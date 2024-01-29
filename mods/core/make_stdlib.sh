@@ -1,0 +1,1 @@
+./mods/tools/wasi-sdk-21.0/bin/llvm-ar qLcs mods/core/stdlibs.a mods/tools/wasi-sysroot/lib/wasm32-wasi/libc.a mods/tools/wasi-sysroot/lib/wasm32-wasi/libc++.a mods/tools/wasi-sysroot/lib/wasm32-wasi/libc++abi.a mods/tools/wasi-sdk-21.0/lib/clang/17/lib/wasi/libclang_rt.builtins-wasm32.a

@@ -1,0 +1,95 @@
+
+t1_2.c.obj:	file format wasm 0x1
+
+Section Details:
+
+Type[1]:
+ - type[0] () -> i32
+Import[5]:
+ - memory[0] pages: initial=1 <- env.__linear_memory
+ - func[0] sig=0 <env.t1_3_func_2> <- env.t1_3_func_2
+ - func[1] sig=0 <t1_2_imported_func_1> <- webrogue.webrogue_t1_imported_func_1
+ - func[2] sig=0 <t1_2_imported_func_2> <- webrogue.webrogue_t1_imported_func_2
+ - table[0] type=funcref initial=1 <- env.__indirect_function_table
+Function[3]:
+ - func[3] sig=0 <t1_2_func_1>
+ - func[4] sig=0 <t1_2_func_2>
+ - func[5] sig=0 <t1_2_func_3>
+Elem[1]:
+ - segment[0] flags=0 table=0 count=1 - init i32=1
+  - elem[1] = ref.func:3 <t1_2_func_1>
+DataCount:
+ - data count: 4
+Code[3]:
+ - func[3] size=8 <t1_2_func_1>
+ - func[4] size=8 <t1_2_func_2>
+ - func[5] size=25 <t1_2_func_3>
+Data[4]:
+ - segment[0] <.data.t1_2_data_1> memory=0 size=1 - init i32=0
+  - 0000000: 01                                       .
+ - segment[1] <.data.t1_2_data_2> memory=0 size=2 - init i32=1
+  - 0000001: 0102                                     ..
+ - segment[2] <.data.t1_2_data_3> memory=0 size=8 - init i32=8
+  - 0000008: 0200 0000 0000 0000                      ........
+ - segment[3] <.data.t1_2_data_4> memory=0 size=4 - init i32=16
+  - 0000010: 0000 0000                                ....
+           000010: R_WASM_MEMORY_ADDR_I32 4 <t1_1_data_1>
+Custom:
+ - name: "linking"
+  - symbol table [count=11]
+   - 0: F <t1_2_func_1> func=3 [ binding=global vis=hidden ]
+   - 1: F <env.t1_3_func_2> func=0 [ undefined binding=global vis=default ]
+   - 2: F <t1_2_func_2> func=4 [ binding=global vis=hidden ]
+   - 3: F <t1_2_func_3> func=5 [ binding=global vis=hidden ]
+   - 4: D <t1_1_data_1> [ undefined binding=global vis=default ]
+   - 5: F <t1_2_imported_func_1> func=1 [ undefined explicit_name binding=global vis=default ]
+   - 6: F <t1_2_imported_func_2> func=2 [ undefined explicit_name binding=global vis=default ]
+   - 7: D <t1_2_data_1> segment=0 offset=0 size=1 [ binding=global vis=hidden ]
+   - 8: D <t1_2_data_2> segment=1 offset=0 size=2 [ binding=global vis=hidden ]
+   - 9: D <t1_2_data_3> segment=2 offset=0 size=8 [ binding=global vis=hidden ]
+   - 10: D <t1_2_data_4> segment=3 offset=0 size=4 [ binding=global vis=hidden ]
+  - segment info [count=4]
+   - 0: .data.t1_2_data_1 p2align=0 [ ]
+   - 1: .data.t1_2_data_2 p2align=0 [ ]
+   - 2: .data.t1_2_data_3 p2align=3 [ ]
+   - 3: .data.t1_2_data_4 p2align=2 [ ]
+Custom:
+ - name: "reloc.CODE"
+  - relocations for section: 5 (Code) [5]
+   - R_WASM_FUNCTION_INDEX_LEB offset=0x000004(file=0x0000db) symbol=1 <env.t1_3_func_2>
+   - R_WASM_TABLE_INDEX_SLEB offset=0x00000d(file=0x0000e4) symbol=0 <t1_2_func_1>
+   - R_WASM_MEMORY_ADDR_LEB offset=0x000019(file=0x0000f0) symbol=4 <t1_1_data_1>
+   - R_WASM_FUNCTION_INDEX_LEB offset=0x00001f(file=0x0000f6) symbol=5 <t1_2_imported_func_1>
+   - R_WASM_FUNCTION_INDEX_LEB offset=0x000026(file=0x0000fd) symbol=6 <t1_2_imported_func_2>
+Custom:
+ - name: "reloc.DATA"
+  - relocations for section: 6 (Data) [1]
+   - R_WASM_MEMORY_ADDR_I32 offset=0x000020(file=0x00012a) symbol=4 <t1_1_data_1>
+Custom:
+ - name: "producers"
+Custom:
+ - name: "target_features"
+  - [+] mutable-globals
+  - [+] sign-ext
+
+Code Disassembly:
+
+0000d9 func[3] <t1_2_func_1>:
+ 0000da: 10 80 80 80 80 00          | call 0 <env.t1_3_func_2>
+           0000db: R_WASM_FUNCTION_INDEX_LEB 1 <env.t1_3_func_2>
+ 0000e0: 0b                         | end
+0000e2 func[4] <t1_2_func_2>:
+ 0000e3: 41 81 80 80 80 00          | i32.const 1
+           0000e4: R_WASM_TABLE_INDEX_SLEB 0 <t1_2_func_1>
+ 0000e9: 0b                         | end
+0000eb func[5] <t1_2_func_3>:
+ 0000ec: 41 00                      | i32.const 0
+ 0000ee: 28 02 80 80 80 80 00       | i32.load 2 0
+           0000f0: R_WASM_MEMORY_ADDR_LEB 4 <t1_1_data_1>
+ 0000f5: 10 81 80 80 80 00          | call 1 <t1_2_imported_func_1>
+           0000f6: R_WASM_FUNCTION_INDEX_LEB 5 <t1_2_imported_func_1>
+ 0000fb: 6a                         | i32.add
+ 0000fc: 10 82 80 80 80 00          | call 2 <t1_2_imported_func_2>
+           0000fd: R_WASM_FUNCTION_INDEX_LEB 6 <t1_2_imported_func_2>
+ 000102: 6a                         | i32.add
+ 000103: 0b                         | end

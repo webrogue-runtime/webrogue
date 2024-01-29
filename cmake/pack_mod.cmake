@@ -1,0 +1,12 @@
+set(PATH_TO_PACK)
+
+list(APPEND PATH_TO_PACK ${MOD_NAME}/mod.a)
+if(EXISTS ${MOD_NAME}/data)
+    list(APPEND PATH_TO_PACK ${MOD_NAME}/data)
+endif()
+
+message(VERBOSE ${PATH_TO_PACK})
+file(ARCHIVE_CREATE OUTPUT ${MOD_OUTPUT}
+    PATHS ${PATH_TO_PACK}
+    FORMAT zip
+)

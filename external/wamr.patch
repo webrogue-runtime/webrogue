@@ -1,0 +1,28 @@
+diff --git a/core/iwasm/interpreter/wasm_runtime.c b/core/iwasm/interpreter/wasm_runtime.c
+index b94be328..135dd1d1 100644
+--- a/core/iwasm/interpreter/wasm_runtime.c
++++ b/core/iwasm/interpreter/wasm_runtime.c
+@@ -1026,8 +1026,8 @@ execute_post_instantiate_functions(WASMModuleInstance *module_inst,
+         && !module->import_wasi_api
+ #endif
+     ) {
+-        call_ctors_func =
+-            lookup_post_instantiate_func(module_inst, "__wasm_call_ctors");
++        // call_ctors_func =
++        //     lookup_post_instantiate_func(module_inst, "__wasm_call_ctors");
+     }
+ #endif
+ 
+diff --git a/core/shared/platform/linux/platform_internal.h b/core/shared/platform/linux/platform_internal.h
+index 8439f872..feb8c68c 100644
+--- a/core/shared/platform/linux/platform_internal.h
++++ b/core/shared/platform/linux/platform_internal.h
+@@ -31,7 +31,7 @@
+ #include <sys/stat.h>
+ #include <sys/mman.h>
+ #include <sys/time.h>
+-#include <sys/timeb.h>
++// #include <sys/timeb.h>
+ #include <sys/uio.h>
+ #include <sys/ioctl.h>
+ #include <sys/socket.h>

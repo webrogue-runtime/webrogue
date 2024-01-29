@@ -1,0 +1,60 @@
+
+function(parse_api_header)
+    set(options)
+    set(oneValueArgs FUNC_MACRO FUNC_COUNT FUNC_ID FUNC_NAME RET_TYPE ARGS ARGS_WITHOUT_TYPES ARG_TYPES)
+    set(multiValueArgs)
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    file(READ ${WR_API_HEADER} content)
+    string(REPLACE "\n" " " content "${content}")
+    string(REGEX REPLACE "[\n ]+" " " content "${content}")
+    string(REGEX MATCHALL "${ARG_FUNC_MACRO}\\( *(void|WASMRawI32|WASMRawU32|WASMRawF32|WASMRawI64|WASMRawU64|WASMRawF64), *[^,]+, *\\([^\)]*\\) *\\)" content "${content}")
+
+    set(FUNC_ID 0)
+
+    foreach(line ${content})
+        math(EXPR FUNC_ID "${FUNC_ID}+1")
+        string(STRIP "${line}" line)
+        string(REGEX MATCH ", [^,]+" func_name "${line}")
+        string(SUBSTRING "${func_name}" 2 -1 func_name)
+        set(FUNC_NAME ${func_name})
+
+        string(REGEX MATCH ", *\\([^\\)]+" args "${line}")
+        if(NOT args STREQUAL "")
+            string(SUBSTRING "${args}" 1 -1 args)
+            string(STRIP "${args}" args)
+            string(SUBSTRING "${args}" 1 -1 args)
+        endif()
+        set(ARGS "${args}")
+
+        string(REGEX MATCHALL "(void \\*|WASMRawI32|WASMRawU32|WASMRawF32|WASMRawI64|WASMRawU64|WASMRawF64)" arg_types "${args}")
+        set(ARG_TYPES "${arg_types}")
+
+        string(REPLACE "WASMRawU32 " "" args_without_types "${args}")
+        string(REPLACE "WASMRawI32 " "" args_without_types "${args_without_types}")
+        string(REPLACE "WASMRawF32 " "" args_without_types "${args_without_types}")
+        string(REPLACE "WASMRawU64 " "" args_without_types "${args_without_types}")
+        string(REPLACE "WASMRawI64 " "" args_without_types "${args_without_types}")
+        string(REPLACE "WASMRawF64 " "" args_without_types "${args_without_types}")
+        string(REPLACE "void *" "" args_without_types "${args_without_types}")
+        set(ARGS_WITHOUT_TYPES "${args_without_types}")
+        
+        string(REGEX MATCH "${ARG_FUNC_MACRO}\\([^,]+" ret_type "${line}")
+        string(REPLACE "${ARG_FUNC_MACRO}(" "" ret_type "${ret_type}")
+        string(STRIP "${ret_type}" ret_type)
+       set(RET_TYPE ${ret_type})
+
+        if(FUNC_ID EQUAL ARG_FUNC_ID)
+            set(${ARG_FUNC_NAME} ${FUNC_NAME} PARENT_SCOPE)
+            set(${ARG_RET_TYPE} ${RET_TYPE} PARENT_SCOPE)
+            set(${ARG_ARGS} ${ARGS} PARENT_SCOPE)
+            set(${ARG_ARGS_WITHOUT_TYPES} ${ARGS_WITHOUT_TYPES} PARENT_SCOPE)
+            set(${ARG_ARG_TYPES} ${ARG_TYPES} PARENT_SCOPE)
+        endif()
+    endforeach()
+
+    if(ARG_FUNC_COUNT)
+        set(${ARG_FUNC_COUNT} ${FUNC_ID} PARENT_SCOPE)
+    endif()
+endfunction()
+

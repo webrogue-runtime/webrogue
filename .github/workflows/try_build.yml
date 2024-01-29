@@ -1,0 +1,198 @@
+name: Webrogue CI
+
+on:
+  push:
+    
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/wasmedge/;
+        git submodule update --init --recursive --single-branch external/xz/;
+        git submodule update --init --recursive --single-branch external/dirent/;
+        git submodule update --init --recursive --single-branch external/pdcurses/;
+        git submodule update --init --recursive --single-branch external/libuv/;
+        git submodule update --init --recursive --single-branch external/uvwasi/;
+
+    - name: Build
+      run: |
+        ./platforms/Windows/build.ps1 Release;
+
+  web:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/xz/
+        git submodule update --init --recursive --single-branch external/libuv/
+        git submodule update --init --recursive --single-branch external/uvwasi/
+
+    - name: Install Emscripten
+      run: |
+        git clone https://github.com/emscripten-core/emsdk.git
+        ./emsdk/emsdk install latest
+        ./emsdk/emsdk activate latest
+        
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+
+    - name: Configure and build
+      run: |        
+        . ./emsdk/emsdk_env.sh
+        sh -c "cd platforms/Web/homepage && bundle install"
+        sh platforms/Web/build_and_pack.sh Debug
+
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/wasmtime/
+        git submodule update --init --recursive --single-branch external/xz/
+        git submodule update --init --recursive --single-branch external/argparse/
+        git submodule update --init --recursive --single-branch external/libuv/
+        git submodule update --init --recursive --single-branch external/uvwasi/
+
+    - name: Apt 
+      run: |
+        sudo apt update
+        sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev 
+
+    - name: Configure and build
+      run: |
+        cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=Debug
+        cmake --build platforms/Linux/build --target pack_executable_to_artifacts -j
+
+  dos:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Apt
+      run: |
+        sudo apt-get install -y libfl2
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/xz/
+        git submodule update --init --recursive --single-branch external/argparse/
+        git submodule update --init --recursive --single-branch external/pdcurses/
+        git submodule update --init --recursive --single-branch external/libuv/
+        git submodule update --init --recursive --single-branch external/uvwasi/
+
+    - name: Install DJGPP toolchain
+      run: |
+        wget https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2
+        sudo tar -xjvf djgpp-linux64-gcc1220.tar.bz2 -C /usr/local/
+
+    - name: Configure and build
+      run: |
+        cmake --toolchain=djgpp_toolchain.cmake -S platforms/DOS/ -B platforms/DOS/build -DCMAKE_BUILD_TYPE=Debug
+        cmake --build platforms/DOS/build --target pack_executable_to_artifacts -j 
+
+  android:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '17'
+
+      - name: Submodules
+        run: |
+          git submodule update --init --recursive --single-branch external/wamr/
+          git submodule update --init --recursive --single-branch external/wasmtime/
+          git submodule update --init --recursive --single-branch external/xz/
+          git submodule update --init --recursive --single-branch external/SDL/
+          git submodule update --init --recursive --single-branch external/SDL_ttf/
+          git submodule update --init --recursive --single-branch external/libuv/
+          git submodule update --init --recursive --single-branch external/uvwasi/
+
+      - name: Install rust targets
+        run: |
+          rustup target add aarch64-linux-android
+          rustup target add x86_64-linux-android
+
+      - name: build
+        run: |
+          cd platforms/Android
+          ./gradlew --no-daemon assembleRelease
+
+  macos:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/xz/
+        git submodule update --init --recursive --single-branch external/libuv/
+        git submodule update --init --recursive --single-branch external/uvwasi/
+        git submodule update --init --recursive --single-branch external/wasmer/
+        git submodule update --init --recursive --single-branch external/SDL/
+        git submodule update --init --recursive --single-branch external/SDL_ttf/
+
+    - name: Install rust tools
+      run: |
+        cargo install cargo-lipo
+
+    - name: Cmake Cache
+      uses: actions/cache@v4
+      with:
+        path: platforms/MacOS/cmake_build/CMakeCache.txt
+        key: macos-cmake-cache
+
+    - name: Configure and build
+      run: |
+        sh platforms/MacOS/build.sh --release
+
+  ios:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/xz/
+        git submodule update --init --recursive --single-branch external/libuv/
+        git submodule update --init --recursive --single-branch external/uvwasi/
+        git submodule update --init --recursive --single-branch external/wasm3/
+        git submodule update --init --recursive --single-branch external/wasmer/
+        git submodule update --init --recursive --single-branch platforms/iOS/external/SnapKit
+        git submodule update --init --recursive --single-branch external/SDL/
+        git submodule update --init --recursive --single-branch external/SDL_ttf/
+
+    - name: Install rust tools
+      run: |
+        cargo install cargo-lipo
+        rustup target add aarch64-apple-ios
+
+    - name: Cmake Cache
+      uses: actions/cache@v4
+      with:
+        path: platforms/iOS/cmake_build/CMakeCache.txt
+        key: ios-cmake-cache
+
+    - name: Configure and build
+      run: |
+        sh platforms/iOS/build.sh --release

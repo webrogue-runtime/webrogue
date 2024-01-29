@@ -1,0 +1,80 @@
+credentials:
+  system:
+    domainCredentials:
+    - credentials:
+      - basicSSHUserPrivateKey:
+          description: "jenkins_ssh_private_key"
+          id: "dc275d74-502a-4d02-a296-a8fcbc0632ba"
+          privateKeySource:
+            directEntry:
+              privateKey: "${file:/jenkins_rsa}"
+          scope: GLOBAL
+          username: "jenkins"
+      - string:
+          id: "android_store_password"
+          scope: GLOBAL
+          secret: "${readFile:/android_store_password}"
+      - string:
+          id: "android_key_password"
+          scope: GLOBAL
+          secret: "${readFile:/android_key_password}"
+
+jenkins:
+  systemMessage: "Jenkins configured automatically by Jenkins Configuration as Code plugin\n\n"
+  nodes:
+    - permanent:
+        labelString: "linux"
+        launcher:
+          ssh:
+            credentialsId: "dc275d74-502a-4d02-a296-a8fcbc0632ba"
+            host: "linux_agent"
+            port: 22
+            sshHostKeyVerificationStrategy: "nonVerifyingKeyVerificationStrategy"
+        name: "linux-agent"
+        remoteFS: "/home/jenkins"
+        retentionStrategy: "always"
+        numExecutors: 5
+  numExecutors: 0
+security:
+  gitHostKeyVerificationConfiguration:
+    sshHostKeyVerificationStrategy:
+      manuallyProvidedKeyVerificationStrategy:
+        approvedHostKeys: "|1|an+WsG76LmmYbUqrfzLo6k+fqZY=|5/GJI4WiJ2Ixld7jfemBI7omZFc=\
+          \ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+unclassified:
+  location:
+    adminAddress: "address not configured yet <nobody@nowhere>"
+    url: "http://localhost:5080/"
+jobs:
+  - script: |
+      multibranchPipelineJob('webrogue') {
+        branchSources {
+          branchSource {
+            source {
+              git {
+                credentialsId('dc275d74-502a-4d02-a296-a8fcbc0632ba')
+                remote('git@github.com:Destructor17/webrogue.git')
+                traits {
+                  gitBranchDiscovery()
+                  submoduleOptionTrait {
+                    extension {
+                      disableSubmodules(false)
+                      recursiveSubmodules(true)
+                      trackingSubmodules(false)
+                      reference(null)
+                      timeout(null)
+                      parentCredentials(true)
+                    }
+                  }
+                }
+              }
+            }
+          } 
+        }
+        configure {
+          it / 'triggers' << 'com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger'{
+            spec '* * * * *'
+            interval "60000"
+          }
+        }
+      }

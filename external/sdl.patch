@@ -1,0 +1,13 @@
+diff --git a/src/video/uikit/SDL_uikitappdelegate.m b/src/video/uikit/SDL_uikitappdelegate.m
+index fb42d2202..31e74f0c9 100644
+--- a/src/video/uikit/SDL_uikitappdelegate.m
++++ b/src/video/uikit/SDL_uikitappdelegate.m
+@@ -465,7 +465,7 @@ - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(
+                         SDL_IdleTimerDisabledChanged, NULL);
+ 
+     SDL_SetMainReady();
+-    [self performSelector:@selector(postFinishLaunch) withObject:nil afterDelay:0.0];
++//    [self performSelector:@selector(postFinishLaunch) withObject:nil afterDelay:0.0];
+ 
+     return YES;
+ }

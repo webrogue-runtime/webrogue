@@ -1,0 +1,109 @@
+
+t1_3.c.obj:	file format wasm 0x1
+
+Section Details:
+
+Type[4]:
+ - type[0] () -> i32
+ - type[1] (i32, i32) -> i32
+ - type[2] (i32, i32, i32, i32) -> i32
+ - type[3] (i32) -> i32
+Import[7]:
+ - memory[0] pages: initial=1 <- env.__linear_memory
+ - func[0] sig=0 <env.t1_2_func_3> <- env.t1_2_func_3
+ - func[1] sig=1 <env.fopen> <- env.fopen
+ - func[2] sig=2 <env.fwrite> <- env.fwrite
+ - func[3] sig=3 <env.fclose> <- env.fclose
+ - func[4] sig=0 <env.t1_2_func_2> <- env.t1_2_func_2
+ - table[0] type=funcref initial=0 <- env.__indirect_function_table
+Function[2]:
+ - func[5] sig=0 <t1_3_func_2>
+ - func[6] sig=0 <my_main>
+Export[1]:
+ - func[6] <my_main> -> "my_main"
+DataCount:
+ - data count: 3
+Code[2]:
+ - func[5] size=21 <t1_3_func_2>
+ - func[6] size=63 <my_main>
+Data[3]:
+ - segment[0] <.data.t1_3_data_1> memory=0 size=1 - init i32=0
+  - 0000000: 03                                       .
+ - segment[1] <.rodata..L.str> memory=0 size=4 - init i32=1
+  - 0000001: 6161 6100                                aaa.
+ - segment[2] <.rodata..L.str.1> memory=0 size=2 - init i32=5
+  - 0000005: 7700                                     w.
+Custom:
+ - name: "linking"
+  - symbol table [count=11]
+   - 0: F <t1_3_func_2> func=5 [ binding=global vis=hidden ]
+   - 1: D <t1_2_data_4> [ undefined binding=global vis=default ]
+   - 2: F <env.t1_2_func_3> func=0 [ undefined binding=global vis=default ]
+   - 3: F <my_main> func=6 [ exported no_strip binding=global vis=hidden ]
+   - 4: D <.L.str> segment=1 offset=0 size=4 [ binding=local vis=default ]
+   - 5: D <.L.str.1> segment=2 offset=0 size=2 [ binding=local vis=default ]
+   - 6: F <env.fopen> func=1 [ undefined binding=global vis=default ]
+   - 7: F <env.fwrite> func=2 [ undefined binding=global vis=default ]
+   - 8: F <env.fclose> func=3 [ undefined binding=global vis=default ]
+   - 9: F <env.t1_2_func_2> func=4 [ undefined binding=global vis=default ]
+   - 10: D <t1_3_data_1> segment=0 offset=0 size=1 [ binding=global vis=hidden ]
+  - segment info [count=3]
+   - 0: .data.t1_3_data_1 p2align=0 [ ]
+   - 1: .rodata..L.str p2align=0 [ STRINGS ]
+   - 2: .rodata..L.str.1 p2align=0 [ STRINGS ]
+Custom:
+ - name: "reloc.CODE"
+  - relocations for section: 5 (Code) [10]
+   - R_WASM_MEMORY_ADDR_LEB offset=0x000007(file=0x0000de) symbol=1 <t1_2_data_4>
+   - R_WASM_FUNCTION_INDEX_LEB offset=0x000010(file=0x0000e7) symbol=2 <env.t1_2_func_3>
+   - R_WASM_MEMORY_ADDR_SLEB offset=0x00001c(file=0x0000f3) symbol=4 <.L.str>
+   - R_WASM_MEMORY_ADDR_SLEB offset=0x000026(file=0x0000fd) symbol=4 <.L.str>
+   - R_WASM_MEMORY_ADDR_SLEB offset=0x00002c(file=0x000103) symbol=5 <.L.str.1>
+   - R_WASM_FUNCTION_INDEX_LEB offset=0x000032(file=0x000109) symbol=6 <env.fopen>
+   - R_WASM_FUNCTION_INDEX_LEB offset=0x00003a(file=0x000111) symbol=7 <env.fwrite>
+   - R_WASM_FUNCTION_INDEX_LEB offset=0x000043(file=0x00011a) symbol=8 <env.fclose>
+   - R_WASM_FUNCTION_INDEX_LEB offset=0x00004a(file=0x000121) symbol=9 <env.t1_2_func_2>
+   - R_WASM_TYPE_INDEX_LEB offset=0x000050(file=0x000127) type=0
+Custom:
+ - name: "producers"
+Custom:
+ - name: "target_features"
+  - [+] mutable-globals
+  - [+] sign-ext
+
+Code Disassembly:
+
+0000d9 func[5] <t1_3_func_2>:
+ 0000da: 41 00                      | i32.const 0
+ 0000dc: 28 02 80 80 80 80 00       | i32.load 2 0
+           0000de: R_WASM_MEMORY_ADDR_LEB 1 <t1_2_data_4>
+ 0000e3: 28 02 00                   | i32.load 2 0
+ 0000e6: 10 80 80 80 80 00          | call 0 <env.t1_2_func_3>
+           0000e7: R_WASM_FUNCTION_INDEX_LEB 2 <env.t1_2_func_3>
+ 0000ec: 6a                         | i32.add
+ 0000ed: 0b                         | end
+0000ef func[6] <my_main>:
+ 0000f0: 01 7f                      | local[0] type=i32
+ 0000f2: 41 81 80 80 80 00          | i32.const 1
+           0000f3: R_WASM_MEMORY_ADDR_SLEB 4 <.L.str>
+ 0000f8: 41 03                      | i32.const 3
+ 0000fa: 41 01                      | i32.const 1
+ 0000fc: 41 81 80 80 80 00          | i32.const 1
+           0000fd: R_WASM_MEMORY_ADDR_SLEB 4 <.L.str>
+ 000102: 41 85 80 80 80 00          | i32.const 5
+           000103: R_WASM_MEMORY_ADDR_SLEB 5 <.L.str.1>
+ 000108: 10 81 80 80 80 00          | call 1 <env.fopen>
+           000109: R_WASM_FUNCTION_INDEX_LEB 6 <env.fopen>
+ 00010e: 22 00                      | local.tee 0
+ 000110: 10 82 80 80 80 00          | call 2 <env.fwrite>
+           000111: R_WASM_FUNCTION_INDEX_LEB 7 <env.fwrite>
+ 000116: 1a                         | drop
+ 000117: 20 00                      | local.get 0
+ 000119: 10 83 80 80 80 00          | call 3 <env.fclose>
+           00011a: R_WASM_FUNCTION_INDEX_LEB 8 <env.fclose>
+ 00011f: 1a                         | drop
+ 000120: 10 84 80 80 80 00          | call 4 <env.t1_2_func_2>
+           000121: R_WASM_FUNCTION_INDEX_LEB 9 <env.t1_2_func_2>
+ 000126: 11 80 80 80 80 00 00       | call_indirect 0 <env.__indirect_function_table> (type 0)
+           000127: R_WASM_TYPE_INDEX_LEB 0
+ 00012d: 0b                         | end

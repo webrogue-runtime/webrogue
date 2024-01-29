@@ -1,0 +1,4 @@
+/test_src/wasi-sdk-*
+/test_src/wasi-sdk.tar.gz
+/test_src/generated_toolchain.cmake
+/test_src/linker_path.cmake

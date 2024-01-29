@@ -1,0 +1,13 @@
+diff --git a/lib/executor/executor.cpp b/lib/executor/executor.cpp
+index b4dc667f..e37d3d4d 100644
+--- a/lib/executor/executor.cpp
++++ b/lib/executor/executor.cpp
+@@ -13,7 +13,7 @@ namespace Executor {
+ Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+ Executor::instantiateModule(Runtime::StoreManager &StoreMgr,
+                             const AST::Module &Mod) {
+-  if (auto Res = instantiate(StoreMgr, Mod)) {
++  if (auto Res = instantiate(StoreMgr, Mod, "default_module")) {
+     return Res;
+   } else {
+     // If Statistics is enabled, then dump it here.

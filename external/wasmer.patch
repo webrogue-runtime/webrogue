@@ -1,0 +1,7 @@
+diff --git a/rust-toolchain b/rust-toolchain
+deleted file mode 100644
+index bfe79d0bdd..0000000000
+--- a/rust-toolchain
++++ /dev/null
+@@ -1 +0,0 @@
+-1.70

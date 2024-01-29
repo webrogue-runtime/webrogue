@@ -1,0 +1,21 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/run"
+        android:title="Run"
+        app:showAsAction="ifRoom|withText"
+        android:onClick="onMenuItemClick"/>
+    <group >
+        <item
+            android:id="@+id/add_log2048"
+            android:onClick="onMenuItemClick"
+            android:title="Add log2048.wrmod" />
+        <item
+            android:id="@+id/import_mod"
+            android:onClick="onMenuItemClick"
+            android:title="Import mod" />
+        <item
+            android:id="@+id/refresh"
+            android:onClick="onMenuItemClick"
+            android:title="Refresh" />
+    </group>
+</menu>

@@ -1,0 +1,32 @@
+services:
+  jenkins:
+    container_name: jenkins
+    build:
+      context: .
+      dockerfile: jenkins.Dockerfile
+
+    ports:
+      - "127.0.0.1:5080:8080"
+    # volumes:
+    #   - jenkins_home:/var/jenkins_home
+    #   - /var/run/docker.sock:/var/run/docker.sock
+    user: root
+    networks:
+      - cicd_network
+
+  linux_agent:
+    container_name: linux_agent
+    build:
+      context: .
+      dockerfile: linux_agent.Dockerfile
+    networks:
+      - cicd_network
+
+# volumes:
+#   jenkins_home:
+#     # external: true
+#     name: jenkins_home
+
+networks:
+  cicd_network:
+    driver: bridge

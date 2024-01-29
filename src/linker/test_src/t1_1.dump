@@ -1,0 +1,44 @@
+
+t1_1.c.obj:	file format wasm 0x1
+
+Section Details:
+
+Type[1]:
+ - type[0] () -> i32
+Import[2]:
+ - memory[0] pages: initial=1 <- env.__linear_memory
+ - func[0] sig=0 <t1_1_imported_func_1> <- webrogue.webrogue_t1_imported_func_1
+Function[1]:
+ - func[1] sig=0 <t1_1_func_1>
+DataCount:
+ - data count: 1
+Code[1]:
+ - func[1] size=8 <t1_1_func_1>
+Data[1]:
+ - segment[0] <.data.t1_1_data_1> memory=0 size=4 - init i32=0
+  - 0000000: 0c00 0000                                ....
+Custom:
+ - name: "linking"
+  - symbol table [count=3]
+   - 0: F <t1_1_func_1> func=1 [ binding=global vis=hidden ]
+   - 1: F <t1_1_imported_func_1> func=0 [ undefined explicit_name binding=global vis=default ]
+   - 2: D <t1_1_data_1> segment=0 offset=0 size=4 [ binding=global vis=hidden ]
+  - segment info [count=1]
+   - 0: .data.t1_1_data_1 p2align=2 [ ]
+Custom:
+ - name: "reloc.CODE"
+  - relocations for section: 4 (Code) [1]
+   - R_WASM_FUNCTION_INDEX_LEB offset=0x000004(file=0x000071) symbol=1 <t1_1_imported_func_1>
+Custom:
+ - name: "producers"
+Custom:
+ - name: "target_features"
+  - [+] mutable-globals
+  - [+] sign-ext
+
+Code Disassembly:
+
+00006f func[1] <t1_1_func_1>:
+ 000070: 10 80 80 80 80 00          | call 0 <t1_1_imported_func_1>
+           000071: R_WASM_FUNCTION_INDEX_LEB 1 <t1_1_imported_func_1>
+ 000076: 0b                         | end
