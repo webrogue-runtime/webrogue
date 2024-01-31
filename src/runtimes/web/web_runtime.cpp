@@ -97,7 +97,7 @@ EM_JS(void, initWasmModule, (const uint8_t *pointer, int size), {
             } else {
                 console.error("host: unknown command ", command);
             }
-        }
+        };
         Module.modsWorker.postMessage(["instantiate", modsWasmData, Module.importedFuncNames, Module.workerSharedBuffer]);
     });
 });
