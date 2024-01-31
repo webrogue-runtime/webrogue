@@ -68,7 +68,7 @@ EM_JS(void, initWasmModule, (const uint8_t *pointer, int size), {
             if (command == 0) { // instantiated
                 wakeUp();
             } else if (command == 1) { // exec_finished
-                Module.executionFinished = true
+                Module.executionFinished = true;
         
                 let modsExecFinished = Module.modsExecFinished;
                 Module.modsExecFinished = undefined;
@@ -150,7 +150,7 @@ void WebModsRuntime::initMods() {
 
     execAsyncFunc("__wasm_call_ctors");
 
-    for (auto modName : resourceStorage->modNames) {
+    for (std::string const &modName : resourceStorage->modNames) {
         execAsyncFunc("init_mod_" + modName);
     }
 
