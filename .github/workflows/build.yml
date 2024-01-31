@@ -245,59 +245,13 @@ jobs:
         run: |
           sh platforms/iOS/build.sh --release
 
-  built:
+  update_pages:
     needs: [windows, web, linux, dos, android, macos, ios]
+    env:
+      GH_TOKEN: ${{secrets.PAGES_UPDATE_TOKEN}}
     runs-on: ubuntu-latest
 
     steps:
       - name: Ok
         run: |
-          true
-  
-  deploy_web:
-    needs: [built, web, android, macos]
-    permissions:
-      pages: write      # to deploy to Pages
-      id-token: write
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: Artifacts-Web
-        path: './artifacts'
-        
-    - uses: actions/download-artifact@v4
-      with:
-        name: Artifacts-Android
-        path: './artifacts-android'
-
-    - uses: actions/download-artifact@v4
-      with:
-        name: Artifacts-MacOS
-        path: './artifacts-macos'
-      
-    - name: Display structure of downloaded files
-      run: ls -R
-      
-    - name: Move artifacts
-      run: |
-        mkdir ./artifacts/release/
-        cp ./artifacts-android/webrogue.apk ./artifacts/release/webrogue.apk
-        cp ./artifacts-macos/Webrogue.dmg ./artifacts/release/Webrogue.dmg
-      
-    - name: Display structure packed files
-      run: ls -R
-
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: './artifacts'
-      
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+          gh workflow run update_submodule
