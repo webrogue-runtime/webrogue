@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="manifest" href="../manifest.json" />
+  <title>Webrogue dynamic game</title>
+  <style>
+    body {
+      font-family: arial;
+      margin: 0;
+      padding: none;
+    }
+
+    .emscripten {
+      padding-right: 0;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
+    }
+
+    div.emscripten {
+      text-align: center;
+      background-color: black;
+      color: white;
+    }
+
+    div.doc_body {
+      padding-left: 1cm;
+      padding-right: 1cm
+    }
+
+    /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+    canvas.emscripten {
+      border: 0px none;
+      background-color: black;
+      width: 100%;
+      height: 100%;
+    }
+
+    #emscripten_logo {
+      display: inline-block;
+      margin: 0;
+    }
+
+    #infoi {
+      z-index: 10;
+    }
+
+    @-webkit-keyframes rotation {
+      from {
+        -webkit-transform: rotate(0deg);
+      }
+
+      to {
+        -webkit-transform: rotate(360deg);
+      }
+    }
+
+    @-moz-keyframes rotation {
+      from {
+        -moz-transform: rotate(0deg);
+      }
+
+      to {
+        -moz-transform: rotate(360deg);
+      }
+    }
+
+    @-o-keyframes rotation {
+      from {
+        -o-transform: rotate(0deg);
+      }
+
+      to {
+        -o-transform: rotate(360deg);
+      }
+    }
+
+    @keyframes rotation {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <noscript>
+    You need at least JavaScript enabled to play this game. What did you expect?
+  </noscript>
+  <div id="script_div" style="position: relative;">
+    <div>
+      <div style="height: 100vh; left: 0; top: 0;">
+        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+      </div>
+    </div>
+    <div style="position: absolute;left: 0;right: 0;top: 0;">
+      <div class="emscripten">
+        <label id="statusLabel"></label>
+      </div>
+    </div>
+  </div>
+
+  <script type='text/javascript'>
+    var request = window.indexedDB.open("webrogueHomepage", 1);
+    request.onerror = (event) => {
+      console.error(`Database error: ${event.target.errorCode}`);
+      alert(`Database error: ${event.target.errorCode}`);
+    };
+    request.onupgradeneeded = (event) => {
+      var db = event.target.result;
+      var objectStore = db.createObjectStore("mods", { keyPath: "modName" });
+
+      objectStore.createIndex("modName", "modName", { unique: true });
+    }
+    request.onsuccess = (event) => {
+      homepageIndexedDB = event.target.result;
+    };
+  </script>
+
+  <script type='text/javascript'>
+    var statusLabelElement = document.getElementById('statusLabel');
+
+    var Module = {
+      preRun: [
+        function () {
+          FS.mkdir('/webrogue');
+          FS.mount(IDBFS, { root: '/' }, '/webrogue');
+          FS.chdir('/webrogue');
+          FS.syncfs(true, function (err) {
+            // handle callback
+          });
+        }
+      ],
+      postRun: [],
+      print: (function () {
+        return function (text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          console.log(text);
+        };
+      })(),
+      canvas: (function () {
+        var canvas = document.getElementById('canvas');
+
+        // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+        // application robust, you may want to override this behavior before shipping!
+        // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+        canvas.addEventListener("webglcontextlost", function (e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+        return canvas;
+      })(),
+      setStatus: function (text) {
+        if (text == "Running...") text = "Loading Webrogue...";
+        statusLabelElement.textContent = text
+      },
+      totalDependencies: 0,
+    };
+    Module.setStatus('Downloading...');
+    window.onerror = function (event) {
+      // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+      Module.setStatus('Exception thrown, see JavaScript console');
+      Module.setStatus = function (text) {
+        if (text) console.error('[post-exception status] ' + text);
+      };
+    };
+  </script>
+  <script type='text/javascript' src="./webrogue_game.js"></script>
+</body>
+
+</html>

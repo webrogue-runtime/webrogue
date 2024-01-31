@@ -1,3 +1,4 @@
+#include "../../../embedded_resources/core_wrmod.h"
 #include "../../../src/core/webrogueMain.hpp"
 #include "../../../src/outputs/sdl/SDLOutput.hpp"
 #include <cstddef>
@@ -19,7 +20,6 @@ extern "C" int modToLoadNameSize();
 extern "C" void modToLoadNameCopy(char *ptr);
 extern "C" int modToLoadDataSize();
 extern "C" void modToLoadDataCopy(uint8_t *ptr);
-extern "C" void presentModSelector();
 
 bool fetched;
 webrogue::core::Config *sharedConfig;
@@ -49,7 +49,6 @@ int main(int argc, char *argv[]) {
     while (true) {
         auto output = std::make_shared<webrogue::outputs::sdl::SDLOutput>();
         downloadedMods.clear();
-        presentModSelector();
 
         webrogue::core::Config config;
         sharedConfig = &config;
@@ -62,24 +61,20 @@ int main(int argc, char *argv[]) {
 
         config.endOutputOnExit = false;
 
-        emscripten_fetch_attr_t attr;
-        emscripten_fetch_attr_init(&attr);
-        strcpy(attr.requestMethod, "GET");
-        attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
-        attr.onsuccess = downloadSucceeded;
-        attr.onerror = downloadFailed;
-
-        fetched = false;
-        fetchedModName = "core";
-        emscripten_fetch(&attr, "artifacts/mods/core.wrmod");
-        while (!fetched)
-            emscripten_sleep(10);
+        sharedConfig->addWrmodData(core_wrmod, core_wrmod_size, "core");
 
         prepareMods();
         if (!modsToLoadCount()) {
+            emscripten_fetch_attr_t attr;
+            emscripten_fetch_attr_init(&attr);
+            strcpy(attr.requestMethod, "GET");
+            attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+            attr.onsuccess = downloadSucceeded;
+            attr.onerror = downloadFailed;
+
             fetched = false;
             fetchedModName = "log2048";
-            emscripten_fetch(&attr, "artifacts/mods/log2048.wrmod");
+            emscripten_fetch(&attr, "mods/log2048.wrmod");
             while (!fetched)
                 emscripten_sleep(10);
         } else {

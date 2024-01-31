@@ -36,9 +36,10 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --recursive --single-branch external/xz/
-        git submodule update --init --recursive --single-branch external/libuv/
-        git submodule update --init --recursive --single-branch external/uvwasi/
+        git submodule update --init --recursive --single-branch \
+          external/xz/ \
+          external/libuv/ \
+          external/uvwasi/
 
     - name: Install Emscripten
       run: |
@@ -54,8 +55,8 @@ jobs:
     - name: Configure and build
       run: |        
         . ./emsdk/emsdk_env.sh
-        sh -c "cd platforms/Web/homepage && bundle install"
-        JEKYLL_ENV=production sh platforms/Web/build_and_pack.sh Release
+        emcmake cmake -B platforms/Web/build -S platforms/Web -DCMAKE_BUILD_TYPE=Release
+        cmake --build platforms/Web/build --target pack_artifacts -j
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4

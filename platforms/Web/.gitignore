@@ -1,4 +1,4 @@
-/*/build
-/game_artifacts
-/baked_game/build_wasm
-/baked_game/build_asmjs
+/build
+/webrogue_baked_game_*
+/webrogue_game*
+/mods
