@@ -13,25 +13,67 @@
 #include <string>
 #include <vector>
 
-extern "C" {
-extern int32_t getArgInt32(uint32_t argNum);
-extern uint32_t getArgUInt32(uint32_t argNum);
-extern int64_t getArgInt64(uint32_t argNum);
-extern uint64_t getArgUInt64(uint32_t argNum);
-extern float getArgFloat(uint32_t argNum);
-extern double getArgDouble(uint32_t argNum);
-
-extern void writeInt32Result(int32_t result);
-extern void writeUInt32Result(uint32_t result);
-extern void writeInt64Result(int64_t result);
-extern void writeUInt64Result(uint64_t result);
-extern void writeFloatResult(float result);
-extern void writeDoubleResult(double result);
-
-extern void makeWorker(const char *jsonPtr);
-
-extern void terminateWorker();
-}
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+#else
+#define EM_JS(ret_type, func_name, args, body)                                 \
+    ret_type func_name args {                                                  \
+        abort();                                                               \
+    }
+#endif
+// clang-format off
+EM_JS(void, makeWorker, (const char *jsonPtr), {
+        Module.modsWorker = new Worker("worker.js");
+        let namesJson = UTF8ToString(jsonPtr);
+        Module.importedFuncNames = JSON.parse(namesJson);
+        Module.modError = undefined;
+    });
+EM_JS(void, terminateWorker, (), {
+        Module.modsWorker.terminate();
+        delete Module.modsWorker;
+        Module.executionFinished = true;
+    });
+EM_JS(int32_t, getArgInt32, (uint32_t argNum), {
+        return Module.importedFuncArgs[argNum]
+    });
+EM_JS(uint32_t, getArgUInt32, (uint32_t argNum), {
+        return Module.importedFuncArgs[argNum]
+    });
+EM_JS(int64_t, getArgInt64, (uint32_t argNum), {
+        return Module.importedFuncArgs[argNum]
+    });
+EM_JS(uint64_t, getArgUInt64, (uint32_t argNum), {
+        return Module.importedFuncArgs[argNum]
+    });
+EM_JS(float, getArgFloat, (uint32_t argNum), {
+        return Module.importedFuncArgs[argNum]
+    });
+EM_JS(double, getArgDouble, (uint32_t argNum), {
+        return Module.importedFuncArgs[argNum]
+    });
+EM_JS(void, writeInt32Result, (int32_t result), {
+        Module.workerSharedArray[1] = BigInt(result)
+    });
+EM_JS(void, writeUInt32Result, (uint32_t result), {
+        Module.workerSharedArray[1] = BigInt(result)
+    });
+EM_JS(void, writeInt64Result, (int64_t result), {
+        Module.workerSharedArray[1] = result
+    });
+EM_JS(void, writeUInt64Result, (uint64_t result), {
+        Module.workerSharedArray[1] = result
+    });
+EM_JS(void, writeFloatResult, (float result), {
+        let buffer = new ArrayBuffer(8);
+        (new Float64Array(buffer))[0] = result;
+        Module.workerSharedArray[1] = (new BigInt64Array(buffer))[0];
+    });
+EM_JS(void, writeDoubleResult, (double result), {
+        let buffer = new ArrayBuffer(8);
+        (new Float64Array(buffer))[0] = result;
+        Module.workerSharedArray[1] = (new BigInt64Array(buffer))[0];
+    });
+// clang-format on
 
 namespace webrogue {
 namespace runtimes {
