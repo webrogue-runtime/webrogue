@@ -254,4 +254,6 @@ jobs:
     steps:
       - name: Ok
         run: |
+          git clone https://github.com/webrogue-runtime/webrogue-runtime.github.io.git &&
+          cd webrogue-runtime.github.io &&
           gh workflow run update_submodule
