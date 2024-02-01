@@ -76,7 +76,7 @@ target_link_options(
     -sWASM_BIGINT
     -sFETCH 
     --js-library ${CMAKE_CURRENT_LIST_DIR}/game/vmlib.js 
-    "-sASYNCIFY_IMPORTS=[presentModSelector, prepareMods, initWasmModule, execFunc, continueFuncExecution, readModMem, writeModMem]"
+    "-sASYNCIFY_IMPORTS=[prepareMods, initWasmModule, execFunc, continueFuncExecution, readModMem, writeModMem]"
 )
 
 make_webrogue_runtime(

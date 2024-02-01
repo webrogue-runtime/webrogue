@@ -1,26 +1,4 @@
 addToLibrary({
-    presentModSelector: function () {
-        Asyncify.handleSleep(wakeUp => {
-
-            var canvas = document.getElementById('canvas');
-
-            Module.runGame = function () {
-
-                for (const child of document.body.children) {
-                    child.style.display = "none"
-                }
-                canvas.style.display = ""
-                canvas.focus();
-                wakeUp();
-                Module.runGame = function () { }
-            }
-
-            for (const child of document.body.children) {
-                child.style.display = ""
-            }
-            canvas.style.display = "none";
-        })
-    },
     prepareMods: function () {
         Asyncify.handleSleep(wakeUp => {
             var transaction = homepageIndexedDB.transaction("mods", 'readonly');
