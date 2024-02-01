@@ -54,7 +54,7 @@ u32 w2c_wasi__snapshot__preview1_fd_prestat_get(struct w2c_wasi__snapshot__previ
 u32 w2c_wasi__snapshot__preview1_fd_read(struct w2c_wasi__snapshot__preview1 *env, u32 a, u32 b, u32 c, u32 g) {
     auto runtime =
         ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->wasiObject.fd_read(WASMRawI32::make(a), WASMRawI32::make(b), WASMRawI32::make(c), WASMRawI32::make(g)).get();
+    return runtime->wasiObject.fd_read(WASMRawU32::make(a), WASMRawU32::make(b), WASMRawU32::make(c), WASMRawU32::make(g)).get();
 }
 
 u32 w2c_wasi__snapshot__preview1_fd_readdir(struct w2c_wasi__snapshot__preview1 *env, u32 a, u32 b, u32 c, u64 d, u32 e) {

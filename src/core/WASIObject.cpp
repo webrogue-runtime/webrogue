@@ -86,13 +86,13 @@ namespace webrogue {
 namespace core {
 WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
                        Config *config)
-    : runtime(pRuntime), vfs(resourceStorage, config) {
+    : runtime(pRuntime) {
     uvwasi_options_t initOptions;
+    uvwasi_options_init(&initOptions);
     uvwasi_errno_t err;
 
     uvwasi = new uvwasi_s;
 
-    /* Setup the initialization options. */
     initOptions.in = 0;
     initOptions.out = 1;
     initOptions.err = 2;
@@ -101,8 +101,11 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
     initOptions.argv = nullptr;
     static const char *envp[] = {"ENV1=test_env", nullptr};
     initOptions.envp = envp;
-    initOptions.preopenc = 0;
-    initOptions.preopens = nullptr;
+    std::vector<uvwasi_preopen_t> preopens;
+    preopens.push_back({.mapped_path = "/", .real_path = "."});
+    preopens.push_back({.mapped_path = "./", .real_path = "."});
+    initOptions.preopenc = preopens.size();
+    initOptions.preopens = preopens.data();
     initOptions.allocator = nullptr;
     initOptions.preopen_socketc = 0;
     initOptions.preopen_sockets = nullptr;

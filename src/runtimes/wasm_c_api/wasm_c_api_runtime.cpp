@@ -201,6 +201,10 @@ bool WasmCApiModsRuntime::setVMData(const void *inPtr, uint64_t offset,
     return true;
 }
 
+size_t WasmCApiModsRuntime::vmSize() {
+    return wasm_memory_data_size(memory);
+}
+
 size_t WasmCApiModsRuntime::voidptrSize() {
     return 4;
 };

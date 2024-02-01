@@ -1,7 +1,6 @@
 #pragma once
 #include "Config.hpp"
 #include "ResourceStorage.hpp"
-#include "VFS.hpp"
 #include "wasm_types.hpp"
 #include <cstdint>
 
@@ -14,7 +13,6 @@ class ModsRuntime;
 class WASIObject {
 public:
     uvwasi_s *uvwasi;
-    VFS vfs;
     ModsRuntime *runtime;
     WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
                Config *config);

@@ -5,8 +5,10 @@
 #include "ConsoleStream.hpp"
 #include "ResourceStorage.hpp"
 #include "WASIObject.hpp"
+#include <cstdint>
 #include <cstddef>
 #include <functional>
+#include <malloc/_malloc.h>
 #include <memory>
 
 namespace webrogue {
@@ -38,6 +40,28 @@ public:
     virtual bool setVMData(const void *in_ptr, uint64_t offset,
                            int32_t size) = 0;
     virtual size_t voidptrSize() = 0;
+    virtual size_t vmSize() = 0;
+
+    template<typename T>
+    inline void setVMInt(uint64_t offset, T value) {
+        T swapped = byteswap<T>(value);
+        setVMData(&swapped, offset, sizeof(T));
+    }
+
+    template<typename T>
+    inline T getVMInt(uint64_t offset) {
+        T swapped;
+        getVMData(&swapped, offset, sizeof(T));
+        return byteswap<T>(swapped);
+    }
+
+    inline void setVMDataZeros(uint64_t offset, int32_t size) {
+        void *data = calloc(0, size);
+        setVMData(data, offset, size);
+        free(data);
+    }
+
+    bool isVMRangeValid(uint64_t offset, int32_t size);
     virtual ~ModsRuntime();
 
     void interrupt();

@@ -1,6 +1,5 @@
 #include "ModsRuntime.hpp"
 #include "WASIObject.hpp"
-#include "byteswap.hpp"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -9,97 +8,126 @@
 #include <string>
 #include <vector>
 
-#include "VFS.hpp"
+#include "uvwasi.h"
 #include "wasi_templates.hpp"
 #include "wasm_types.hpp"
 
 namespace webrogue {
 namespace core {
 
+#define E_BAD_ADDR WASMRawU32::make(-1)
+
 WASI_FUNCTION_IMPL(WASMRawU32, fd_close, (WASMRawU32 fd)) {
-    return WASMRawU32::make(vfs.close(fd.get()) ? 0 : 8);
+    return WASMRawU32::make(uvwasi_fd_close(uvwasi, fd.get()));
 }
 
-WASI_FUNCTION_IMPL(WASMRawI32, fd_fdstat_get,
+WASI_FUNCTION_IMPL(WASMRawU32, fd_fdstat_get,
                    (WASMRawU32 fd, WASMRawU32 out_offset)) {
-    nr_wasi_fdstat_t fdstat;
-    fdstat.fs_filetype = byteswap<nr_wasi_filetype_t>(3); // 4 for file
-    fdstat.fs_flags = byteswap<nr_wasi_fdflags_t>(0);
-    fdstat.fs_rights_base = (uint64_t)-1;       // all rights
-    fdstat.fs_rights_inheriting = (uint64_t)-1; // all rights
-    WASI_CHECK(runtime->setVMData(&fdstat, out_offset.get(),
-                                  sizeof(nr_wasi_fdstat_t)));
-    return WASMRawI32::make(0);
+    uint32_t const buf = out_offset.get();
+
+    if (!runtime->isVMRangeValid(buf, 24))
+        return E_BAD_ADDR;
+
+    uvwasi_fdstat_t stat;
+    uvwasi_errno_t const ret = uvwasi_fd_fdstat_get(uvwasi, fd.get(), &stat);
+
+    if (ret != UVWASI_ESUCCESS) {
+        return WASMRawU32::make(ret);
+    }
+
+    runtime->setVMDataZeros(buf, 24);
+    runtime->setVMInt<uint8_t>(buf + 0, stat.fs_filetype);
+    runtime->setVMInt<uint16_t>(buf + 2, stat.fs_flags);
+    runtime->setVMInt<uint64_t>(buf + 8, stat.fs_rights_base);
+    runtime->setVMInt<uint64_t>(buf + 16, stat.fs_rights_inheriting);
+    return WASMRawU32::make(ret);
 }
 
 WASI_FUNCTION_IMPL(WASMRawI32, fd_fdstat_set_flags,
                    (WASMRawI32 a, WASMRawI32 b)) {
-    // TODO
+    assert(false);
     return WASMRawI32::make(0);
 }
 
-WASI_FUNCTION_IMPL(WASMRawI32, fd_prestat_dir_name,
-                   (WASMRawU32 fd, WASMRawU32 out, WASMRawU32 len)) {
-    std::string name;
-    if (!vfs.preopendDirName(fd.get(), name)) {
-        return WASMRawI32::make(8);
-    }
-    if (len.get() != name.size() + 1) {
-        return WASMRawI32::make(8);
-    }
-    WASI_CHECK(runtime->setVMData(name.c_str(), out.get(), len.get()));
-    return WASMRawI32::make(0);
+WASI_FUNCTION_IMPL(WASMRawU32, fd_prestat_dir_name,
+                   (WASMRawU32 fd, WASMRawU32 path, WASMRawU32 path_len)) {
+
+    if (!runtime->isVMRangeValid(path.get(), path_len.get()))
+        return E_BAD_ADDR;
+
+    std::vector<char> hostPath;
+    hostPath.resize(path_len.get());
+    runtime->getVMData(hostPath.data(), path.get(), path_len.get());
+
+    uvwasi_errno_t const ret = uvwasi_fd_prestat_dir_name(
+        uvwasi, fd.get(), hostPath.data(), hostPath.size());
+
+    runtime->setVMData(hostPath.data(), path.get(), path_len.get());
+
+    return WASMRawU32::make(ret);
 }
 
-WASI_FUNCTION_IMPL(WASMRawI32, fd_prestat_get,
-                   (WASMRawU32 fd, WASMRawU32 out)) {
-    std::string name;
-    if (!vfs.preopendDirName(fd.get(), name)) {
-        return WASMRawI32::make(8);
+WASI_FUNCTION_IMPL(WASMRawU32, fd_prestat_get,
+                   (WASMRawU32 fd, WASMRawU32 buf)) {
+    if (!runtime->isVMRangeValid(buf.get(), 8))
+        return E_BAD_ADDR;
+
+    uvwasi_prestat_t prestat;
+
+    uvwasi_errno_t const ret =
+        uvwasi_fd_prestat_get(uvwasi, fd.get(), &prestat);
+
+    if (ret != UVWASI_ESUCCESS) {
+        return WASMRawU32::make(ret);
     }
-    WASMI32 ret[2];
-    ret[0] = WASMI32::make(0);
-    ret[1] = WASMI32::make(name.size() + 1);
-    WASI_CHECK(runtime->setVMData(ret, out.get(), sizeof(WASMI32) * 2));
-    return WASMRawI32::make(0);
+
+    runtime->setVMInt<uint32_t>(buf.get() + 0, prestat.pr_type);
+    runtime->setVMInt<uint32_t>(buf.get() + 4, prestat.u.dir.pr_name_len);
+    return WASMRawU32::make(ret);
 }
 
-WASI_FUNCTION_IMPL(WASMRawI32, fd_read,
-                   (WASMRawI32 fd, WASMRawI32 raw_wasi_iovs_offset,
-                    WASMRawI32 iovs_len, WASMRawI32 out_nread_offset)) {
+WASI_FUNCTION_IMPL(WASMRawU32, fd_read,
+                   (WASMRawU32 fd, WASMRawU32 wasi_iovs, WASMRawU32 iovs_len,
+                    WASMRawU32 nread)) {
+    if (!runtime->isVMRangeValid(wasi_iovs.get(),
+                                 iovs_len.get() * sizeof(uvwasi_iovec_t)))
+        return E_BAD_ADDR;
 
-    size_t hostNread = 0;
-    bool hasError = false;
-    std::vector<uint8_t> hostData;
-    for (int i = 0; i < iovs_len.get(); i++) {
-        nr_wasi_iovec_t io;
-        WASI_CHECK(runtime->getVMData(
-            &io, alignedOffset<nr_wasi_iovec_t>(raw_wasi_iovs_offset.get(), i),
-            sizeof(nr_wasi_iovec_t)));
+    if (!runtime->isVMRangeValid(nread.get(), sizeof(uvwasi_size_t)))
+        return E_BAD_ADDR;
 
-        nr_wasi_size_t buffOffset = byteswap<nr_wasi_size_t>(io.buf);
-        nr_wasi_size_t size = byteswap<nr_wasi_size_t>(io.buf_len);
+    if (iovs_len.get() > 32)
+        return WASMRawU32::make(UVWASI_EINVAL);
+    uvwasi_iovec_t iovs[32];
+    std::vector<char> buffers[32];
+    uint32_t bufferOffsets[32];
+    uint32_t bufferLen[32];
 
-        if (!size)
-            continue;
-        hostData.resize(size);
+    uvwasi_size_t numRead;
+    uvwasi_errno_t ret;
 
-        size_t currentNread;
-
-        if (!vfs.read(fd.get(), hostData.data(), size, currentNread)) {
-            hasError = true;
-            assert(false);
-            break;
-        }
-        WASI_CHECK(runtime->setVMData(hostData.data(), buffOffset, size));
-        hostNread += currentNread;
+    for (uvwasi_size_t i = 0; i < iovs_len.get(); ++i) {
+        uint32_t const buf = runtime->getVMInt<uint32_t>(
+            wasi_iovs.get() + sizeof(uint32_t) * (i * 2));
+        uint32_t const bufLen = runtime->getVMInt<uint32_t>(
+            wasi_iovs.get() + sizeof(uint32_t) * (i * 2 + 1));
+        if (!runtime->isVMRangeValid(buf, bufLen))
+            return E_BAD_ADDR;
+        bufferOffsets[i] = buf;
+        bufferLen[i] = bufLen;
+        buffers[i].resize(bufLen);
+        iovs[i].buf = buffers[i].data();
+        iovs[i].buf_len = bufLen;
+        runtime->getVMData(iovs[i].buf, bufferOffsets[i], bufferLen[i]);
     }
 
-    nr_wasi_size_t nread = byteswap<nr_wasi_size_t>(hostNread);
+    ret = uvwasi_fd_read(uvwasi, fd.get(), iovs, iovs_len.get(), &numRead);
+    for (uvwasi_size_t i = 0; i < iovs_len.get(); ++i) {
+        runtime->setVMData(iovs[i].buf, bufferOffsets[i], bufferLen[i]);
+    }
 
-    WASI_CHECK(runtime->setVMData(&nread, out_nread_offset.get(),
-                                  sizeof(nr_wasi_size_t)));
-    return WASMRawI32::make(hasError ? 8 : 0);
+    runtime->setVMInt<uint32_t>(nread.get(), numRead);
+    return WASMRawU32::make(ret);
 }
 
 WASI_FUNCTION_IMPL(WASMRawU32, fd_readdir,
@@ -109,53 +137,76 @@ WASI_FUNCTION_IMPL(WASMRawU32, fd_readdir,
     return WASMRawU32::make(8);
 }
 
-WASI_FUNCTION_IMPL(WASMRawI32, fd_seek,
-                   (WASMRawI32 fd, WASMRawI64 offset, WASMRawI32 whence,
-                    WASMRawU32 out_pos_offset)) {
-    size_t hostPos;
-    if (vfs.seek(fd.get(), offset.get(), whence.get(), hostPos)) {
-        nr_wasi_filesize_t pos = byteswap<nr_wasi_filesize_t>(hostPos);
-        WASI_CHECK(runtime->setVMData(&pos, out_pos_offset.get(),
-                                      sizeof(nr_wasi_filesize_t)));
-        return WASMRawI32::make(0);
+WASI_FUNCTION_IMPL(WASMRawU32, fd_seek,
+                   (WASMRawI32 fd, WASMRawI64 offset, WASMRawI32 wasi_whence,
+                    WASMRawU32 result)) {
+    if (!runtime->isVMRangeValid(result.get(), sizeof(uvwasi_filesize_t)))
+        return E_BAD_ADDR;
+
+    uvwasi_whence_t whence = -1;
+    switch (wasi_whence.get()) {
+    case 0:
+        whence = UVWASI_WHENCE_CUR;
+        break;
+    case 1:
+        whence = UVWASI_WHENCE_END;
+        break;
+    case 2:
+        whence = UVWASI_WHENCE_SET;
+        break;
     }
-    return WASMRawI32::make(8);
+
+    uvwasi_filesize_t pos;
+    uvwasi_errno_t const ret =
+        uvwasi_fd_seek(uvwasi, fd.get(), offset.get(), whence, &pos);
+
+    runtime->setVMInt<uint64_t>(result.get(), pos);
+
+    return WASMRawU32::make(ret);
 }
 
-WASI_FUNCTION_IMPL(WASMRawI32, fd_write,
-                   (WASMRawU32 fd, WASMRawU32 raw_wasi_iovs_offset,
-                    WASMRawU32 iovs_len, WASMRawU32 out_nwritten_offset)) {
+WASI_FUNCTION_IMPL(WASMRawU32, fd_write,
+                   (WASMRawU32 fd, WASMRawU32 wasi_iovs, WASMRawU32 iovs_len,
+                    WASMRawU32 nwritten)) {
+    if (!runtime->isVMRangeValid(wasi_iovs.get(),
+                                 iovs_len.get() * sizeof(uvwasi_iovec_t)))
+        return E_BAD_ADDR;
 
-    size_t hostNwritten = 0;
-    bool hasError = false;
-    std::vector<uint8_t> hostData;
-    for (int i = 0; i < iovs_len.get(); i++) {
-        nr_wasi_iovec_t io;
-        WASI_CHECK(runtime->getVMData(
-            &io, alignedOffset<nr_wasi_iovec_t>(raw_wasi_iovs_offset.get(), i),
-            sizeof(nr_wasi_iovec_t)));
+    if (!runtime->isVMRangeValid(nwritten.get(), sizeof(uvwasi_size_t)))
+        return E_BAD_ADDR;
 
-        nr_wasi_size_t buffOffset = byteswap<nr_wasi_size_t>(io.buf);
-        nr_wasi_size_t size = byteswap<nr_wasi_size_t>(io.buf_len);
+    if (iovs_len.get() > 32)
+        return WASMRawU32::make(UVWASI_EINVAL);
+    uvwasi_ciovec_t iovs[32];
+    std::vector<char> buffers[32];
+    uint32_t bufferOffsets[32];
+    uint32_t bufferLen[32];
 
-        if (!size)
-            continue;
-        hostData.resize(size);
-        WASI_CHECK(runtime->getVMData(hostData.data(), buffOffset, size));
+    uvwasi_size_t numWritten;
+    uvwasi_errno_t ret;
 
-        if (!vfs.write(fd.get(), hostData.data(), size)) {
-            hasError = true;
-            assert(false);
-            break;
-        }
-        hostNwritten += size;
+    for (uvwasi_size_t i = 0; i < iovs_len.get(); ++i) {
+        uint32_t const buf = runtime->getVMInt<uint32_t>(
+            wasi_iovs.get() + sizeof(uint32_t) * (i * 2));
+        uint32_t const bufLen = runtime->getVMInt<uint32_t>(
+            wasi_iovs.get() + sizeof(uint32_t) * (i * 2 + 1));
+        if (!runtime->isVMRangeValid(buf, bufLen))
+            return E_BAD_ADDR;
+        bufferOffsets[i] = buf;
+        bufferLen[i] = bufLen;
+        buffers[i].resize(bufLen);
+        iovs[i].buf = buffers[i].data();
+        iovs[i].buf_len = bufLen;
+        runtime->getVMData(buffers[i].data(), bufferOffsets[i], bufferLen[i]);
     }
 
-    nr_wasi_size_t nwritten = byteswap<nr_wasi_size_t>(hostNwritten);
+    ret = uvwasi_fd_write(uvwasi, fd.get(), iovs, iovs_len.get(), &numWritten);
+    for (uvwasi_size_t i = 0; i < iovs_len.get(); ++i) {
+        runtime->setVMData(iovs[i].buf, bufferOffsets[i], bufferLen[i]);
+    }
 
-    WASI_CHECK(runtime->setVMData(&nwritten, out_nwritten_offset.get(),
-                                  sizeof(nr_wasi_size_t)));
-    return WASMRawI32::make(hasError ? 8 : 0);
+    runtime->setVMInt<uint32_t>(nwritten.get(), numWritten);
+    return WASMRawU32::make(ret);
 }
 
 WASI_FUNCTION_IMPL(WASMRawI32, path_filestat_get,
@@ -165,42 +216,44 @@ WASI_FUNCTION_IMPL(WASMRawI32, path_filestat_get,
     return WASMRawI32::make(8);
 }
 
-WASI_FUNCTION_IMPL(WASMRawI32, path_open,
-                   (WASMRawU32 dirfd, WASMRawU32 dirflags,
-                    WASMRawU32 in_path_offset, WASMRawU32 path_len,
-                    WASMRawU32 oflags, WASMRawU64 fs_rights_base,
-                    WASMRawU64 fs_rights_inheriting, WASMRawU32 fs_flags,
-                    WASMRawU32 out_fd_offset)) {
+WASI_FUNCTION_IMPL(WASMRawU32, path_open,
+                   (WASMRawU32 dirfd, WASMRawU32 dirflags, WASMRawU32 path,
+                    WASMRawU32 path_len, WASMRawU32 oflags,
+                    WASMRawU64 fs_rights_base, WASMRawU64 fs_rights_inheriting,
+                    WASMRawU32 fs_flags, WASMRawU32 fd)) {
+    if (!runtime->isVMRangeValid(path.get(), path_len.get()))
+        return E_BAD_ADDR;
+    if (!runtime->isVMRangeValid(fd.get(), sizeof(uvwasi_fd_t)))
+        return E_BAD_ADDR;
+
+    uvwasi_fd_t uvfd;
 
     std::vector<char> pathData;
-    pathData.resize(path_len.get() + 1);
-    WASI_CHECK(runtime->getVMData(pathData.data(), in_path_offset.get(),
-                                  path_len.get()));
-    pathData[path_len.get()] = '\0';
+    pathData.reserve(path_len.get());
+    runtime->getVMData(pathData.data(), path.get(), path_len.get());
 
-    std::string pathString = pathData.data();
-    if (pathString.size() != path_len.get()) {
-        assert(false);
-        return WASMRawI32::make(28);
-    }
-    size_t outFd;
-    if (!vfs.open(pathString, outFd, fs_flags.get() && __WASI_FDFLAGS_APPEND)) {
-        assert(false);
-        return WASMRawI32::make(8);
-    }
+    uvwasi_errno_t const ret =
+        uvwasi_path_open(uvwasi, dirfd.get(), dirflags.get(), pathData.data(),
+                         path_len.get(), oflags.get(), fs_rights_base.get(),
+                         fs_rights_inheriting.get(), fs_flags.get(), &uvfd);
 
-    nr_wasi_fd_t fd = byteswap<nr_wasi_fd_t>(outFd);
-
-    WASI_CHECK(
-        runtime->setVMData(&fd, out_fd_offset.get(), sizeof(nr_wasi_fd_t)))
-
-    return WASMRawI32::make(0);
+    runtime->setVMInt<uint32_t>(fd.get(), uvfd);
+    return WASMRawU32::make(ret);
 }
 
-WASI_FUNCTION_IMPL(WASMRawI32, path_remove_directory,
-                   (WASMRawU32 a, WASMRawU32 b, WASMRawU32 c)) {
-    assert(false);
-    return WASMRawI32::make(8);
+WASI_FUNCTION_IMPL(WASMRawU32, path_remove_directory,
+                   (WASMRawU32 fd, WASMRawU32 path, WASMRawU32 path_len)) {
+    if (!runtime->isVMRangeValid(path.get(), path_len.get()))
+        return E_BAD_ADDR;
+
+    std::vector<char> pathData;
+    pathData.reserve(path_len.get());
+    runtime->getVMData(pathData.data(), path.get(), path_len.get());
+
+    uvwasi_errno_t const ret = uvwasi_path_remove_directory(
+        uvwasi, fd.get(), pathData.data(), path_len.get());
+
+    return WASMRawU32::make(ret);
 }
 WASI_FUNCTION_IMPL(WASMRawI32, path_rename,
                    (WASMRawU32 a, WASMRawU32 b, WASMRawU32 c, WASMRawU32 d,
@@ -208,10 +261,19 @@ WASI_FUNCTION_IMPL(WASMRawI32, path_rename,
     assert(false);
     return WASMRawI32::make(8);
 }
-WASI_FUNCTION_IMPL(WASMRawI32, path_unlink_file,
-                   (WASMRawU32 a, WASMRawU32 b, WASMRawU32 c)) {
-    assert(false);
-    return WASMRawI32::make(8);
+WASI_FUNCTION_IMPL(WASMRawU32, path_unlink_file,
+                   (WASMRawU32 fd, WASMRawU32 path, WASMRawU32 path_len)) {
+    if (!runtime->isVMRangeValid(path.get(), path_len.get()))
+        return E_BAD_ADDR;
+
+    std::vector<char> pathData;
+    pathData.reserve(path_len.get());
+    runtime->getVMData(pathData.data(), path.get(), path_len.get());
+
+    uvwasi_errno_t const ret = uvwasi_path_unlink_file(
+        uvwasi, fd.get(), pathData.data(), path_len.get());
+
+    return WASMRawU32::make(ret);
 }
 
 } // namespace core

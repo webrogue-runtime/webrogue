@@ -69,6 +69,9 @@ bool Wasm2cModsRuntime::setVMData(const void *inPtr, uint64_t offset,
     memcpy(linked.w2c_memory.data + offset, inPtr, size);
     return true;
 }
+size_t Wasm2cModsRuntime::vmSize() {
+    return linked.w2c_memory.size;
+}
 size_t Wasm2cModsRuntime::voidptrSize() {
     return 4;
 };

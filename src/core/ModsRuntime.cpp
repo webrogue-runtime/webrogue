@@ -30,11 +30,11 @@ void ModsRuntime::interrupt() {
     }
 }
 
-void ModsRuntime::onFrameEnd() {
+bool ModsRuntime::isVMRangeValid(uint64_t offset, int32_t size) {
+    return offset + size < vmSize();
+}
 
-#ifndef WEBROGUE_NO_WASI
-    wasiObject.vfs.commit();
-#endif
+void ModsRuntime::onFrameEnd() {
     config->onFrameEnd();
 }
 } // namespace core

@@ -46,8 +46,6 @@ set(
     ${WEBROGUE_ROOT_PATH}/src/core/utf.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/Vec2.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/Vec2.cpp
-    ${WEBROGUE_ROOT_PATH}/src/core/VFS.hpp
-    ${WEBROGUE_ROOT_PATH}/src/core/VFS.cpp
 
     ${WEBROGUE_ROOT_PATH}/external/sqlite_amb/sqlite3.c
     ${WEBROGUE_ROOT_PATH}/external/sqlite_amb/sqlite3.h
