@@ -13,75 +13,6 @@
 #include "wasi_templates.hpp"
 #include "wasm_types.hpp"
 
-// #if defined(__DJGPP__)
-// #include <time.h>
-// typedef int clockid_t;
-// static inline int clock_getres(int clk_id, struct timespec *spec) {
-//     return -1; // Defaults to 1000000
-// }
-// struct timespec {
-//     WASMRawU64 tv_sec;
-//     WASMRawU64 tv_nsec;
-// };
-// static inline int clock_gettime(int clk_id, struct timespec *spec) {
-//     struct timeval tp;
-//     struct timezone tzp;
-//     gettimeofday(&tp, &tzp);
-//     spec->tv_sec = tp.tv_sec;
-//     spec->tv_nsec = tp.tv_sec * 1000;
-//     return 0;
-// }
-// static inline clockid_t convert_clockid(nr_wasi_clockid_t in) {
-//     return 0;
-// }
-// #elif defined(_WIN32)
-
-// #if !defined(__MINGW32__)
-
-// #define _AMD64_
-
-// #include "sysinfoapi.h"
-
-// static inline int clock_gettime(int clk_id, struct timespec *spec) {
-//     __int64 wintime;
-//     GetSystemTimeAsFileTime((FILETIME *)&wintime);
-//     wintime -= 116444736000000000i64;            // 1jan1601 to 1jan1970
-//     spec->tv_sec = wintime / 10000000i64;        // seconds
-//     spec->tv_nsec = wintime % 10000000i64 * 100; // nano-seconds
-//     return 0;
-// }
-
-// static inline int clock_getres(int clk_id, struct timespec *spec) {
-//     return -1; // Defaults to 1000000
-// }
-
-// #endif
-
-// static inline clockid_t convert_clockid(nr_wasi_clockid_t in) {
-//     return 0;
-// }
-
-// #else // _WIN32
-
-// #include <time.h>
-
-// static inline clockid_t convert_clockid(nr_wasi_clockid_t in) {
-//     switch (in) {
-//     case __WASI_CLOCKID_MONOTONIC:
-//         return CLOCK_MONOTONIC;
-//     case __WASI_CLOCKID_PROCESS_CPUTIME_ID:
-//         return CLOCK_PROCESS_CPUTIME_ID;
-//     case __WASI_CLOCKID_REALTIME:
-//         return CLOCK_REALTIME;
-//     case __WASI_CLOCKID_THREAD_CPUTIME_ID:
-//         return CLOCK_THREAD_CPUTIME_ID;
-//     default:
-//         return (clockid_t)-1;
-//     }
-// }
-
-// #endif // _WIN32
-
 namespace webrogue {
 namespace core {
 WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
@@ -102,8 +33,14 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
     static const char *envp[] = {"ENV1=test_env", nullptr};
     initOptions.envp = envp;
     std::vector<uvwasi_preopen_t> preopens;
-    preopens.push_back({.mapped_path = "/", .real_path = "."});
-    preopens.push_back({.mapped_path = "./", .real_path = "."});
+    preopens.push_back({
+        "/", // mapped_path
+        "."  // real_path
+    });
+    preopens.push_back({
+        "./", // mapped_path
+        "."   // real_path
+    });
     initOptions.preopenc = preopens.size();
     initOptions.preopens = preopens.data();
     initOptions.allocator = nullptr;

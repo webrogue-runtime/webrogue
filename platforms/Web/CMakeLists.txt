@@ -125,7 +125,7 @@ add_custom_target(pack_artifacts
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/webrogue_baked_game_wasm.js ${ARTIFACTS_PATH}/webrogue_baked_game_wasm.js
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/webrogue_baked_game_wasm.wasm ${ARTIFACTS_PATH}/webrogue_baked_game_wasm.wasm
     
-    # DEPENDS webrogue_baked_game_asmjs
+    DEPENDS webrogue_baked_game_asmjs
     DEPENDS webrogue_baked_game_wasm
     DEPENDS webrogue_game 
     DEPENDS ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod
