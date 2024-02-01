@@ -137,7 +137,7 @@ void M3ModsRuntime::start() {
 bool M3ModsRuntime::getVMData(void *outPtr, uint64_t offset, int32_t size) {
     uint32_t currentMemSize;
     uint8_t *currentMem = m3_GetMemory(modsRuntime, &currentMemSize, 0);
-    bool memOk = offset >= 0 && (offset + size) <= currentMemSize;
+    bool const memOk = offset >= 0 && (offset + size) <= currentMemSize;
     if (!memOk)
         return false;
     memcpy(outPtr, currentMem + offset, size);
@@ -147,13 +147,15 @@ bool M3ModsRuntime::setVMData(const void *inPtr, uint64_t offset,
                               int32_t size) {
     uint32_t currentMemSize;
     uint8_t *currentMem = m3_GetMemory(modsRuntime, &currentMemSize, 0);
-    bool memOk = offset >= 0 && (offset + size) <= currentMemSize;
+    bool const memOk = offset >= 0 && (offset + size) <= currentMemSize;
     if (!memOk)
         return false;
     memcpy(currentMem + offset, inPtr, size);
     return true;
 }
-
+size_t M3ModsRuntime::vmSize() {
+    return m3_GetMemorySize(modsRuntime);
+}
 size_t M3ModsRuntime::voidptrSize() {
     return 4;
 };

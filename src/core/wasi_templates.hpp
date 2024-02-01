@@ -3,6 +3,7 @@
 namespace webrogue {
 namespace core {
 
+#define E_BAD_ADDR WASMRawU32::make(-1)
 #define WASI_FUNCTION_IMPL(RET_TYPE, NAME, ARGS) RET_TYPE WASIObject::NAME ARGS
 
 #ifdef NDEBUG

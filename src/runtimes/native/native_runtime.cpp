@@ -53,7 +53,9 @@ bool NativeModsRuntime::setVMData(const void *inPtr, uint64_t offset,
     memcpy((void *)offset, inPtr, size);
     return true;
 }
-
+size_t NativeModsRuntime::vmSize() {
+    return -1;
+}
 size_t NativeModsRuntime::voidptrSize() {
     return sizeof(void *);
 };

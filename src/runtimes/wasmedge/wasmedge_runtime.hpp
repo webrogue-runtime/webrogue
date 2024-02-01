@@ -18,6 +18,7 @@ public:
     void start() override;
     bool getVMData(void *outPtr, uint64_t offset, int32_t size) override;
     bool setVMData(const void *inPtr, uint64_t offset, int32_t size) override;
+    size_t vmSize() override;
     size_t voidptrSize() override;
     ~WasmEdgeModsRuntime() override;
 };

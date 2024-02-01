@@ -229,7 +229,13 @@ bool WasmEdgeModsRuntime::setVMData(const void *inPtr, uint64_t offset,
         memCxt, (uint8_t *)(inPtr), offset, size);
     return WasmEdge_ResultOK(res);
 }
-
+size_t WasmEdgeModsRuntime::vmSize() {
+    const WasmEdge_CallingFrameContext *callFrameCxt =
+        (const WasmEdge_CallingFrameContext *)vmContext;
+    WasmEdge_MemoryInstanceContext *memCxt =
+        WasmEdge_CallingFrameGetMemoryInstance(callFrameCxt, 0);
+    return WasmEdge_MemoryInstanceGetPageSize(memCxt);
+}
 size_t WasmEdgeModsRuntime::voidptrSize() {
     return 4;
 };

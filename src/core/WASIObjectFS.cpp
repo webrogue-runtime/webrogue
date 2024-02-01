@@ -15,8 +15,6 @@
 namespace webrogue {
 namespace core {
 
-#define E_BAD_ADDR WASMRawU32::make(-1)
-
 WASI_FUNCTION_IMPL(WASMRawU32, fd_close, (WASMRawU32 fd)) {
     return WASMRawU32::make(uvwasi_fd_close(uvwasi, fd.get()));
 }
@@ -45,7 +43,7 @@ WASI_FUNCTION_IMPL(WASMRawU32, fd_fdstat_get,
 
 WASI_FUNCTION_IMPL(WASMRawI32, fd_fdstat_set_flags,
                    (WASMRawI32 a, WASMRawI32 b)) {
-    assert(false);
+    abort();
     return WASMRawI32::make(0);
 }
 
@@ -133,7 +131,7 @@ WASI_FUNCTION_IMPL(WASMRawU32, fd_read,
 WASI_FUNCTION_IMPL(WASMRawU32, fd_readdir,
                    (WASMRawU32 a, WASMRawU32 b, WASMRawU32 c, WASMRawU64 d,
                     WASMRawU32 e)) {
-    assert(false);
+    abort();
     return WASMRawU32::make(8);
 }
 
@@ -212,7 +210,7 @@ WASI_FUNCTION_IMPL(WASMRawU32, fd_write,
 WASI_FUNCTION_IMPL(WASMRawI32, path_filestat_get,
                    (WASMRawU32 a, WASMRawU32 b, WASMRawU32 c, WASMRawU32 d,
                     WASMRawU32 e)) {
-    assert(false);
+    abort();
     return WASMRawI32::make(8);
 }
 
@@ -258,7 +256,7 @@ WASI_FUNCTION_IMPL(WASMRawU32, path_remove_directory,
 WASI_FUNCTION_IMPL(WASMRawI32, path_rename,
                    (WASMRawU32 a, WASMRawU32 b, WASMRawU32 c, WASMRawU32 d,
                     WASMRawU32 e, WASMRawU32 f)) {
-    assert(false);
+    abort();
     return WASMRawI32::make(8);
 }
 WASI_FUNCTION_IMPL(WASMRawU32, path_unlink_file,

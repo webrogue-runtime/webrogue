@@ -186,6 +186,10 @@ bool WebModsRuntime::setVMData(const void *inPtr, uint64_t offset,
     writeModMem(offset, size, inPtr);
     return true;
 }
+size_t WebModsRuntime::vmSize() {
+    std::cerr << "WebModsRuntime::vmSize not implemented";
+    abort();
+}
 
 size_t WebModsRuntime::voidptrSize() {
     return 4;

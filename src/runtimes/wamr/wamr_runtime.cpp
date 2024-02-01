@@ -153,7 +153,14 @@ bool WamrModsRuntime::setVMData(const void *inPtr, uint64_t offset,
     memcpy(currentMem + offset, inPtr, size);
     return true;
 }
+size_t WamrModsRuntime::vmSize() {
+    uint32_t currentMemSize;
+    uint8_t *currentMem =
+        (uint8_t *)wasm_runtime_addr_app_to_native(moduleInst, 0);
 
+    wasm_runtime_get_app_addr_range(moduleInst, 0, nullptr, &currentMemSize);
+    return currentMemSize;
+}
 size_t WamrModsRuntime::voidptrSize() {
     return 4;
 };

@@ -172,29 +172,16 @@ WASI_FUNCTION_IMPL(WASMRawI32, random_get, (WASMRawU32 a, WASMRawU32 b)) {
 }
 
 WASI_FUNCTION_IMPL(WASMRawU32, clock_time_get,
-                   (WASMRawU32 clk_id, WASMRawU64 precision,
-                    WASMRawU32 out_time_offset)) {
+                   (WASMRawU32 wasi_clk_id, WASMRawU64 precision,
+                    WASMRawU32 time)) {
+    if (!runtime->isVMRangeValid(time.get(), sizeof(uvwasi_timestamp_t)))
+        return E_BAD_ADDR;
 
-    // // m3ApiGetArg(__wasi_clockid_t, wasi_clk_id)
-    // //     m3ApiGetArg(__wasi_timestamp_t, precision)
-    // //         m3ApiGetArgMem(__wasi_timestamp_t *, time)
-
-    // //             m3ApiCheckMem(time, sizeof(__wasi_timestamp_t));
-
-    // clockid_t clk = convert_clockid(clk_id);
-    // if (clk < 0)
-    //     return 28;
-
-    // struct timespec tp;
-    // if (clock_gettime(clk, &tp) != 0) {
-    //     return 8;
-    // }
-
-    // WASI_CHECK(
-    //     runtime->setVMData(&tp, out_time_offset,
-    //     sizeof(nr_wasi_timestamp_t)));
-    // // m3ApiWriteMem64(time, convert_timespec(&tp));
-    return WASMRawU32::make(0);
+    uvwasi_timestamp_t t;
+    uvwasi_errno_t const ret =
+        uvwasi_clock_time_get(uvwasi, wasi_clk_id.get(), precision.get(), &t);
+    runtime->setVMInt<uint64_t>(time.get(), t);
+    return WASMRawU32::make(ret);
 }
 
 WASI_FUNCTION_IMPL(WASMRawI32, fd_sync, (WASMRawU32 a)) {

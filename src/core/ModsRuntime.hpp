@@ -5,10 +5,9 @@
 #include "ConsoleStream.hpp"
 #include "ResourceStorage.hpp"
 #include "WASIObject.hpp"
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
-#include <malloc/_malloc.h>
 #include <memory>
 
 namespace webrogue {
@@ -42,14 +41,12 @@ public:
     virtual size_t voidptrSize() = 0;
     virtual size_t vmSize() = 0;
 
-    template<typename T>
-    inline void setVMInt(uint64_t offset, T value) {
+    template <typename T> inline void setVMInt(uint64_t offset, T value) {
         T swapped = byteswap<T>(value);
         setVMData(&swapped, offset, sizeof(T));
     }
 
-    template<typename T>
-    inline T getVMInt(uint64_t offset) {
+    template <typename T> inline T getVMInt(uint64_t offset) {
         T swapped;
         getVMData(&swapped, offset, sizeof(T));
         return byteswap<T>(swapped);
