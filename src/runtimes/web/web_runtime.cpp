@@ -1,4 +1,5 @@
 #include "web_runtime.hpp"
+#include <stdint.h>
 
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
@@ -187,8 +188,7 @@ bool WebModsRuntime::setVMData(const void *inPtr, uint64_t offset,
     return true;
 }
 size_t WebModsRuntime::vmSize() {
-    std::cerr << "WebModsRuntime::vmSize not implemented";
-    abort();
+    return SIZE_MAX;
 }
 
 size_t WebModsRuntime::voidptrSize() {

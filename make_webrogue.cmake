@@ -260,7 +260,7 @@ set(WABT_SUBDIR_ADDED 0)
 macro(add_wabt_subdir)
     if(${WABT_SUBDIR_ADDED} EQUAL 0)
         set(BUILD_TESTS FALSE)
-        add_subdirectory(${WEBROGUE_ROOT_PATH}/external/wabt)
+        add_subdirectory(${WEBROGUE_ROOT_PATH}/external/wabt wabt)
         set(WABT_SUBDIR_ADDED 1)
     endif()
 endmacro()
@@ -397,13 +397,22 @@ function(make_webrogue_runtime)
         )
         set(DEFAULT_FACTORY_SOURCES ${WEBROGUE_WASM2C_RUNTIME_DEFAULT_FACTORY_SOURCE_FILES})
         add_wabt_subdir()
+        set(WASM2C_DEPENDENCIES wasm2c wasm-strip)
+        if(NOT WASM2C_COMMAND)
+            set(WASM2C_COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:wasm2c>)
+            set(WASM2C_DEPENDENCIES)
+        endif()
+        if(WASM2C_STRIP)
+            set(WASM2C_STRIP COMMAND $<TARGET_FILE:wasm-strip> ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked_strip.wasm)
+        else()
+            set(WASM2C_STRIP COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked.wasm ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked_strip.wasm)
+        endif()
         add_custom_command(
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/linked.h ${CMAKE_CURRENT_BINARY_DIR}/linked.c
-            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked.wasm ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked_strip.wasm
-            # COMMAND $<TARGET_FILE:wasm-strip> ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked_strip.wasm
-            COMMAND $<TARGET_FILE:wasm2c> ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked_strip.wasm -o ${CMAKE_CURRENT_BINARY_DIR}/linked.c --module-name=linked
+            COMMAND ${WASM2C_STRIP}
+            COMMAND ${WASM2C_COMMAND} ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked_strip.wasm -o ${CMAKE_CURRENT_BINARY_DIR}/linked.c --module-name=linked
             WORKING_DIRECTORY ${WEBROGUE_ROOT_PATH} 
-            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked.wasm wasm2c wasm-strip
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/mods_build/linked.wasm ${WASM2C_DEPENDENCIES} 
         )
     elseif(${ARGS_TYPE} STREQUAL WAMR)
         set(SOURCES ${WEBROGUE_WAMR_RUNTIME_SOURCE_FILES})
