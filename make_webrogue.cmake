@@ -311,7 +311,7 @@ if(CLANG_HAS_WASM)
             --toolchain=tools/generated_toolchain.cmake
             ${MODS_BUILD_GENERATOR_ARGS}
             -DCMAKE_MODULE_PATH=${WEBROGUE_ROOT_PATH}/cmake 
-            -DCMAKE_BUILD_TYPE=Debug
+            -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_LINKER=a
             -DWEBROGUE_MOD_NAMES=${WEBROGUE_MOD_NAME_CONFIGURE_ARG}
         RESULT_VARIABLE r

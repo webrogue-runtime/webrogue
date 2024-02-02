@@ -11,7 +11,8 @@ set(CLANG_HAS_WASM TRUE)
 #     set(CLANG_HAS_WASM FALSE)
 # endif()
 file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/mods/)
-set(WEBROGUE_MOD_NAMES core brogue)
+set(WEBROGUE_MODS log2048 CACHE STRING "list of mods to build")
+set(WEBROGUE_MOD_NAMES core ${WEBROGUE_MODS})
 #
 include(make_webrogue.cmake)
 

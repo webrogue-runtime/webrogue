@@ -55,3 +55,6 @@
 [submodule "mods/brogue"]
 	path = mods/brogue
 	url = https://github.com/Destructor17/brogue.git
+[submodule "mods/coremark"]
+	path = mods/coremark
+	url = https://github.com/Destructor17/coremark.git
