@@ -223,6 +223,9 @@ WASI_FUNCTION_IMPL(WASMRawI32, fd_fdstat_set_rights,
                    (WASMRawU32 a, WASMRawU64 b, WASMRawU64 c)) {
     abort();
 }
+WASI_FUNCTION_IMPL(WASMRawU32, proc_raise, (WASMRawU32 a)) {
+    abort();
+}
 
 } // namespace core
 } // namespace webrogue

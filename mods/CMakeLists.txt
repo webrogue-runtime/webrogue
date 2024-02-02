@@ -12,16 +12,23 @@ set(WEBROGUE_MOD_DEFS WEBROGUE_WASM_MODS)
 
 function(register_mod)
     set(options)
-    set(oneValueArgs NAME)
+    set(oneValueArgs NAME ARCHIVE_PATH)
     cmake_parse_arguments(ADD_MOD "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     if(NOT ${WEBROGUE_MOD_NAME} STREQUAL ${ADD_MOD_NAME})
         message(FATAL_ERROR "Mod name must match directory name, got ${NAME} and ${WEBROGUE_MOD_NAME}")
     endif()
-    set_target_properties(${ADD_MOD_NAME}
-                      PROPERTIES SUFFIX ".wasm"
-                      POSITION_INDEPENDENT_CODE OFF)
 
-    target_link_options(${ADD_MOD_NAME} PUBLIC -Wl,--export-all,--relocatable)
+    if(NOT ADD_MOD_ARCHIVE_PATH)
+        set(ARCHIVE_PATH $<TARGET_FILE:${ADD_MOD_NAME}>)
+        target_link_options(${ADD_MOD_NAME} PUBLIC -Wl,--export-all,--relocatable)
+        set_target_properties(
+            ${ADD_MOD_NAME}
+            PROPERTIES SUFFIX ".wasm"
+            POSITION_INDEPENDENT_CODE OFF
+        )
+    else()
+        set(ARCHIVE_PATH ${ADD_MOD_ARCHIVE_PATH})
+    endif()
 
     set(BUNDLED_FILE_NAME ${CMAKE_CURRENT_SOURCE_DIR}/mod.a)
     set(BUNDLING_DIR ${CMAKE_CURRENT_BINARY_DIR}/mod_bundling)
@@ -31,10 +38,12 @@ function(register_mod)
     # target_link_libraries(${ADD_MOD_NAME}_linked ${ADD_MOD_NAME})
     # target_link_options(${ADD_MOD_NAME}_linked PUBLIC -Wl,--export-all,--relocatable,--whole-archive)
 
+    
+
     add_custom_command(
         OUTPUT ${BUNDLED_FILE_NAME}
         COMMAND ${CMAKE_COMMAND} -E rm -f ${BUNDLED_FILE_NAME}
-        COMMAND ${ar_tool} qLcs ${BUNDLED_FILE_NAME} $<TARGET_FILE:${ADD_MOD_NAME}>
+        COMMAND ${ar_tool} qLcs ${BUNDLED_FILE_NAME} ${ARCHIVE_PATH}
 
         # COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${ADD_MOD_NAME}> ${BUNDLED_FILE_NAME}
 
@@ -42,7 +51,7 @@ function(register_mod)
         # COMMAND ${CMAKE_COMMAND} -E rm -f ${BUNDLED_FILE_NAME}
         # COMMAND ${ar_tool} rcs ${BUNDLED_FILE_NAME} ${BUNDLED_FILE_NAME}.wasm
 
-        DEPENDS ${ADD_MOD_NAME}
+        DEPENDS ${ADD_MOD_NAME} ${ADD_MOD_ARCHIVE_PATH}
     )
 
     add_custom_target(
@@ -100,7 +109,7 @@ set(
     "${CMAKE_CURRENT_SOURCE_DIR}/../mods/core/stdlibs.a"
 )
 
-# message(FATAL_ERROR ${WEBROGUE_MODS_LINKER} ${WASM_LD_FLAGS} -o ${CMAKE_CURRENT_BINARY_DIR}/linked.wasm)
+# message(FATAL_ERROR ${TEST_LINK_COMMAND})
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/linked.wasm

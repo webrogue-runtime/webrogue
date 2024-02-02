@@ -1,0 +1,17 @@
+[package]
+name = "hello-wasm"
+version = "0.1.0"
+authors = ["Your Name <you@example.com>"]
+description = "A sample project with wasm-pack"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/yourgithubusername/hello-wasm"
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+
+[dependencies]
+lazy_static = "1.4.0"
+# libc_alloc = "1.0.6"
+
