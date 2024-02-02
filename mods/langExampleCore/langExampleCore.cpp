@@ -1,0 +1,66 @@
+#include "../core/include/core.h"
+#include "../core/include/macros.h"
+#include <cstdlib>
+#include <map>
+#include <string>
+extern "C" {
+#include "langExampleCore.h"
+}
+
+std::map<std::string, langExampleFunc> exampleFuncs;
+
+extern "C" void addLangExample(const char *name, langExampleFunc func) {
+    exampleFuncs[name] = func;
+}
+
+void langExampleCoreInitializationStep() {
+    bool hasLastResult = false;
+    std::string lastResult;
+    while (true) {
+        size_t eventCount;
+        webrogue_event *events = webrogue_core_get_events(&eventCount);
+        bool hasMouseEvent = false;
+        int mouseX, mouseY;
+        for (int i = 0; i < eventCount; i++) {
+            webrogue_event const event = events[i];
+            switch (event.type) {
+            case Close:
+                exit(0);
+            case MouseLeftButtonPressed:
+                hasMouseEvent = true;
+                mouseX = event.data1;
+                mouseY = event.data2;
+                break;
+            default:
+                break;
+            }
+        }
+
+        size_t width, height;
+        wr_glyph *drawingArea = webrogue_core_get_drawing_area(&width, &height);
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                drawingArea[width * y + x] = {' ', 0};
+        int y = 0;
+        auto printStr = [width, height, drawingArea, &y](std::string str) {
+            for (int x = 0; x < str.size(); x++) {
+                drawingArea[width * y + x] = {static_cast<wr_char>(str[x]), 0};
+            }
+            y += str.size() / width + 1;
+        };
+        for (auto &pair : exampleFuncs) {
+            if (hasMouseEvent && mouseY == y) {
+                hasLastResult = true;
+                lastResult = pair.second();
+            }
+            printStr(pair.first);
+        }
+        if (hasLastResult)
+            printStr(lastResult);
+        webrogue_core_interrupt();
+    }
+}
+
+extern "C" WR_EXPORTED(void, init_mod_langExampleCore)() {
+    webrogue_core_add_initialization_step(langExampleCoreInitializationStep);
+}
