@@ -10,51 +10,65 @@
 [submodule "external/dirent"]
 	path = external/dirent
 	url = https://github.com/tronkko/dirent.git
+	branch = master
 [submodule "external/pdcurses"]
 	path = external/pdcurses
 	url = https://github.com/wmcbrine/PDCurses.git
+	branch = master
 [submodule "external/argparse"]
 	path = external/argparse
 	url = https://github.com/p-ranav/argparse.git
+	branch = master
 [submodule "external/wasm3"]
 	path = external/wasm3
 	url = https://github.com/wasm3/wasm3.git
 	ignore = dirty
+	branch = main
 [submodule "external/wamr"]
 	path = external/wamr
 	url = https://github.com/bytecodealliance/wasm-micro-runtime.git
 	ignore = dirty
+	branch = main
 [submodule "external/xz"]
 	path = external/xz
 	url = https://github.com/Auterion/xz-embedded.git
+	branch = master
 [submodule "platforms/iOS/external/SnapKit"]
 	path = platforms/iOS/external/SnapKit
 	url = https://github.com/SnapKit/SnapKit.git
+	branch = develop
 [submodule "external/wasmedge"]
 	path = external/wasmedge
 	url = https://github.com/WasmEdge/WasmEdge.git
 	ignore = dirty
+	branch = master
 [submodule "external/wabt"]
 	path = external/wabt
 	url = https://github.com/WebAssembly/wabt.git
+	branch = main
 [submodule "external/uvwasi"]
 	path = external/uvwasi
 	url = https://github.com/nodejs/uvwasi.git
+	branch = main
 [submodule "external/libuv"]
 	path = external/libuv
 	url = https://github.com/libuv/libuv.git
 	ignore = dirty
+	branch = v1.x
 [submodule "external/wasmtime"]
 	path = external/wasmtime
 	url = https://github.com/bytecodealliance/wasmtime.git
 	ignore = dirty
+	branch = main
 [submodule "external/wasmer"]
 	path = external/wasmer
 	url = https://github.com/wasmerio/wasmer.git
 	ignore = dirty
+	branch = master
 [submodule "mods/brogue"]
 	path = mods/brogue
 	url = https://github.com/Destructor17/brogue.git
 [submodule "mods/coremark"]
 	path = mods/coremark
 	url = https://github.com/Destructor17/coremark.git
+	branch = main
