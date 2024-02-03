@@ -2,3 +2,6 @@
 /test_src/wasi-sdk.tar.gz
 /test_src/generated_toolchain.cmake
 /test_src/linker_path.cmake
+/linked*.wasm
+/linked*.dump
+/linked.diff

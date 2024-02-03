@@ -267,4 +267,10 @@ u32 w2c_wasi__snapshot__preview1_fd_fdstat_set_rights(struct w2c_wasi__snapshot_
     return runtime->wasiObject.fd_fdstat_set_rights(WASMRawU32::make(a), WASMRawU64::make(b), WASMRawU64::make(c)).get();
 }
 
+u32 w2c_wasi__snapshot__preview1_proc_raise(struct w2c_wasi__snapshot__preview1 *env, u32 a) {
+    auto runtime =
+        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
+    return runtime->wasiObject.proc_raise(WASMRawU32::make(a)).get();
+}
+
 }

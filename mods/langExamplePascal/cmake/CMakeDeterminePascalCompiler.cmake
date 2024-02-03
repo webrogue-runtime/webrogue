@@ -1,0 +1,23 @@
+set(CMAKE_Pascal_COMPILER ${WEBROGUE_PASCAL_TOOLCHAIN_COMPILER})
+mark_as_advanced(CMAKE_Pascal_COMPILER)
+
+if(NOT CMAKE_Pascal_COMPILER_VERSION)
+    execute_process(
+        COMMAND ${CMAKE_Pascal_COMPILER} -iV
+        OUTPUT_VARIABLE CMAKE_Pascal_COMPILER_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(CMAKE_Pascal_COMPILER_ARG1 "-l- -v0ewn -Fu${WEBROGUE_PASCAL_TOOLCHAIN_UNITS}/*")
+endif()
+mark_as_advanced(CMAKE_Pascal_COMPILER_VERSION)
+
+get_filename_component(COMPILER_LOCATION "${CMAKE_Pascal_COMPILER}" PATH)
+
+configure_file(
+    ${CMAKE_CURRENT_LIST_DIR}/CMakePascalCompiler.cmake.in
+    "${CMAKE_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/${CMAKE_VERSION}/CMakePascalCompiler.cmake"
+    IMMEDIATE 
+)
+
+file(COPY "${CMAKE_CURRENT_LIST_DIR}/CMakePascalInformation.cmake" DESTINATION "${CMAKE_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/${CMAKE_VERSION}")
+set(CMAKE_Pascal_COMPILER_ENV_VAR "PASCAL_COMPILER")

@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
+
 if(MAKE_WEBROGUE_TARGET_NAME)
     project(webrogue_mods)
 else()
@@ -12,7 +14,7 @@ set(WEBROGUE_MOD_DEFS WEBROGUE_WASM_MODS)
 
 function(register_mod)
     set(options)
-    set(oneValueArgs NAME ARCHIVE_PATH)
+    set(oneValueArgs NAME ARCHIVE_PATH ALREADY_EXPORTED)
     cmake_parse_arguments(ADD_MOD "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     if(NOT ${WEBROGUE_MOD_NAME} STREQUAL ${ADD_MOD_NAME})
         message(FATAL_ERROR "Mod name must match directory name, got ${NAME} and ${WEBROGUE_MOD_NAME}")

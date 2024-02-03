@@ -44,16 +44,16 @@ Result ArchiveReader::addObjectFile(const vector<uint8_t> *data,
     ReadBinaryOptions readOptions;
     readOptions.readDebugNames = true;
 
-    string filenameStr = filename.str();
+    string const filenameStr = filename.str();
     module->name = filename.str();
     CHECK_RESULT(readBinaryIr(filenameStr.c_str(), pushedData.data(),
                               pushedData.size(), readOptions, {},
                               module.get()));
-    // {
-    //   string command = "echo \'" + string(filename) + "\' >> actual";
-    //   cout << filename << "\n";
-    //   system(command.c_str());
-    // }
+    {
+        string const command = "echo \'" + filenameStr + "\' >> actual";
+        cout << filenameStr << "\n";
+        // system(command.c_str());
+    }
     for (auto &symbol : module->symbols) {
         if (symbol->kind() == WASMModule::Symbol::Kind::Func)
             for (string comdat :

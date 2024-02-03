@@ -83,14 +83,14 @@ add_library(core_wrmod ${WEBROGUE_LIBRARY_TYPE}
 
 set(WEBROGUE_RUNTIMES)
 
-make_webrogue_runtime(
-    LIB_NAME webrogue_runtime_native
-    TYPE NATIVE
-    ${WEBROGUE_LIBRARY_TYPE}
-    NATIVE_RUNTIME_MODS ${WEBROGUE_MOD_NAMES}
-    WEBROGUE_CORE_LIB webrogue_core
-)
-list(APPEND WEBROGUE_RUNTIMES native)
+# make_webrogue_runtime(
+#     LIB_NAME webrogue_runtime_native
+#     TYPE NATIVE
+#     ${WEBROGUE_LIBRARY_TYPE}
+#     NATIVE_RUNTIME_MODS ${WEBROGUE_MOD_NAMES}
+#     WEBROGUE_CORE_LIB webrogue_core
+# )
+# list(APPEND WEBROGUE_RUNTIMES native)
 
 make_webrogue_runtime(
     LIB_NAME webrogue_runtime_m3
@@ -267,10 +267,16 @@ add_executable(
     ${WEBROGUE_ROOT_PATH}/src/linker/wasm-ld-mini.cc
 )
 
+add_dependencies(
+    compact_linker_test
+    build_wasm_mods
+)
+
 target_link_libraries(compact_linker_test compact_linker)
 
+list(JOIN WEBROGUE_MOD_NAMES "|" a)
 target_compile_definitions(
-    compact_linker_test PRIVATE WASM_OBJDUMP_PATH=$<TARGET_FILE:wasm-objdump>
+    compact_linker_test PRIVATE WASM_OBJDUMP_PATH=$<TARGET_FILE:wasm-objdump> "WEBROGUE_MOD_NAMES=${a}"
 )
 
 if(NOT EXISTS ${WEBROGUE_ROOT_PATH}/src/linker/test_src/generated_toolchain.cmake)
