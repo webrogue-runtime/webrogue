@@ -83,14 +83,14 @@ add_library(core_wrmod ${WEBROGUE_LIBRARY_TYPE}
 
 set(WEBROGUE_RUNTIMES)
 
-# make_webrogue_runtime(
-#     LIB_NAME webrogue_runtime_native
-#     TYPE NATIVE
-#     ${WEBROGUE_LIBRARY_TYPE}
-#     NATIVE_RUNTIME_MODS ${WEBROGUE_MOD_NAMES}
-#     WEBROGUE_CORE_LIB webrogue_core
-# )
-# list(APPEND WEBROGUE_RUNTIMES native)
+make_webrogue_runtime(
+    LIB_NAME webrogue_runtime_native
+    TYPE NATIVE
+    ${WEBROGUE_LIBRARY_TYPE}
+    NATIVE_RUNTIME_MODS ${WEBROGUE_MOD_NAMES}
+    WEBROGUE_CORE_LIB webrogue_core
+)
+list(APPEND WEBROGUE_RUNTIMES native)
 
 make_webrogue_runtime(
     LIB_NAME webrogue_runtime_m3
