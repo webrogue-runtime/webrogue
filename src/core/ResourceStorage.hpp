@@ -11,9 +11,11 @@ namespace webrogue {
 namespace core {
 class ResourceStorage {
 public:
-    std::map<std::string, std::vector<uint8_t>> filemap;
+    std::map<std::string, std::vector<uint8_t>> fileMap;
     ConsoleStream *wrout;
     ConsoleStream *wrerr;
+    std::map<uint32_t, std::string> descriptorMap;
+
     std::function<void()> interrupt = []() {
     };
 
@@ -28,7 +30,7 @@ public:
     bool loadWrmodData(const uint8_t *data, size_t size, std::string name);
     bool loadWrmodFile(std::string path, std::string name);
 
-    ResourceStorage(ConsoleStream *pNrout, ConsoleStream *pNrerr);
+    ResourceStorage(ConsoleStream *wrout, ConsoleStream *wrerr);
 
 private:
     bool readRealFile(std::vector<uint8_t> &out, std::string path);

@@ -3,10 +3,12 @@
 #include "ModsRuntime.hpp"
 #include "byteswap.hpp"
 #include "wasm_types.hpp"
+#include <_types/_uint32_t.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <vector>
 
 namespace webrogue {
@@ -354,6 +356,54 @@ WR_API_FUNCTION_IMPL(WASMRawI32, wr_sqlite3_bind_blob,
     }
     return WASMRawI32::make(sqlite3_bind_blob(
         db->stmtById(stmt.get()), a.get(), hostBlob.data(), n.get(), nullptr));
+}
+WR_API_FUNCTION_IMPL(WASMRawU32, wr_res_open,
+                     (WASMRawU64 name, WASMRawU32 nameLen)) {
+    std::vector<char> hostName;
+    hostName.resize(nameLen.get());
+    if (!runtime->getVMData(hostName.data(), name.get(), nameLen.get())) {
+        assert(false);
+        return WASMRawU32::make(0);
+    }
+    std::string const nameStr{hostName.data(), hostName.size()};
+    if (!runtime->resourceStorage->hasFile(nameStr)) {
+        assert(false);
+        return WASMRawU32::make(0);
+    }
+    uint32_t rd = 1;
+    for (auto pair : runtime->resourceStorage->descriptorMap)
+        if (pair.first == rd)
+            rd++;
+    runtime->resourceStorage->descriptorMap[rd] = nameStr;
+    return WASMRawU32::make(rd);
+}
+WR_API_FUNCTION_IMPL(WASMRawU64, wr_res_get_size, (WASMRawU32 rd)) {
+    if (!runtime->resourceStorage->descriptorMap.count(rd.get())) {
+        assert(false);
+        return WASMRawU64::make(0);
+    }
+    return WASMRawU64::make(
+        runtime->resourceStorage
+            ->fileMap[runtime->resourceStorage->descriptorMap[rd.get()]]
+            .size());
+}
+WR_API_FUNCTION_IMPL(void, wr_res_get_data,
+                     (WASMRawU32 rd, WASMRawU64 outData)) {
+    if (!runtime->resourceStorage->descriptorMap.count(rd.get())) {
+        assert(false);
+        return;
+    }
+    auto &resource =
+        runtime->resourceStorage
+            ->fileMap[runtime->resourceStorage->descriptorMap[rd.get()]];
+    runtime->setVMData(resource.data(), outData.get(), resource.size());
+}
+WR_API_FUNCTION_IMPL(void, wr_res_close, (WASMRawU32 rd)) {
+    if (!runtime->resourceStorage->descriptorMap.count(rd.get())) {
+        assert(false);
+        return;
+    }
+    runtime->resourceStorage->descriptorMap.erase(rd.get());
 }
 
 } // namespace core

@@ -1,6 +1,7 @@
 import lzma
 import sys
 import pathlib
+import os
 
 
 if sys.argv[1] == "normal":
@@ -68,6 +69,12 @@ def compress_file(path: str, is_wasm: bool):
 compress_file("mod.a", is_wasm=True)
 if is_core:
     compress_file("stdlibs.a", is_wasm=True)
+res_path = mod_dir_path.joinpath("wrres")
+if os.path.isdir(res_path):
+    for dir, _, files in os.walk(res_path):
+        relPath = os.path.relpath(dir, mod_dir_path)
+        for file in files:
+            compress_file(os.path.join(relPath, file), is_wasm=False)
 
 compressed += compressor.flush()
 

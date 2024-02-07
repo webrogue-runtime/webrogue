@@ -14,8 +14,8 @@
 
 namespace webrogue {
 namespace core {
-ResourceStorage::ResourceStorage(ConsoleStream *pNrout, ConsoleStream *pNrerr)
-    : wrout(pNrout), wrerr(pNrerr) {
+ResourceStorage::ResourceStorage(ConsoleStream *wrout, ConsoleStream *wrerr)
+    : wrout(wrout), wrerr(wrerr) {
 }
 
 void ResourceStorage::addDirectory(std::string modName, std::string path) {
@@ -39,12 +39,12 @@ void ResourceStorage::traverseDirectory(std::string modName,
         return;
 
     while ((drnt = readdir(dir)) != NULL) {
-        std::string name(drnt->d_name);
+        std::string const name(drnt->d_name);
         if (name == curDir || name == parDir)
             continue;
         struct stat s;
-        bool isDir = s.st_mode & S_IFDIR;
-        std::string newExtraPath = extraPath + "/" + name;
+        bool const isDir = s.st_mode & S_IFDIR;
+        std::string const newExtraPath = extraPath + "/" + name;
         if (stat((rootPath + newExtraPath).c_str(), &s) != 0)
             continue;
 
@@ -59,14 +59,14 @@ void ResourceStorage::traverseDirectory(std::string modName,
 }
 void ResourceStorage::loadFile(std::string modName, std::string realPath,
                                std::string extraPath) {
-    std::vector<uint8_t> &fileData = filemap[modName + extraPath] = {};
+    std::vector<uint8_t> &fileData = fileMap[modName + extraPath] = {};
     readRealFile(fileData, realPath);
 }
 std::vector<uint8_t> &ResourceStorage::getFile(std::string path) {
-    return filemap[path];
+    return fileMap[path];
 }
 bool ResourceStorage::hasFile(std::string path) {
-    return filemap.count(path);
+    return fileMap.count(path);
 }
 
 struct DecompressedFilePointer {
@@ -138,7 +138,7 @@ void ResourceStorage::addWrmodData(std::string modName, const uint8_t *data,
         return; // overread, but how?
     }
     for (auto pointer : decompressedFiles) {
-        filemap[modName + "/" + pointer.filename] = {
+        fileMap[modName + "/" + pointer.filename] = {
             &decompressedData[pointer.cursor],
             &decompressedData[pointer.cursor] + pointer.size};
     }

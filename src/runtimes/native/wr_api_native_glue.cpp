@@ -138,4 +138,20 @@ extern "C" int32_t wr_sqlite3_bind_blob(int64_t stmt, int32_t a, uint64_t in_blo
     return webrogue::runtimes::native::sharedApiObject->wr_sqlite3_bind_blob(WASMRawI64::make(stmt), WASMRawI32::make(a), WASMRawU64::make(in_blob_offset), WASMRawI32::make(n)).get();
 }
 
+extern "C" uint32_t wr_res_open(uint64_t name, uint32_t nameLen) {
+    return webrogue::runtimes::native::sharedApiObject->wr_res_open(WASMRawU64::make(name), WASMRawU32::make(nameLen)).get();
+}
+
+extern "C" uint64_t wr_res_get_size(uint32_t rd) {
+    return webrogue::runtimes::native::sharedApiObject->wr_res_get_size(WASMRawU32::make(rd)).get();
+}
+
+extern "C" void wr_res_get_data(uint32_t rd, uint64_t outData) {
+    return webrogue::runtimes::native::sharedApiObject->wr_res_get_data(WASMRawU32::make(rd), WASMRawU64::make(outData));
+}
+
+extern "C" void wr_res_close(uint32_t rd) {
+    return webrogue::runtimes::native::sharedApiObject->wr_res_close(WASMRawU32::make(rd));
+}
+
 extern "C" void initWrNativeApi() {}
