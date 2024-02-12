@@ -1,9 +1,7 @@
 #include "../../mods/core/include/common/colors.h"
 #include "Config.hpp"
 #include "ModsRuntime.hpp"
-#include "byteswap.hpp"
 #include "wasm_types.hpp"
-#include <_types/_uint32_t.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>

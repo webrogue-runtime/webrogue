@@ -72,3 +72,6 @@
 	path = mods/coremark
 	url = https://github.com/Destructor17/coremark.git
 	branch = main
+[submodule "mods/rugpt2"]
+	path = mods/rugpt2
+	url = https://github.com/Destructor17/rugpt2.git

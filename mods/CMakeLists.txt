@@ -92,6 +92,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/tools/linker_path.cmake)
 
 foreach(mod ${mods})
     set(WEBROGUE_MOD_NAME ${mod})
+    set(WEBROGUE_NATIVE_MODS FALSE)
     add_subdirectory(${mod})
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${mod}/${mod}.wrmod

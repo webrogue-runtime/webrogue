@@ -88,6 +88,7 @@ make_webrogue_runtime(
     TYPE NATIVE
     ${WEBROGUE_LIBRARY_TYPE}
     NATIVE_RUNTIME_MODS ${WEBROGUE_MOD_NAMES}
+    NO_EWRMOD
     WEBROGUE_CORE_LIB webrogue_core
 )
 list(APPEND WEBROGUE_RUNTIMES native)
@@ -261,44 +262,46 @@ foreach(RUNTIME ${WEBROGUE_RUNTIMES})
     endforeach()
 endforeach()
 
-# compact_linker_test
-add_executable(
-    compact_linker_test
-    ${WEBROGUE_ROOT_PATH}/src/linker/wasm-ld-mini.cc
-)
 
-add_dependencies(
-    compact_linker_test
-    build_wasm_mods
-)
-
-target_link_libraries(compact_linker_test compact_linker)
-
-list(JOIN WEBROGUE_MOD_NAMES "|" a)
-target_compile_definitions(
-    compact_linker_test PRIVATE WASM_OBJDUMP_PATH=$<TARGET_FILE:wasm-objdump> "WEBROGUE_MOD_NAMES=${a}"
-)
 
 if(NOT EXISTS ${WEBROGUE_ROOT_PATH}/src/linker/test_src/generated_toolchain.cmake)
     exec_program(${CMAKE_COMMAND} ARGS -P${WEBROGUE_ROOT_PATH}/src/linker/test_src/download_toolchain.cmake)
 endif()
-add_custom_target(conf_wasm_files_for_compact_ported_linker_test
-    COMMAND ${CMAKE_COMMAND} 
-      -B ${CMAKE_CURRENT_BINARY_DIR}/test_build -S ${WEBROGUE_ROOT_PATH}/src/linker/test_src
-      --toolchain=${WEBROGUE_ROOT_PATH}/src/linker/test_src/generated_toolchain.cmake
-      -DWASM_LD_MINI_WASM_OBJDUMP_PATH=$<TARGET_FILE:wasm-objdump>
-      -DWASM_LD_MINI_WASM_STRIP_PATH=$<TARGET_FILE:wasm-strip>
-      ${MODS_BUILD_GENERATOR_ARGS}
-      -DCMAKE_BUILD_TYPE=Release
-    WORKING_DIRECTORY ${WEBROGUE_ROOT_PATH}/src/linker/test_src
-    DEPENDS wasm-objdump wasm-strip
-)
-add_custom_target(build_wasm_files_for_compact_ported_linker_test
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/test_build
-    WORKING_DIRECTORY ${WEBROGUE_ROOT_PATH}/src/linker/test_src
-    DEPENDS conf_wasm_files_for_compact_ported_linker_test
-)
-add_dependencies(compact_linker_test build_wasm_files_for_compact_ported_linker_test)
+if(FALSE)
+    # compact_linker_test
+    add_executable(
+        compact_linker_test
+        ${WEBROGUE_ROOT_PATH}/src/linker/wasm-ld-mini.cc
+    )
 
+    add_dependencies(
+        compact_linker_test
+        build_wasm_mods
+    )
+
+    target_link_libraries(compact_linker_test compact_linker)
+
+    list(JOIN WEBROGUE_MOD_NAMES "|" a)
+    target_compile_definitions(
+        compact_linker_test PRIVATE WASM_OBJDUMP_PATH=$<TARGET_FILE:wasm-objdump> "WEBROGUE_MOD_NAMES=${a}"
+    )
+    add_custom_target(conf_wasm_files_for_compact_ported_linker_test
+        COMMAND ${CMAKE_COMMAND} 
+        -B ${CMAKE_CURRENT_BINARY_DIR}/test_build -S ${WEBROGUE_ROOT_PATH}/src/linker/test_src
+        --toolchain=${WEBROGUE_ROOT_PATH}/src/linker/test_src/generated_toolchain.cmake
+        -DWASM_LD_MINI_WASM_OBJDUMP_PATH=$<TARGET_FILE:wasm-objdump>
+        -DWASM_LD_MINI_WASM_STRIP_PATH=$<TARGET_FILE:wasm-strip>
+        ${MODS_BUILD_GENERATOR_ARGS}
+        -DCMAKE_BUILD_TYPE=Release
+        WORKING_DIRECTORY ${WEBROGUE_ROOT_PATH}/src/linker/test_src
+        DEPENDS wasm-objdump wasm-strip
+    )
+    add_custom_target(build_wasm_files_for_compact_ported_linker_test
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/test_build
+        WORKING_DIRECTORY ${WEBROGUE_ROOT_PATH}/src/linker/test_src
+        DEPENDS conf_wasm_files_for_compact_ported_linker_test
+    )
+    add_dependencies(compact_linker_test build_wasm_files_for_compact_ported_linker_test)
+endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)

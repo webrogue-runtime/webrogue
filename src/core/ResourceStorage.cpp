@@ -1,8 +1,11 @@
 #include "ResourceStorage.hpp"
+#include "../../external/zstd/zstd.h"
 #include "sys/stat.h"
 #include "xz.h"
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <dirent.h>
 #include <fstream>
@@ -69,31 +72,76 @@ bool ResourceStorage::hasFile(std::string path) {
     return fileMap.count(path);
 }
 
-struct DecompressedFilePointer {
-    size_t cursor;
-    size_t size;
-    std::string filename;
-};
-
 void ResourceStorage::addWrmodData(std::string modName, const uint8_t *data,
                                    size_t size) {
     if (modNames.count(modName))
         return;
     modNames.insert(modName);
-    size_t readedModnameLen = strnlen((const char *)data, 128);
-    std::string readedModname{(const char *)data, readedModnameLen};
-    if (readedModname != modName)
+    size_t const rModnameLen = strnlen((const char *)data, 128);
+    std::string const rModname{(const char *)data, rModnameLen};
+    if (rModname != modName)
         return;
-    data += readedModnameLen + 1;
-    size -= readedModnameLen + 1;
-    std::string hexSize{(const char *)data, 16};
-    unsigned int decompressedSize = std::stoul(hexSize, nullptr, 16);
+    data += rModnameLen + 1;
+    size -= rModnameLen + 1;
+    if (rModname != modName)
+        return;
+
+    size_t const rCompressorNameLen = strnlen((const char *)data, 128);
+    std::string const rCompressorName{(const char *)data, rCompressorNameLen};
+    data += rCompressorNameLen + 1;
+    size -= rCompressorNameLen + 1;
+
+    std::string const hexSize{(const char *)data, 16};
+    const size_t decompressedSize = std::stoul(hexSize, nullptr, 16);
     data += 17;
     size -= 17;
     std::vector<uint8_t> decompressedData;
     decompressedData.resize(decompressedSize + 1);
     decompressedData[decompressedSize] = '\0'; // guard
-    size_t streamSize = 64 * 1024;
+    std::list<DecompressedFilePointer> decompressedFiles;
+
+    if (rCompressorName == "xz")
+        decompressXZ(data, size, decompressedData, decompressedSize,
+                     decompressedFiles);
+    else if (rCompressorName == "zstd")
+        decompressZstd(data, size, decompressedData, decompressedSize,
+                       decompressedFiles);
+    else
+        return;
+
+    size_t cursor = 0;
+    while (cursor < decompressedSize) {
+        size_t const nameLen = std::strlen((char *)&decompressedData[cursor]);
+        if (cursor + nameLen >= decompressedSize)
+            return;
+        std::string const filename{(char *)&decompressedData[cursor], nameLen};
+        cursor += nameLen + 1;
+        if (cursor + 17 >= decompressedSize)
+            return;
+        unsigned int const fileSize =
+            std::stoul({(char *)&decompressedData[cursor], 16}, nullptr, 16);
+        cursor += 17;
+        if (cursor + fileSize > decompressedSize)
+            return;
+        decompressedFiles.push_back({cursor, fileSize, filename});
+        cursor += fileSize;
+    }
+    if (cursor != decompressedSize) {
+        return; // overread, but how?
+    }
+
+    for (auto pointer : decompressedFiles) {
+        fileMap[modName + "/" + pointer.filename] = {
+            &decompressedData[pointer.cursor],
+            &decompressedData[pointer.cursor] + pointer.size};
+    }
+}
+
+void ResourceStorage::decompressXZ(
+    const uint8_t *data, size_t size, std::vector<uint8_t> &decompressedData,
+    size_t decompressedSize,
+    std::list<DecompressedFilePointer> &decompressedFiles) {
+    size_t const streamSize = 64 * 1024;
     struct xz_buf b;
     b.in = data;
     b.in_pos = 0;
@@ -116,31 +164,52 @@ void ResourceStorage::addWrmodData(std::string modName, const uint8_t *data,
     if (ret != XZ_STREAM_END) {
         return;
     }
-    std::list<DecompressedFilePointer> decompressedFiles;
-    size_t cursor = 0;
-    while (cursor < decompressedSize) {
-        size_t nameLen = std::strlen((char *)&decompressedData[cursor]);
-        if (cursor + nameLen >= decompressedSize)
-            return;
-        std::string filename{(char *)&decompressedData[cursor], nameLen};
-        cursor += nameLen + 1;
-        if (cursor + 17 >= decompressedSize)
-            return;
-        unsigned int fileSize =
-            std::stoul({(char *)&decompressedData[cursor], 16}, nullptr, 16);
-        cursor += 17;
-        if (cursor + fileSize > decompressedSize)
-            return;
-        decompressedFiles.push_back({cursor, fileSize, filename});
-        cursor += fileSize;
-    }
-    if (cursor != decompressedSize) {
-        return; // overread, but how?
-    }
-    for (auto pointer : decompressedFiles) {
-        fileMap[modName + "/" + pointer.filename] = {
-            &decompressedData[pointer.cursor],
-            &decompressedData[pointer.cursor] + pointer.size};
+}
+
+void ResourceStorage::decompressZstd(
+    const uint8_t *data, size_t size, std::vector<uint8_t> &decompressedData,
+    size_t decompressedSize,
+    std::list<DecompressedFilePointer> &decompressedFiles) {
+
+    size_t const buffInSize = ZSTD_DStreamInSize();
+    std::vector<char> buffIn;
+    buffIn.resize(buffInSize);
+    size_t buffInOffset = 0;
+
+    size_t const buffOutSize = ZSTD_DStreamOutSize();
+    std::vector<char> buffOut;
+    buffOut.resize(buffOutSize);
+    size_t buffOutOffset = 0;
+
+    ZSTD_DCtx *const dctx = ZSTD_createDCtx();
+
+    while (size_t read = std::min(size - buffInOffset, buffInSize)) {
+
+        ZSTD_inBuffer input = {data + buffInOffset, read, 0};
+        buffInOffset += read;
+        /* Given a valid frame, zstd won't consume the last byte of the frame
+         * until it has flushed all of the decompressed data of the frame.
+         * Therefore, instead of checking if the return code is 0, we can
+         * decompress just check if input.pos < input.size.
+         */
+        while (input.pos < input.size) {
+            ZSTD_outBuffer output = {buffOut.data(), buffOutSize, 0};
+            /* The return code is zero if the frame is complete, but there may
+             * be multiple frames concatenated together. Zstd will automatically
+             * reset the context when a frame is complete. Still, calling
+             * ZSTD_DCtx_reset() can be useful to reset the context to a clean
+             * state, for instance if the last decompression call returned an
+             * error.
+             */
+            size_t const ret = ZSTD_decompressStream(dctx, &output, &input);
+            if (ZSTD_isError(ret)) {
+                *wrout << ZSTD_getErrorName(ret) << "\n";
+                abort();
+            }
+            memcpy(decompressedData.data() + buffOutOffset, buffOut.data(),
+                   output.pos);
+            buffOutOffset += output.pos;
+        }
     }
 }
 

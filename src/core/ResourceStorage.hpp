@@ -10,6 +10,12 @@
 namespace webrogue {
 namespace core {
 class ResourceStorage {
+    struct DecompressedFilePointer {
+        size_t cursor;
+        size_t size;
+        std::string filename;
+    };
+
 public:
     std::map<std::string, std::vector<uint8_t>> fileMap;
     ConsoleStream *wrout;
@@ -26,6 +32,14 @@ public:
     std::vector<uint8_t> &getFile(std::string path);
     void addDirectory(std::string modName, std::string path);
     void addWrmodData(std::string modName, const uint8_t *data, size_t size);
+    void decompressXZ(const uint8_t *data, size_t size,
+                      std::vector<uint8_t> &decompressedData,
+                      size_t decompressedSize,
+                      std::list<DecompressedFilePointer> &decompressedFiles);
+    void decompressZstd(const uint8_t *data, size_t size,
+                        std::vector<uint8_t> &decompressedData,
+                        size_t decompressedSize,
+                        std::list<DecompressedFilePointer> &decompressedFiles);
     bool loadDir(std::string path, std::string name);
     bool loadWrmodData(const uint8_t *data, size_t size, std::string name);
     bool loadWrmodFile(std::string path, std::string name);

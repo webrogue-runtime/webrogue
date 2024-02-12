@@ -207,4 +207,28 @@ u32 w2c_webrogue_wr_sqlite3_bind_blob(struct w2c_webrogue *env, u64 stmt, u32 a,
     return runtime->apiObject.wr_sqlite3_bind_blob(WASMRawI64::make(stmt), WASMRawI32::make(a), WASMRawU64::make(in_blob_offset), WASMRawI32::make(n)).get();
 }
 
+u32 w2c_webrogue_wr_res_open(struct w2c_webrogue *env, u64 name, u32 nameLen) {
+    auto runtime =
+        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
+    return runtime->apiObject.wr_res_open(WASMRawU64::make(name), WASMRawU32::make(nameLen)).get();
+}
+
+u64 w2c_webrogue_wr_res_get_size(struct w2c_webrogue *env, u32 rd) {
+    auto runtime =
+        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
+    return runtime->apiObject.wr_res_get_size(WASMRawU32::make(rd)).get();
+}
+
+void w2c_webrogue_wr_res_get_data(struct w2c_webrogue *env, u32 rd, u64 outData) {
+    auto runtime =
+        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
+    return runtime->apiObject.wr_res_get_data(WASMRawU32::make(rd), WASMRawU64::make(outData));
+}
+
+void w2c_webrogue_wr_res_close(struct w2c_webrogue *env, u32 rd) {
+    auto runtime =
+        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
+    return runtime->apiObject.wr_res_close(WASMRawU32::make(rd));
+}
+
 }

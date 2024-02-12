@@ -53,6 +53,8 @@ set(
     ${WEBROGUE_ROOT_PATH}/external/xz/linux/lib/xz/xz_dec_lzma2.c
     ${WEBROGUE_ROOT_PATH}/external/xz/linux/lib/xz/xz_dec_stream.c
     ${WEBROGUE_ROOT_PATH}/external/xz/linux/lib/xz/xz_crc32.c
+
+    ${WEBROGUE_ROOT_PATH}/external/zstd/zstd.c
 )
 
 
@@ -380,7 +382,7 @@ function(make_webrogue_output)
 endfunction()
 
 function(make_webrogue_runtime)
-    set(options STATIC SHARED NO_DEFAULT_FACRTORY)
+    set(options STATIC SHARED NO_DEFAULT_FACRTORY NO_EWRMOD)
     set(oneValueArgs TYPE LIB_NAME WEBROGUE_CORE_LIB)
     set(multiValueArgs NATIVE_RUNTIME_MODS)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -420,10 +422,12 @@ function(make_webrogue_runtime)
     elseif(${ARGS_TYPE} STREQUAL NATIVE)
         set(SOURCES ${WEBROGUE_NATIVE_RUNTIME_SOURCE_FILES})
         set(DEFAULT_FACTORY_SOURCES ${WEBROGUE_NATIVE_RUNTIME_DEFAULT_FACTORY_SOURCE_FILES})
-        foreach(mod_to_embed ${ARGS_NATIVE_RUNTIME_MODS})
-            embed_resource(${WEBROGUE_ROOT_PATH}/mods/${mod_to_embed}/${mod_to_embed}.ewrmod)
-            list(APPEND SOURCES ${WEBROGUE_ROOT_PATH}/embedded_resources/${mod_to_embed}_ewrmod.c ${WEBROGUE_ROOT_PATH}/embedded_resources/${mod_to_embed}_ewrmod.h)
-        endforeach()
+        if(NOT ARGS_NO_EWRMOD)
+            foreach(mod_to_embed ${ARGS_NATIVE_RUNTIME_MODS})
+                embed_resource(${WEBROGUE_ROOT_PATH}/mods/${mod_to_embed}/${mod_to_embed}.ewrmod)
+                list(APPEND SOURCES ${WEBROGUE_ROOT_PATH}/embedded_resources/${mod_to_embed}_ewrmod.c ${WEBROGUE_ROOT_PATH}/embedded_resources/${mod_to_embed}_ewrmod.h)
+            endforeach()
+        endif()
     elseif(${ARGS_TYPE} STREQUAL WASMEDGE)
         set(SOURCES ${WEBROGUE_WASMEDGE_RUNTIME_SOURCE_FILES})
         set(DEFAULT_FACTORY_SOURCES ${WEBROGUE_WASMEDGE_RUNTIME_DEFAULT_FACTORY_SOURCE_FILES})
@@ -483,6 +487,7 @@ function(make_webrogue_runtime)
                 endif()
             endfunction()
             if(NOT ${mod_to_embed} IN_LIST NATIVE_MOD_SUBDIRS)
+                set(WEBROGUE_NATIVE_MODS TRUE)
                 add_subdirectory(${WEBROGUE_ROOT_PATH}/mods/${mod_to_embed} ${mod_to_embed}_embedded)
                 set(NATIVE_MOD_SUBDIRS ${NATIVE_MOD_SUBDIRS} ${mod_to_embed})
                 set(NATIVE_MOD_SUBDIRS ${NATIVE_MOD_SUBDIRS} PARENT_SCOPE)
