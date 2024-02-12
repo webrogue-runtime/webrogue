@@ -43,7 +43,7 @@
 #undef  XXH_INLINE_ALL
 #define XXH_INLINE_ALL
 #define ZSTD_LEGACY_SUPPORT 0
-#ifndef __EMSCRIPTEN__
+#if !defined(__EMSCRIPTEN__) && !defined(__DJGPP__)
 #define ZSTD_MULTITHREAD
 #endif
 #define ZSTD_TRACE 0
