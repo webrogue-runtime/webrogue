@@ -5,7 +5,15 @@ addToLibrary({
             var allRecords = transaction.objectStore("mods").getAll();
             allRecords.onsuccess = function () {
                 Module.modsToLoad = allRecords.result;
-                wakeUp();
+                async function resolveBlobs() {
+                    for (const key in Module.modsToLoad) {
+                        if (Object.hasOwnProperty.call(Module.modsToLoad, key)) {
+                            const modToLoad = Module.modsToLoad[key];
+                            modToLoad.data = new Uint8Array(await modToLoad.blob.arrayBuffer());
+                        }
+                    }
+                }
+                resolveBlobs().then(wakeUp);
             };
         });
     },

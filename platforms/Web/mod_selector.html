@@ -56,6 +56,10 @@
             };
         }
 
+        function splitModToChunks(bytes) {
+            return new Blob([bytes.buffer]);
+        }
+
         const fileSelector = document.getElementById('fileSelector');
         fileSelector.value = null;
         fileSelector.addEventListener('change', (fileSelectorEvent) => {
@@ -76,7 +80,9 @@
 
                     var nameBytes = bytes.slice(0, bytes.findIndex((byte) => byte == 0));
                     var modName = (new TextDecoder()).decode(nameBytes);
-                    var allRecords = transaction.objectStore("mods").put({ modName: modName, data: bytes });
+
+
+                    var allRecords = transaction.objectStore("mods").put({ modName: modName, blob: splitModToChunks(bytes) });
                 }
                 reader.onerror = function (event) {
                     remainFiles--;
@@ -103,9 +109,9 @@
             }
             storedMods.forEach((mod) => {
                 var newNode = document.getElementById("exampleModItem").cloneNode(true);
-                newNode.querySelector("#modItemLabel").textContent = mod.data ? mod.modName : mod.modName + ", not installed";
+                newNode.querySelector("#modItemLabel").textContent = mod.blob ? mod.modName : mod.modName + ", not installed";
                 var downloadButton = newNode.querySelector("#downloadButton");
-                if (mod.data)
+                if (mod.blob)
                     downloadButton.style.display = "none";
                 else
                     downloadButton.onclick = function () {
@@ -120,12 +126,12 @@
                                 transaction.oncomplete = function (event) {
                                     reloadModList();
                                 };
-                                transaction.objectStore("mods").add({ modName: mod.modName, data: new Uint8Array(content) });
+                                transaction.objectStore("mods").add({ modName: mod.modName, blob: splitModToChunks(new Uint8Array(content)) });
                             });
                         });
                     }
                 var deleteButton = newNode.querySelector("#deleteButton");
-                if (!mod.data)
+                if (!mod.blob)
                     deleteButton.style.display = "none";
                 else
                     deleteButton.onclick = function () {
