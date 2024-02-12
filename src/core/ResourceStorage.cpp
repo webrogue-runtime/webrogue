@@ -1,3 +1,6 @@
+// it looks like windef.h header contains min macro
+#define NOMINMAX
+
 #include "ResourceStorage.hpp"
 #include "../../external/zstd/zstd.h"
 #include "sys/stat.h"
@@ -183,8 +186,7 @@ void ResourceStorage::decompressZstd(
 
     ZSTD_DCtx *const dctx = ZSTD_createDCtx();
 
-    while (size - buffInOffset) {
-        size_t const read = std::min(size - buffInOffset, buffInSize);
+    while (size_t const read = std::min(size - buffInOffset, buffInSize)) {
         ZSTD_inBuffer input = {data + buffInOffset, read, 0};
         buffInOffset += read;
         while (input.pos < input.size) {
