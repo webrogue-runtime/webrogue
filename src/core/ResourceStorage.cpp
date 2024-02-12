@@ -183,24 +183,12 @@ void ResourceStorage::decompressZstd(
 
     ZSTD_DCtx *const dctx = ZSTD_createDCtx();
 
-    while (size_t read = std::min(size - buffInOffset, buffInSize)) {
-
+    while (size - buffInOffset) {
+        size_t const read = std::min(size - buffInOffset, buffInSize);
         ZSTD_inBuffer input = {data + buffInOffset, read, 0};
         buffInOffset += read;
-        /* Given a valid frame, zstd won't consume the last byte of the frame
-         * until it has flushed all of the decompressed data of the frame.
-         * Therefore, instead of checking if the return code is 0, we can
-         * decompress just check if input.pos < input.size.
-         */
         while (input.pos < input.size) {
             ZSTD_outBuffer output = {buffOut.data(), buffOutSize, 0};
-            /* The return code is zero if the frame is complete, but there may
-             * be multiple frames concatenated together. Zstd will automatically
-             * reset the context when a frame is complete. Still, calling
-             * ZSTD_DCtx_reset() can be useful to reset the context to a clean
-             * state, for instance if the last decompression call returned an
-             * error.
-             */
             size_t const ret = ZSTD_decompressStream(dctx, &output, &input);
             if (ZSTD_isError(ret)) {
                 *wrout << ZSTD_getErrorName(ret) << "\n";
@@ -210,6 +198,7 @@ void ResourceStorage::decompressZstd(
                    output.pos);
             buffOutOffset += output.pos;
         }
+        interrupt();
     }
 }
 
