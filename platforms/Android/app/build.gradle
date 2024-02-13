@@ -12,7 +12,7 @@ android {
     compileSdkVersion 34
     defaultConfig {
         if (buildAsApplication) {
-            applicationId "com.webrogue"
+            applicationId "io.github.webrogue_runtime"
         }
         minSdkVersion 24
         targetSdkVersion 34
@@ -45,6 +45,7 @@ android {
             ndk {
                 abiFilters 'armeabi-v7a', 'arm64-v8a'
             }
+            signingConfig signingConfigs.debug
         }
         debug {
             debuggable true
@@ -87,7 +88,7 @@ android {
     buildFeatures {
         viewBinding true
     }
-    namespace 'com.webrogue'
+    namespace 'io.github.webrogue_runtime'
     lint {
         abortOnError false
     }
@@ -97,7 +98,7 @@ android {
             variant.outputs.each { output ->
                 def outputFile = output.outputFile
                 if (outputFile != null && outputFile.name.endsWith(".aar")) {
-                    def fileName = "com.webrogue.aar"
+                    def fileName = "io.github.webrogue_runtime.aar"
                     output.outputFile = new File(outputFile.parent, fileName)
                 }
             }

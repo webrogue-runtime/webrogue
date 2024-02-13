@@ -35,11 +35,11 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
     std::vector<uvwasi_preopen_t> preopens;
     preopens.push_back({
         "/", // mapped_path
-        "."  // real_path
+        config->dataPath.c_str()  // real_path
     });
     preopens.push_back({
         "./", // mapped_path
-        "."   // real_path
+        config->dataPath.c_str()   // real_path
     });
     initOptions.preopenc = preopens.size();
     initOptions.preopens = preopens.data();

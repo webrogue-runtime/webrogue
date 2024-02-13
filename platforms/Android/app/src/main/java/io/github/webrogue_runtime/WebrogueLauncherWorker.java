@@ -1,4 +1,4 @@
-package com.webrogue;
+package io.github.webrogue_runtime;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -34,22 +34,24 @@ public class WebrogueLauncherWorker {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         int nRead;
         byte[] readBuffer = new byte[256];
+        int terminatorIndex = -1;
+        int flushedCount = 0;
         try {
-            while ((nRead = inputStream.read(readBuffer, 0, readBuffer.length)) != -1) {
+            while ((terminatorIndex == -1) && (((nRead = inputStream.read(readBuffer, 0, readBuffer.length))) != -1)) {
+                for(int i = 0; i<nRead; i++) {
+                    if(readBuffer[i] == '\0') {
+                        terminatorIndex = i + flushedCount;
+                        break;
+                    }
+                }
+                flushedCount += nRead;
                 buffer.write(readBuffer, 0, nRead);
             }
             buffer.flush();
         } catch (IOException e) {
-
+            return;
         }
         byte[] fileData = buffer.toByteArray();
-        int terminatorIndex = -1;
-        for(int i = 0; i<fileData.length; i++) {
-            if(fileData[i] == '\0') {
-                terminatorIndex = i;
-                break;
-            }
-        }
         if(terminatorIndex == -1 || terminatorIndex>128) return;
         String mod_name = new String(Arrays.copyOfRange(fileData, 0, terminatorIndex));
         String filename = mod_name + ".wrmod";
@@ -60,10 +62,13 @@ public class WebrogueLauncherWorker {
         try {
             FileOutputStream outputStream = new FileOutputStream(targetFile);
             outputStream.write(fileData, 0, fileData.length);
+            while (((nRead = inputStream.read(readBuffer, 0, readBuffer.length))) != -1) {
+                outputStream.write(readBuffer, 0, nRead);
+            }
         } catch (FileNotFoundException e) {
-
+            refresh();
         } catch (IOException e) {
-
+            refresh();
         }
         refresh();
     }

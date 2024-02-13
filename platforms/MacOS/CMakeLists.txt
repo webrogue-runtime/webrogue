@@ -85,7 +85,7 @@ target_source_group(TARGET webrogue ROOT_DIR "${WEBROGUE_ROOT_PATH}/src")
 
 set_target_properties(webrogue PROPERTIES
     BUNDLE True
-    MACOSX_BUNDLE_GUI_IDENTIFIER com.webrogue
+    MACOSX_BUNDLE_GUI_IDENTIFIER io.github.webrogue_runtime
     MACOSX_BUNDLE_BUNDLE_NAME webrogue
     MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"

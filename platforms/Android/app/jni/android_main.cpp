@@ -6,7 +6,7 @@
 int SDL_main(int argc, char *argv[]) {
     webrogue::core::Config config;
     JNIEnv *jniEnv = (JNIEnv *)SDL_AndroidGetJNIEnv();
-    jclass clazz = jniEnv->FindClass("com/webrogue/WebrogueActivity");
+    jclass clazz = jniEnv->FindClass("io/github/webrogue_runtime/WebrogueActivity");
     jmethodID get_storage_path_method_id = jniEnv->GetStaticMethodID(
         clazz, "staticGetStoragePath", "()Ljava/lang/String;");
     jstring returned_string = static_cast<jstring>(

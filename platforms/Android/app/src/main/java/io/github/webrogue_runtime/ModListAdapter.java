@@ -1,6 +1,5 @@
-package com.webrogue;
+package io.github.webrogue_runtime;
 
-import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -9,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 /**
  * Provide views to RecyclerView with data from mDataSet.
