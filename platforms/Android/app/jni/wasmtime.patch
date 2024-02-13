@@ -1,8 +1,8 @@
 diff --git a/crates/c-api/CMakeLists.txt b/crates/c-api/CMakeLists.txt
-index ff92a091e..07c667a77 100644
+index ff92a091e2..e7484e87f0 100644
 --- a/crates/c-api/CMakeLists.txt
 +++ b/crates/c-api/CMakeLists.txt
-@@ -61,19 +61,27 @@ endif()
+@@ -61,22 +61,33 @@ endif()
  if(ANDROID)
  	# Rust attempts to use libgcc.a on NDK versions r23-beta3 and up
  	# but it has been replaced with libunwind.a (rust-lang/rust#85806)
@@ -32,3 +32,9 @@ index ff92a091e..07c667a77 100644
  endif()
  include(ExternalProject)
  find_program(WASMTIME_CARGO_BINARY cargo)
++if(WASMTIME_CARGO_BINARY STREQUAL WASMTIME_CARGO_BINARY-NOTFOUND)
++	set(WASMTIME_CARGO_BINARY $ENV{HOME}/.cargo/bin/cargo)
++endif()
+ ExternalProject_Add(
+ 	wasmtime-crate
+ 	DOWNLOAD_COMMAND ""
