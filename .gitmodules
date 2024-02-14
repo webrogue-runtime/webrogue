@@ -58,7 +58,6 @@
 [submodule "external/wasmtime"]
 	path = external/wasmtime
 	url = https://github.com/bytecodealliance/wasmtime.git
-	ignore = dirty
 	branch = main
 [submodule "external/wasmer"]
 	path = external/wasmer

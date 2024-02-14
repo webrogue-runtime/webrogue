@@ -50,8 +50,8 @@ Result ArchiveReader::addObjectFile(const vector<uint8_t> *data,
                               pushedData.size(), readOptions, {},
                               module.get()));
     {
-        string const command = "echo \'" + filenameStr + "\' >> actual";
-        cout << filenameStr << "\n";
+        // string const command = "echo \'" + filenameStr + "\' >> actual";
+        // cout << filenameStr << "\n";
         // system(command.c_str());
     }
     for (auto &symbol : module->symbols) {

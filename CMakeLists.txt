@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.15)
 
 project(webrogue)
 
@@ -141,24 +141,45 @@ list(APPEND WEBROGUE_RUNTIMES web)
 
 if(${WEBROGUE_LIBRARY_TYPE} STREQUAL STATIC)
     set(BUILD_SHARED_LIBS OFF)
+    set(RUST_CRATE_TYPE staticlib)
 elseif(${WEBROGUE_LIBRARY_TYPE} STREQUAL SHARED)
     set(BUILD_SHARED_LIBS ON)
+    set(RUST_CRATE_TYPE cdylib)
 else()
     message(FATAL_ERROR)
 endif()
 
-set(WASMTIME_USER_CARGO_BUILD_OPTIONS --no-default-features)
-add_subdirectory(${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api wasmtime)
+include(FetchContent)
+
+FetchContent_Declare(
+    Corrosion
+    GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+    GIT_TAG 0a3bdf4
+)
+FetchContent_MakeAvailable(Corrosion)
+corrosion_import_crate(
+    MANIFEST_PATH ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/Cargo.toml 
+    NO_DEFAULT_FEATURES
+    CRATE_TYPES ${RUST_CRATE_TYPE}
+    CRATES wasmtime-c-api
+)
 make_webrogue_runtime(
     LIB_NAME webrogue_runtime_wasmtime
     TYPE WASM_C_API
     ${WEBROGUE_LIBRARY_TYPE}
 )
 target_link_libraries(webrogue_runtime_wasmtime wasmtime)
+target_include_directories(webrogue_runtime_wasmtime PRIVATE ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/wasm-c-api/include)
 list(APPEND WEBROGUE_RUNTIMES wasmtime)
 
-set(WASMER_USER_CARGO_BUILD_OPTIONS --no-default-features --features jit,cranelift)
-add_subdirectory(${WEBROGUE_ROOT_PATH}/external/wasmer_cmake wasmer)
+
+corrosion_import_crate(
+    MANIFEST_PATH ${WEBROGUE_ROOT_PATH}/external/wasmer/lib/c-api/Cargo.toml 
+    NO_DEFAULT_FEATURES
+    FEATURES jit cranelift
+    CRATE_TYPES ${RUST_CRATE_TYPE}
+    CRATES wasmer-c-api
+)
 make_webrogue_runtime(
     LIB_NAME webrogue_runtime_wasmer
     TYPE WASM_C_API

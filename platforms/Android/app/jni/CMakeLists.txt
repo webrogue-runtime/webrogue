@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.22)
 
 project(webrogue)
 
@@ -41,18 +41,17 @@ target_include_directories(webrogue_core PRIVATE ${WEBROGUE_ROOT_PATH}/external/
 
 
 if(CMAKE_ANDROID_ARCH_ABI STREQUAL arm64-v8a OR CMAKE_ANDROID_ARCH_ABI STREQUAL x86_64)
-    exec_program(git ${WEBROGUE_ROOT_PATH}/external/wasmtime ARGS apply ../../platforms/Android/app/jni/wasmtime.patch OUTPUT_VARIABLE v)
-    set(BUILD_SHARED_LIBS OFF)
-    set(WASMTIME_USER_CARGO_BUILD_OPTIONS --no-default-features)
-    add_subdirectory(${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api wasmtime)
-
     make_webrogue_runtime(
-        LIB_NAME webrogue_runtime_wasmtime
+        LIB_NAME webrogue_runtime_wasmer
         TYPE WASM_C_API
         STATIC
     )
-    target_link_libraries(webrogue_runtime_wasmtime wasmtime webrogue_core)
-    set(WEBROGUE_RUNTIME_LIB webrogue_runtime_wasmtime)
+    target_link_libraries(webrogue_runtime_wasmer webrogue_core)
+    link_to_wasmer(
+        LIB_NAME webrogue_runtime_wasmer
+        STATIC
+    )
+    set(WEBROGUE_RUNTIME_LIB webrogue_runtime_wasmer)
 elseif(CMAKE_ANDROID_ARCH_ABI STREQUAL armeabi-v7a OR CMAKE_ANDROID_ARCH_ABI STREQUAL x86)
     add_subdirectory(${WEBROGUE_ROOT_PATH}/platforms/Android/app/jni/wamr wamr)
 

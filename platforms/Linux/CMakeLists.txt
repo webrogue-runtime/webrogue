@@ -49,8 +49,8 @@ if(WEBROGUE_TERMUX)
     set(WEBROGUE_SAVED_VAR_ANDROID ${ANDROID})
     unset(ANDROID)
 endif()
-set(WASMTIME_USER_CARGO_BUILD_OPTIONS --no-default-features)
-add_subdirectory(${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api wasmtime)
+
+
 if(WEBROGUE_TERMUX)
     set(ANDROID ${WEBROGUE_SAVED_VAR_ANDROID})
 endif()
@@ -60,7 +60,11 @@ make_webrogue_runtime(
     TYPE WASM_C_API
     STATIC
 )
-target_link_libraries(webrogue_runtime_wasmtime wasmtime webrogue_core)
+target_link_libraries(webrogue_runtime_wasmtime webrogue_core)
+link_to_wasmer(
+    LIB_NAME webrogue_runtime_wasmtime
+    STATIC
+)
 list(APPEND WEBROGUE_OUTPUTS ncurses)
 if(${WEBROGUE_USE_SDL})
     list(APPEND CMAKE_MODULE_PATH ${WEBROGUE_ROOT_PATH}/cmake/sdl2)

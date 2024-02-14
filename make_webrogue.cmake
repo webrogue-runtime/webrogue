@@ -539,3 +539,63 @@ function(make_webrogue_core)
     endif()
 endfunction()
 
+function(link_to_wasmtime)
+    set(options STATIC SHARED)
+    set(oneValueArgs LIB_NAME)
+    set(multiValueArgs)
+    cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    include(FetchContent)
+    FetchContent_Declare(
+        Corrosion
+        GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+        GIT_TAG 0a3bdf4
+    )
+    FetchContent_MakeAvailable(Corrosion)
+    if(${ARGS_STATIC})
+        set(RUST_CRATE_TYPE staticlib)
+    elseif(${ARGS_SHARED})
+        set(RUST_CRATE_TYPE cdylib)
+    else()
+        message(FATAL_ERROR "Specify STATIC or SHARED library")
+    endif()
+    corrosion_import_crate(
+        MANIFEST_PATH ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/Cargo.toml 
+        NO_DEFAULT_FEATURES
+        CRATE_TYPES ${RUST_CRATE_TYPE}
+        CRATES wasmtime-c-api
+    )
+
+    target_link_libraries(${ARGS_LIB_NAME} wasmtime)
+    target_include_directories(${ARGS_LIB_NAME} PRIVATE ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/wasm-c-api/include)
+endfunction()
+
+function(link_to_wasmer)
+    set(options STATIC SHARED)
+    set(oneValueArgs LIB_NAME)
+    set(multiValueArgs)
+    cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    include(FetchContent)
+    FetchContent_Declare(
+        Corrosion
+        GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+        GIT_TAG 0a3bdf4
+    )
+    FetchContent_MakeAvailable(Corrosion)
+    if(${ARGS_STATIC})
+        set(RUST_CRATE_TYPE staticlib)
+    elseif(${ARGS_SHARED})
+        set(RUST_CRATE_TYPE cdylib)
+    else()
+        message(FATAL_ERROR "Specify STATIC or SHARED library")
+    endif()
+    corrosion_import_crate(
+        MANIFEST_PATH ${WEBROGUE_ROOT_PATH}/external/wasmer/lib/c-api/Cargo.toml 
+        NO_DEFAULT_FEATURES
+        FEATURES jit cranelift
+        CRATE_TYPES ${RUST_CRATE_TYPE}
+        CRATES wasmer-c-api
+    )
+
+    target_link_libraries(${ARGS_LIB_NAME} wasmer)
+    target_include_directories(${ARGS_LIB_NAME} PRIVATE ${WEBROGUE_ROOT_PATH}/external/wasmer/lib/c-api)
+endfunction()
