@@ -47,10 +47,6 @@ def encode_num(num: int) -> bytes:
     return result.encode()
 
 
-# zstd, xz
-compressor_name = "zstd"
-
-
 def compress_file(path: str, is_wasm: bool):
     global data_to_compress
     absolute_path = mod_dir_path.joinpath(path)
@@ -72,6 +68,11 @@ if os.path.isdir(res_path):
         for file in files:
             compress_file(os.path.join(relPath, file), is_wasm=False)
 
+# raw, zstd, xz
+compressor_name = "zstd"
+if len(data_to_compress) < 1024 * 1024:
+    compressor_name = "xz"
+
 if compressor_name == "zstd":
     compressed = zstd.compress(
         data_to_compress,
@@ -83,6 +84,8 @@ elif compressor_name == "xz":
         format=lzma.FORMAT_XZ,
         check=lzma.CHECK_CRC32,
     )
+elif compressor_name == "raw":
+    compressed = data_to_compress
 
 output_file.write(mod_name.encode() + b"\0")
 output_file.write(compressor_name.encode() + b"\0")

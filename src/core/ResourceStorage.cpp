@@ -109,6 +109,8 @@ void ResourceStorage::addWrmodData(std::string modName, const uint8_t *data,
     else if (rCompressorName == "zstd")
         decompressZstd(data, size, decompressedData, decompressedSize,
                        decompressedFiles);
+    else if (rCompressorName == "raw")
+        memcpy(decompressedData.data(), data, size);
     else
         return;
 
@@ -226,14 +228,11 @@ bool ResourceStorage::readRealFile(std::vector<uint8_t> &out,
     std::ifstream file(path, std::ios::in | std::ios::binary);
     if (!file.is_open())
         return false;
-    file.unsetf(std::ios::skipws);
-    file.seekg(0, std::ios_base::end);
-    size_t fileSize = file.tellg();
-    file.seekg(0, std::ios_base::beg);
-    out.resize(0);
-    out.reserve(fileSize);
-    out.insert(out.begin(), std::istream_iterator<uint8_t>(file),
-               std::istream_iterator<uint8_t>());
+    file.seekg(0, std::ios::end);
+    size_t const length = file.tellg();
+    file.seekg(0, std::ios::beg);
+    out.resize(length);
+    file.read(reinterpret_cast<char *>(out.data()), length);
     return true;
 }
 

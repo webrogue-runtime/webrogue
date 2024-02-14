@@ -316,11 +316,7 @@ if(CLANG_HAS_WASM)
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_LINKER=a
             -DWEBROGUE_MOD_NAMES=${WEBROGUE_MOD_NAME_CONFIGURE_ARG}
-        RESULT_VARIABLE r
     )
-    if(NOT r EQUAL 0)
-        message(FATAL_ERROR "Error while configuring wasm mods")
-    endif()
     set(BUILD_MODS_OUTPUTS)
     foreach(mod_name ${mod_names})
         list(APPEND BUILD_MODS_OUTPUTS ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.wrmod ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.ewrmod)
