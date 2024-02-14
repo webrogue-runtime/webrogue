@@ -74,7 +74,7 @@ done
 echo Building rust lib
 {
     cd ../../external/wasmer/
-    git apply ../wasmer.patch || true
+    rm rust-toolchain || true
 
     cd lib/c-api
     # rustup target add aarch64-apple-darwin
