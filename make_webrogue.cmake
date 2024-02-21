@@ -597,5 +597,5 @@ function(link_to_wasmer)
     )
 
     target_link_libraries(${ARGS_LIB_NAME} wasmer)
-    target_include_directories(${ARGS_LIB_NAME} PRIVATE ${WEBROGUE_ROOT_PATH}/external/wasmer/lib/c-api)
+    target_include_directories(${ARGS_LIB_NAME} PRIVATE ${WEBROGUE_ROOT_PATH}/external/wasmer/lib/c-api/tests/wasm-c-api/include)
 endfunction()

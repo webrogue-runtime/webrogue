@@ -13,6 +13,8 @@
 #include "wasi_templates.hpp"
 #include "wasm_types.hpp"
 
+#include <io.h>
+
 namespace webrogue {
 namespace core {
 WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
@@ -24,9 +26,12 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
 
     uvwasi = new uvwasi_s;
 
-    initOptions.in = 0;
-    initOptions.out = 1;
-    initOptions.err = 2;
+    initOptions.in =
+        _open_osfhandle((intptr_t)GetStdHandle(STD_INPUT_HANDLE), _O_RDONLY);
+    initOptions.out =
+        _open_osfhandle((intptr_t)GetStdHandle(STD_OUTPUT_HANDLE), _O_WRONLY);
+    initOptions.err =
+        _open_osfhandle((intptr_t)GetStdHandle(STD_ERROR_HANDLE), _O_WRONLY);
     initOptions.fd_table_size = 3;
     initOptions.argc = 0;
     initOptions.argv = nullptr;

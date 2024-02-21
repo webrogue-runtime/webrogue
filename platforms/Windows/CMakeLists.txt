@@ -8,6 +8,8 @@
 #add_executable(webrogue_windows ${PROJECT_SOURCE_DIR}/win.cpp)
 #target_link_libraries(webrogue_windows webrogue_sdl)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
 cmake_minimum_required(VERSION 3.13)
 
 project(webrogue C CXX)
@@ -34,12 +36,12 @@ make_webrogue_core(
 )
 set(WEBROGUE_COMPACT_LINKER_SHARED ON)
 include(${WEBROGUE_ROOT_PATH}/cmake/make_compact_linker.cmake)
-target_link_libraries(webrogue_core compact_linker)
+target_link_libraries(webrogue_core PUBLIC compact_linker)
 
 #libuv
 set(LIBUV_BUILD_SHARED ON)
 add_subdirectory(${WEBROGUE_ROOT_PATH}/external/libuv libuv)
-target_link_libraries(webrogue_core uv)
+target_link_libraries(webrogue_core PUBLIC uv)
 target_include_directories(webrogue_core PRIVATE ${WEBROGUE_ROOT_PATH}/external/libuv/include) 
 
 make_webrogue_runtime(
@@ -71,11 +73,11 @@ make_webrogue_output(
 )
 
 add_executable(webrogue ${CMAKE_CURRENT_LIST_DIR}/win.cpp)
-target_link_libraries(webrogue webrogue_core webrogue_output_pdcurses webrogue_runtime_wasmer)
+target_link_libraries(webrogue webrogue_output_pdcurses)
 target_include_directories(webrogue PRIVATE ${WEBROGUE_ROOT_PATH}/src)
 
 add_executable(webrogue_sdl WIN32 ${CMAKE_CURRENT_LIST_DIR}/win_sdl.cpp)
-target_link_libraries(webrogue_sdl webrogue_core webrogue_output_sdl webrogue_runtime_wasmer)
+target_link_libraries(webrogue_sdl webrogue_output_sdl)
 target_include_directories(webrogue_sdl PRIVATE ${WEBROGUE_ROOT_PATH}/src ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
 
 add_custom_command(
@@ -83,6 +85,14 @@ add_custom_command(
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${SDL2_DLLS} ${SDL2_TTF_DLLS} $<PATH:GET_PARENT_PATH,$<TARGET_FILE:webrogue_sdl>>
 )
+foreach(WEBROGUE_TARGET webrogue webrogue_sdl)
+    # add_custom_command(
+    #     TARGET ${WEBROGUE_TARGET}
+    #     POST_BUILD 
+    #     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:uv> $<TARGET_FILE:compact_linker> $<PATH:GET_PARENT_PATH,$<TARGET_FILE:${WEBROGUE_TARGET}>>
+    # )
+    target_link_libraries(${WEBROGUE_TARGET} compact_linker uv webrogue_core webrogue_runtime_wasmer)
+endforeach() 
 add_custom_target(webrogue_windows DEPENDS webrogue webrogue_sdl pack_mods)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:8388608")
 
@@ -91,7 +101,7 @@ set(ARTIFACTS_PATH ${WEBROGUE_ROOT_PATH}/artifacts)
 add_custom_target(pack_artifacts 
     COMMAND ${CMAKE_COMMAND} -E rm -rf ${ARTIFACTS_PATH}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${ARTIFACTS_PATH}
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:webrogue> $<TARGET_FILE:webrogue_core> $<TARGET_FILE:webrogue_runtime_wasmer> $<TARGET_FILE:webrogue_sdl> $<TARGET_FILE:uv> ${SDL2_DLLS} ${SDL2_TTF_DLLS} $<TARGET_FILE:compact_linker> ${ARTIFACTS_PATH}
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:webrogue> $<TARGET_FILE:webrogue_core> $<TARGET_FILE:webrogue_runtime_wasmer> $<TARGET_FILE:webrogue_runtime_wasmer> $<TARGET_FILE:webrogue_sdl> $<TARGET_FILE:uv> ${SDL2_DLLS} ${SDL2_TTF_DLLS} $<TARGET_FILE:compact_linker> ${ARTIFACTS_PATH}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${ARTIFACTS_PATH}/mods
     COMMAND ${CMAKE_COMMAND} -E copy ${WEBROGUE_ROOT_PATH}/mods/core/core.wrmod ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod ${ARTIFACTS_PATH}/mods
     

@@ -202,6 +202,12 @@ template <typename... Args> struct ArgumentSignatureHelper {
     }
 };
 
+template <> struct ArgumentSignatureHelper<> {
+    static void getSignature(wasm_valtype_vec_t *resultsVec) {
+        wasm_valtype_vec_new_empty(resultsVec);
+    }
+};
+
 template <typename Ret> struct ResultSignatureHelper;
 
 template <> struct ResultSignatureHelper<void> {

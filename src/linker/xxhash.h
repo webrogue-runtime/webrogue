@@ -83,8 +83,8 @@ uint32_t inline read32le(const unsigned char *P) {
 uint64_t inline xxHash64(std::vector<uint8_t> data) {
     size_t Len = data.size();
     uint64_t Seed = 0;
-    const unsigned char *P = &*data.begin();
-    const unsigned char *BEnd = &*data.end();
+    const unsigned char *P = data.data();
+    const unsigned char *BEnd = data.data() + data.size();
     uint64_t H64;
 
     if (Len >= 32) {

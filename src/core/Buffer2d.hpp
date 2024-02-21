@@ -5,11 +5,11 @@
 
 template <typename T> struct Buffer2d {
 private:
-    std::vector<T> buffer;
     int height = 0;
     int width = 0;
 
 public:
+    std::vector<T> buffer;
     inline void resize(Vec2Int size) {
         width = size.x;
         height = size.y;

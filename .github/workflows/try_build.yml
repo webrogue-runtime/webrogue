@@ -12,7 +12,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --recursive --single-branch external/wasmedge/;
+        git submodule update --init --recursive --single-branch external/wasmer/;
         git submodule update --init --recursive --single-branch external/xz/;
         git submodule update --init --recursive --single-branch external/dirent/;
         git submodule update --init --recursive --single-branch external/pdcurses/;

@@ -631,12 +631,12 @@ Result Synthesizer::relocate() {
 
                     dataPtr =
                         synthesizedData.data.data() + reloc.offset - offset;
-                    endPtr = &*synthesizedData.data.end();
+                    endPtr = synthesizedData.data.data() + synthesizedData.data.size();
                     break;
                 }
             } else {
                 dataPtr = input->code.data() + reloc.offset;
-                endPtr = &*input->code.end();
+                endPtr = input->code.data() + input->code.size();
             }
             if (!dataPtr || !endPtr)
                 continue;

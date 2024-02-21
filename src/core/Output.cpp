@@ -75,7 +75,7 @@ void Output::lazyEnd() {
 }
 
 wr_glyph *Output::getBuffer() {
-    return &renderBuffer.at(0, 0);
+    return renderBuffer.buffer.data();
 }
 
 void Output::resizeIfNeeded() {
