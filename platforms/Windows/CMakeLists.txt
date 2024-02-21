@@ -10,7 +10,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(webrogue)
+project(webrogue C CXX)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
@@ -26,7 +26,6 @@ include(../../make_webrogue.cmake)
 include_directories(${WEBROGUE_ROOT_PATH}/external/dirent/include)
 
 include(${WEBROGUE_ROOT_PATH}/platforms/Windows/download_sdl.cmake)
-include(${WEBROGUE_ROOT_PATH}/platforms/Windows/download_llvm.cmake)
 add_compile_definitions("MAKE_DEFAULT_RUNTIME_EXPORT=__declspec(dllexport)")
 
 make_webrogue_core(
@@ -44,26 +43,17 @@ target_link_libraries(webrogue_core uv)
 target_include_directories(webrogue_core PRIVATE ${WEBROGUE_ROOT_PATH}/external/libuv/include) 
 
 make_webrogue_runtime(
-    LIB_NAME webrogue_runtime_wasmedge
-    TYPE WASMEDGE
+    LIB_NAME webrogue_runtime_wasmer
+    TYPE WASM_C_API
     SHARED
 )
-set(WASMEDGE_BUILD_AOT_RUNTIME ON)
-set(WASMEDGE_BUILD_SHARED_LIB OFF)
-set(WASMEDGE_BUILD_STATIC_LIB ON)
-set(WASMEDGE_BUILD_PACKAGE "ZIP")
 
-set(LLVM_EXPORT_PATH ${WEBROGUE_ROOT_PATH}/platforms/Windows/build/LLVM-16.0.6-win64/lib/cmake/llvm/LLVMExports.cmake)
+link_to_wasmer(
+    LIB_NAME webrogue_runtime_wasmer
+    SHARED
+)
 
-file(READ ${LLVM_EXPORT_PATH} FILE_CONTENT)
-string(REPLACE "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/DIA SDK/lib/amd64/diaguids.lib;" "" FILE_CONTENT "${FILE_CONTENT}")
-file(WRITE ${LLVM_EXPORT_PATH} "${FILE_CONTENT}")
-
-add_subdirectory(${WEBROGUE_ROOT_PATH}/external/wasmedge wasmedge)
-
-target_link_libraries(webrogue_runtime_wasmedge wasmedgeCAPI)
-
-target_link_libraries(webrogue_runtime_wasmedge webrogue_core)
+target_link_libraries(webrogue_runtime_wasmer webrogue_core)
 
 make_webrogue_output(
     LIB_NAME webrogue_output_sdl
@@ -81,11 +71,11 @@ make_webrogue_output(
 )
 
 add_executable(webrogue ${CMAKE_CURRENT_LIST_DIR}/win.cpp)
-target_link_libraries(webrogue webrogue_core webrogue_output_pdcurses webrogue_runtime_wasmedge)
+target_link_libraries(webrogue webrogue_core webrogue_output_pdcurses webrogue_runtime_wasmer)
 target_include_directories(webrogue PRIVATE ${WEBROGUE_ROOT_PATH}/src)
 
 add_executable(webrogue_sdl WIN32 ${CMAKE_CURRENT_LIST_DIR}/win_sdl.cpp)
-target_link_libraries(webrogue_sdl webrogue_core webrogue_output_sdl webrogue_runtime_wasmedge)
+target_link_libraries(webrogue_sdl webrogue_core webrogue_output_sdl webrogue_runtime_wasmer)
 target_include_directories(webrogue_sdl PRIVATE ${WEBROGUE_ROOT_PATH}/src ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
 
 add_custom_command(
@@ -101,7 +91,7 @@ set(ARTIFACTS_PATH ${WEBROGUE_ROOT_PATH}/artifacts)
 add_custom_target(pack_artifacts 
     COMMAND ${CMAKE_COMMAND} -E rm -rf ${ARTIFACTS_PATH}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${ARTIFACTS_PATH}
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:webrogue> $<TARGET_FILE:webrogue_core> $<TARGET_FILE:webrogue_runtime_wasmedge> $<TARGET_FILE:webrogue_sdl> $<TARGET_FILE:uv> ${SDL2_DLLS} ${SDL2_TTF_DLLS} $<TARGET_FILE:compact_linker> ${ARTIFACTS_PATH}
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:webrogue> $<TARGET_FILE:webrogue_core> $<TARGET_FILE:webrogue_runtime_wasmer> $<TARGET_FILE:webrogue_sdl> $<TARGET_FILE:uv> ${SDL2_DLLS} ${SDL2_TTF_DLLS} $<TARGET_FILE:compact_linker> ${ARTIFACTS_PATH}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${ARTIFACTS_PATH}/mods
     COMMAND ${CMAKE_COMMAND} -E copy ${WEBROGUE_ROOT_PATH}/mods/core/core.wrmod ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod ${ARTIFACTS_PATH}/mods
     
