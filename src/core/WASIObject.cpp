@@ -17,6 +17,24 @@
 
 namespace webrogue {
 namespace core {
+
+int win_stdio_fd(DWORD stdio_type, bool rdonly) {
+    HANDLE handle = GetStdHandle(stdio_type);
+    if (handle == INVALID_HANDLE_VALUE || !handle) {
+        handle = CreateFile(
+            "nul",       
+            rdonly ? GENERIC_READ : GENERIC_WRITE,  
+            rdonly ? FILE_SHARE_READ : 0,
+            NULL,        
+            OPEN_EXISTING,  
+            rdonly ? FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED : FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
+    }
+    return  _open_osfhandle((intptr_t)handle,
+                    rdonly ? _O_RDONLY : _O_WRONLY);
+}
+
 WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
                        Config *config)
     : runtime(pRuntime) {
@@ -26,12 +44,9 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
 
     uvwasi = new uvwasi_s;
 
-    initOptions.in =
-        _open_osfhandle((intptr_t)GetStdHandle(STD_INPUT_HANDLE), _O_RDONLY);
-    initOptions.out =
-        _open_osfhandle((intptr_t)GetStdHandle(STD_OUTPUT_HANDLE), _O_WRONLY);
-    initOptions.err =
-        _open_osfhandle((intptr_t)GetStdHandle(STD_ERROR_HANDLE), _O_WRONLY);
+    initOptions.in = win_stdio_fd(STD_INPUT_HANDLE, true);
+    initOptions.out = win_stdio_fd(STD_OUTPUT_HANDLE, false);
+    initOptions.err = win_stdio_fd(STD_ERROR_HANDLE, false);
     initOptions.fd_table_size = 3;
     initOptions.argc = 0;
     initOptions.argv = nullptr;

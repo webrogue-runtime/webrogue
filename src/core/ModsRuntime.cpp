@@ -23,10 +23,10 @@ void ModsRuntime::interrupt() {
 
     if (std::chrono::duration_cast<std::chrono::milliseconds>(now -
                                                               lastInterrupt)
-            .count() > 10) {
-        lastInterrupt = now;
+            .count() > 100) {
         apiObject.output->lazyEnd();
         apiObject.output->beginFrame();
+        lastInterrupt = std::chrono::system_clock::now();
     }
 }
 
