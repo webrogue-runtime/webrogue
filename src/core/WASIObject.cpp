@@ -13,11 +13,14 @@
 #include "wasi_templates.hpp"
 #include "wasm_types.hpp"
 
+#if defined(_WIN32)
 #include <io.h>
+#endif
 
 namespace webrogue {
 namespace core {
 
+#if defined(_WIN32)
 int win_stdio_fd(DWORD stdio_type, bool rdonly) {
     HANDLE handle = GetStdHandle(stdio_type);
     if (handle == INVALID_HANDLE_VALUE || !handle) {
@@ -34,6 +37,7 @@ int win_stdio_fd(DWORD stdio_type, bool rdonly) {
     return  _open_osfhandle((intptr_t)handle,
                     rdonly ? _O_RDONLY : _O_WRONLY);
 }
+#endif
 
 WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
                        Config *config)
@@ -44,9 +48,15 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
 
     uvwasi = new uvwasi_s;
 
+#if defined(_WIN32)
     initOptions.in = win_stdio_fd(STD_INPUT_HANDLE, true);
     initOptions.out = win_stdio_fd(STD_OUTPUT_HANDLE, false);
     initOptions.err = win_stdio_fd(STD_ERROR_HANDLE, false);
+#else
+    initOptions.in = 0;
+    initOptions.out = 1;
+    initOptions.err = 2; 
+#endif
     initOptions.fd_table_size = 3;
     initOptions.argc = 0;
     initOptions.argv = nullptr;
