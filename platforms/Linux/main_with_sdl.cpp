@@ -1,12 +1,12 @@
+#include "../../embedded_resources/core_wrmod.h"
 #include "../../external/argparse/include/argparse/argparse.hpp"
 #include "../../src/core/webrogueMain.hpp"
 #include "../../src/outputs/curses/CursesOutput.hpp"
 #include "../../src/outputs/sdl/SDLOutput.hpp"
+#include "find_data_path.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
-
-#include "../../embedded_resources/core_wrmod.h"
 
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser program("webrogue");
@@ -44,8 +44,11 @@ int main(int argc, char *argv[]) {
     webrogue::core::Config config;
     config.addWrmodData(core_wrmod, core_wrmod_size, "core");
     config.setDataPath(".");
+    config.setModsPath(findModsPath());
     config.loadsModsFromDataPath = true;
 
     return webrogue::core::webrogueMain(
         output, webrogue::runtimes::makeDefaultRuntime, &config);
 }
+
+//

@@ -9,5 +9,9 @@ void Config::setDataPath(std::string path) {
     hasDataPath = true;
     dataPath = path;
 }
+void Config::setModsPath(std::string path) {
+    hasModsPath = true;
+    modsPath = path;
+}
 } // namespace core
 } // namespace webrogue

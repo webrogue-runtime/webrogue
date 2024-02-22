@@ -15,12 +15,15 @@ bool loadMods(ResourceStorage *mockFS, Config *config, ConsoleStream *wrout,
         if (!mockFS->loadWrmodData(modData.data, modData.size, modData.name))
             return false;
     }
-    if (config->loadsModsFromDataPath && config->hasDataPath) {
+    if (config->loadsModsFromDataPath &&
+        (config->hasDataPath || config->hasModsPath)) {
         static const std::string curDir = ".";
         static const std::string parDir = "..";
         DIR *dir;
         struct dirent *drnt;
-        std::string modsPath = (config->dataPath + "/mods");
+        std::string const modsPath = config->hasModsPath
+                                         ? config->modsPath
+                                         : (config->dataPath + "/mods");
         dir = opendir(modsPath.c_str());
         if (!dir) {
             *wrerr << "unable to open directory \"" << modsPath << "\"\n";
@@ -30,14 +33,12 @@ bool loadMods(ResourceStorage *mockFS, Config *config, ConsoleStream *wrout,
             std::string name(drnt->d_name);
             if (name != curDir && name != parDir && name != "core") {
                 struct stat s;
-                if (stat((config->dataPath + "/mods/" + name).c_str(), &s) !=
-                    0) {
-                    *wrerr << "stat \"" << config->dataPath + "/mods/" + name
-                           << "\" failed!\n";
+                std::string const newPath = modsPath + "/" + name;
+                if (stat(newPath.c_str(), &s) != 0) {
+                    *wrerr << "stat \"" << newPath << "\" failed!\n";
                     return false;
                 }
-                bool isDir = s.st_mode & S_IFDIR;
-                std::string newPath = (config->dataPath + "/mods") + "/" + name;
+                bool const isDir = s.st_mode & S_IFDIR;
 
                 if (isDir) {
                     if (!mockFS->loadDir(newPath, name))

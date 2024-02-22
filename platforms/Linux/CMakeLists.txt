@@ -38,7 +38,7 @@ target_link_libraries(webrogue_core compact_linker)
 
 #libuv
 set(LIBUV_BUILD_SHARED OFF)
-add_subdirectory(${WEBROGUE_ROOT_PATH}/external/libuv libuv)
+add_subdirectory(${WEBROGUE_ROOT_PATH}/external/libuv libuv EXCLUDE_FROM_ALL)
 target_link_libraries(webrogue_core uv_a)
 target_include_directories(webrogue_core PRIVATE ${WEBROGUE_ROOT_PATH}/external/libuv/include) 
 
@@ -75,12 +75,12 @@ if(${WEBROGUE_USE_SDL})
         TYPE SDL
         STATIC
     )
-    add_executable(webrogue "./main_with_sdl.cpp")
+    add_executable(webrogue main_with_sdl.cpp find_data_path.cpp)
     target_include_directories(webrogue_output_sdl PUBLIC ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
     target_link_libraries(webrogue_output_sdl ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
     target_link_libraries(webrogue webrogue_output_sdl)
 else()
-    add_executable(webrogue "./main.cpp")
+    add_executable(webrogue main.cpp find_data_path.cpp)
 endif()
 
 add_library(core_wrmod STATIC
@@ -114,6 +114,12 @@ add_custom_target(pack_executable_to_artifacts
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/webrogue ${WEBROGUE_ROOT_PATH}/artifacts/
     COMMAND ${CMAKE_COMMAND} -E copy ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod ${WEBROGUE_ROOT_PATH}/artifacts/mods
     DEPENDS webrogue
+)
+
+install(TARGETS webrogue)
+install(
+    FILES ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod
+    DESTINATION share/webrogue/mods
 )
 
 # profiling
