@@ -86,11 +86,11 @@ jobs:
         sudo apt update
         sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev 
 
-    - name: Configure and build
+    - name: Build RPM and DEB packages
       run: |
-        cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=Release
-        cmake --build platforms/Linux/build --target webrogue --parallel
-        cmake --install platforms/Linux/build/ --prefix artifacts
+        sh platforms/Linux/build.sh
+        mkdir artifacts
+        mv platforms/Linux/webrogue.deb platforms/Linux/webrogue.rpm artifacts
 
     - uses: actions/upload-artifact@v4
       with:
@@ -248,8 +248,32 @@ jobs:
         run: |
           sh platforms/iOS/build.sh --release
 
-  update_pages:
+  build_pages:
     needs: [windows, web, linux, dos, android, macos, ios]
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Make _site directory
+        run: |
+          mkdir _site
+
+      - uses: actions/download-artifact@v4
+        with: 
+          name: Artifacts-Linux
+          path: _site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+
+  update_pages:
+    needs: build_pages
     env:
       GH_TOKEN: ${{secrets.PAGES_UPDATE_TOKEN}}
     runs-on: ubuntu-latest
