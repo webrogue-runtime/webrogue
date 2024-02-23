@@ -267,6 +267,11 @@ jobs:
           name: Artifacts-Android
           path: _site
 
+      - uses: actions/download-artifact@v4
+        with: 
+          name: Artifacts-MacOS
+          path: _site
+          
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
       - name: Deploy to GitHub Pages
