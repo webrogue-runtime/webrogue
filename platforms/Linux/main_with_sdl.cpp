@@ -4,6 +4,7 @@
 #include "../../src/outputs/curses/CursesOutput.hpp"
 #include "../../src/outputs/sdl/SDLOutput.hpp"
 #include "find_data_path.hpp"
+#include <SDL2/SDL_video.h>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -12,7 +13,7 @@ __asm__(".symver realpath,realpath@GLIBC_2.2.5");
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser program("webrogue");
     program.add_argument("-o", "--output")
-        .default_value(std::string("sdl"))
+        .default_value(std::string("auto"))
         .help("output type to use, or \"list\" to get list of available output "
               "types")
         .required();
@@ -26,12 +27,17 @@ int main(int argc, char *argv[]) {
     std::string outputType = program.get<std::string>("--output");
 
     std::shared_ptr<webrogue::core::Output> output = nullptr;
+    if (outputType == "auto") {
+        outputType = SDL_GetNumVideoDisplays() > 0 ? "sdl" : "curses";
+    }
     if (outputType == "curses") {
         output = std::make_shared<webrogue::outputs::curses::CursesOutput>();
     } else if (outputType == "sdl") {
         output = std::make_shared<webrogue::outputs::sdl::SDLOutput>();
     } else if (outputType == "list") {
-        std::cerr << "curses" << std::endl << "sdl" << std::endl;
+        std::cerr << "curses" << std::endl
+                  << "sdl" << std::endl
+                  << "auto" << std::endl;
         return 1;
     } else {
         std::cerr << "output type " << outputType << "not available"

@@ -34,7 +34,7 @@ RUN sh platforms/Linux/build.sh
 # COPY --from=builder /webrogue/platforms/Linux/webrogue.rpm webrogue.rpm
 # RUN apt-get install -y ./webrogue.deb
 
-FROM fedora:40
+FROM fedora:38
 COPY --from=builder /webrogue/platforms/Linux/webrogue.deb webrogue.deb
 COPY --from=builder /webrogue/platforms/Linux/webrogue.rpm webrogue.rpm
-# RUN rpm -i webrogue.rpm
+RUN rpm -i webrogue.rpm
