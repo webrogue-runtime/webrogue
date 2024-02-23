@@ -81,11 +81,6 @@ jobs:
         git submodule update --init --recursive --single-branch external/SDL/
         git submodule update --init --recursive --single-branch external/SDL_ttf/
 
-    - name: Apt
-      run: |
-        sudo apt update
-        sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev 
-
     - name: Build RPM and DEB packages
       run: |
         sh platforms/Linux/build.sh
@@ -265,6 +260,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with: 
           name: Artifacts-Linux
+          path: _site
+
+      - uses: actions/download-artifact@v4
+        with: 
+          name: Artifacts-Android
           path: _site
 
       - name: Upload Pages artifact

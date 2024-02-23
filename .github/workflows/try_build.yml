@@ -69,11 +69,6 @@ jobs:
         git submodule update --init --recursive --single-branch external/SDL/
         git submodule update --init --recursive --single-branch external/SDL_ttf/
 
-    - name: Apt 
-      run: |
-        sudo apt update
-        sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev 
-
     - name: Configure and build
       run: |
         cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=Debug
