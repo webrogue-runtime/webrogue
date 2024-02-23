@@ -127,5 +127,7 @@ install(
 set(CPACK_GENERATOR "DEB" "RPM")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Artem Borovik")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.14), libgcc-s1 (>= 10), libncursesw6 (>= 6)")
+set(CPACK_RPM_PACKAGE_AUTOREQPROV OFF)
+set(CPACK_RPM_PACKAGE_REQUIRES "libc6 >= 2.14, glibc >= 2.14, libgcc (>= 10), ncurses-libs >= 6")
 include(CPack)
 # libsdl2-2.0-0 (>= 2), libsdl2-ttf-2.0-0 (>= 2), 

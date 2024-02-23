@@ -1,6 +1,4 @@
-ARG image=ubuntu:22.04
-
-FROM $image as builder
+FROM ubuntu:22.04 as builder
 
 # Timezone fix for old images
 ENV TZ=Asia/Dubai
@@ -31,10 +29,12 @@ RUN git pull && git submodule update --recursive
 RUN sh platforms/Linux/build.sh
 
 
-FROM $image
-COPY --from=builder /webrogue/webrogue.deb webrogue.deb
-# COPY --from=builder /webrogue/platforms/Linux/App.AppImage App.AppImage
-RUN apt update
-RUN apt-get install -y ./webrogue.deb
+# FROM ubuntu:22.04
+# COPY --from=builder /webrogue/platforms/Linux/webrogue.deb webrogue.deb
+# COPY --from=builder /webrogue/platforms/Linux/webrogue.rpm webrogue.rpm
+# RUN apt-get install -y ./webrogue.deb
 
-SHELL [ "webrogue" ]
+FROM fedora:40
+COPY --from=builder /webrogue/platforms/Linux/webrogue.deb webrogue.deb
+COPY --from=builder /webrogue/platforms/Linux/webrogue.rpm webrogue.rpm
+# RUN rpm -i webrogue.rpm
