@@ -49,15 +49,6 @@ include_directories(${CURSES_INCLUDE_DIR})
 target_link_libraries(webrogue_output_ncurses ${CURSES_LIBRARIES})
 
 set(BUILD_SHARED_LIBS OFF)
-if(WEBROGUE_TERMUX)
-    set(WEBROGUE_SAVED_VAR_ANDROID ${ANDROID})
-    unset(ANDROID)
-endif()
-
-
-if(WEBROGUE_TERMUX)
-    set(ANDROID ${WEBROGUE_SAVED_VAR_ANDROID})
-endif()
 
 make_webrogue_runtime(
     LIB_NAME webrogue_runtime_wasmtime
@@ -125,33 +116,16 @@ endif()
 
 target_compile_features(webrogue PRIVATE cxx_std_17)
 
-if(WEBROGUE_APPIMAGE)
-    install(
-        CODE 
-        "include(${WEBROGUE_ROOT_PATH}/platforms/Linux/appimage.cmake)
-        make_appimage(
-            EXE \"${CMAKE_BINARY_DIR}/webrogue\"
-            NAME \"YourAppName\"
-            ICON \"${WEBROGUE_ROOT_PATH}/platforms/Linux/512.png\"
-            DIR_ICON \"${WEBROGUE_ROOT_PATH}/platforms/Linux/512.png\"
-            OUTPUT_NAME \"${WEBROGUE_ROOT_PATH}/platforms/Linux/App.AppImage\"
-            ASSETS \"${CMAKE_BINARY_DIR}/mods\"
-            SHARED_LIBS \"/usr/lib/x86_64-linux-gnu/libncurses.so.6\" \"/usr/lib/x86_64-linux-gnu/libtinfo.so.6\"
-        )
-        " 
-        COMPONENT Runtime
-    )
-    target_link_libraries(webrogue -static-libstdc++)
-    target_compile_options(webrogue BEFORE PRIVATE -static)
-else()
-    install(TARGETS webrogue)
-    install(
-        FILES ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod
-        DESTINATION share/webrogue/mods
-    )
-    set(CPACK_GENERATOR "DEB")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Artem Borovik")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.14), libgcc-s1 (>= 10), libstdc++6 (>= 12), libncursesw6 (>= 6)")
-    include(CPack)
-endif()
+
+target_link_libraries(webrogue -static-libstdc++)
+
+install(TARGETS webrogue)
+install(
+    FILES ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod
+    DESTINATION share/webrogue/mods
+)
+set(CPACK_GENERATOR "DEB")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Artem Borovik")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.14), libgcc-s1 (>= 10), libncursesw6 (>= 6)")
+include(CPack)
 # libsdl2-2.0-0 (>= 2), libsdl2-ttf-2.0-0 (>= 2), 
