@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+__asm__(".symver realpath,realpath@GLIBC_2.2.5");
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser program("webrogue");
     program.add_argument("-o", "--output")

@@ -122,6 +122,7 @@ install(
     DESTINATION share/webrogue/mods
 )
 
-# profiling
-#set(CMAKE_CXX_FLAGS "-std=c++17 -pg -ggdb3 -Wall -Wextra -pedantic")
-#set(LINK_FLAGS "-std=c++17 -pg -ggdb3 -Wall -Wextra -pedantic")
+set(CPACK_GENERATOR "DEB")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Artem Borovik")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.14), libgcc-s1 (>= 10), libsdl2-2.0-0 (>= 2), libsdl2-ttf-2.0-0 (>= 2), libstdc++6 (>= 12), libncursesw6 (>= 6)")
+include(CPack)

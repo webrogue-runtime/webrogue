@@ -21,5 +21,6 @@ std::string findModsPath() {
     TRY_DIR("mods");
     TRY_DIR("./share/webrogue/mods");
     TRY_DIR("/usr/local/share/webrogue/mods");
+    TRY_DIR("/usr/share/webrogue/mods");
     abort();
 }
