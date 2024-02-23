@@ -4,7 +4,9 @@
 #include "../../src/outputs/curses/CursesOutput.hpp"
 #include "../../src/outputs/sdl/SDLOutput.hpp"
 #include "find_data_path.hpp"
-#include <SDL2/SDL_video.h>
+#include <SDL.h>
+#include <SDL2/SDL_error.h>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -28,7 +30,10 @@ int main(int argc, char *argv[]) {
 
     std::shared_ptr<webrogue::core::Output> output = nullptr;
     if (outputType == "auto") {
+        SDL_Init(SDL_INIT_VIDEO);
+
         outputType = SDL_GetNumVideoDisplays() > 0 ? "sdl" : "curses";
+        SDL_QuitSubSystem(SDL_INIT_VIDEO);
     }
     if (outputType == "curses") {
         output = std::make_shared<webrogue::outputs::curses::CursesOutput>();
