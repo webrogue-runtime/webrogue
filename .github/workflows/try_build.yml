@@ -77,7 +77,7 @@ jobs:
     - name: Configure and build
       run: |
         cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=Debug
-        cmake --build platforms/Linux/build --target pack_executable_to_artifacts -j
+        cmake --build platforms/Linux/build --target webrogue --parallel 
 
   dos:
     runs-on: ubuntu-latest

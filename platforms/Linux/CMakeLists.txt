@@ -124,7 +124,7 @@ install(
     FILES ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod
     DESTINATION share/webrogue/mods
 )
-set(CPACK_GENERATOR "DEB")
+set(CPACK_GENERATOR "DEB" "RPM")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Artem Borovik")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.14), libgcc-s1 (>= 10), libncursesw6 (>= 6)")
 include(CPack)

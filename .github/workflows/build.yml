@@ -89,7 +89,8 @@ jobs:
     - name: Configure and build
       run: |
         cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=Release
-        cmake --build platforms/Linux/build --target pack_executable_to_artifacts -j
+        cmake --build platforms/Linux/build --target webrogue --parallel
+        cmake --install platforms/Linux/build/ --prefix artifacts
 
     - uses: actions/upload-artifact@v4
       with:
