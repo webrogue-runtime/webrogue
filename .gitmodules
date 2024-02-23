@@ -74,6 +74,3 @@
 [submodule "mods/rugpt2"]
 	path = mods/rugpt2
 	url = https://github.com/Destructor17/rugpt2.git
-[submodule "platforms/Linux/AppImage"]
-	path = platforms/Linux/AppImage
-	url = https://github.com/Ravbug/AppImage.cmake.git

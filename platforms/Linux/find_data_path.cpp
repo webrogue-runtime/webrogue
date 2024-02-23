@@ -1,5 +1,6 @@
 #include "find_data_path.hpp"
 #include <cstdio>
+#include <cstdlib>
 #include <dirent.h>
 #include <string>
 #include <sys/stat.h>

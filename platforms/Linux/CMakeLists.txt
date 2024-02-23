@@ -40,9 +40,13 @@ target_link_libraries(webrogue_core compact_linker)
 set(LIBUV_BUILD_SHARED OFF)
 add_subdirectory(${WEBROGUE_ROOT_PATH}/external/libuv libuv EXCLUDE_FROM_ALL)
 target_link_libraries(webrogue_core uv_a)
-target_include_directories(webrogue_core PRIVATE ${WEBROGUE_ROOT_PATH}/external/libuv/include) 
+target_include_directories(webrogue_core PRIVATE ${WEBROGUE_ROOT_PATH}/external/libuv/include)
 
-target_link_libraries(webrogue_output_ncurses ncurses)
+
+set(CURSES_NEED_NCURSES true)
+find_package(Curses REQUIRED)
+include_directories(${CURSES_INCLUDE_DIR})
+target_link_libraries(webrogue_output_ncurses ${CURSES_LIBRARIES})
 
 set(BUILD_SHARED_LIBS OFF)
 if(WEBROGUE_TERMUX)
@@ -67,16 +71,31 @@ link_to_wasmer(
 )
 list(APPEND WEBROGUE_OUTPUTS ncurses)
 if(${WEBROGUE_USE_SDL})
-    list(APPEND CMAKE_MODULE_PATH ${WEBROGUE_ROOT_PATH}/cmake/sdl2)
-    find_package(SDL2)
-    find_package(SDL2_ttf)
+    # if(WEBROGUE_APPIMAGE)
+    set(SDL_SHARED OFF)
+    set(SDL_STATIC ON)
+    add_subdirectory(${WEBROGUE_ROOT_PATH}/external/SDL SDL2)
+    set(SDL2_INCLUDE_DIR ${WEBROGUE_ROOT_PATH}/external/SDL/include)
+    set(SDL2_LIBRARY SDL2-static)
+
+    set(SDL2TTF_VENDORED ON)
+    set(SDL2TTF_INSTALL OFF)
+    add_subdirectory(${WEBROGUE_ROOT_PATH}/external/SDL_ttf SDL_ttf)
+    set(SDL2_TTF_INCLUDE_DIR ${WEBROGUE_ROOT_PATH}/external/SDL_ttf)
+    set(SDL2_TTF_LIBRARY SDL2_ttf)
+    # else()
+    #     list(APPEND CMAKE_MODULE_PATH ${WEBROGUE_ROOT_PATH}/cmake/sdl2)
+    #     find_package(SDL2)
+    #     find_package(SDL2_ttf)
+    # endif()
     make_webrogue_output(
         LIB_NAME webrogue_output_sdl
         TYPE SDL
         STATIC
     )
     add_executable(webrogue main_with_sdl.cpp find_data_path.cpp)
-    target_include_directories(webrogue_output_sdl PUBLIC ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
+    target_include_directories(webrogue_output_sdl PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
+    target_include_directories(webrogue PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
     target_link_libraries(webrogue_output_sdl ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
     target_link_libraries(webrogue webrogue_output_sdl)
 else()
@@ -94,7 +113,6 @@ include(${WEBROGUE_ROOT_PATH}/cmake/make_compact_linker.cmake)
 
 target_link_libraries(
     webrogue 
-    ncurses
     core_wrmod 
     webrogue_output_ncurses
     webrogue_core
@@ -107,36 +125,33 @@ endif()
 
 target_compile_features(webrogue PRIVATE cxx_std_17)
 
-add_custom_target(pack_executable_to_artifacts
-    COMMAND ${CMAKE_COMMAND} -E rm -rf ${WEBROGUE_ROOT_PATH}/artifacts
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${WEBROGUE_ROOT_PATH}/artifacts
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${WEBROGUE_ROOT_PATH}/artifacts/mods
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/webrogue ${WEBROGUE_ROOT_PATH}/artifacts/
-    COMMAND ${CMAKE_COMMAND} -E copy ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod ${WEBROGUE_ROOT_PATH}/artifacts/mods
-    DEPENDS webrogue pack_mods_to_build_dir
-)
-
-install(TARGETS webrogue)
-install(
-    FILES ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod
-    DESTINATION share/webrogue/mods
-)
-
-install(CODE 
-    "include(${WEBROGUE_ROOT_PATH}/platforms/Linux/AppImage/appimage.cmake)
-    make_appimage(
-        EXE \"${CMAKE_BINARY_DIR}/webrogue\"
-        NAME \"YourAppName\"
-        ICON \"${WEBROGUE_ROOT_PATH}/platforms/Linux/512.png\"
-        DIR_ICON \"${WEBROGUE_ROOT_PATH}/platforms/Linux/512.png\"
-        OUTPUT_NAME \"${WEBROGUE_ROOT_PATH}/App.AppImage\"
-        ASSETS \"${CMAKE_BINARY_DIR}/mods\"
+if(WEBROGUE_APPIMAGE)
+    install(
+        CODE 
+        "include(${WEBROGUE_ROOT_PATH}/platforms/Linux/appimage.cmake)
+        make_appimage(
+            EXE \"${CMAKE_BINARY_DIR}/webrogue\"
+            NAME \"YourAppName\"
+            ICON \"${WEBROGUE_ROOT_PATH}/platforms/Linux/512.png\"
+            DIR_ICON \"${WEBROGUE_ROOT_PATH}/platforms/Linux/512.png\"
+            OUTPUT_NAME \"${WEBROGUE_ROOT_PATH}/platforms/Linux/App.AppImage\"
+            ASSETS \"${CMAKE_BINARY_DIR}/mods\"
+            SHARED_LIBS \"/usr/lib/x86_64-linux-gnu/libncurses.so.6\" \"/usr/lib/x86_64-linux-gnu/libtinfo.so.6\"
+        )
+        " 
+        COMPONENT Runtime
     )
-	" 
-	COMPONENT Runtime
-)
-
-set(CPACK_GENERATOR "DEB")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Artem Borovik")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.14), libgcc-s1 (>= 10), libsdl2-2.0-0 (>= 2), libsdl2-ttf-2.0-0 (>= 2), libstdc++6 (>= 12), libncursesw6 (>= 6)")
-include(CPack)
+    target_link_libraries(webrogue -static-libstdc++)
+    target_compile_options(webrogue BEFORE PRIVATE -static)
+else()
+    install(TARGETS webrogue)
+    install(
+        FILES ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod
+        DESTINATION share/webrogue/mods
+    )
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Artem Borovik")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.14), libgcc-s1 (>= 10), libstdc++6 (>= 12), libncursesw6 (>= 6)")
+    include(CPack)
+endif()
+# libsdl2-2.0-0 (>= 2), libsdl2-ttf-2.0-0 (>= 2), 

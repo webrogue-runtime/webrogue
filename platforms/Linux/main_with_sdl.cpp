@@ -12,7 +12,7 @@ __asm__(".symver realpath,realpath@GLIBC_2.2.5");
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser program("webrogue");
     program.add_argument("-o", "--output")
-        .default_value(std::string("curses"))
+        .default_value(std::string("sdl"))
         .help("output type to use, or \"list\" to get list of available output "
               "types")
         .required();

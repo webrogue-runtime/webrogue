@@ -13,26 +13,30 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.29.0-rc2/cmake-3.
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
-COPY src src
-COPY platforms/Linux platforms/Linux
-COPY cmake cmake
-COPY make_webrogue.cmake make_webrogue.cmake
-COPY mods mods
+WORKDIR "/"
+RUN git clone https://github.com/webrogue-runtime/webrogue.git
+WORKDIR "/webrogue"
 
-COPY external/wasmer/ external/wasmer/
-COPY external/xz/ external/xz/
-COPY external/argparse/ external/argparse/
-COPY external/libuv/ external/libuv/
-COPY external/uvwasi/ external/uvwasi/
-COPY external/zstd/ external/zstd/
-COPY external/sqlite_amb/ external/sqlite_amb/
-COPY external/wasmer.patch/ external/wasmer.patch/
+RUN git submodule update --init --recursive --single-branch external/wasmer/ && \
+    git submodule update --init --recursive --single-branch external/xz/ && \
+    git submodule update --init --recursive --single-branch external/argparse/ && \
+    git submodule update --init --recursive --single-branch external/libuv/ && \
+    git submodule update --init --recursive --single-branch external/uvwasi/ && \
+    git submodule update --init --recursive --single-branch external/SDL/ && \
+    git submodule update --init --recursive --single-branch external/SDL_ttf/
 
-RUN cmake -S platforms/Linux/ -B platforms/Linux/build/ -DCMAKE_BUILD_TYPE=Release && cmake --build platforms/Linux/build/ --target webrogue --parallel && cpack --config platforms/Linux/build/CPackConfig.cmake && cp webrogue-*-Linux.deb webrogue.deb
+RUN cmake -S platforms/Linux/ -B platforms/Linux/build/ -DCMAKE_BUILD_TYPE=Release -DWEBROGUE_APPIMAGE=OFF
+RUN cmake --build platforms/Linux/build/ --target webrogue --parallel 
+RUN cpack --config platforms/Linux/build/CPackConfig.cmake && cp webrogue-*-Linux.deb webrogue.deb
+
+RUN cmake -S . -B build/ -DCMAKE_BUILD_TYPE=Release -DWEBROGUE_APPIMAGE=ON
+RUN cmake --build build/ --target webrogue --parallel 
+RUN cmake --install build/ --prefix .
 
 
 FROM $image
-COPY --from=builder /webrogue.deb webrogue.deb
+COPY --from=builder /webrogue/webrogue.deb webrogue.deb
+COPY --from=builder /webrogue/App.AppImage App.AppImage
 RUN apt update
 RUN apt-get install -y ./webrogue.deb
 
