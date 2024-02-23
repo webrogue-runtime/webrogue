@@ -113,13 +113,27 @@ add_custom_target(pack_executable_to_artifacts
     COMMAND ${CMAKE_COMMAND} -E make_directory ${WEBROGUE_ROOT_PATH}/artifacts/mods
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/webrogue ${WEBROGUE_ROOT_PATH}/artifacts/
     COMMAND ${CMAKE_COMMAND} -E copy ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod ${WEBROGUE_ROOT_PATH}/artifacts/mods
-    DEPENDS webrogue
+    DEPENDS webrogue pack_mods_to_build_dir
 )
 
 install(TARGETS webrogue)
 install(
     FILES ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod
     DESTINATION share/webrogue/mods
+)
+
+install(CODE 
+    "include(${WEBROGUE_ROOT_PATH}/platforms/Linux/AppImage/appimage.cmake)
+    make_appimage(
+        EXE \"${CMAKE_BINARY_DIR}/webrogue\"
+        NAME \"YourAppName\"
+        ICON \"${WEBROGUE_ROOT_PATH}/platforms/Linux/512.png\"
+        DIR_ICON \"${WEBROGUE_ROOT_PATH}/platforms/Linux/512.png\"
+        OUTPUT_NAME \"${WEBROGUE_ROOT_PATH}/App.AppImage\"
+        ASSETS \"${CMAKE_BINARY_DIR}/mods\"
+    )
+	" 
+	COMPONENT Runtime
 )
 
 set(CPACK_GENERATOR "DEB")

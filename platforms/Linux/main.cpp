@@ -7,8 +7,8 @@ __asm__(".symver realpath,realpath@GLIBC_2.2.5");
 int main(int argc, char *argv[]) {
     webrogue::config::Config config;
     config.addWrmodData(core_wrmod, core_wrmod_size, "core");
-    config.setDataPath(".");
     config.setModsPath(findModsPath());
+    config.setDataPath(findDataPath());
     config.loadsModsFromDataPath = true;
     return webrogue::core::webrogueMain(
         std::make_shared<webrogue::output::CursesOutput>(),

@@ -44,8 +44,9 @@ int main(int argc, char *argv[]) {
 
     webrogue::core::Config config;
     config.addWrmodData(core_wrmod, core_wrmod_size, "core");
-    config.setDataPath(".");
+
     config.setModsPath(findModsPath());
+    config.setDataPath(findDataPath());
     config.loadsModsFromDataPath = true;
 
     return webrogue::core::webrogueMain(

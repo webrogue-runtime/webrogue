@@ -1,6 +1,9 @@
 #include "find_data_path.hpp"
+#include <cstdio>
 #include <dirent.h>
 #include <string>
+#include <sys/stat.h>
+#include <unistd.h>
 
 bool checkIfDirExists(std::string dirname) {
     DIR *dir = opendir(dirname.c_str());
@@ -22,5 +25,14 @@ std::string findModsPath() {
     TRY_DIR("./share/webrogue/mods");
     TRY_DIR("/usr/local/share/webrogue/mods");
     TRY_DIR("/usr/share/webrogue/mods");
+    printf("no mods directory found. aborting");
     abort();
+}
+
+std::string findDataPath() {
+    std::string dataDir = "/home/someone/.webrogue";
+    if (!checkIfDirExists(dataDir)) {
+        mkdir(dataDir.c_str(), 0700);
+    }
+    return dataDir;
 }
