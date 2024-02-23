@@ -17,14 +17,13 @@ WORKDIR "/"
 RUN git clone https://github.com/webrogue-runtime/webrogue.git
 WORKDIR "/webrogue"
 
-RUN git submodule update --init --recursive --single-branch external/wasmer/ && \
-    git submodule update --init --recursive --single-branch external/xz/ && \
-    git submodule update --init --recursive --single-branch external/argparse/ && \
-    git submodule update --init --recursive --single-branch external/libuv/ && \
-    git submodule update --init --recursive --single-branch external/uvwasi/ && \
-    git submodule update --init --recursive --single-branch external/SDL/ && \
-    git submodule update --init --recursive --single-branch external/SDL_ttf/
-
+RUN git submodule update --init --recursive external/wasmer/ && \
+    git submodule update --init --recursive external/xz/ && \
+    git submodule update --init --recursive external/argparse/ && \
+    git submodule update --init --recursive external/libuv/ && \
+    git submodule update --init --recursive external/uvwasi/ && \
+    git submodule update --init --recursive external/SDL/ && \
+    git submodule update --init --recursive external/SDL_ttf/
 
 COPY git_hash git_hash
 RUN git pull && git submodule update --recursive
@@ -40,4 +39,4 @@ COPY --from=builder /webrogue/webrogue.deb webrogue.deb
 RUN apt update
 RUN apt-get install -y ./webrogue.deb
 
-# SHELL [ "webrogue" ]
+SHELL [ "webrogue" ]

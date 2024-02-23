@@ -43,7 +43,7 @@ target_link_libraries(webrogue_core uv_a)
 target_include_directories(webrogue_core PRIVATE ${WEBROGUE_ROOT_PATH}/external/libuv/include)
 
 
-set(CURSES_NEED_NCURSES true)
+set(CURSES_NEED_NCURSES ON)
 find_package(Curses REQUIRED)
 include_directories(${CURSES_INCLUDE_DIR})
 target_link_libraries(webrogue_output_ncurses ${CURSES_LIBRARIES})

@@ -78,6 +78,8 @@ jobs:
         git submodule update --init --recursive --single-branch external/argparse/
         git submodule update --init --recursive --single-branch external/libuv/
         git submodule update --init --recursive --single-branch external/uvwasi/
+        git submodule update --init --recursive --single-branch external/SDL/
+        git submodule update --init --recursive --single-branch external/SDL_ttf/
 
     - name: Apt
       run: |
