@@ -31,7 +31,7 @@ std::string findModsPath() {
 }
 
 std::string findDataPath() {
-    std::string dataDir = "/home/someone/.webrogue";
+    std::string dataDir = std::string(getenv("HOME")) + "/.webrogue";
     if (!checkIfDirExists(dataDir)) {
         mkdir(dataDir.c_str(), 0700);
     }
