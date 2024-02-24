@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest">
+  <Identity Name="NumberGuesserManifest" 
+          Version="1.0.0.0" 
+          Publisher="CN=AppModelSamples, OID.2.25.311729368913984317654407730594956997722=1"/>
+  <Properties>
+    <DisplayName>MyApp</DisplayName>
+    <PublisherDisplayName>MyCompany</PublisherDisplayName>
+    <Logo>Webrogue.png</Logo>
+  </Properties>
+  <Prerequisites>
+    <OSMinVersion>6.2.1</OSMinVersion>
+    <OSMaxVersionTested>6.2.1</OSMaxVersionTested>
+  </Prerequisites>
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+  <Applications>
+    <Application Id="Webrogue" Executable="webrogue_sdl.exe" EntryPoint="WinMain">
+      <VisualElements DisplayName="Webrogue" Description="Webrogue"
+           Logo="Webrogue.png" SmallLogo="Webrogue.png"  
+           ForegroundText="dark" BackgroundColor="#FFFFFF">
+         <SplashScreen BackgroundColor="black" Image="Webrogue.png" />
+      </VisualElements>
+    </Application>
+  </Applications>
+</Package>

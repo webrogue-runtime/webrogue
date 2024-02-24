@@ -40,7 +40,7 @@ target_link_libraries(webrogue_core PUBLIC compact_linker)
 
 #libuv
 set(LIBUV_BUILD_SHARED ON)
-add_subdirectory(${WEBROGUE_ROOT_PATH}/external/libuv libuv)
+add_subdirectory(${WEBROGUE_ROOT_PATH}/external/libuv libuv EXCLUDE_FROM_ALL)
 target_link_libraries(webrogue_core PUBLIC uv)
 target_include_directories(webrogue_core PRIVATE ${WEBROGUE_ROOT_PATH}/external/libuv/include) 
 
@@ -98,12 +98,16 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:8388608")
 
 set(ARTIFACTS_PATH ${WEBROGUE_ROOT_PATH}/artifacts)
 
-add_custom_target(pack_artifacts 
-    COMMAND ${CMAKE_COMMAND} -E rm -rf ${ARTIFACTS_PATH}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${ARTIFACTS_PATH}
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:webrogue> $<TARGET_FILE:webrogue_core> $<TARGET_FILE:webrogue_runtime_wasmer> $<TARGET_FILE:webrogue_runtime_wasmer> $<TARGET_FILE:webrogue_sdl> $<TARGET_FILE:uv> ${SDL2_DLLS} ${SDL2_TTF_DLLS} $<TARGET_FILE:compact_linker> ${ARTIFACTS_PATH}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${ARTIFACTS_PATH}/mods
-    COMMAND ${CMAKE_COMMAND} -E copy ${WEBROGUE_ROOT_PATH}/mods/core/core.wrmod ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod ${ARTIFACTS_PATH}/mods
-    
-    DEPENDS webrogue_windows
+install(
+    TARGETS webrogue webrogue_core webrogue_runtime_wasmer webrogue_sdl uv compact_linker
+    RUNTIME
+    DESTINATION .
+)
+install(
+    FILES ${WEBROGUE_ROOT_PATH}/mods/core/core.wrmod ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod
+    DESTINATION mods
+)
+install(
+    FILES ${SDL2_DLLS} ${SDL2_TTF_DLLS} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wasmer.dll
+    DESTINATION .
 )

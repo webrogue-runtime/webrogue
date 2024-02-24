@@ -3,4 +3,5 @@ mkdir .\artifacts\
 $BuildConfig = $args[0]
 echo "Build config: $BuildConfig"
 cmake -S platforms/Windows/ -B platforms/Windows/build -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
-cmake --build platforms/Windows/build -t pack_artifacts --config $BuildConfig --parallel
+cmake --build platforms/Windows/build -t webrogue_windows --config $BuildConfig --parallel
+cmake --install .\platforms\Windows\build\ --prefix artifacts
