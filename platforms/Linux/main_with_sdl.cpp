@@ -11,7 +11,6 @@
 #include <memory>
 #include <string>
 
-__asm__(".symver realpath,realpath@GLIBC_2.2.5");
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser program("webrogue");
     program.add_argument("-o", "--output")
@@ -31,7 +30,7 @@ int main(int argc, char *argv[]) {
     std::shared_ptr<webrogue::core::Output> output = nullptr;
     if (outputType == "auto") {
         SDL_Init(SDL_INIT_VIDEO);
-
+        // Does not works
         outputType = SDL_GetNumVideoDisplays() > 0 ? "sdl" : "curses";
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
     }
