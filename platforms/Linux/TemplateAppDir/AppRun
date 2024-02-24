@@ -1,3 +1,4 @@
 #!/bin/sh
-cd "$(dirname "$0")";
-./webrogue $@
+DIR="$(cd "$(dirname "$0")" && pwd)"
+export WEBROGUE_FALLBACK_MODS_PATH="$DIR/mods"
+"$DIR/webrogue" $@

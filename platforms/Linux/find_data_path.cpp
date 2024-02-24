@@ -20,10 +20,14 @@ bool checkIfDirExists(std::string dirname) {
 
 std::string findModsPath() {
 #define TRY_DIR(DIR)                                                           \
-    if (checkIfDirExists(DIR))                                                 \
-        return DIR;
+    {                                                                          \
+        std::string dir = DIR;                                                 \
+        if (checkIfDirExists(dir))                                             \
+            return dir;                                                        \
+    }
     TRY_DIR("mods");
-    TRY_DIR("./share/webrogue/mods");
+    if (getenv("WEBROGUE_FALLBACK_MODS_PATH"))
+        TRY_DIR(getenv("WEBROGUE_FALLBACK_MODS_PATH"));
     TRY_DIR("/usr/local/share/webrogue/mods");
     TRY_DIR("/usr/share/webrogue/mods");
     printf("no mods directory found. aborting");
