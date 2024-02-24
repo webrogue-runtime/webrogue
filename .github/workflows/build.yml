@@ -83,9 +83,10 @@ jobs:
 
     - name: Build RPM and DEB packages
       run: |
-        sh platforms/Linux/build.sh
+        sh platforms/Linux/ubuntu.sh
+        sh platforms/Linux/deb2appimage.sh
         mkdir artifacts
-        mv platforms/Linux/webrogue.deb platforms/Linux/webrogue.rpm artifacts
+        mv platforms/Linux/webrogue.deb platforms/Linux/webrogue.rpm platforms/Linux/Webrogue-x86_64.AppImage artifacts
 
     - uses: actions/upload-artifact@v4
       with:
