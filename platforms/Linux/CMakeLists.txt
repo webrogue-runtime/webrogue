@@ -42,11 +42,14 @@ add_subdirectory(${WEBROGUE_ROOT_PATH}/external/libuv libuv EXCLUDE_FROM_ALL)
 target_link_libraries(webrogue_core uv_a)
 target_include_directories(webrogue_core PRIVATE ${WEBROGUE_ROOT_PATH}/external/libuv/include)
 
-
 set(CURSES_NEED_NCURSES ON)
 find_package(Curses REQUIRED)
 include_directories(${CURSES_INCLUDE_DIR})
-target_link_libraries(webrogue_output_ncurses ${CURSES_LIBRARIES})
+if(WEBROGUE_SHARED_NCURSES)
+    target_link_libraries(webrogue_output_ncurses ${CURSES_LIBRARIES})
+else()
+    target_link_libraries(webrogue_output_ncurses -Wl,-Bstatic -lncurses -ltinfo -Wl,-Bdynamic)
+endif()
 
 set(BUILD_SHARED_LIBS OFF)
 
