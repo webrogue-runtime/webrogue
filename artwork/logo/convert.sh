@@ -1,3 +1,5 @@
+cd $(dirname $0)
+
 set -ex
 # sudo snap install svgo
 svgo logo.svg -o logo_optimized.svg
@@ -20,3 +22,5 @@ android_black_white 192 xxxhdpi
 
 rsvg-convert -w 512 -h 512 logo.svg -o logo_black_transparent_512.png
 mv logo_black_transparent_512.png ../../platforms/Android/app/src/main/res/drawable/ic_launcher_black_foreground.png
+
+convert -background transparent -define 'icon:auto-resize=16,24,32,64' logo.svg logo.ico
