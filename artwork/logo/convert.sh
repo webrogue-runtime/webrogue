@@ -72,7 +72,7 @@ original | parse_colors | outer_fill_color 00000000 | default_colors | to_png_tr
 
 # For Linux
 original | stroke_width 1.5 | to_png_transparent 256 ../../platforms/Linux/TemplateAppDir/.DirIcon
-original | stroke_width 1.5 | to_svg ../../platforms/Linux/TemplateAppDir/Webrogue.svg
+original | stroke_width 1.5 | to_svg ../../platforms/Linux/TemplateAppDir/webrogue.svg
 
 # For Web
 original | bigger | stroke_width 1 | to_ico ../../platforms/Web/logo.ico
