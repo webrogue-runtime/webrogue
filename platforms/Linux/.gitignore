@@ -1,4 +1,6 @@
-Webrogue-x86_64.AppImage
-webrogue.deb
-webrogue.rpm
-git_hash
+/Webrogue-x86_64.AppImage
+/appimagetool-x86_64.AppImage
+/squashfs-root
+/webrogue.deb
+/webrogue.rpm
+/git_hash

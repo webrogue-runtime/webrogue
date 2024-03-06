@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=webrogue
+Exec=webrogue
+Comment=Webrogue runtime
+Icon=webrogue
+Categories=Development;
+Terminal=false
+
