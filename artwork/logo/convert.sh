@@ -53,26 +53,26 @@ stroke_color() {
     sed "s/fill:#STROKE_COLOR/fill:#$1/g"
 }
 # Stroke width
-DEFAULT_STROKE_WIDTH=2
+DEFAULT_STROKE_WIDTH=1.5
 stroke_width() {
     sed "s/stroke-width:$DEFAULT_STROKE_WIDTH/stroke-width:$1/g"
 }
 
 # For Android
 android_old() {
-    original | stroke_width 1.5 | to_png_white $1 ../../platforms/Android/app/src/main/res/mipmap-$2/ic_launcher.png
+    original | to_png_white $1 ../../platforms/Android/app/src/main/res/mipmap-$2/ic_launcher.png
 }
 android_old 48 mdpi
 android_old 72 hdpi
 android_old 96 xhdpi
 android_old 144 xxhdpi
 android_old 192 xxxhdpi
-original | stroke_width 1.5 | to_png_transparent 512 ../../platforms/Android/app/src/main/res/drawable/ic_launcher_foreground.png
-original | parse_colors | outer_fill_color 00000000 | default_colors | to_png_transparent 512 ../../platforms/Android/app/src/main/res/drawable/ic_launcher_monochrome.png
+original | to_png_transparent 512 ../../platforms/Android/app/src/main/res/drawable/ic_launcher_foreground.png
+original | stroke_width 2 | parse_colors | outer_fill_color 00000000 | default_colors | to_png_transparent 512 ../../platforms/Android/app/src/main/res/drawable/ic_launcher_monochrome.png
 
 # For Linux
-original | stroke_width 1.5 | to_png_transparent 256 ../../platforms/Linux/TemplateAppDir/.DirIcon
-original | stroke_width 1.5 | to_svg ../../platforms/Linux/TemplateAppDir/webrogue.svg
+original | to_png_transparent 256 ../../platforms/Linux/TemplateAppDir/.DirIcon
+original | to_svg ../../platforms/Linux/TemplateAppDir/webrogue.svg
 
 # For Web
 original | bigger | stroke_width 1 | to_ico ../../platforms/Web/logo.ico
