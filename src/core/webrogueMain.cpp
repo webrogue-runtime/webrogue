@@ -15,8 +15,8 @@ bool loadMods(ResourceStorage *mockFS, Config *config, ConsoleStream *wrout,
         if (!mockFS->loadWrmodData(modData.data, modData.size, modData.name))
             return false;
     }
-    if (config->loadsModsFromDataPath &&
-        (config->hasDataPath || config->hasModsPath)) {
+    if ((config->loadsModsFromDataPath &&
+        config->hasDataPath) || config->hasModsPath) {
         static const std::string curDir = ".";
         static const std::string parDir = "..";
         DIR *dir;

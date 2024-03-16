@@ -72,12 +72,12 @@ make_webrogue_output(
     PDCURSES_OS wincon
 )
 
-add_executable(webrogue ${CMAKE_CURRENT_LIST_DIR}/win.cpp)
-target_link_libraries(webrogue webrogue_output_pdcurses)
+add_executable(webrogue ${CMAKE_CURRENT_LIST_DIR}/win.cpp ${CMAKE_CURRENT_LIST_DIR}/common.cpp)
+target_link_libraries(webrogue webrogue_output_pdcurses shlwapi.lib)
 target_include_directories(webrogue PRIVATE ${WEBROGUE_ROOT_PATH}/src)
 
-add_executable(webrogue_sdl WIN32 ${CMAKE_CURRENT_LIST_DIR}/win_sdl.cpp)
-target_link_libraries(webrogue_sdl webrogue_output_sdl)
+add_executable(webrogue_sdl WIN32 ${CMAKE_CURRENT_LIST_DIR}/win_sdl.cpp ${CMAKE_CURRENT_LIST_DIR}/common.cpp)
+target_link_libraries(webrogue_sdl webrogue_output_sdl shlwapi.lib)
 target_include_directories(webrogue_sdl PRIVATE ${WEBROGUE_ROOT_PATH}/src ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
 
 add_custom_command(
@@ -111,3 +111,6 @@ install(
     FILES ${SDL2_DLLS} ${SDL2_TTF_DLLS} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/wasmer.dll
     DESTINATION .
 )
+
+set(CPACK_GENERATOR NSIS)
+include(CPack)
