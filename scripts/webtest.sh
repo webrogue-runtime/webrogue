@@ -2,7 +2,8 @@
 
 set -ex
 
-sh platforms/Web/build_and_pack.sh Release
+emcmake cmake -B platforms/Web/build -S platforms/Web -DCMAKE_BUILD_TYPE=Release
+cmake --build platforms/Web/build --target pack_artifacts -j
 
-cd platforms/Web/homepage
-bundle exec jekyll serve
+cd platforms/Web
+python3 -m http.server

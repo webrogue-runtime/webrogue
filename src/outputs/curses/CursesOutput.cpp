@@ -2,6 +2,7 @@
 
 #include "../../../mods/core/include/common/events.h"
 #include "../../core/utf.hpp"
+#include "curses.h"
 #include "curses_include.hpp"
 #include <clocale>
 
@@ -23,6 +24,10 @@ void CursesOutput::pollEvent(int milliseconds) {
     if (r == ERR) {
         event.type = webrogue_event_type::None;
         events.push(event);
+        return;
+    }
+    // ?
+    if (r == 588 || r == 589) {
         return;
     }
     if (r == 3) {
@@ -73,12 +78,26 @@ void CursesOutput::pollEvent(int milliseconds) {
         }
     }
     { // Chars
-        if (r >= 'A' && r <= 'z') {
+        bool isChar = r >= 'A' && r <= 'z';
+        isChar = isChar || r == ' ';
+        if (isChar) {
             event.type = webrogue_event_type::Char;
             event.data1 = r;
             events.push(event);
             return;
         }
+    }
+    if (r == 10) { // Enter
+        event.type = webrogue_event_type::Key;
+        event.data1 = 0x157;
+        events.push(event);
+        return;
+    }
+    if (r == 263) { // Backspace
+        event.type = webrogue_event_type::Key;
+        event.data1 = '\177';
+        events.push(event);
+        return;
     }
     if (r == KEY_RESIZE) {
         event.type = webrogue_event_type::Resize;
@@ -93,6 +112,7 @@ void CursesOutput::pollEvent(int milliseconds) {
     if (r == -1) {
         doupdate();
     }
+    // Unhandled
     return;
 }
 

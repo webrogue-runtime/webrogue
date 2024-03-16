@@ -138,7 +138,7 @@ WR_API_FUNCTION_IMPL(void, wr_copy_events,
         return;
     }
     if (!runtime->setVMData(rawEvents.data(), out_buff_offset.get(),
-                            size.get() * sizeof(webrogue_raw_event))) {
+                            size.get() * sizeof(webrogue_event))) {
         assert(false);
         return;
     }

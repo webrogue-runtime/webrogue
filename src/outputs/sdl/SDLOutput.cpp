@@ -4,6 +4,8 @@
 #include "../../../mods/core/include/common/events.h"
 #include "../../core/Output.hpp"
 #include "SDL.h"
+#include "SDL_events.h"
+#include "SDL_keycode.h"
 #include "SDL_render.h"
 #include "SDL_timer.h"
 #include "SDL_ttf.h"
@@ -90,46 +92,60 @@ void SDLOutput::pollEvents() {
         }
 
         if (event.type == SDL_KEYDOWN) {
-            if (event.key.keysym.sym == 96) {
+            if (event.key.keysym.scancode == 96) {
                 outputEvent.type = webrogue_event_type::Console;
                 events.push(outputEvent);
+            } else {
+                switch (event.key.keysym.sym) {
+                case SDLK_UP:
+                    outputEvent.type = webrogue_event_type::Arrow;
+                    outputEvent.data1 = webrogue_arrow_direction::up;
+                    events.push(outputEvent);
+                    break;
+                case SDLK_DOWN:
+                    outputEvent.type = webrogue_event_type::Arrow;
+                    outputEvent.data1 = webrogue_arrow_direction::down;
+                    events.push(outputEvent);
+                    break;
+                case SDLK_LEFT:
+                    outputEvent.type = webrogue_event_type::Arrow;
+                    outputEvent.data1 = webrogue_arrow_direction::left;
+                    events.push(outputEvent);
+                    break;
+                case SDLK_RIGHT:
+                    outputEvent.type = webrogue_event_type::Arrow;
+                    outputEvent.data1 = webrogue_arrow_direction::right;
+                    events.push(outputEvent);
+                    break;
+                case SDLK_KP_ENTER:
+                    outputEvent.type = webrogue_event_type::Key;
+                    outputEvent.data1 = 0x157;
+                    events.push(outputEvent);
+                    break;
+                case SDLK_BACKSPACE:
+                    outputEvent.type = webrogue_event_type::Key;
+                    outputEvent.data1 = '\177';
+                    events.push(outputEvent);
+                    break;
+                default:
+                    outputEvent.type = webrogue_event_type::Key;
+                    outputEvent.data1 = event.key.keysym.sym;
+                    events.push(outputEvent);
+                    break;
+                }
             }
-            pressed.insert(event.key.keysym.sym);
             continue;
         }
-        if (event.type == SDL_KEYUP) {
-            pressed.erase(event.key.keysym.sym);
+        if (event.type == SDL_TEXTINPUT) {
+            for (int i = 0; i < 32 && event.text.text[i]; i++) {
+                outputEvent.type = webrogue_event_type::Char;
+                outputEvent.data1 = event.text.text[i];
+                events.push(outputEvent);
+            }
             continue;
         }
     }
 
-    if ((std::chrono::steady_clock::now() - lastPress).count() > 200e6) {
-        for (auto i = pressed.cbegin(); i != pressed.cend(); i++) {
-            switch (*i) {
-            case SDLK_UP:
-                outputEvent.type = webrogue_event_type::Arrow;
-                outputEvent.data1 = webrogue_arrow_direction::up;
-                events.push(outputEvent);
-                break;
-            case SDLK_DOWN:
-                outputEvent.type = webrogue_event_type::Arrow;
-                outputEvent.data1 = webrogue_arrow_direction::down;
-                events.push(outputEvent);
-                break;
-            case SDLK_LEFT:
-                outputEvent.type = webrogue_event_type::Arrow;
-                outputEvent.data1 = webrogue_arrow_direction::left;
-                events.push(outputEvent);
-                break;
-            case SDLK_RIGHT:
-                outputEvent.type = webrogue_event_type::Arrow;
-                outputEvent.data1 = webrogue_arrow_direction::right;
-                events.push(outputEvent);
-                break;
-            }
-            lastPress = std::chrono::steady_clock::now();
-        }
-    }
     if (hasDeadline && getTimeBeforeNextDeadline() < 0) {
         events.push({webrogue_event_type::Deadline});
         hasDeadline = false;
@@ -140,7 +156,6 @@ void SDLOutput::onBegin() {
     SDL_Init(SDL_INIT_EVERYTHING);
     int windowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 #if defined(__ANDROID__)
-    windowFlags |= SDL_WINDOW_RESIZABLE;
     windowFlags |= SDL_WINDOW_FULLSCREEN;
 #elif defined(TARGET_OS_MAC)
 #elif defined(TARGET_OS_IPHONE)

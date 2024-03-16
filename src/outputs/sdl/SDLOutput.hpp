@@ -21,9 +21,6 @@ struct ColorPair {
 };
 
 class SDLOutput : public webrogue::core::Output {
-    std::chrono::steady_clock::time_point lastPress;
-    std::set<SDL_Keycode> pressed;
-
 public:
     SDLOutput();
     int topInset = 0;

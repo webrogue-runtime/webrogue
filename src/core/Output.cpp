@@ -48,7 +48,7 @@ void Output::endFrame() {
 webrogue_event Output::getEvent() {
     if (events.empty())
         return {webrogue_event_type::None};
-    webrogue_event result = events.top();
+    webrogue_event result = events.front();
     events.pop();
     return result;
 }

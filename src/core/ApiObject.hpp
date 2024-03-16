@@ -19,7 +19,7 @@ public:
     Output *output;
     ConsoleWriter *consoleWriter;
     Config *config;
-    std::vector<webrogue_raw_event> rawEvents;
+    std::vector<webrogue_event> rawEvents;
     ApiObject(ModsRuntime *pRuntime, Config *pConfig);
 
 #define WR_API_FUNCTION(RET_TYPE, NAME, ARGS) RET_TYPE NAME ARGS;

@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstdint>
 #include <list>
+#include <queue>
 #include <stack>
 
 namespace webrogue {
@@ -19,7 +20,7 @@ protected:
     Buffer2d<wr_glyph> renderBuffer;
     bool isRendering = false;
     bool isRenderingFrame = false;
-    std::stack<webrogue_event> events;
+    std::queue<webrogue_event> events;
     std::chrono::steady_clock::time_point deadline;
     bool hasDeadline = false;
 
