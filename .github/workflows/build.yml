@@ -270,6 +270,11 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with: 
+          name: Artifacts-Windows-Installer
+          path: _site
+
+      - uses: actions/download-artifact@v4
+        with: 
           name: Artifacts-MacOS
           path: _site
           
