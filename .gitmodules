@@ -74,3 +74,6 @@
 [submodule "mods/rugpt2"]
 	path = mods/rugpt2
 	url = https://github.com/Destructor17/rugpt2.git
+[submodule "external/libtsm"]
+	path = external/libtsm
+	url = https://github.com/Aetf/libtsm
