@@ -44,7 +44,7 @@ jobs:
     
     - name: Install packages
       run: |
-        apt-get install python3-zstd
+        sudo apt-get install python3-zstd
 
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
@@ -75,7 +75,7 @@ jobs:
 
     - name: Install packages
       run: |
-        apt-get install python3-zstd
+        sudo apt-get install python3-zstd
 
     - name: Configure and build
       run: |
@@ -90,8 +90,8 @@ jobs:
 
     - name: Install packages
       run: |
-        apt-get install -y libfl2
-        apt-get install python3-zstd
+        sudo apt-get install -y libfl2
+        sudo apt-get install python3-zstd
 
     - name: Submodules
       run: |
@@ -135,7 +135,7 @@ jobs:
 
       - name: Install packages
         run: |
-          apt-get install python3-zstd
+          sudo apt-get install python3-zstd
 
       - name: Install rust targets
         run: |
