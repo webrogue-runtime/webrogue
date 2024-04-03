@@ -21,6 +21,10 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
     
+    - name: Install packages
+      run: |
+        python3 -m pip install zstd
+        
     - name: Build
       run: |
         ./platforms/Windows/build.ps1 Release;
