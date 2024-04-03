@@ -26,7 +26,7 @@ mod_name = mod_dir_path.parts[-1]
 
 is_core = mod_name == "core"
 
-if not mod_dir_path.joinpath("mod.a").exists():
+if pack_wasm and not mod_dir_path.joinpath("mod.a").exists():
     print(f"{mod_dir_path.joinpath('mod.a')} does not exists", file=sys.stderr)
     exit(1)
 if is_core and not mod_dir_path.joinpath("stdlibs.a").exists():
