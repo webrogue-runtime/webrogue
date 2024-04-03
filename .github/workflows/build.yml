@@ -47,6 +47,10 @@ jobs:
         ./emsdk/emsdk install latest
         ./emsdk/emsdk activate latest
     
+    - name: Install packages
+      run: |
+        apt-get install python3-zstd
+
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
       with:
@@ -81,6 +85,10 @@ jobs:
         git submodule update --init --recursive --single-branch external/SDL/
         git submodule update --init --recursive --single-branch external/SDL_ttf/
 
+    - name: Install packages
+      run: |
+        apt-get install python3-zstd
+
     - name: Build RPM and DEB packages
       run: |
         sh platforms/Linux/ubuntu.sh
@@ -100,9 +108,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Apt
+    - name: Install packages
       run: |
-        sudo apt-get install -y libfl2
+        apt-get install -y libfl2
+        apt-get install python3-zstd
 
     - name: Submodules
       run: |
@@ -139,6 +148,10 @@ jobs:
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
           java-version: '17'
+
+      - name: Install packages
+        run: |
+          apt-get install python3-zstd
 
       - name: Submodules
         run: |
@@ -184,6 +197,9 @@ jobs:
         git submodule update --init --recursive --single-branch external/SDL/
         git submodule update --init --recursive --single-branch external/SDL_ttf/
 
+    - name: Install packages
+      run: |
+        pip3 install zstd
 
     - name: Install rust tools
       run: |
@@ -229,6 +245,10 @@ jobs:
           git submodule update --init --recursive --single-branch external/SDL/
           git submodule update --init --recursive --single-branch external/SDL_ttf/
         
+      - name: Install packages
+        run: |
+          pip3 install zstd
+          
       - name: Install rust tools
         run: |
           cargo install cargo-lipo

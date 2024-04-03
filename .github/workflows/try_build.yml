@@ -41,7 +41,11 @@ jobs:
         git clone https://github.com/emscripten-core/emsdk.git
         ./emsdk/emsdk install latest
         ./emsdk/emsdk activate latest
-        
+    
+    - name: Install packages
+      run: |
+        apt-get install python3-zstd
+
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
       with:
@@ -69,6 +73,10 @@ jobs:
         git submodule update --init --recursive --single-branch external/SDL/
         git submodule update --init --recursive --single-branch external/SDL_ttf/
 
+    - name: Install packages
+      run: |
+        apt-get install python3-zstd
+
     - name: Configure and build
       run: |
         cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=Debug
@@ -80,9 +88,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Apt
+    - name: Install packages
       run: |
-        sudo apt-get install -y libfl2
+        apt-get install -y libfl2
+        apt-get install python3-zstd
 
     - name: Submodules
       run: |
@@ -124,6 +133,10 @@ jobs:
           git submodule update --init --recursive --single-branch external/libuv/
           git submodule update --init --recursive --single-branch external/uvwasi/
 
+      - name: Install packages
+        run: |
+          apt-get install python3-zstd
+
       - name: Install rust targets
         run: |
           rustup target add aarch64-linux-android
@@ -148,6 +161,10 @@ jobs:
         git submodule update --init --recursive --single-branch external/wasmer/
         git submodule update --init --recursive --single-branch external/SDL/
         git submodule update --init --recursive --single-branch external/SDL_ttf/
+
+    - name: Install packages
+      run: |
+        pip3 install zstd
 
     - name: Install rust tools
       run: |
@@ -179,6 +196,10 @@ jobs:
         git submodule update --init --recursive --single-branch platforms/iOS/external/SnapKit
         git submodule update --init --recursive --single-branch external/SDL/
         git submodule update --init --recursive --single-branch external/SDL_ttf/
+
+    - name: Install packages
+      run: |
+        pip3 install zstd
 
     - name: Install rust tools
       run: |
