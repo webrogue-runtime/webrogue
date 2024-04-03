@@ -19,6 +19,8 @@ jobs:
         git submodule update --init --recursive --single-branch external/libuv/;
         git submodule update --init --recursive --single-branch external/uvwasi/;
         
+    - uses: ilammy/msvc-dev-cmd@v1
+    
     - name: Build
       run: |
         ./platforms/Windows/build.ps1 Release;
