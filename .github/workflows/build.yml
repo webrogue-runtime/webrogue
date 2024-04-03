@@ -199,7 +199,7 @@ jobs:
 
     - name: Install packages
       run: |
-        pip3 install zstd
+        python3 -m pip install zstd
 
     - name: Install rust tools
       run: |
@@ -247,7 +247,7 @@ jobs:
         
       - name: Install packages
         run: |
-          pip3 install zstd
+          python3 -m pip install zstd
           
       - name: Install rust tools
         run: |
