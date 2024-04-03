@@ -319,7 +319,7 @@ if(CLANG_HAS_WASM)
     )
     set(BUILD_MODS_OUTPUTS)
     foreach(mod_name ${mod_names})
-        list(APPEND BUILD_MODS_OUTPUTS ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.wrmod ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.ewrmod)
+        list(APPEND BUILD_MODS_OUTPUTS ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.wrmod)
     endforeach()
     add_custom_target(build_wasm_mods
         COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/mods_build --target final_linking
@@ -328,6 +328,18 @@ if(CLANG_HAS_WASM)
     )
     add_dependencies(pack_mods_to_build_dir build_wasm_mods)
 endif()
+
+set(BUILD_EWRMODS_OUTPUTS)
+set(BUILD_EWRMODS_COMMANDS)
+foreach(mod_name ${mod_names})
+    list(APPEND BUILD_EWRMODS_OUTPUTS ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.wrmod ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.ewrmod)
+    list(APPEND BUILD_EWRMODS_OUTPUTS COMMAND python3 ${WEBROGUE_ROOT_PATH}/mods/tools/pack_mods.py nowasm ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.ewrmod ${WEBROGUE_ROOT_PATH}/mods/${mod_name})
+endforeach()
+add_custom_target(
+    build_ewrmods
+    ${BUILD_EWRMODS_COMMANDS}
+    BYPRODUCTS ${BUILD_EWRMODS_OUTPUTS}
+)
 
 embed_resource(${WEBROGUE_ROOT_PATH}/mods/core/core.wrmod)
 
@@ -527,7 +539,9 @@ function(make_webrogue_core)
         list(APPEND SOURCES ${WASI_SOURCE_FILES})
     endif()
     add_library(${ARGS_LIB_NAME} ${LIB_TYPE} ${SOURCES})
-    add_dependencies(${ARGS_LIB_NAME} pack_mods_to_build_dir)
+    if(NOT ARGS_NO_WASM)
+        add_dependencies(${ARGS_LIB_NAME} pack_mods_to_build_dir)
+    endif()
     target_include_directories(
         ${ARGS_LIB_NAME} PRIVATE 
         ${WEBROGUE_ROOT_PATH}/external/xz/userspace 

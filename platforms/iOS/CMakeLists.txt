@@ -7,7 +7,7 @@ project(webrogue_ios C CXX Swift)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
 
-set(CLANG_HAS_WASM FALSE)
+set(CLANG_HAS_WASM TRUE)
 set(WEBROGUE_ROOT_PATH ${CMAKE_CURRENT_LIST_DIR}/../..)
 set(WEBROGUE_MOD_NAMES core log2048)
 include(../../make_webrogue.cmake)

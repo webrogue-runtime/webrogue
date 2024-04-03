@@ -24,7 +24,9 @@ platforms/MacOS/webrogue.xcworkspace/xcuserdata
 /mods/tools/linker_path.cmake
 /mods/tools/import_analyze*
 /build_compile_commands
-mods/*/mod.a
+/mods/*/mod.a
+/mods/*/*.wrmod
+/mods/*/*.ewrmod
 vfs.db
 webrogue.db
 /wasmedge_aot_cache

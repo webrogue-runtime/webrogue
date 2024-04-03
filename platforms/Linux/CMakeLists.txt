@@ -19,7 +19,7 @@ endif()
 
 option(WEBROGUE_USE_SDL "Build webrogue with sdl support" ON)
 
-set(CLANG_HAS_WASM FALSE)
+set(CLANG_HAS_WASM TRUE)
 set(WEBROGUE_ROOT_PATH ${CMAKE_CURRENT_LIST_DIR}/../..)
 set(WEBROGUE_MOD_NAMES core log2048)
 

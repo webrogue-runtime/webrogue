@@ -97,7 +97,6 @@ foreach(mod ${mods})
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${mod}/${mod}.wrmod
         COMMAND python3 ${MODS_ROOT_PATH}/tools/pack_mods.py normal ${CMAKE_CURRENT_SOURCE_DIR}/${mod}/${mod}.wrmod ${CMAKE_CURRENT_SOURCE_DIR}/${mod}
-        COMMAND python3 ${MODS_ROOT_PATH}/tools/pack_mods.py nowasm ${CMAKE_CURRENT_SOURCE_DIR}/${mod}/${mod}.ewrmod ${CMAKE_CURRENT_SOURCE_DIR}/${mod}
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${mod}/mod.a ${MODS_ROOT_PATH}/tools/pack_mods.py bundle_${mod}
         COMMENT "Packing ${MOD_TARGET_NAME}"
     )
