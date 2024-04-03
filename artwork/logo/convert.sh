@@ -21,7 +21,7 @@ to_svg() {
     svgo /dev/stdin -o $1
 }
 to_ico() {
-    convert -background transparent -define 'icon:auto-resize=16,24,32,64' /dev/stdin $1
+    convert -background transparent -define "icon:auto-resize=$2" /dev/stdin $1
 }
 
 # Sizes
@@ -75,4 +75,7 @@ original | to_png_transparent 256 ../../platforms/Linux/TemplateAppDir/.DirIcon
 original | to_svg ../../platforms/Linux/TemplateAppDir/webrogue.svg
 
 # For Web
-original | bigger | to_ico ../../platforms/Web/logo.ico
+original | bigger | to_ico ../../platforms/Web/logo.ico "16,24,32,64"
+
+# For Windows
+original | bigger | to_ico ../../platforms/Windows/logo.ico "16,32,48,256"
