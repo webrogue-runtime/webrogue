@@ -186,3 +186,11 @@ set_source_files_properties(${WEBROGUE_ROOT_PATH}/platforms/iOS/LaunchScreen.sto
 
 target_sources(webrogue PUBLIC ${WEBROGUE_ROOT_PATH}/platforms/iOS/colors.xcassets)
 set_source_files_properties(${WEBROGUE_ROOT_PATH}/platforms/iOS/colors.xcassets PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+
+target_sources(webrogue PUBLIC ${WEBROGUE_ROOT_PATH}/platforms/iOS/Webrogue/Assets.xcassets)
+set_source_files_properties(
+    ${WEBROGUE_ROOT_PATH}/platforms/iOS/Webrogue/Assets.xcassets
+    PROPERTIES 
+    MACOSX_PACKAGE_LOCATION Resources
+)
+set(CMAKE_XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon")

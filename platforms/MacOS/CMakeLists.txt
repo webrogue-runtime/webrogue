@@ -94,4 +94,16 @@ set_target_properties(webrogue PROPERTIES
 )
 
 target_sources(webrogue PUBLIC ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod)
-set_source_files_properties(${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+set_source_files_properties(
+    ${WEBROGUE_ROOT_PATH}/mods/log2048/log2048.wrmod 
+    PROPERTIES 
+    MACOSX_PACKAGE_LOCATION Resources
+)
+
+target_sources(webrogue PRIVATE ${WEBROGUE_ROOT_PATH}/platforms/MacOS/Webrogue/Assets.xcassets)
+set_source_files_properties(
+    ${WEBROGUE_ROOT_PATH}/platforms/MacOS/Webrogue/Assets.xcassets
+    PROPERTIES
+    MACOSX_PACKAGE_LOCATION Resources
+)
+set(CMAKE_XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon")

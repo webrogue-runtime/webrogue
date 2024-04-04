@@ -93,3 +93,18 @@ original | to_png_transparent 88 ../../platforms/Windows/Images/Square44x44Logo.
 original | to_png_transparent 24 ../../platforms/Windows/Images/Square44x44Logo.targetsize-24_altform-unplated.png
 original | margin -5 | to_png_transparent 50 ../../platforms/Windows/Images/StoreLogo.png
 original | margin  1 | to_png_transparent_wide 620 300 ../../platforms/Windows/Images/Wide310x150Logo.png #620x300
+
+# For MacOS
+original | to_png_transparent 16 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos16.png
+original | to_png_transparent 32 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos16_x2.png
+original | to_png_transparent 32 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos32.png
+original | to_png_transparent 64 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos32_x2.png
+original | to_png_transparent 128 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos128.png
+original | to_png_transparent 256 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos128_x2.png
+original | to_png_transparent 256 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos256.png
+original | to_png_transparent 512 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos256_x2.png
+original | to_png_transparent 512 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos512.png
+original | to_png_transparent 1024 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos512_x2.png
+
+# For iOS
+original | to_png_transparent 1024 ../../platforms/iOS/Webrogue/Assets.xcassets/AppIcon.appiconset/ios1024.png
