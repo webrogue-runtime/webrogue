@@ -14,6 +14,11 @@ original() {
 to_png_transparent() {
     rsvg-convert -w $1 -h $1 /dev/stdin -o $2
 }
+to_png_transparent_wide() {
+    rsvg-convert -w $2 -h $2 /dev/stdin -o tmp.png 
+    convert -size $1x$2 xc:none -background none -page +$(expr \( $1 - $2 \) / 2)+0 tmp.png -flatten $3
+    rm tmp.png
+}
 to_png_white() {
     rsvg-convert -w $1 -h $1 --background-color white /dev/stdin -o $2
 }
@@ -25,8 +30,10 @@ to_ico() {
 }
 
 # Sizes
-bigger() {
-    sed "s/viewBox=\"0 0 48 48\"/viewBox=\"6 6 36 36\"/g"
+margin() {
+    SIZE=$(expr 48 + $1 + $1)
+    OFFSET=$(expr 0 - $1)
+    sed "s/viewBox=\"0 0 48 48\"/viewBox=\"$OFFSET $OFFSET $SIZE $SIZE\"/g"
 }
 
 # Colors
@@ -75,7 +82,14 @@ original | to_png_transparent 256 ../../platforms/Linux/TemplateAppDir/.DirIcon
 original | to_svg ../../platforms/Linux/TemplateAppDir/webrogue.svg
 
 # For Web
-original | bigger | to_ico ../../platforms/Web/logo.ico "16,24,32,64"
+original | margin -6 | to_ico ../../platforms/Web/logo.ico "16,24,32,64"
 
 # For Windows
-original | bigger | to_ico ../../platforms/Windows/logo.ico "16,32,48,256"
+original | margin -6 | to_ico ../../platforms/Windows/logo.ico "16,32,48,256"
+original | margin -5 | to_png_transparent 48 ../../platforms/Windows/Images/LockScreenLogo.png
+original | margin  1 | to_png_transparent_wide 1240 600 ../../platforms/Windows/Images/SplashScreen.png
+original | margin -5 | to_png_transparent 300 ../../platforms/Windows/Images/Square150x150Logo.png
+original | margin -5 | tee /dev/stderr | to_png_transparent 88 ../../platforms/Windows/Images/Square44x44Logo.png
+original | margin -5 | to_png_transparent 24 ../../platforms/Windows/Images/Square44x44Logo.targetsize-24_altform-unplated.png
+original | margin -5 | to_png_transparent 50 ../../platforms/Windows/Images/StoreLogo.png
+original | margin  1 | to_png_transparent_wide 620 300 ../../platforms/Windows/Images/Wide310x150Logo.png #620x300
