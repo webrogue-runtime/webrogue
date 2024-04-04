@@ -5,7 +5,7 @@ ENV TZ=Asia/Dubai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt update
-RUN apt-get install -y build-essential libncurses-dev git curl wget rpm libsdl2-dev libsdl2-ttf-dev
+RUN apt-get install -y build-essential libncurses-dev git curl wget rpm libsdl2-dev libsdl2-ttf-dev python3-venv
 
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.29.0-rc2/cmake-3.29.0-rc2-linux-x86_64.sh -O cmake_installer.sh && mkdir /opt_cmake && bash cmake_installer.sh --prefix=/opt_cmake --skip-license && ln -s /opt_cmake/bin/* /usr/local/bin && rm cmake_installer.sh
 
