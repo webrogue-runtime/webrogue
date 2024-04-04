@@ -72,11 +72,25 @@ make_webrogue_output(
     PDCURSES_OS wincon
 )
 
-add_executable(webrogue ${CMAKE_CURRENT_LIST_DIR}/win.cpp ${CMAKE_CURRENT_LIST_DIR}/common.cpp)
+add_executable(
+    webrogue 
+    ${CMAKE_CURRENT_LIST_DIR}/win.cpp 
+    ${CMAKE_CURRENT_LIST_DIR}/common.cpp
+)
 target_link_libraries(webrogue webrogue_output_pdcurses shlwapi.lib)
 target_include_directories(webrogue PRIVATE ${WEBROGUE_ROOT_PATH}/src)
 
-add_executable(webrogue_sdl WIN32 ${CMAKE_CURRENT_LIST_DIR}/win_sdl.cpp ${CMAKE_CURRENT_LIST_DIR}/common.cpp)
+# add_custom_command(
+#     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/win_sdl_rc.o
+#     COMMAND windres ${CMAKE_CURRENT_LIST_DIR}/win_sdl.rc -o ${CMAKE_CURRENT_BINARY_DIR}/win_sdl_rc.o
+#     DEPENDS ${CMAKE_CURRENT_LIST_DIR}/win_sdl.rc
+# )
+add_executable(
+    webrogue_sdl WIN32 
+    ${CMAKE_CURRENT_LIST_DIR}/win_sdl.cpp 
+    ${CMAKE_CURRENT_LIST_DIR}/common.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/win_sdl.rc
+)
 target_link_libraries(webrogue_sdl webrogue_output_sdl shlwapi.lib)
 target_include_directories(webrogue_sdl PRIVATE ${WEBROGUE_ROOT_PATH}/src ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
 
