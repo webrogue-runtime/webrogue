@@ -1,27 +1,31 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest">
-  <Identity Name="NumberGuesserManifest" 
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" IgnorableNamespaces="uap rescap build" xmlns:build="http://schemas.microsoft.com/developer/appx/2015/build">
+  <Identity Name="Webrogue" 
           Version="1.0.0.0" 
           Publisher="CN=AppModelSamples, OID.2.25.311729368913984317654407730594956997722=1"/>
   <Properties>
-    <DisplayName>MyApp</DisplayName>
-    <PublisherDisplayName>MyCompany</PublisherDisplayName>
-    <Logo>Webrogue.png</Logo>
+    <DisplayName>Webrogue</DisplayName>
+    <PublisherDisplayName>Webrogue</PublisherDisplayName>
+    <Logo>Images\StoreLogo.png</Logo>
   </Properties>
-  <Prerequisites>
-    <OSMinVersion>6.2.1</OSMinVersion>
-    <OSMaxVersionTested>6.2.1</OSMaxVersionTested>
-  </Prerequisites>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+    <PackageDependency Name="Microsoft.VCLibs.140.00.Debug.UWPDesktop" MinVersion="14.0.30704.0" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
+  </Dependencies>
   <Resources>
-    <Resource Language="en-us" />
+    <Resource Language="EN-US" />
   </Resources>
   <Applications>
-    <Application Id="Webrogue" Executable="webrogue_sdl.exe" EntryPoint="WinMain">
-      <VisualElements DisplayName="Webrogue" Description="Webrogue"
-           Logo="Webrogue.png" SmallLogo="Webrogue.png"  
-           ForegroundText="dark" BackgroundColor="#FFFFFF">
-         <SplashScreen BackgroundColor="black" Image="Webrogue.png" />
-      </VisualElements>
+    <Application Id="App" Executable="webrogue_sdl.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="Webrogue" Description="Webrogue in graphics mode" BackgroundColor="transparent" Square150x150Logo="Images\Square150x150Logo.png" Square44x44Logo="Images\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png" />
+        <uap:SplashScreen Image="Images\SplashScreen.png" />
+      </uap:VisualElements>
     </Application>
   </Applications>
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
 </Package>

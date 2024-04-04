@@ -34,3 +34,4 @@ cert.pem
 key.pem
 /mods/tools/wasi-sysroot*
 /mods/tools/wasi-sdk*
+/webrogue.msix

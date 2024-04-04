@@ -31,6 +31,11 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
+        name: Artifacts-Windows-MSIX
+        path: ./artifacts/webrogue.msix
+
+    - uses: actions/upload-artifact@v4
+      with:
         name: Artifacts-Windows-Installer
         path: ./artifacts/webrogue_installer.exe
 
@@ -297,6 +302,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with: 
           name: Artifacts-Windows-Installer
+          path: _site
+
+      - uses: actions/download-artifact@v4
+        with: 
+          name: Artifacts-Windows-MSIX
           path: _site
 
       - uses: actions/download-artifact@v4
