@@ -32,7 +32,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: Artifacts-Windows-MSIX
-        path: ./artifacts/webrogue.msix
+        path: ./webrogue.msix
 
     - uses: actions/upload-artifact@v4
       with:
