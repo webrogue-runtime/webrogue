@@ -88,8 +88,8 @@ original | margin -6 | to_ico ../../platforms/Web/logo.ico "16,24,32,64"
 original | margin -6 | to_ico ../../platforms/Windows/logo.ico "16,32,48,256"
 original | margin -5 | to_png_transparent 48 ../../platforms/Windows/Images/LockScreenLogo.png
 original | margin  1 | to_png_transparent_wide 1240 600 ../../platforms/Windows/Images/SplashScreen.png
-original | margin -5 | to_png_transparent 300 ../../platforms/Windows/Images/Square150x150Logo.png
-original | margin -5 | tee /dev/stderr | to_png_transparent 88 ../../platforms/Windows/Images/Square44x44Logo.png
-original | margin -5 | to_png_transparent 24 ../../platforms/Windows/Images/Square44x44Logo.targetsize-24_altform-unplated.png
+original | to_png_transparent 300 ../../platforms/Windows/Images/Square150x150Logo.png
+original | to_png_transparent 88 ../../platforms/Windows/Images/Square44x44Logo.png
+original | to_png_transparent 24 ../../platforms/Windows/Images/Square44x44Logo.targetsize-24_altform-unplated.png
 original | margin -5 | to_png_transparent 50 ../../platforms/Windows/Images/StoreLogo.png
 original | margin  1 | to_png_transparent_wide 620 300 ../../platforms/Windows/Images/Wide310x150Logo.png #620x300
