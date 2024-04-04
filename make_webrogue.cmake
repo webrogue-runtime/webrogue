@@ -329,11 +329,17 @@ if(CLANG_HAS_WASM)
     add_dependencies(pack_mods_to_build_dir build_wasm_mods)
 endif()
 
+find_program(
+    PYTHON_PROGRAM
+    python3
+    REQUIRED
+)
+
 set(BUILD_EWRMODS_OUTPUTS)
 set(BUILD_EWRMODS_COMMANDS)
 foreach(mod_name ${mod_names})
     list(APPEND BUILD_EWRMODS_OUTPUTS ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.ewrmod)
-    list(APPEND BUILD_EWRMODS_COMMANDS COMMAND python3 ${WEBROGUE_ROOT_PATH}/mods/tools/pack_mods.py nowasm ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.ewrmod ${WEBROGUE_ROOT_PATH}/mods/${mod_name})
+    list(APPEND BUILD_EWRMODS_COMMANDS COMMAND ${PYTHON_PROGRAM} ${WEBROGUE_ROOT_PATH}/mods/tools/pack_mods.py nowasm ${WEBROGUE_ROOT_PATH}/mods/${mod_name}/${mod_name}.ewrmod ${WEBROGUE_ROOT_PATH}/mods/${mod_name})
 endforeach()
 add_custom_target(
     build_ewrmods

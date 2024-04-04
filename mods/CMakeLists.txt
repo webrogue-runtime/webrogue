@@ -90,13 +90,19 @@ endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/tools/linker_path.cmake)
 
+find_program(
+    PYTHON_PROGRAM
+    python3
+    REQUIRED
+)
+
 foreach(mod ${mods})
     set(WEBROGUE_MOD_NAME ${mod})
     set(WEBROGUE_NATIVE_MODS FALSE)
     add_subdirectory(${mod})
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${mod}/${mod}.wrmod
-        COMMAND python3 ${MODS_ROOT_PATH}/tools/pack_mods.py normal ${CMAKE_CURRENT_SOURCE_DIR}/${mod}/${mod}.wrmod ${CMAKE_CURRENT_SOURCE_DIR}/${mod}
+        COMMAND ${PYTHON_PROGRAM} ${MODS_ROOT_PATH}/tools/pack_mods.py normal ${CMAKE_CURRENT_SOURCE_DIR}/${mod}/${mod}.wrmod ${CMAKE_CURRENT_SOURCE_DIR}/${mod}
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${mod}/mod.a ${MODS_ROOT_PATH}/tools/pack_mods.py bundle_${mod}
         COMMENT "Packing ${MOD_TARGET_NAME}"
     )
