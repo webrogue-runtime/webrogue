@@ -92,7 +92,7 @@ original | to_png_transparent 300 ../../platforms/Windows/Images/Square150x150Lo
 original | to_png_transparent 88 ../../platforms/Windows/Images/Square44x44Logo.png
 original | to_png_transparent 24 ../../platforms/Windows/Images/Square44x44Logo.targetsize-24_altform-unplated.png
 original | margin -5 | to_png_transparent 50 ../../platforms/Windows/Images/StoreLogo.png
-original | margin  1 | to_png_transparent_wide 620 300 ../../platforms/Windows/Images/Wide310x150Logo.png #620x300
+original | margin  1 | to_png_transparent_wide 620 300 ../../platforms/Windows/Images/Wide310x150Logo.png
 
 # For MacOS
 original | to_png_transparent 16 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos16.png

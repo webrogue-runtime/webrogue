@@ -193,69 +193,69 @@ endif()
 
 list(APPEND WEBROGUE_RUNTIMES wasmer)
 
-set(WEBROGUE_OUTPUTS)
+set(WEBROGUE_TERMINALS)
 
 if(WIN32)
     include(${WEBROGUE_ROOT_PATH}/platforms/Windows/download_sdl.cmake)
     
     include_directories(${WEBROGUE_ROOT_PATH}/external/dirent/include)
     
-    make_webrogue_output(
-        LIB_NAME webrogue_output_pdcurses
-        TYPE PDCURSES
-        ${WEBROGUE_LIBRARY_TYPE}
-        PDCURSES_OS wincon
-    )
-    target_include_directories(webrogue_output_pdcurses PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
-    target_link_libraries(webrogue_output_pdcurses ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
-    list(APPEND WEBROGUE_OUTPUTS pdcurses)
+    # make_webrogue_terminal(
+    #     LIB_NAME webrogue_terminal_pdcurses
+    #     TYPE pdcurses
+    #     ${WEBROGUE_LIBRARY_TYPE}
+    #     PDCURSES_OS wincon
+    # )
+    # target_include_directories(webrogue_output_pdcurses PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
+    # target_link_libraries(webrogue_output_pdcurses ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
+    # list(APPEND WEBROGUE_OUTPUTS pdcurses)
 
-    make_webrogue_output(
-        LIB_NAME webrogue_output_sdl
-        TYPE SDL
+    make_webrogue_terminal(
+        LIB_NAME webrogue_terminal_emulated
+        TYPE emulated
         ${WEBROGUE_LIBRARY_TYPE}
     )
-    target_include_directories(webrogue_output_sdl PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
-    target_link_libraries(webrogue_output_sdl ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
-    list(APPEND WEBROGUE_OUTPUTS sdl)
+    target_include_directories(webrogue_terminal_emulated PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
+    target_link_libraries(webrogue_terminal_emulated ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
+    list(APPEND WEBROGUE_TERMINALS emulated)
 else()
     find_package(SDL2)
     find_package(SDL2_ttf)
     if(SDL2_FOUND)
-        make_webrogue_output(
-            LIB_NAME webrogue_output_pdcurses
-            TYPE PDCURSES
-            ${WEBROGUE_LIBRARY_TYPE}
-            PDCURSES_OS sdl2
-        )
-        target_include_directories(webrogue_output_pdcurses PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
-        target_link_libraries(webrogue_output_pdcurses ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
-        list(APPEND WEBROGUE_OUTPUTS pdcurses)
+        # make_webrogue_terminal(
+        #     LIB_NAME webrogue_output_pdcurses
+        #     TYPE PDCURSES
+        #     ${WEBROGUE_LIBRARY_TYPE}
+        #     PDCURSES_OS sdl2
+        # )
+        # target_include_directories(webrogue_output_pdcurses PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
+        # target_link_libraries(webrogue_output_pdcurses ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
+        # list(APPEND WEBROGUE_OUTPUTS pdcurses)
 
-        make_webrogue_output(
-            LIB_NAME webrogue_output_sdl
-            TYPE SDL
+        make_webrogue_terminal(
+            LIB_NAME webrogue_terminal_emulated
+            TYPE emulated
             ${WEBROGUE_LIBRARY_TYPE}
         )
-        target_include_directories(webrogue_output_sdl PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
-        target_link_libraries(webrogue_output_sdl ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
-        list(APPEND WEBROGUE_OUTPUTS sdl)
+        target_include_directories(webrogue_terminal_emulated PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
+        target_link_libraries(webrogue_terminal_emulated ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
+        list(APPEND WEBROGUE_TERMINALS emulated)
     endif()
 
-    make_webrogue_output(
-        LIB_NAME webrogue_output_ncurses
-        TYPE NCURSES
-        ${WEBROGUE_LIBRARY_TYPE}
-    )
-    target_link_libraries(webrogue_output_ncurses ncurses)
-    list(APPEND WEBROGUE_OUTPUTS ncurses)
+    # make_webrogue_output(
+    #     LIB_NAME webrogue_output_ncurses
+    #     TYPE NCURSES
+    #     ${WEBROGUE_LIBRARY_TYPE}
+    # )
+    # target_link_libraries(webrogue_output_ncurses ncurses)
+    # list(APPEND WEBROGUE_OUTPUTS ncurses)
 endif()
 
 add_custom_target(all_webrogue)
 
 foreach(RUNTIME ${WEBROGUE_RUNTIMES})
-    foreach(OUTPUT ${WEBROGUE_OUTPUTS})
-        set(EXECUTABLE_NAME webrogue_${OUTPUT}_${RUNTIME})
+    foreach(TERMINAL ${WEBROGUE_TERMINALS})
+        set(EXECUTABLE_NAME webrogue_${TERMINAL}_${RUNTIME})
         if(WIN32)
             set(EXECUTABLE_TYPE WIN32)
         else()
@@ -265,7 +265,7 @@ foreach(RUNTIME ${WEBROGUE_RUNTIMES})
         target_link_libraries(
             ${EXECUTABLE_NAME}
             webrogue_runtime_${RUNTIME}
-            webrogue_output_${OUTPUT}
+            webrogue_terminal_${TERMINAL}
             core_wrmod
             webrogue_core
             compact_linker
@@ -273,8 +273,8 @@ foreach(RUNTIME ${WEBROGUE_RUNTIMES})
         target_include_directories(${EXECUTABLE_NAME} PRIVATE ${WEBROGUE_ROOT_PATH}/src)
         target_compile_features(${EXECUTABLE_NAME} PRIVATE cxx_std_17)
         add_dependencies(all_webrogue ${EXECUTABLE_NAME})
-        if(OUTPUT STREQUAL sdl)
-            target_compile_definitions(${EXECUTABLE_NAME} PRIVATE OUTPUT_SDL)
+        if(TERMINAL STREQUAL emulated)
+            target_compile_definitions(${EXECUTABLE_NAME} PRIVATE WEBROGUE_TERMINAL_EMULATED)
             target_include_directories(${EXECUTABLE_NAME} PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
         endif()
         if(RUNTIME STREQUAL native)

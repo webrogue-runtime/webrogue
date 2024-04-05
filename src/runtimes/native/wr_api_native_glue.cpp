@@ -2,14 +2,6 @@
 #include "shared_api_object.hpp"
 using namespace webrogue::core;
 // clang-format off
-extern "C" int32_t wr_get_render_width() {
-    return webrogue::runtimes::native::sharedApiObject->wr_get_render_width().get();
-}
-
-extern "C" int32_t wr_get_render_height() {
-    return webrogue::runtimes::native::sharedApiObject->wr_get_render_height().get();
-}
-
 extern "C" void wr_start_color() {
     return webrogue::runtimes::native::sharedApiObject->wr_start_color();
 }
@@ -30,10 +22,6 @@ extern "C" void wr_set_color_pair(int32_t color_pair, int32_t fg, int32_t bg) {
     return webrogue::runtimes::native::sharedApiObject->wr_set_color_pair(WASMRawI32::make(color_pair), WASMRawI32::make(fg), WASMRawI32::make(bg));
 }
 
-extern "C" void wr_render_set_screen_data(uint64_t in_buff_offset, int64_t size) {
-    return webrogue::runtimes::native::sharedApiObject->wr_render_set_screen_data(WASMRawU64::make(in_buff_offset), WASMRawI64::make(size));
-}
-
 extern "C" void wr_set_deadline(int32_t ms) {
     return webrogue::runtimes::native::sharedApiObject->wr_set_deadline(WASMRawI32::make(ms));
 }
@@ -44,6 +32,10 @@ extern "C" int32_t wr_interrupt() {
 
 extern "C" void wr_copy_events(uint64_t out_buff_offset, int64_t size) {
     return webrogue::runtimes::native::sharedApiObject->wr_copy_events(WASMRawU64::make(out_buff_offset), WASMRawI64::make(size));
+}
+
+extern "C" void wr_stdout_write(uint64_t in_buff_offset, int64_t size) {
+    return webrogue::runtimes::native::sharedApiObject->wr_stdout_write(WASMRawU64::make(in_buff_offset), WASMRawI64::make(size));
 }
 
 extern "C" void wr_debug_print(uint64_t in_buff_offset, int64_t size) {

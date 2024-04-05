@@ -19,20 +19,6 @@ ApiObject::ApiObject(ModsRuntime *pRuntime, Config *pConfig)
 
 // rendering
 
-WR_API_FUNCTION_IMPL(WASMRawI32, wr_get_render_width, ()) {
-    if (!runtime->isInitialized) {
-        assert(false);
-        return WASMRawI32::make(-1);
-    }
-    return WASMRawI32::make(output->size().x);
-}
-WR_API_FUNCTION_IMPL(WASMRawI32, wr_get_render_height, ()) {
-    if (!runtime->isInitialized) {
-        assert(false);
-        return WASMRawI32::make(-1);
-    }
-    return WASMRawI32::make(output->size().y);
-}
 WR_API_FUNCTION_IMPL(void, wr_start_color, ()) {
     if (!runtime->isInitialized) {
         assert(false);
@@ -70,19 +56,6 @@ WR_API_FUNCTION_IMPL(void, wr_set_color_pair,
         return;
     }
     output->setColorPair(color_pair.get(), fg.get(), bg.get());
-}
-WR_API_FUNCTION_IMPL(void, wr_render_set_screen_data,
-                     (WASMRawU64 in_buff_offset, WASMRawI64 size)) {
-
-    if (size.get() != output->size().x * output->size().y) {
-        assert(false);
-        return;
-    }
-    if (!runtime->getVMData(output->getBuffer(), in_buff_offset.get(),
-                            size.get() * sizeof(wr_glyph))) {
-        assert(false);
-        return;
-    }
 }
 WR_API_FUNCTION_IMPL(void, wr_set_deadline, (WASMRawI32 ms)) {
     output->addDeadline(static_cast<float>(ms.get()) / 1000);
@@ -142,6 +115,10 @@ WR_API_FUNCTION_IMPL(void, wr_copy_events,
         assert(false);
         return;
     }
+}
+
+WR_API_FUNCTION_IMPL(void, wr_stdout_write,
+                     (WASMRawU64 in_buff_offset, WASMRawI64 size)) {
 }
 
 // debug

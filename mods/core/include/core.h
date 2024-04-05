@@ -17,9 +17,7 @@ void webrogue_core_interrupt();
 
 void webrogue_core_print(const char *);
 
-webrogue_event *webrogue_core_get_events(size_t *out_event_count);
-
-wr_glyph *webrogue_core_get_drawing_area(size_t *out_width, size_t *out_height);
+webrogue_event const *webrogue_core_get_events(size_t *out_event_count);
 
 #ifdef __cplusplus
 }

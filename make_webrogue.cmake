@@ -30,8 +30,6 @@ set(
     ${WEBROGUE_ROOT_PATH}/src/core/Config.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/ConsoleStream.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/ConsoleStream.cpp
-    ${WEBROGUE_ROOT_PATH}/src/core/ConsoleWriter.hpp
-    ${WEBROGUE_ROOT_PATH}/src/core/ConsoleWriter.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/DB.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/DB.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/ResourceStorage.hpp
@@ -40,8 +38,8 @@ set(
     ${WEBROGUE_ROOT_PATH}/src/core/ModsRuntime.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/webrogueMain.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/webrogueMain.cpp
-    ${WEBROGUE_ROOT_PATH}/src/core/Output.hpp
-    ${WEBROGUE_ROOT_PATH}/src/core/Output.cpp
+    ${WEBROGUE_ROOT_PATH}/src/core/Terminal.hpp
+    ${WEBROGUE_ROOT_PATH}/src/core/Terminal.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/utf.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/utf.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/Vec2.hpp
@@ -59,19 +57,19 @@ set(
 
 
 set(
-    WEBROGUE_SDL_SOURCE_FILES
+    WEBROGUE_EMULATED_TERMINAL_SOURCE_FILES
 
-    ${WEBROGUE_ROOT_PATH}/src/outputs/sdl/SDLOutput.hpp
-    ${WEBROGUE_ROOT_PATH}/src/outputs/sdl/SDLOutput.cpp
-    ${WEBROGUE_ROOT_PATH}/embedded_resources/sdl_font_ttf.c
-    ${WEBROGUE_ROOT_PATH}/embedded_resources/sdl_font_ttf.h
+    ${WEBROGUE_ROOT_PATH}/src/terminals/emulated/EmulatedTerminal.hpp
+    ${WEBROGUE_ROOT_PATH}/src/terminals/emulated/EmulatedTerminal.cpp
+    ${WEBROGUE_ROOT_PATH}/embedded_resources/hack_ttf.c
+    ${WEBROGUE_ROOT_PATH}/embedded_resources/hack_ttf.h
 )
 
 set(
-    WEBROGUE_CURSES_SOURCE_FILES
+    WEBROGUE_CURSES_TERMINAL_FILES
 
-    ${WEBROGUE_ROOT_PATH}/src/outputs/curses/CursesOutput.hpp
-    ${WEBROGUE_ROOT_PATH}/src/outputs/curses/CursesOutput.cpp
+    ${WEBROGUE_ROOT_PATH}/src/terminals/curses/CursesTerminal.hpp
+    ${WEBROGUE_ROOT_PATH}/src/terminals/curses/CursesTerminal.cpp
 )
 
 set(
@@ -222,7 +220,7 @@ function(embed_resource resource)
     )
 endfunction()
 
-embed_resource(${WEBROGUE_ROOT_PATH}/src/outputs/sdl/sdl_font.ttf)
+embed_resource(${WEBROGUE_ROOT_PATH}/src/terminals/emulated/hack.ttf)
 
 #glue
 add_custom_command(
@@ -349,22 +347,22 @@ add_custom_target(
 
 embed_resource(${WEBROGUE_ROOT_PATH}/mods/core/core.wrmod)
 
-function(make_webrogue_output)
+function(make_webrogue_terminal)
     set(options STATIC SHARED)
     set(oneValueArgs TYPE LIB_NAME PDCURSES_OS)
     set(multiValueArgs)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-    if(${ARGS_TYPE} STREQUAL SDL)
-        set(SOURCES ${WEBROGUE_SDL_SOURCE_FILES})
-    elseif(${ARGS_TYPE} STREQUAL NCURSES)
-        set(SOURCES ${WEBROGUE_CURSES_SOURCE_FILES})
-    elseif(${ARGS_TYPE} STREQUAL PDCURSES)
+    if(${ARGS_TYPE} STREQUAL emulated)
+        set(SOURCES ${WEBROGUE_EMULATED_TERMINAL_SOURCE_FILES})
+    elseif(${ARGS_TYPE} STREQUAL ncurses)
+        set(SOURCES ${WEBROGUE_CURSES_TERMINAL_FILES})
+    elseif(${ARGS_TYPE} STREQUAL pdcurses)
         set(PDCURSES_DIR ${WEBROGUE_ROOT_PATH}/external/pdcurses)
         file(GLOB_RECURSE PDCURSES_SRC ${PDCURSES_DIR}/pdcurses/*.c)
         file(GLOB_RECURSE PDCURSES_OS_SRC ${PDCURSES_DIR}/${ARGS_PDCURSES_OS}/*.c)
         set(
             SOURCES 
-            ${WEBROGUE_CURSES_SOURCE_FILES}
+            ${WEBROGUE_CURSES_TERMINAL_FILES}
             ${PDCURSES_DIR}/${ARGS_PDCURSES_OS}/pdcclip.c ${PDCURSES_SRC} ${PDCURSES_OS_SRC}
         )
     else()
