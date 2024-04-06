@@ -44,25 +44,23 @@ bool readRealFile(std::vector<uint8_t> &out, std::string path) {
 }
 
 WasmEdgeModsRuntime::WasmEdgeModsRuntime(
-    webrogue::core::ConsoleStream *wrout, webrogue::core::ConsoleStream *wrerr,
     webrogue::core::ResourceStorage *resourceStorage,
-    webrogue::core::Config *config)
-    : ModsRuntime(wrout, wrerr, resourceStorage, config) {
+    webrogue::core::Config const *config)
+    : ModsRuntime(resourceStorage, config) {
 }
 
 void WasmEdgeModsRuntime::initMods() {
     spdlog::set_level(spdlog::level::err);
-    auto linkResult = core::getCompactlyLinkedBinaries(
-        this, resourceStorage, config,
-        [this]() {
-            interrupt();
-        },
-        wrout, wrerr);
+    auto linkResult = core::getCompactlyLinkedBinaries(this, resourceStorage,
+                                                       config, [this]() {
+                                                           interrupt();
+                                                       });
     WasmEdge_Result res;
     confCxt = WasmEdge_ConfigureCreate();
-    std::string const aotCachePath = config->dataPath + "/wasmedge_aot_cache";
+    std::string const aotCachePath =
+        config->getDataPath() + "/wasmedge_aot_cache";
     if (true) {
-        *wrout << "precompiling...\n";
+        // *wrout << "precompiling...\n";
         WasmEdge_CompilerContext *compCtx = WasmEdge_CompilerCreate(confCxt);
         res = WasmEdge_CompilerCompileFromBuffer(compCtx, linkResult->data(),
                                                  linkResult->size(),
@@ -172,7 +170,7 @@ void WasmEdgeModsRuntime::initMods() {
         return;
     }
 
-    *wrout << "initializing mods...\n";
+    // *wrout << "initializing mods...\n";
     WasmEdge_String funcName =
         WasmEdge_StringCreateByCString("__wasm_call_ctors");
     res = WasmEdge_VMExecute(vmCxt, funcName, nullptr, 0, nullptr, 0);
@@ -193,7 +191,7 @@ void WasmEdgeModsRuntime::initMods() {
             return;
         }
     }
-    *wrout << "all mods initialized\n";
+    // *wrout << "all mods initialized\n";
 
     isInitialized = true;
 }

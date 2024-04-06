@@ -9,24 +9,20 @@
 
 namespace webrogue {
 namespace core {
-bool loadMods(ResourceStorage *mockFS, Config *config, ConsoleStream *wrout,
-              ConsoleStream *wrerr) {
-    for (auto modData : config->mods) {
+bool loadMods(ResourceStorage *mockFS, Config const *config) {
+    for (auto modData : config->getModsData()) {
         if (!mockFS->loadWrmodData(modData.data, modData.size, modData.name))
             return false;
     }
-    if ((config->loadsModsFromDataPath &&
-        config->hasDataPath) || config->hasModsPath) {
+    if (config->getModsDirPath().has_value()) {
         static const std::string curDir = ".";
         static const std::string parDir = "..";
         DIR *dir;
         struct dirent *drnt;
-        std::string const modsPath = config->hasModsPath
-                                         ? config->modsPath
-                                         : (config->dataPath + "/mods");
+        std::string const modsPath = config->getModsDirPath().value();
         dir = opendir(modsPath.c_str());
         if (!dir) {
-            *wrerr << "unable to open directory \"" << modsPath << "\"\n";
+            // *wrerr << "unable to open directory \"" << modsPath << "\"\n";
             return false;
         }
         while ((drnt = readdir(dir)) != NULL) {
@@ -35,7 +31,7 @@ bool loadMods(ResourceStorage *mockFS, Config *config, ConsoleStream *wrout,
                 struct stat s;
                 std::string const newPath = modsPath + "/" + name;
                 if (stat(newPath.c_str(), &s) != 0) {
-                    *wrerr << "stat \"" << newPath << "\" failed!\n";
+                    // *wrerr << "stat \"" << newPath << "\" failed!\n";
                     return false;
                 }
                 bool const isDir = s.st_mode & S_IFDIR;
@@ -59,59 +55,59 @@ bool loadMods(ResourceStorage *mockFS, Config *config, ConsoleStream *wrout,
         }
         closedir(dir);
 
-        *wrout << "all mods loaded\n";
+        // *wrout << "all mods loaded\n";
     }
     return true;
 }
 
-int webrogueMain(std::shared_ptr<Output> output, runtime_maker_t runtimeMaker,
-                 Config *config) {
-    ConsoleWriter consoleWriter(output);
-    ConsoleStream wrout(&consoleWriter, false);
-    wrout.tie(nullptr);
-    ConsoleStream wrerr(&consoleWriter, true);
-    wrerr.tie(nullptr);
-    ResourceStorage mockFS(&wrout, &wrerr);
-    std::shared_ptr<ModsRuntime> runtime(
-        runtimeMaker(&wrout, &wrerr, &mockFS, config));
-    runtime->apiObject.output = output.get();
-    runtime->apiObject.consoleWriter = &consoleWriter;
-    output->begin();
+int webrogueMain(webrogue::core::runtime_maker_t runtimeMaker,
+                 const webrogue::core::Config config) {
+    // ConsoleWriter consoleWriter(output);
+    // ConsoleStream wrout(false);
+    // wrout.tie(nullptr);
+    // ConsoleStream wrerr(true);
+    // wrerr.tie(nullptr);
+    ResourceStorage mockFS;
+    std::shared_ptr<ModsRuntime> runtime(runtimeMaker(&mockFS, &config));
+    runtime->display = config.getDisplay();
+    // runtime->apiObject.output = output.get();
+    // runtime->apiObject.consoleWriter = &consoleWriter;
+    // output->begin();
     mockFS.interrupt = [&runtime]() {
         runtime->interrupt();
     };
-    bool hasLoadingError = !loadMods(&mockFS, config, &wrout, &wrerr);
+    bool hasLoadingError = !loadMods(&mockFS, &config);
     if (!hasLoadingError) {
         std::string dbpath;
-        if (config->hasDataPath) {
-            wrout << "opening database...\n";
-            dbpath = config->dataPath + "/webrogue.db";
-        } else {
-            wrout << "opening in-memory database...\n";
-            dbpath = "memory";
-        }
+        // if (config->hasDataPath) {
+        //     wrout << "opening database...\n";
+        //     dbpath = config->dataPath + "/webrogue.db";
+        // } else {
+        // wrout << "opening in-memory database...\n";
+        dbpath = "memory";
+        // }
         runtime->apiObject.db = std::make_unique<DB>(dbpath);
         runtime->initMods();
         hasLoadingError |= !runtime->isInitialized;
     }
 
-    while (true) {
-        auto event = output->getEvent();
-        if (event.type == webrogue_event_type::None)
-            break;
-    }
-    consoleWriter.isShown = hasLoadingError;
+    // while (true) {
+    //     // auto event = output->getEvent();
+    //     if (event.type == webrogue_event_type::None)
+    //         break;
+    // }
+    // consoleWriter.isShown = hasLoadingError;
     if (!hasLoadingError) {
-        output->beginFrame();
+        // output->beginFrame();
         runtime->start();
-        output->endFrame();
-        config->onFrameEnd();
-        if (config->endOutputOnExit)
-            output->end();
+        // output->endFrame();
+        // config->onFrameEnd();
+        // if (config->endOutputOnExit)
+        //     output->end();
         return 0;
     }
-    while (consoleWriter.present().type != webrogue_event_type::Close)
-        consoleWriter.isShown = true;
+    // while (consoleWriter.present().type != webrogue_event_type::Close)
+    //     consoleWriter.isShown = true;
     return 1;
 }
 } // namespace core

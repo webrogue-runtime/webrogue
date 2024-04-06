@@ -9,10 +9,8 @@ namespace runtimes {
 namespace wamr {
 class WamrModsRuntime : public webrogue::core::ModsRuntime {
 public:
-    WamrModsRuntime(webrogue::core::ConsoleStream *wrout,
-                    webrogue::core::ConsoleStream *wrerr,
-                    webrogue::core::ResourceStorage *resourceStorage,
-                    webrogue::core::Config *config);
+    WamrModsRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                    webrogue::core::Config const *config);
     const uint32_t stackSize = 64 * 1024, heapSize = 64 * 1024;
 
     bool initializedWasmRuntime = false;

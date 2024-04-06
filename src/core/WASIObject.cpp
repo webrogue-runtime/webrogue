@@ -24,23 +24,20 @@ namespace core {
 int win_stdio_fd(DWORD stdio_type, bool rdonly) {
     HANDLE handle = GetStdHandle(stdio_type);
     if (handle == INVALID_HANDLE_VALUE || !handle) {
-        handle = CreateFile(
-            "nul",       
-            rdonly ? GENERIC_READ : GENERIC_WRITE,  
-            rdonly ? FILE_SHARE_READ : 0,
-            NULL,        
-            OPEN_EXISTING,  
-            rdonly ? FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED : FILE_ATTRIBUTE_NORMAL,
-            NULL
-        );
+        handle =
+            CreateFile("nul", rdonly ? GENERIC_READ : GENERIC_WRITE,
+                       rdonly ? FILE_SHARE_READ : 0, NULL, OPEN_EXISTING,
+                       rdonly ? FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED
+                              : FILE_ATTRIBUTE_NORMAL,
+                       NULL);
     }
-    return  _open_osfhandle((intptr_t)handle,
-                    rdonly ? _O_RDONLY : _O_WRONLY);
+    return _open_osfhandle((intptr_t)handle, rdonly ? _O_RDONLY : _O_WRONLY);
 }
 #endif
 
-WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
-                       Config *config)
+WASIObject::WASIObject(ModsRuntime *pRuntime,
+                       ResourceStorage const *resourceStorage,
+                       Config const *config)
     : runtime(pRuntime) {
     uvwasi_options_t initOptions;
     uvwasi_options_init(&initOptions);
@@ -55,7 +52,7 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
 #else
     initOptions.in = 0;
     initOptions.out = 1;
-    initOptions.err = 2; 
+    initOptions.err = 2;
 #endif
     initOptions.fd_table_size = 3;
     initOptions.argc = 0;
@@ -63,13 +60,14 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
     static const char *envp[] = {"ENV1=test_env", nullptr};
     initOptions.envp = envp;
     std::vector<uvwasi_preopen_t> preopens;
+    std::string dataPath = config->getDataPath();
     preopens.push_back({
-        "/", // mapped_path
-        config->dataPath.c_str()  // real_path
+        "/",             // mapped_path
+        dataPath.c_str() // real_path
     });
     preopens.push_back({
-        "./", // mapped_path
-        config->dataPath.c_str()   // real_path
+        "./",            // mapped_path
+        dataPath.c_str() // real_path
     });
     initOptions.preopenc = preopens.size();
     initOptions.preopens = preopens.data();

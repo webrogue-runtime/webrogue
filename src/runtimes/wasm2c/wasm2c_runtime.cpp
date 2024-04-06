@@ -30,10 +30,9 @@ w2c_wasi__snapshot__preview1_proc_exit(struct w2c_wasi__snapshot__preview1 *env,
 #endif
 }
 Wasm2cModsRuntime::Wasm2cModsRuntime(
-    webrogue::core::ConsoleStream *wrout, webrogue::core::ConsoleStream *wrerr,
     webrogue::core::ResourceStorage *resourceStorage,
-    webrogue::core::Config *config)
-    : ModsRuntime(wrout, wrerr, resourceStorage, config) {
+    webrogue::core::Config const *config)
+    : ModsRuntime(resourceStorage, config) {
 }
 void Wasm2cModsRuntime::initMods() {
     wasm_rt_init();

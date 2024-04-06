@@ -32,6 +32,10 @@ set(
     ${WEBROGUE_ROOT_PATH}/src/core/ConsoleStream.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/DB.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/DB.cpp
+    ${WEBROGUE_ROOT_PATH}/src/core/Display.hpp
+    ${WEBROGUE_ROOT_PATH}/src/core/Display.cpp
+    ${WEBROGUE_ROOT_PATH}/src/core/EventManager.hpp
+    ${WEBROGUE_ROOT_PATH}/src/core/EventManager.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/ResourceStorage.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/ResourceStorage.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/ModsRuntime.hpp
@@ -40,6 +44,8 @@ set(
     ${WEBROGUE_ROOT_PATH}/src/core/webrogueMain.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/Terminal.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/Terminal.cpp
+    ${WEBROGUE_ROOT_PATH}/src/core/TSMTerminal.hpp
+    ${WEBROGUE_ROOT_PATH}/src/core/TSMTerminal.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/utf.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/utf.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/Vec2.hpp
@@ -52,26 +58,40 @@ set(
     ${WEBROGUE_ROOT_PATH}/external/xz/linux/lib/xz/xz_dec_stream.c
     ${WEBROGUE_ROOT_PATH}/external/xz/linux/lib/xz/xz_crc32.c
 
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/shared/shl-array.h
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/shared/shl-htable.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/shared/shl-htable.h
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/shared/shl-llog.h
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/shared/shl-macro.h
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/shared/shl-ring.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/shared/shl-ring.h
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm/libtsm-int.h
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm/libtsm.h
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm/tsm-render.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm/tsm-screen.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm/tsm-selection.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm/tsm-unicode.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm/tsm-unicode.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm/tsm-vte-charsets.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm/tsm-vte.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/external/wcwidth/wcwidth.c
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/external/wcwidth/wcwidth.h
+    ${WEBROGUE_ROOT_PATH}/external/libtsm/external/xkbcommon/xkbcommon-keysyms.h
+
     ${WEBROGUE_ROOT_PATH}/external/zstd/zstd.c
 )
 
 
 set(
-    WEBROGUE_EMULATED_TERMINAL_SOURCE_FILES
+    WEBROGUE_SDL_DISPLAY_SOURCE_FILES
 
-    ${WEBROGUE_ROOT_PATH}/src/terminals/emulated/EmulatedTerminal.hpp
-    ${WEBROGUE_ROOT_PATH}/src/terminals/emulated/EmulatedTerminal.cpp
+    ${WEBROGUE_ROOT_PATH}/src/displays/sdl/SDLDisplay.cpp
+    ${WEBROGUE_ROOT_PATH}/src/displays/sdl/SDLDisplay.hpp
+    ${WEBROGUE_ROOT_PATH}/src/displays/sdl/SDLTerminal.cpp
+    ${WEBROGUE_ROOT_PATH}/src/displays/sdl/SDLTerminal.hpp
     ${WEBROGUE_ROOT_PATH}/embedded_resources/hack_ttf.c
     ${WEBROGUE_ROOT_PATH}/embedded_resources/hack_ttf.h
 )
-
-set(
-    WEBROGUE_CURSES_TERMINAL_FILES
-
-    ${WEBROGUE_ROOT_PATH}/src/terminals/curses/CursesTerminal.hpp
-    ${WEBROGUE_ROOT_PATH}/src/terminals/curses/CursesTerminal.cpp
-)
-
 set(
     WEBROGUE_NATIVE_RUNTIME_SOURCE_FILES
 
@@ -220,7 +240,7 @@ function(embed_resource resource)
     )
 endfunction()
 
-embed_resource(${WEBROGUE_ROOT_PATH}/src/terminals/emulated/hack.ttf)
+embed_resource(${WEBROGUE_ROOT_PATH}/src/displays/sdl/hack.ttf)
 
 #glue
 add_custom_command(
@@ -347,13 +367,13 @@ add_custom_target(
 
 embed_resource(${WEBROGUE_ROOT_PATH}/mods/core/core.wrmod)
 
-function(make_webrogue_terminal)
+function(make_webrogue_display)
     set(options STATIC SHARED)
     set(oneValueArgs TYPE LIB_NAME PDCURSES_OS)
     set(multiValueArgs)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-    if(${ARGS_TYPE} STREQUAL emulated)
-        set(SOURCES ${WEBROGUE_EMULATED_TERMINAL_SOURCE_FILES})
+    if(${ARGS_TYPE} STREQUAL sdl)
+        set(SOURCES ${WEBROGUE_SDL_DISPLAY_SOURCE_FILES})
     elseif(${ARGS_TYPE} STREQUAL ncurses)
         set(SOURCES ${WEBROGUE_CURSES_TERMINAL_FILES})
     elseif(${ARGS_TYPE} STREQUAL pdcurses)
@@ -551,6 +571,9 @@ function(make_webrogue_core)
         ${WEBROGUE_ROOT_PATH}/external/xz/userspace 
         ${WEBROGUE_ROOT_PATH}/external/xz/linux/include/linux
         ${WEBROGUE_ROOT_PATH}/external/uvwasi/include
+        ${WEBROGUE_ROOT_PATH}/external/libtsm/src/shared
+        ${WEBROGUE_ROOT_PATH}/external/libtsm/src/tsm
+        ${WEBROGUE_ROOT_PATH}/external/libtsm/external
     )
     if(ARGS_NO_WASI)
         target_compile_definitions(${ARGS_LIB_NAME} PRIVATE WEBROGUE_NO_WASI)

@@ -10,10 +10,8 @@ class WasmEdgeModsRuntime : public webrogue::core::ModsRuntime {
 public:
     WasmEdge_VMContext *vmCxt;
     WasmEdge_ConfigureContext *confCxt;
-    WasmEdgeModsRuntime(webrogue::core::ConsoleStream *wrout,
-                        webrogue::core::ConsoleStream *wrerr,
-                        webrogue::core::ResourceStorage *resourceStorage,
-                        webrogue::core::Config *config);
+    WasmEdgeModsRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                        webrogue::core::Config const *config);
     void initMods() override;
     void start() override;
     bool getVMData(void *outPtr, uint64_t offset, int32_t size) override;

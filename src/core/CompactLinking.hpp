@@ -12,11 +12,9 @@ namespace webrogue {
 namespace core {
 typedef std::vector<uint8_t> wasm_binnary;
 
-std::shared_ptr<std::vector<uint8_t>>
-getCompactlyLinkedBinaries(ModsRuntime *runtime,
-                           ResourceStorage *resourceStorage, Config *config,
-                           std::function<void()> interrupt,
-                           ConsoleStream *wrout, ConsoleStream *wrerr);
+std::shared_ptr<std::vector<uint8_t>> getCompactlyLinkedBinaries(
+    ModsRuntime *runtime, ResourceStorage *resourceStorage,
+    Config const *config, std::function<void()> interrupt);
 
 } // namespace core
 } // namespace webrogue

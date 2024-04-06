@@ -7,10 +7,8 @@ namespace runtimes {
 namespace native {
 class NativeModsRuntime : public webrogue::core::ModsRuntime {
 public:
-    NativeModsRuntime(webrogue::core::ConsoleStream *wrout,
-                      webrogue::core::ConsoleStream *wrerr,
-                      webrogue::core::ResourceStorage *resourceStorage,
-                      webrogue::core::Config *config);
+    NativeModsRuntime(webrogue::core::ResourceStorage *,
+                      webrogue::core::Config const *);
     void initMods() override;
     void start() override;
     bool getVMData(void *outPtr, uint64_t offset, int32_t size) override;

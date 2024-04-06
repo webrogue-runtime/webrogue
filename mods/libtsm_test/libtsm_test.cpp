@@ -5,10 +5,14 @@
 #include <string>
 
 void llibtsm_testInitializationStep() {
-    std::string str = "str!";
-    wr_stdout_write((WASMRawU64)str.c_str(), str.size());
+    int i = 0;
     while (true) {
-        webrogue_core_interrupt();
+        std::string str = "str" + std::to_string(i) + "!";
+        i++;
+        wr_stdout_write((WASMRawU64)str.c_str(), str.size());
+    }
+    while (true) {
+        //        webrogue_core_interrupt();
         size_t event_count;
         webrogue_event const *events = webrogue_core_get_events(&event_count);
         for (int i = 0; i < event_count; i++) {

@@ -9,10 +9,8 @@ namespace runtimes {
 namespace m3 {
 class M3ModsRuntime : public webrogue::core::ModsRuntime {
 public:
-    M3ModsRuntime(webrogue::core::ConsoleStream *wrout,
-                  webrogue::core::ConsoleStream *wrerr,
-                  webrogue::core::ResourceStorage *resourceStorage,
-                  webrogue::core::Config *config);
+    M3ModsRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                  webrogue::core::Config const *config);
     std::shared_ptr<core::wasm_binnary> linkedWasm;
     IM3Environment modsEnvironment = nullptr;
     IM3Runtime modsRuntime = nullptr;

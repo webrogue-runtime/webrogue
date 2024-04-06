@@ -11,10 +11,8 @@ namespace runtimes {
 namespace wasm2c {
 class Wasm2cModsRuntime : public webrogue::core::ModsRuntime {
 public:
-    Wasm2cModsRuntime(webrogue::core::ConsoleStream *wrout,
-                      webrogue::core::ConsoleStream *wrerr,
-                      webrogue::core::ResourceStorage *resourceStorage,
-                      webrogue::core::Config *config);
+    Wasm2cModsRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                      webrogue::core::Config const *config);
 
     w2c_linked linked;
     void initMods() override;

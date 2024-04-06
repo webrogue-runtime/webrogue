@@ -13,7 +13,7 @@ extern "C" {
 typedef void (*webrogue_initialization_step)();
 void webrogue_core_add_initialization_step(
     webrogue_initialization_step observer);
-void webrogue_core_interrupt();
+//void webrogue_core_interrupt();
 
 void webrogue_core_print(const char *);
 

@@ -3,70 +3,22 @@ using namespace webrogue::core;
 
 // clang-format off
 extern "C" {
-u32 w2c_webrogue_wr_get_render_width(struct w2c_webrogue *env) {
+u32 w2c_webrogue_wr_poll(struct w2c_webrogue *env, u32 timeout_ms) {
     auto runtime =
         ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_get_render_width().get();
-}
-
-u32 w2c_webrogue_wr_get_render_height(struct w2c_webrogue *env) {
-    auto runtime =
-        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_get_render_height().get();
-}
-
-void w2c_webrogue_wr_start_color(struct w2c_webrogue *env) {
-    auto runtime =
-        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_start_color();
-}
-
-u32 w2c_webrogue_wr_get_color_pairs_count(struct w2c_webrogue *env) {
-    auto runtime =
-        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_get_color_pairs_count().get();
-}
-
-u32 w2c_webrogue_wr_get_colors_count(struct w2c_webrogue *env) {
-    auto runtime =
-        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_get_colors_count().get();
-}
-
-void w2c_webrogue_wr_set_color(struct w2c_webrogue *env, u32 color, u32 r, u32 g, u32 b) {
-    auto runtime =
-        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_set_color(WASMRawI32::make(color), WASMRawI32::make(r), WASMRawI32::make(g), WASMRawI32::make(b));
-}
-
-void w2c_webrogue_wr_set_color_pair(struct w2c_webrogue *env, u32 color_pair, u32 fg, u32 bg) {
-    auto runtime =
-        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_set_color_pair(WASMRawI32::make(color_pair), WASMRawI32::make(fg), WASMRawI32::make(bg));
-}
-
-void w2c_webrogue_wr_render_set_screen_data(struct w2c_webrogue *env, u64 in_buff_offset, u64 size) {
-    auto runtime =
-        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_render_set_screen_data(WASMRawU64::make(in_buff_offset), WASMRawI64::make(size));
-}
-
-void w2c_webrogue_wr_set_deadline(struct w2c_webrogue *env, u32 ms) {
-    auto runtime =
-        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_set_deadline(WASMRawI32::make(ms));
-}
-
-u32 w2c_webrogue_wr_interrupt(struct w2c_webrogue *env) {
-    auto runtime =
-        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
-    return runtime->apiObject.wr_interrupt().get();
+    return runtime->apiObject.wr_poll(WASMRawI32::make(timeout_ms)).get();
 }
 
 void w2c_webrogue_wr_copy_events(struct w2c_webrogue *env, u64 out_buff_offset, u64 size) {
     auto runtime =
         ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
     return runtime->apiObject.wr_copy_events(WASMRawU64::make(out_buff_offset), WASMRawI64::make(size));
+}
+
+void w2c_webrogue_wr_stdout_write(struct w2c_webrogue *env, u64 in_buff_offset, u64 size) {
+    auto runtime =
+        ((webrogue::runtimes::wasm2c::Wasm2cModsRuntime *)env);
+    return runtime->apiObject.wr_stdout_write(WASMRawU64::make(in_buff_offset), WASMRawI64::make(size));
 }
 
 void w2c_webrogue_wr_debug_print(struct w2c_webrogue *env, u64 in_buff_offset, u64 size) {

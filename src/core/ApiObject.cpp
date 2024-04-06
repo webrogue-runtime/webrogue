@@ -11,93 +11,18 @@
 
 namespace webrogue {
 namespace core {
-ApiObject::ApiObject(ModsRuntime *pRuntime, Config *pConfig)
+ApiObject::ApiObject(ModsRuntime *pRuntime, Config const *pConfig)
     : runtime(pRuntime), config(pConfig) {
 }
 
 #define WR_API_FUNCTION_IMPL(RET_TYPE, NAME, ARGS) RET_TYPE ApiObject::NAME ARGS
 
-// rendering
-
-WR_API_FUNCTION_IMPL(void, wr_start_color, ()) {
+WR_API_FUNCTION_IMPL(WASMRawU32, wr_poll, (WASMRawI32 timeout_ms)) {
     if (!runtime->isInitialized) {
         assert(false);
-        return;
+        return WASMRawU32::make(0);
     }
-    output->startColor();
-}
-WR_API_FUNCTION_IMPL(WASMRawI32, wr_get_color_pairs_count, ()) {
-    if (!runtime->isInitialized) {
-        assert(false);
-        return WASMRawI32::make(-1);
-    }
-    return WASMRawI32::make(output->getColorPairsCount());
-}
-WR_API_FUNCTION_IMPL(WASMRawI32, wr_get_colors_count, ()) {
-    if (!runtime->isInitialized) {
-        assert(false);
-        return WASMRawI32::make(-1);
-    }
-    return WASMRawI32::make(output->getColorsCount());
-}
-WR_API_FUNCTION_IMPL(void, wr_set_color,
-                     (WASMRawI32 color, WASMRawI32 r, WASMRawI32 g,
-                      WASMRawI32 b)) {
-    if (!runtime->isInitialized) {
-        assert(false);
-        return;
-    }
-    output->setColor(color.get(), r.get(), g.get(), b.get());
-}
-WR_API_FUNCTION_IMPL(void, wr_set_color_pair,
-                     (WASMRawI32 color_pair, WASMRawI32 fg, WASMRawI32 bg)) {
-    if (!runtime->isInitialized) {
-        assert(false);
-        return;
-    }
-    output->setColorPair(color_pair.get(), fg.get(), bg.get());
-}
-WR_API_FUNCTION_IMPL(void, wr_set_deadline, (WASMRawI32 ms)) {
-    output->addDeadline(static_cast<float>(ms.get()) / 1000);
-}
-WR_API_FUNCTION_IMPL(WASMRawI32, wr_interrupt, ()) {
-    if (!runtime->isInitialized) {
-        assert(false);
-        return WASMRawI32::make(-1);
-    }
-    webrogue_event consoleWriterExitEvent = {webrogue_event_type::None, 0, 0};
-    output->endFrame();
-    runtime->onFrameEnd();
-    while (true) { // frames loop
-        output->beginFrame();
-        rawEvents.clear();
-        bool gotDeadline = false;
-        if (consoleWriterExitEvent.type != webrogue_event_type::None) {
-            rawEvents.push_back({consoleWriterExitEvent.type,
-                                 consoleWriterExitEvent.data1,
-                                 consoleWriterExitEvent.data2, 0});
-            consoleWriterExitEvent = {webrogue_event_type::None, 0, 0};
-        }
-        while (true) { // events loop
-            webrogue_event event = output->getEvent();
-            if (event.type == webrogue_event_type::None)
-                break;
-            if (event.type == webrogue_event_type::Deadline)
-                gotDeadline = true;
-            else
-                rawEvents.push_back({event.type, event.data1, event.data2, 0});
-            if (event.type == webrogue_event_type::Console)
-                consoleWriter->isShown = true;
-        } // events loop
-        if (consoleWriter->isShown) {
-            consoleWriterExitEvent = consoleWriter->present();
-        } else {
-            if (gotDeadline || !rawEvents.empty()) {
-                return WASMRawI32::make(rawEvents.size());
-            }
-            output->lazyEnd();
-        }
-    } // frames loop
+    return WASMRawU32::make(runtime->eventManager.poll(timeout_ms.get()));
 }
 
 WR_API_FUNCTION_IMPL(void, wr_copy_events,
@@ -119,6 +44,14 @@ WR_API_FUNCTION_IMPL(void, wr_copy_events,
 
 WR_API_FUNCTION_IMPL(void, wr_stdout_write,
                      (WASMRawU64 in_buff_offset, WASMRawI64 size)) {
+    std::vector<char> hostData;
+    hostData.resize(size.get());
+    if (!runtime->getVMData(hostData.data(), in_buff_offset.get(),
+                            size.get())) {
+        assert(false);
+        return;
+    }
+    runtime->display->terminal->writeStdout(hostData.data(), hostData.size());
 }
 
 // debug
@@ -134,7 +67,7 @@ WR_API_FUNCTION_IMPL(void, wr_debug_print,
     }
     hostData[size.get()] = '\0';
     std::string hostString = hostData.data();
-    *runtime->wrout << hostString;
+    // *runtime->wrout << hostString;
 }
 
 // sqlite

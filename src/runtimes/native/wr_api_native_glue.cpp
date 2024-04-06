@@ -2,32 +2,8 @@
 #include "shared_api_object.hpp"
 using namespace webrogue::core;
 // clang-format off
-extern "C" void wr_start_color() {
-    return webrogue::runtimes::native::sharedApiObject->wr_start_color();
-}
-
-extern "C" int32_t wr_get_color_pairs_count() {
-    return webrogue::runtimes::native::sharedApiObject->wr_get_color_pairs_count().get();
-}
-
-extern "C" int32_t wr_get_colors_count() {
-    return webrogue::runtimes::native::sharedApiObject->wr_get_colors_count().get();
-}
-
-extern "C" void wr_set_color(int32_t color, int32_t r, int32_t g, int32_t b) {
-    return webrogue::runtimes::native::sharedApiObject->wr_set_color(WASMRawI32::make(color), WASMRawI32::make(r), WASMRawI32::make(g), WASMRawI32::make(b));
-}
-
-extern "C" void wr_set_color_pair(int32_t color_pair, int32_t fg, int32_t bg) {
-    return webrogue::runtimes::native::sharedApiObject->wr_set_color_pair(WASMRawI32::make(color_pair), WASMRawI32::make(fg), WASMRawI32::make(bg));
-}
-
-extern "C" void wr_set_deadline(int32_t ms) {
-    return webrogue::runtimes::native::sharedApiObject->wr_set_deadline(WASMRawI32::make(ms));
-}
-
-extern "C" int32_t wr_interrupt() {
-    return webrogue::runtimes::native::sharedApiObject->wr_interrupt().get();
+extern "C" uint32_t wr_poll(int32_t timeout_ms) {
+    return webrogue::runtimes::native::sharedApiObject->wr_poll(WASMRawI32::make(timeout_ms)).get();
 }
 
 extern "C" void wr_copy_events(uint64_t out_buff_offset, int64_t size) {

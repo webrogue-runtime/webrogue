@@ -13,10 +13,9 @@ namespace runtimes {
 namespace wamr {
 
 WamrModsRuntime::WamrModsRuntime(
-    webrogue::core::ConsoleStream *wrout, webrogue::core::ConsoleStream *wrerr,
     webrogue::core::ResourceStorage *resourceStorage,
-    webrogue::core::Config *config)
-    : ModsRuntime(wrout, wrerr, resourceStorage, config) {
+    webrogue::core::Config const *config)
+    : ModsRuntime(resourceStorage, config) {
 }
 static void procExitFunc(wasm_exec_env_t execEnv, uint32_t exitCode) {
     wasm_module_inst_t moduleInst = get_module_inst(execEnv);
@@ -47,17 +46,15 @@ NativeSymbol wasiSymbols[] = {
 };
 
 void WamrModsRuntime::initMods() {
-    auto linked = core::getCompactlyLinkedBinaries(
-        this, resourceStorage, config,
-        [this]() {
-            interrupt();
-        },
-        wrout, wrerr);
+    auto linked = core::getCompactlyLinkedBinaries(this, resourceStorage,
+                                                   config, [this]() {
+                                                       interrupt();
+                                                   });
     if (!linked || linked->size() == 0) {
-        *wrerr << "linking failed\n";
+        // *wrerr << "linking failed\n";
         return;
     }
-    *wrout << "initializing runtime for mods...\n";
+    // *wrout << "initializing runtime for mods...\n";
     RuntimeInitArgs initArgs;
     memset(&initArgs, 0, sizeof(RuntimeInitArgs));
     initArgs.fast_jit_code_cache_size = linked->size() * 8;
@@ -71,7 +68,7 @@ void WamrModsRuntime::initMods() {
     initializedWasmRuntime = true;
     char errorBuf[128];
     wasm_function_inst_t func;
-    *wrout << "loading linked mods...\n";
+    // *wrout << "loading linked mods...\n";
 
     if (!wasm_runtime_register_natives("wasi_snapshot_preview1", wasiSymbols,
                                        sizeof(wasiSymbols) /
@@ -86,31 +83,31 @@ void WamrModsRuntime::initMods() {
     module = wasm_runtime_load(linked->data(), linked->size(), errorBuf,
                                sizeof(errorBuf));
     if (!module) {
-        *wrerr << "Error while loading linked module: " << errorBuf << "\n";
+        // *wrerr << "Error while loading linked module: " << errorBuf << "\n";
         return;
     }
     moduleInst = wasm_runtime_instantiate(module, stackSize, heapSize, errorBuf,
                                           sizeof(errorBuf));
     if (!moduleInst) {
-        *wrerr << errorBuf;
+        // *wrerr << errorBuf;
         return;
     }
     execEnv = wasm_runtime_create_exec_env(moduleInst, stackSize);
     wasm_runtime_set_user_data(execEnv, this);
-    *wrout << "initializing mods...\n";
-    func = wasm_runtime_lookup_function(moduleInst, "__wasm_call_ctors", "()");
+    // *wrout << "initializing mods...\n";
+    func = wasm_runtime_lookup_function(moduleInst, "__wasm_call_ctors");
     if (!wasm_runtime_call_wasm_v(execEnv, func, 0, nullptr, 0)) {
         return;
     }
     for (std::string const modName : resourceStorage->modNames) {
         std::string const funcName = "init_mod_" + modName;
-        func = wasm_runtime_lookup_function(moduleInst, funcName.c_str(), "()");
+        func = wasm_runtime_lookup_function(moduleInst, funcName.c_str());
         if (!wasm_runtime_call_wasm_v(execEnv, func, 0, nullptr, 0)) {
             return;
         }
     }
-    *wrout << "all mods initialized\n";
-    startFunc = wasm_runtime_lookup_function(moduleInst, "wr_start", "()");
+    // *wrout << "all mods initialized\n";
+    startFunc = wasm_runtime_lookup_function(moduleInst, "wr_start");
 
     isInitialized = true;
 };
@@ -122,14 +119,14 @@ void WamrModsRuntime::start() {
     if (procExit) {
         wasm_runtime_clear_exception(moduleInst);
     } else if (!ret) {
-        *wrerr << "Error while executing wr_start: "
-               << wasm_runtime_get_exception(moduleInst) << "\n";
+        // *wrerr << "Error while executing wr_start: "
+        //        << wasm_runtime_get_exception(moduleInst) << "\n";
         isInitialized = false;
     }
 };
 
 bool WamrModsRuntime::getVMData(void *outPtr, uint64_t offset, int32_t size) {
-    uint32_t currentMemSize;
+    uint64_t currentMemSize;
     uint8_t *currentMem =
         (uint8_t *)wasm_runtime_addr_app_to_native(moduleInst, 0);
 
@@ -142,7 +139,7 @@ bool WamrModsRuntime::getVMData(void *outPtr, uint64_t offset, int32_t size) {
 }
 bool WamrModsRuntime::setVMData(const void *inPtr, uint64_t offset,
                                 int32_t size) {
-    uint32_t currentMemSize;
+    uint64_t currentMemSize;
     uint8_t *currentMem =
         (uint8_t *)wasm_runtime_addr_app_to_native(moduleInst, 0);
 
@@ -154,7 +151,7 @@ bool WamrModsRuntime::setVMData(const void *inPtr, uint64_t offset,
     return true;
 }
 size_t WamrModsRuntime::vmSize() {
-    uint32_t currentMemSize;
+    uint64_t currentMemSize;
     uint8_t *currentMem =
         (uint8_t *)wasm_runtime_addr_app_to_native(moduleInst, 0);
 

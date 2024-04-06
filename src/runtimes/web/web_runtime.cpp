@@ -127,21 +127,17 @@ namespace webrogue {
 namespace runtimes {
 namespace web {
 
-WebModsRuntime::WebModsRuntime(webrogue::core::ConsoleStream *wrout,
-                               webrogue::core::ConsoleStream *wrerr,
-                               webrogue::core::ResourceStorage *resourceStorage,
-                               webrogue::core::Config *config)
-    : ModsRuntime(wrout, wrerr, resourceStorage, config){};
+WebModsRuntime::WebModsRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                               webrogue::core::Config const *config)
+    : ModsRuntime(resourceStorage, config){};
 
 void WebModsRuntime::initMods() {
-    linkedWasm = getCompactlyLinkedBinaries(
-        this, resourceStorage, config,
-        [this]() {
+    linkedWasm =
+        getCompactlyLinkedBinaries(this, resourceStorage, config, [this]() {
             interrupt();
-        },
-        wrout, wrerr);
+        });
     if (!linkedWasm) {
-        *wrerr << "linking failed\n";
+        // *wrerr << "linking failed\n";
         return;
     }
 
@@ -169,7 +165,7 @@ bool WebModsRuntime::execAsyncFunc(std::string funcName) {
         std::vector<char> error;
         error.resize(errorSize);
         getModError(error.data());
-        *wrerr << std::string(error.data(), error.size()) << "\n";
+        // *wrerr << std::string(error.data(), error.size()) << "\n";
         return false;
     }
     return true;

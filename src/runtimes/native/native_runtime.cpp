@@ -21,10 +21,9 @@ namespace runtimes {
 namespace native {
 
 NativeModsRuntime::NativeModsRuntime(
-    webrogue::core::ConsoleStream *wrout, webrogue::core::ConsoleStream *wrerr,
     webrogue::core::ResourceStorage *resourceStorage,
-    webrogue::core::Config *config)
-    : ModsRuntime(wrout, wrerr, resourceStorage, config) {
+    webrogue::core::Config const *config)
+    : ModsRuntime(resourceStorage, config) {
 }
 
 void NativeModsRuntime::initMods() {
@@ -32,11 +31,11 @@ void NativeModsRuntime::initMods() {
     //  needed to mark api functions as used to prevent strange linking bug
     initWrNativeApi();
 
-    *wrout << "initialization started\n";
+    // *wrout << "initialization started\n";
 #define mod_to_embed(name) init_mod_##name();
 #include stringize(WEBROGUE_MOD_LIST_HEADER)
 #undef mod_to_embed
-    *wrout << "initialization finished\n";
+    // *wrout << "initialization finished\n";
     isInitialized = true;
 }
 void NativeModsRuntime::start() {

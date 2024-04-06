@@ -1,7 +1,10 @@
-#include "Terminal.hpp"
+#include "Display.hpp"
+
 namespace webrogue {
 namespace core {
-Terminal::~Terminal() {
+Display::Display() {
+}
+Display::~Display() {
 }
 } // namespace core
 } // namespace webrogue

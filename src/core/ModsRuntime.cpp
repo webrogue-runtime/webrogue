@@ -5,10 +5,9 @@
 #include <chrono>
 namespace webrogue {
 namespace core {
-ModsRuntime::ModsRuntime(ConsoleStream *wrout, ConsoleStream *wrerr,
-                         ResourceStorage *resourceStorage, Config *config)
-    : wrout(wrout), wrerr(wrerr), resourceStorage(resourceStorage),
-      config(config),
+ModsRuntime::ModsRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                         webrogue::core::Config const *config)
+    : resourceStorage(resourceStorage), config(config),
 #ifndef WEBROGUE_NO_WASI
       wasiObject(this, resourceStorage, config),
 #endif
@@ -24,18 +23,14 @@ void ModsRuntime::interrupt() {
     if (std::chrono::duration_cast<std::chrono::milliseconds>(now -
                                                               lastInterrupt)
             .count() > 100) {
-        apiObject.output->lazyEnd();
-        apiObject.output->beginFrame();
+        // apiObject.output->lazyEnd();
+        // apiObject.output->beginFrame();
         lastInterrupt = std::chrono::system_clock::now();
     }
 }
 
 bool ModsRuntime::isVMRangeValid(uint64_t offset, int32_t size) {
     return offset + size < vmSize();
-}
-
-void ModsRuntime::onFrameEnd() {
-    config->onFrameEnd();
 }
 } // namespace core
 } // namespace webrogue

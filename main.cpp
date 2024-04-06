@@ -1,8 +1,9 @@
 
+#include "core/Terminal.hpp"
 #include "src/core/ModsRuntime.hpp"
 #include <memory>
-#if defined(OUTPUT_SDL)
-#include "src/outputs/sdl/SDLOutput.hpp"
+#if defined(WEBROGUE_DISPLAY_SDL)
+#include "src/displays/sdl/SDLDisplay.hpp"
 #else
 #include "src/outputs/curses/CursesOutput.hpp"
 #endif
@@ -19,22 +20,19 @@ int WinMain() {
 #else
 int main(int argc, char *argv[]) {
 #endif
-    webrogue::core::Config config;
+    webrogue::core::Config config(".");
 #if !defined(WEBROGUE_NATIVE_MODS)
-    config.addWrmodData(core_wrmod, core_wrmod_size, "core");
-    config.loadsModsFromDataPath = true;
+    config.setModsData(core_wrmod, core_wrmod_size, "core", false);
 #else
     load_embedded_mods(&config);
     config.loadsModsFromDataPath = false;
 #endif
-    config.setDataPath(".");
 
-#if defined(OUTPUT_SDL)
-    return webrogueMain(std::make_shared<webrogue::outputs::sdl::SDLOutput>(),
-                        webrogue::runtimes::makeDefaultRuntime, &config);
+#if defined(WEBROGUE_DISPLAY_SDL)
+    config.setDisplay(std::make_shared<webrogue::displays::sdl::SDLDisplay>());
 #else
-    return webrogueMain(
-        std::make_shared<webrogue::outputs::curses::CursesOutput>(),
-        webrogue::runtimes::makeDefaultRuntime, &config);
+    !!!terminal =
+        std::make_shared<webrogue::terminals::emulated::EmulatedTerminal>();
 #endif
+    return webrogueMain(webrogue::runtimes::makeDefaultRuntime, config);
 }

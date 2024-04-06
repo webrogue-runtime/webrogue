@@ -2,13 +2,11 @@
 
 #include "Config.hpp"
 #include "ModsRuntime.hpp"
-#include "Output.hpp"
 #include <memory>
 
 namespace webrogue {
 namespace core {
-int webrogueMain(std::shared_ptr<webrogue::core::Output> output,
-                 webrogue::core::runtime_maker_t runtimeMaker,
-                 webrogue::core::Config *config);
+int webrogueMain(webrogue::core::runtime_maker_t runtimeMaker,
+                 const webrogue::core::Config config);
 } // namespace core
 } // namespace webrogue

@@ -14,10 +14,8 @@ namespace runtimes {
 namespace wasm_c_api {
 class WasmCApiModsRuntime : public webrogue::core::ModsRuntime {
 public:
-    WasmCApiModsRuntime(webrogue::core::ConsoleStream *wrout,
-                        webrogue::core::ConsoleStream *wrerr,
-                        webrogue::core::ResourceStorage *resourceStorage,
-                        webrogue::core::Config *config);
+    WasmCApiModsRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                        webrogue::core::Config const *config);
     wasm_module_t *module = nullptr;
     wasm_instance_t *instance = nullptr;
     wasm_engine_t *engine = nullptr;

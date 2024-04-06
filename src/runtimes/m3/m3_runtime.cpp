@@ -29,46 +29,42 @@ m3ApiRawFunction(proc_exit) {
     m3ApiTrap(m3Err_trapExit);
 }
 
-M3ModsRuntime::M3ModsRuntime(webrogue::core::ConsoleStream *wrout,
-                             webrogue::core::ConsoleStream *wrerr,
-                             webrogue::core::ResourceStorage *resourceStorage,
-                             webrogue::core::Config *config)
-    : ModsRuntime(wrout, wrerr, resourceStorage, config){};
+M3ModsRuntime::M3ModsRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                             webrogue::core::Config const *config)
+    : ModsRuntime(resourceStorage, config){};
 
 void M3ModsRuntime::initMods() {
 
-    linkedWasm = core::getCompactlyLinkedBinaries(
-        this, resourceStorage, config,
-        [this]() {
-            interrupt();
-        },
-        wrout, wrerr);
+    linkedWasm = core::getCompactlyLinkedBinaries(this, resourceStorage, config,
+                                                  [this]() {
+                                                      interrupt();
+                                                  });
     if (!linkedWasm) {
-        *wrerr << "linking failed\n";
+        // *wrerr << "linking failed\n";
         return;
     }
 
     modsEnvironment = m3_NewEnvironment();
     if (!modsEnvironment) {
-        *wrerr << "initializing m3 environment failed\n";
+        // *wrerr << "initializing m3 environment failed\n";
         return;
     }
     modsRuntime = m3_NewRuntime(modsEnvironment, 64 * 1024 * 1024, nullptr);
     if (!modsRuntime) {
-        *wrerr << "initializing m3 runtime failed\n";
+        // *wrerr << "initializing m3 runtime failed\n";
         return;
     }
     M3Result err = m3_ParseModule(modsEnvironment, &modsModule,
                                   linkedWasm->data(), linkedWasm->size());
     if (err) {
-        *wrerr << "parsing wasm binnary failed: " << err << "\n";
+        // *wrerr << "parsing wasm binnary failed: " << err << "\n";
         return;
     }
 
     m3_SetModuleName(modsModule, "mods");
     err = m3_LoadModule(modsRuntime, modsModule);
     if (err) {
-        *wrerr << "loading wasm module failed: " << err << "\n";
+        // *wrerr << "loading wasm module failed: " << err << "\n";
         return;
     }
 
@@ -89,18 +85,18 @@ void M3ModsRuntime::initMods() {
 
     m3_LinkRawFunctionEx(modsModule, "wasi_snapshot_preview1", "proc_exit",
                          "v(i)", proc_exit, (void *)(this));
-    *wrout << "initializing mods...\n";
+    // *wrout << "initializing mods...\n";
 
     IM3Function func;
 
     err = m3_FindFunction(&func, modsRuntime, "__wasm_call_ctors");
     if (err) {
-        *wrerr << err << "\n";
+        // *wrerr << err << "\n";
         return;
     }
     err = m3_Call(func, 0, nullptr);
     if (err) {
-        *wrerr << err << "\n";
+        // *wrerr << err << "\n";
         return;
     }
     for (std::string modName : resourceStorage->modNames) {
@@ -108,20 +104,20 @@ void M3ModsRuntime::initMods() {
 
         err = m3_FindFunction(&func, modsRuntime, funcName.c_str());
         if (err) {
-            *wrerr << err << "\n";
+            // *wrerr << err << "\n";
             return;
         }
         err = m3_Call(func, 0, nullptr);
         if (err) {
-            *wrerr << err << "\n";
+            // *wrerr << err << "\n";
             return;
         }
     }
-    *wrout << "all mods initialized\n";
+    // *wrout << "all mods initialized\n";
 
     err = m3_FindFunction(&startFunction, modsRuntime, "wr_start");
     if (err) {
-        *wrerr << err << "\n";
+        // *wrerr << err << "\n";
         return;
     }
 
@@ -130,7 +126,7 @@ void M3ModsRuntime::initMods() {
 void M3ModsRuntime::start() {
     M3Result err = m3_Call(startFunction, 0, nullptr);
     if (err && !procExit) {
-        *wrerr << err << "\n";
+        // *wrerr << err << "\n";
         return;
     }
 }

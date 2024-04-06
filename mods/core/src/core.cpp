@@ -26,22 +26,24 @@ extern "C" webrogue_event const *webrogue_core_get_events(size_t *eventCount) {
     return eventBuffer.data();
 }
 
-
 extern "C" void webrogue_core_print(const char *str) {
     wr_debug_print((uint64_t)str, strlen(str));
 }
 
 extern "C" WR_EXPORTED(void, wr_start)() {
     eventBuffer.clear();
+    for (auto step : initializationSteps) {
+        step();
+    }
 }
 
-extern "C" void webrogue_core_interrupt() {
-    eventBuffer.clear();
-    int32_t const numberOfEvents = wr_interrupt();
-    eventBuffer.resize(numberOfEvents);
-    if (numberOfEvents)
-        wr_copy_events((int64_t)eventBuffer.data(), numberOfEvents);
-}
+//extern "C" void webrogue_core_interrupt() {
+//    eventBuffer.clear();
+//    int32_t const numberOfEvents = wr_interrupt();
+//    eventBuffer.resize(numberOfEvents);
+//    if (numberOfEvents)
+//        wr_copy_events((int64_t)eventBuffer.data(), numberOfEvents);
+//}
 
 extern "C" WR_EXPORTED(void, init_mod_core)() {
     FILE *f = fopen("./text.txt", "w+");

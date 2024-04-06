@@ -37,32 +37,29 @@ static wasm_trap_t *procExitFunc(void *env, const wasm_val_vec_t *args,
 }
 
 WasmCApiModsRuntime::WasmCApiModsRuntime(
-    webrogue::core::ConsoleStream *wrout, webrogue::core::ConsoleStream *wrerr,
     webrogue::core::ResourceStorage *resourceStorage,
-    webrogue::core::Config *config)
-    : ModsRuntime(wrout, wrerr, resourceStorage, config) {
+    webrogue::core::Config const *config)
+    : ModsRuntime(resourceStorage, config) {
 }
 
 void WasmCApiModsRuntime::initMods() {
-    auto linkResult = core::getCompactlyLinkedBinaries(
-        this, resourceStorage, config,
-        [this]() {
-            interrupt();
-        },
-        wrout, wrerr);
+    auto linkResult = core::getCompactlyLinkedBinaries(this, resourceStorage,
+                                                       config, [this]() {
+                                                           interrupt();
+                                                       });
 
-    *wrout << "creating engine...\n";
+    // *wrout << "creating engine...\n";
     engine = wasm_engine_new();
-    *wrout << "creating store...\n";
+    // *wrout << "creating store...\n";
     store = wasm_store_new(engine);
     wasm_byte_vec_t binary;
     wasm_byte_vec_new_uninitialized(&binary, linkResult->size());
     memcpy(binary.data, linkResult->data(), linkResult->size());
-    *wrout << "creating module...\n";
+    // *wrout << "creating module...\n";
     module = wasm_module_new(store, &binary);
 
     if (!module) {
-        *wrerr << "module == nullptr\n";
+        // *wrerr << "module == nullptr\n";
         return;
     }
     std::map<std::string, wasm_extern_t *> importMap;
@@ -114,14 +111,14 @@ void WasmCApiModsRuntime::initMods() {
     }
 
     wasm_extern_vec_t const imports = {externs.size(), externs.data()};
-    *wrout << "creating instance...\n";
+    // *wrout << "creating instance...\n";
     wasm_trap_t *trap;
     instance = wasm_instance_new(store, module, &imports, &trap);
     if (!instance) {
         wasm_message_t errMessage;
         wasm_trap_message(trap, &errMessage);
-        *wrerr << "instance == nullptr\n"
-               << std::string(errMessage.data, errMessage.size) << "\n";
+        // *wrerr << "instance == nullptr\n"
+        // << std::string(errMessage.data, errMessage.size) << "\n";
         return;
     }
 
@@ -151,7 +148,7 @@ void WasmCApiModsRuntime::initMods() {
         }
     }
 
-    *wrout << "initializing mods...\n";
+    // *wrout << "initializing mods...\n";
     wasm_val_vec_t const args = WASM_EMPTY_VEC;
     wasm_val_vec_t results = WASM_EMPTY_VEC;
     if (wasm_func_call(exportedFuncMap["__wasm_call_ctors"], &args, &results)) {

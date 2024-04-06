@@ -7,11 +7,9 @@
 
 namespace webrogue {
 namespace core {
-std::shared_ptr<std::vector<uint8_t>>
-getCompactlyLinkedBinaries(ModsRuntime *runtime,
-                           ResourceStorage *resourceStorage, Config *config,
-                           std::function<void()> interrupt,
-                           ConsoleStream *wrout, ConsoleStream *wrerr) {
+std::shared_ptr<std::vector<uint8_t>> getCompactlyLinkedBinaries(
+    ModsRuntime *runtime, ResourceStorage *resourceStorage,
+    Config const *config, std::function<void()> interrupt) {
 
     // {
     //     std::ifstream file("external/wabt/src/linking/"
@@ -30,7 +28,7 @@ getCompactlyLinkedBinaries(ModsRuntime *runtime,
     //     return std::make_shared<std::vector<uint8_t>>(out);
     // }
 
-    *wrout << "linking...\n";
+    // *wrout << "linking...\n";
 
     std::vector<LinkableFile> binaries;
     std::vector<std::string> requiredFuncs;
@@ -38,7 +36,7 @@ getCompactlyLinkedBinaries(ModsRuntime *runtime,
     for (std::string const modname : resourceStorage->modNames) {
         std::string const filename = modname + "/mod.a";
         if (!resourceStorage->hasFile(filename)) {
-            *wrerr << "Could not find " + filename + " for linking\n";
+            // *wrerr << "Could not find " + filename + " for linking\n";
             return nullptr;
         }
         binaries.push_back(
@@ -50,7 +48,7 @@ getCompactlyLinkedBinaries(ModsRuntime *runtime,
         std::string const filename = "core/stdlibs.a";
 
         if (!resourceStorage->hasFile(filename)) {
-            *wrerr << "Could not find " + filename + " for linking\n";
+            // *wrerr << "Could not find " + filename + " for linking\n";
             return nullptr;
         }
         binaries.push_back(

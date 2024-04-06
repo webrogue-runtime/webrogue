@@ -14,8 +14,8 @@ class WASIObject {
 public:
     uvwasi_s *uvwasi;
     ModsRuntime *runtime;
-    WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
-               Config *config);
+    WASIObject(ModsRuntime *pRuntime, ResourceStorage const *resourceStorage,
+               Config const *config);
     ~WASIObject();
 
 #define WASI_FUNCTION(RET_TYPE, NAME, ARGS) RET_TYPE NAME ARGS;

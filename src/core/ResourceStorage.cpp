@@ -20,8 +20,7 @@
 
 namespace webrogue {
 namespace core {
-ResourceStorage::ResourceStorage(ConsoleStream *wrout, ConsoleStream *wrerr)
-    : wrout(wrout), wrerr(wrerr) {
+ResourceStorage::ResourceStorage() {
 }
 
 void ResourceStorage::addDirectory(std::string modName, std::string path) {
@@ -71,7 +70,7 @@ void ResourceStorage::loadFile(std::string modName, std::string realPath,
 std::vector<uint8_t> &ResourceStorage::getFile(std::string path) {
     return fileMap[path];
 }
-bool ResourceStorage::hasFile(std::string path) {
+bool ResourceStorage::hasFile(std::string path) const {
     return fileMap.count(path);
 }
 
@@ -195,7 +194,7 @@ void ResourceStorage::decompressZstd(
             ZSTD_outBuffer output = {buffOut.data(), buffOutSize, 0};
             size_t const ret = ZSTD_decompressStream(dctx, &output, &input);
             if (ZSTD_isError(ret)) {
-                *wrout << ZSTD_getErrorName(ret) << "\n";
+                // *wrout << ZSTD_getErrorName(ret) << "\n";
                 abort();
             }
             memcpy(decompressedData.data() + buffOutOffset, buffOut.data(),
@@ -209,7 +208,7 @@ void ResourceStorage::decompressZstd(
 bool ResourceStorage::loadDir(std::string path, std::string name) {
     if (modNames.count(name))
         return true;
-    *wrout << "loading directory \"" << name << "\"...\n";
+    // *wrout << "loading directory \"" << name << "\"...\n";
     addDirectory(name, path);
     return true;
 }
@@ -218,7 +217,7 @@ bool ResourceStorage::loadWrmodData(const uint8_t *data, size_t size,
                                     std::string name) {
     if (modNames.count(name))
         return true;
-    *wrout << "loading \"" << name << "\" from memory...\n";
+    // *wrout << "loading \"" << name << "\" from memory...\n";
     addWrmodData(name, data, size);
     return true;
 }
@@ -239,7 +238,7 @@ bool ResourceStorage::readRealFile(std::vector<uint8_t> &out,
 bool ResourceStorage::loadWrmodFile(std::string path, std::string name) {
     if (modNames.count(name))
         return true;
-    *wrout << "loading file \"" << path << "\"...\n";
+    // *wrout << "loading file \"" << path << "\"...\n";
     std::vector<uint8_t> compressedData;
     readRealFile(compressedData, path);
     addWrmodData(name, compressedData.data(), compressedData.size());

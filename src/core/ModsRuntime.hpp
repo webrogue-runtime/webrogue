@@ -3,6 +3,8 @@
 #include "ApiObject.hpp"
 #include "Config.hpp"
 #include "ConsoleStream.hpp"
+#include "Display.hpp"
+#include "EventManager.hpp"
 #include "ResourceStorage.hpp"
 #include "WASIObject.hpp"
 #include <cstddef>
@@ -12,20 +14,18 @@
 
 namespace webrogue {
 namespace core {
-class Linker;
 class ModsRuntime {
 public:
-    ModsRuntime(ConsoleStream *wrout, ConsoleStream *wrerr,
-                ResourceStorage *resourceStorage, Config *config);
+    ModsRuntime(webrogue::core::ResourceStorage *,
+                webrogue::core::Config const *);
     ApiObject apiObject;
 #ifndef WEBROGUE_NO_WASI
     WASIObject wasiObject;
 #endif
-    Linker *linker;
-    ConsoleStream *wrout;
-    ConsoleStream *wrerr;
+    EventManager eventManager;
+    std::shared_ptr<Display> display;
     ResourceStorage *resourceStorage;
-    Config *config;
+    Config const *config;
     const void *vmContext = nullptr;
 
     bool procExit = false;
@@ -62,12 +62,10 @@ public:
     virtual ~ModsRuntime();
 
     void interrupt();
-
-    void onFrameEnd();
 };
 
-typedef std::function<std::shared_ptr<ModsRuntime>(
-    ConsoleStream *, ConsoleStream *, ResourceStorage *, Config *)>
+typedef std::function<std::shared_ptr<ModsRuntime>(ResourceStorage *,
+                                                   Config const *)>
     runtime_maker_t;
 
 } // namespace core
@@ -81,9 +79,7 @@ namespace runtimes {
 #endif
 
 std::shared_ptr<webrogue::core::ModsRuntime> MAKE_DEFAULT_RUNTIME_EXPORT
-makeDefaultRuntime(webrogue::core::ConsoleStream *wrout,
-                   webrogue::core::ConsoleStream *wrerr,
-                   webrogue::core::ResourceStorage *resourceStorage,
-                   webrogue::core::Config *config);
+makeDefaultRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                   webrogue::core::Config const *config);
 } // namespace runtimes
 } // namespace webrogue

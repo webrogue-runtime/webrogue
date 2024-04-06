@@ -3,6 +3,7 @@
 #include "ConsoleStream.hpp"
 #include <cstdint>
 #include <functional>
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -18,8 +19,6 @@ class ResourceStorage {
 
 public:
     std::map<std::string, std::vector<uint8_t>> fileMap;
-    ConsoleStream *wrout;
-    ConsoleStream *wrerr;
     std::map<uint32_t, std::string> descriptorMap;
 
     std::function<void()> interrupt = []() {
@@ -28,7 +27,7 @@ public:
 public:
     std::string dataPath;
     std::set<std::string> modNames;
-    bool hasFile(std::string path);
+    bool hasFile(std::string path) const;
     std::vector<uint8_t> &getFile(std::string path);
     void addDirectory(std::string modName, std::string path);
     void addWrmodData(std::string modName, const uint8_t *data, size_t size);
@@ -44,7 +43,7 @@ public:
     bool loadWrmodData(const uint8_t *data, size_t size, std::string name);
     bool loadWrmodFile(std::string path, std::string name);
 
-    ResourceStorage(ConsoleStream *wrout, ConsoleStream *wrerr);
+    ResourceStorage();
 
 private:
     bool readRealFile(std::vector<uint8_t> &out, std::string path);

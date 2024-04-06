@@ -1,8 +1,8 @@
 #pragma once
+#include "../../mods/core/include/core.h"
 #include "Config.hpp"
-#include "ConsoleWriter.hpp"
 #include "DB.hpp"
-#include "Output.hpp"
+#include "Terminal.hpp"
 #include "wasm_types.hpp"
 #include <cstdint>
 #include <memory>
@@ -16,11 +16,10 @@ class ApiObject {
 public:
     ModsRuntime *runtime;
     std::unique_ptr<DB> db;
-    Output *output;
-    ConsoleWriter *consoleWriter;
-    Config *config;
+    Terminal *terminal;
+    Config const *config;
     std::vector<webrogue_event> rawEvents;
-    ApiObject(ModsRuntime *pRuntime, Config *pConfig);
+    ApiObject(ModsRuntime *pRuntime, Config const *pConfig);
 
 #define WR_API_FUNCTION(RET_TYPE, NAME, ARGS) RET_TYPE NAME ARGS;
 #include "../../mods/core/include/common/wr_api_functions.def"

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 project(webrogue)
 
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 set(WEBROGUE_ROOT_PATH ${CMAKE_CURRENT_LIST_DIR})
 set(CLANG_HAS_WASM TRUE)
@@ -193,7 +193,7 @@ endif()
 
 list(APPEND WEBROGUE_RUNTIMES wasmer)
 
-set(WEBROGUE_TERMINALS)
+set(WEBROGUE_DISPLAYS)
 
 if(WIN32)
     include(${WEBROGUE_ROOT_PATH}/platforms/Windows/download_sdl.cmake)
@@ -210,14 +210,14 @@ if(WIN32)
     # target_link_libraries(webrogue_output_pdcurses ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
     # list(APPEND WEBROGUE_OUTPUTS pdcurses)
 
-    make_webrogue_terminal(
-        LIB_NAME webrogue_terminal_emulated
-        TYPE emulated
+    make_webrogue_display(
+        LIB_NAME webrogue_display_sdl
+        TYPE sdl
         ${WEBROGUE_LIBRARY_TYPE}
     )
-    target_include_directories(webrogue_terminal_emulated PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
-    target_link_libraries(webrogue_terminal_emulated ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
-    list(APPEND WEBROGUE_TERMINALS emulated)
+    target_include_directories(webrogue_display_sdl PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
+    target_link_libraries(webrogue_display_sdl ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
+    list(APPEND WEBROGUE_DISPLAYS sdl)
 else()
     find_package(SDL2)
     find_package(SDL2_ttf)
@@ -232,14 +232,14 @@ else()
         # target_link_libraries(webrogue_output_pdcurses ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
         # list(APPEND WEBROGUE_OUTPUTS pdcurses)
 
-        make_webrogue_terminal(
-            LIB_NAME webrogue_terminal_emulated
-            TYPE emulated
+        make_webrogue_display(
+            LIB_NAME webrogue_display_sdl
+            TYPE sdl
             ${WEBROGUE_LIBRARY_TYPE}
         )
-        target_include_directories(webrogue_terminal_emulated PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
-        target_link_libraries(webrogue_terminal_emulated ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
-        list(APPEND WEBROGUE_TERMINALS emulated)
+        target_include_directories(webrogue_display_sdl PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
+        target_link_libraries(webrogue_display_sdl ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
+        list(APPEND WEBROGUE_DISPLAYS sdl)
     endif()
 
     # make_webrogue_output(
@@ -254,8 +254,8 @@ endif()
 add_custom_target(all_webrogue)
 
 foreach(RUNTIME ${WEBROGUE_RUNTIMES})
-    foreach(TERMINAL ${WEBROGUE_TERMINALS})
-        set(EXECUTABLE_NAME webrogue_${TERMINAL}_${RUNTIME})
+    foreach(DISPLAY ${WEBROGUE_DISPLAYS})
+        set(EXECUTABLE_NAME webrogue_${DISPLAY}_${RUNTIME})
         if(WIN32)
             set(EXECUTABLE_TYPE WIN32)
         else()
@@ -265,7 +265,7 @@ foreach(RUNTIME ${WEBROGUE_RUNTIMES})
         target_link_libraries(
             ${EXECUTABLE_NAME}
             webrogue_runtime_${RUNTIME}
-            webrogue_terminal_${TERMINAL}
+            webrogue_display_${DISPLAY}
             core_wrmod
             webrogue_core
             compact_linker
@@ -273,8 +273,8 @@ foreach(RUNTIME ${WEBROGUE_RUNTIMES})
         target_include_directories(${EXECUTABLE_NAME} PRIVATE ${WEBROGUE_ROOT_PATH}/src)
         target_compile_features(${EXECUTABLE_NAME} PRIVATE cxx_std_17)
         add_dependencies(all_webrogue ${EXECUTABLE_NAME})
-        if(TERMINAL STREQUAL emulated)
-            target_compile_definitions(${EXECUTABLE_NAME} PRIVATE WEBROGUE_TERMINAL_EMULATED)
+        if(DISPLAY STREQUAL sdl)
+            target_compile_definitions(${EXECUTABLE_NAME} PRIVATE WEBROGUE_DISPLAY_SDL)
             target_include_directories(${EXECUTABLE_NAME} PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_TTF_INCLUDE_DIR})
         endif()
         if(RUNTIME STREQUAL native)

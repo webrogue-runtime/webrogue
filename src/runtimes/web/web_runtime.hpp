@@ -9,10 +9,8 @@ namespace runtimes {
 namespace web {
 class WebModsRuntime : public webrogue::core::ModsRuntime {
 public:
-    WebModsRuntime(webrogue::core::ConsoleStream *wrout,
-                   webrogue::core::ConsoleStream *wrerr,
-                   webrogue::core::ResourceStorage *resourceStorage,
-                   webrogue::core::Config *config);
+    WebModsRuntime(webrogue::core::ResourceStorage *resourceStorage,
+                   webrogue::core::Config const *config);
     std::shared_ptr<core::wasm_binnary> linkedWasm;
 
     void initMods() override;
