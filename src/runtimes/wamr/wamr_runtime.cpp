@@ -98,19 +98,19 @@ void WamrModsRuntime::initMods() {
     execEnv = wasm_runtime_create_exec_env(moduleInst, stackSize);
     wasm_runtime_set_user_data(execEnv, this);
     *wrout << "initializing mods...\n";
-    func = wasm_runtime_lookup_function(moduleInst, "__wasm_call_ctors", "()");
+    func = wasm_runtime_lookup_function(moduleInst, "__wasm_call_ctors");
     if (!wasm_runtime_call_wasm_v(execEnv, func, 0, nullptr, 0)) {
         return;
     }
     for (std::string const modName : resourceStorage->modNames) {
         std::string const funcName = "init_mod_" + modName;
-        func = wasm_runtime_lookup_function(moduleInst, funcName.c_str(), "()");
+        func = wasm_runtime_lookup_function(moduleInst, funcName.c_str());
         if (!wasm_runtime_call_wasm_v(execEnv, func, 0, nullptr, 0)) {
             return;
         }
     }
     *wrout << "all mods initialized\n";
-    startFunc = wasm_runtime_lookup_function(moduleInst, "wr_start", "()");
+    startFunc = wasm_runtime_lookup_function(moduleInst, "wr_start");
 
     isInitialized = true;
 };
