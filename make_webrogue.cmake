@@ -40,6 +40,8 @@ set(
     ${WEBROGUE_ROOT_PATH}/src/core/ResourceStorage.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/ModsRuntime.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/ModsRuntime.cpp
+    ${WEBROGUE_ROOT_PATH}/src/core/ObjectExtractor.hpp
+    ${WEBROGUE_ROOT_PATH}/src/core/Pollable.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/webrogueMain.hpp
     ${WEBROGUE_ROOT_PATH}/src/core/webrogueMain.cpp
     ${WEBROGUE_ROOT_PATH}/src/core/Terminal.hpp

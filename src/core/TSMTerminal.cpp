@@ -33,6 +33,16 @@ TSMTerminal::TSMTerminal() {
 void TSMTerminal::writeStdout(void const *data, size_t size) {
     tsm_screen_resize(screen, getWidth(), getHeight());
     tsm_vte_input(vte, (const char *)data, size);
+
+    auto now = std::chrono::steady_clock::now();
+    auto duration = now - lastDrawTimePoint;
+    using fps_60 = std::chrono::duration<double, std::ratio<1, 60>>;
+    if (fps_60(duration).count() > 1) {
+        draw();
+        lastDrawTimePoint = now;
+    }
+}
+void TSMTerminal::draw() {
     tsm_screen_draw(screen, tsmTerminalDraw, this);
 }
 TSMTerminal::~TSMTerminal() {

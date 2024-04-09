@@ -22,7 +22,8 @@ WR_API_FUNCTION_IMPL(WASMRawU32, wr_poll, (WASMRawI32 timeout_ms)) {
         assert(false);
         return WASMRawU32::make(0);
     }
-    return WASMRawU32::make(runtime->eventManager.poll(timeout_ms.get()));
+    runtime->eventManager.poll(timeout_ms.get());
+    return WASMRawU32::make(runtime->eventManager.getEvents().size());
 }
 
 WR_API_FUNCTION_IMPL(void, wr_copy_events,
@@ -31,15 +32,17 @@ WR_API_FUNCTION_IMPL(void, wr_copy_events,
         assert(false);
         return;
     }
-    if (size.get() != rawEvents.size()) {
+    if (size.get() != runtime->eventManager.getEvents().size()) {
         assert(false);
         return;
     }
-    if (!runtime->setVMData(rawEvents.data(), out_buff_offset.get(),
+    if (!runtime->setVMData(runtime->eventManager.getEvents().data(),
+                            out_buff_offset.get(),
                             size.get() * sizeof(webrogue_event))) {
         assert(false);
         return;
     }
+    runtime->eventManager.clearEvents();
 }
 
 WR_API_FUNCTION_IMPL(void, wr_stdout_write,

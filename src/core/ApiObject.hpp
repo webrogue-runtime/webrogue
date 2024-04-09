@@ -18,7 +18,6 @@ public:
     std::unique_ptr<DB> db;
     Terminal *terminal;
     Config const *config;
-    std::vector<webrogue_event> rawEvents;
     ApiObject(ModsRuntime *pRuntime, Config const *pConfig);
 
 #define WR_API_FUNCTION(RET_TYPE, NAME, ARGS) RET_TYPE NAME ARGS;

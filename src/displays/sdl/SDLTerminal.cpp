@@ -8,19 +8,17 @@ namespace webrogue {
 namespace displays {
 namespace sdl {
 SDLTerminal::SDLTerminal(SDLDisplay *display) : display(display) {
-    int windowWidth = 0;
-    int windowHeight = 0;
-    SDL_GetWindowSize(display->window, &windowWidth, &windowHeight);
-    mainTexture =
-        SDL_CreateTexture(display->renderer, SDL_PIXELFORMAT_RGBA8888,
-                          SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
+    windowWidth = windowHeight = -1;
 }
 
-void SDLTerminal::writeStdout(void const *data, size_t size) {
-    int windowWidth = 0;
-    int windowHeight = 0;
-    SDL_GetWindowSize(display->window, &windowWidth, &windowHeight);
-
+void SDLTerminal::refreshWindowSize() {
+    int newWindowWidth = 0;
+    int newWindowHeight = 0;
+    SDL_GetWindowSize(display->window, &newWindowWidth, &newWindowHeight);
+    if (newWindowWidth == windowWidth && newWindowHeight == windowHeight)
+        return;
+    windowWidth = newWindowWidth;
+    windowHeight = newWindowHeight;
     fontHeight = 12;
 
     if (font)
@@ -35,17 +33,32 @@ void SDLTerminal::writeStdout(void const *data, size_t size) {
     dx = (windowWidth - (charCountX * fontWidth)) / 2;
     dy = (windowHeight - (charCountY * fontHeight)) / 2;
 
+    if (mainTexture)
+        SDL_DestroyTexture(mainTexture);
+
+    mainTexture =
+        SDL_CreateTexture(display->renderer, SDL_PIXELFORMAT_RGBA8888,
+                          SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
+}
+
+void SDLTerminal::writeStdout(void const *data, size_t size) {
+    refreshWindowSize();
+
+    core::TSMTerminal::writeStdout(data, size);
+    // drawGlyph(3, 3, 'a');
+};
+
+void SDLTerminal::draw() {
     SDL_SetRenderTarget(display->renderer, mainTexture);
     SDL_SetRenderDrawColor(display->renderer, 0, 0, 0, 0);
     SDL_RenderClear(display->renderer);
 
-    core::TSMTerminal::writeStdout(data, size);
-    // drawGlyph(3, 3, 'a');
+    core::TSMTerminal::draw();
 
     SDL_SetRenderTarget(display->renderer, NULL);
     SDL_RenderCopy(display->renderer, mainTexture, NULL, NULL);
     SDL_RenderPresent(display->renderer);
-};
+}
 
 bool operator<(const SDLTerminal::GlyphMapKey &k1,
                const SDLTerminal::GlyphMapKey &k2) {
@@ -59,9 +72,9 @@ SDLTerminal::GlyphMapValue::~GlyphMapValue() {
 }
 
 void SDLTerminal::drawGlyph(int x, int y, uint32_t glyph) {
-    SDL_Color foregroundColor = {255, 255, 255, 0};
-    SDL_Color backgroundColor = {0, 0, 0, 0};
-    GlyphMapKey key = {glyph};
+    SDL_Color const foregroundColor = {255, 255, 255, 0};
+    SDL_Color const backgroundColor = {0, 0, 0, 0};
+    GlyphMapKey const key = {glyph};
     if (!glyphMap.count(key)) {
         SDL_Surface *surface = TTF_RenderGlyph32_Shaded(
             font, glyph, foregroundColor, backgroundColor);

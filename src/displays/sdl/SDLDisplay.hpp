@@ -11,6 +11,7 @@ class SDLDisplay : public core::Display {
 public:
     SDLDisplay();
     SDL_Renderer *renderer;
+    void poll(core::EventManager &eventManager) override;
     SDL_Window *window;
     ~SDLDisplay() override;
 };

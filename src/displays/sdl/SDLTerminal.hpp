@@ -17,6 +17,9 @@ public:
     void writeStdout(void const *data, size_t size) override;
     int getWidth() override;
     int getHeight() override;
+    void refreshWindowSize();
+    void draw() override;
+
     ~SDLTerminal() override;
 
     class GlyphMapKey {
@@ -33,12 +36,14 @@ public:
 
 private:
     SDLDisplay *display;
-    SDL_Texture *mainTexture;
+    SDL_Texture *mainTexture = 0;
     TTF_Font *font = nullptr;
 
     std::map<GlyphMapKey, std::unique_ptr<GlyphMapValue>> glyphMap;
 
     int fontHeight, fontWidth;
+
+    int windowWidth, windowHeight;
 
     int charCountX, charCountY;
     int dx, dy;

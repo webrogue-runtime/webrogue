@@ -70,6 +70,8 @@ int webrogueMain(webrogue::core::runtime_maker_t runtimeMaker,
     ResourceStorage mockFS;
     std::shared_ptr<ModsRuntime> runtime(runtimeMaker(&mockFS, &config));
     runtime->display = config.getDisplay();
+    runtime->eventManager.registerPollable(runtime->display.get());
+
     // runtime->apiObject.output = output.get();
     // runtime->apiObject.consoleWriter = &consoleWriter;
     // output->begin();
