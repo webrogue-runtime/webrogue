@@ -1,6 +1,10 @@
 #include "SDLDisplay.hpp"
+#include "../../../external/libtsm/external/xkbcommon/xkbcommon-keysyms.h"
 #include "../../core/EventManager.hpp"
 #include "SDLTerminal.hpp"
+#include "SDL_keycode.h"
+#include <cstdint>
+#include <cstring>
 #include <memory>
 
 namespace webrogue {
@@ -26,21 +30,54 @@ void SDLDisplay::poll(core::EventManager &eventManager) {
     webrogue_event outputEvent;
 
     while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_QUIT) {
+        switch (event.type) {
+        case SDL_QUIT: {
             outputEvent.type = webrogue_event_type::Close;
             eventManager.addEvent(outputEvent);
-            continue;
-        }
-        if (event.type == SDL_WINDOWEVENT) {
-            if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+        } break;
+        case SDL_WINDOWEVENT: {
+            switch (event.window.event) {
+            case SDL_WINDOWEVENT_RESIZED:
                 outputEvent.type = webrogue_event_type::Resize;
                 eventManager.addEvent(outputEvent);
-            }
-            if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                break;
+            case SDL_WINDOWEVENT_CLOSE:
                 outputEvent.type = webrogue_event_type::Close;
                 eventManager.addEvent(outputEvent);
-                continue;
+                break;
+            default:
+                break;
             }
+        } break;
+        case SDL_KEYDOWN: {
+            auto *sdlTerminal = reinterpret_cast<SDLTerminal *>(terminal.get());
+            uint32_t sym = event.key.keysym.sym;
+            unsigned int mods = 0;
+            if (event.key.keysym.mod & KMOD_CTRL)
+                mods |= TSM_CONTROL_MASK;
+            if (sym == SDLK_BACKSPACE) {
+                // mods |= TSM_CONTROL_MASK;
+                sym = XKB_KEY_BackSpace;
+            }
+            if (sym == SDLK_RETURN) {
+                // mods |= TSM_CONTROL_MASK;
+                sym = XKB_KEY_Return;
+                sdlTerminal->writeStdin("\n", 1);
+            }
+
+            sdlTerminal->ignoreStdin = true;
+            sdlTerminal->keyPressed(sym, 0, mods, 0);
+            sdlTerminal->ignoreStdin = false;
+        } break;
+
+        case SDL_TEXTINPUT: {
+            auto *sdlTerminal = reinterpret_cast<SDLTerminal *>(terminal.get());
+            sdlTerminal->feedText(event.text.text, strlen(event.text.text));
+        }
+
+        break;
+        default:
+            break;
         }
         // if (event.type == SDL_MOUSEBUTTONDOWN ||
         //     event.type == SDL_MOUSEBUTTONUP) {
@@ -74,61 +111,10 @@ void SDLDisplay::poll(core::EventManager &eventManager) {
         //     events.push(outputEvent);
         //     continue;
         // }
-
-        // if (event.type == SDL_KEYDOWN) {
-        //     if (event.key.keysym.scancode == 96) {
-        //         outputEvent.type = webrogue_event_type::Console;
-        //         events.push(outputEvent);
-        //     } else {
-        //         switch (event.key.keysym.sym) {
-        //         case SDLK_UP:
-        //             outputEvent.type = webrogue_event_type::Arrow;
-        //             outputEvent.data1 = webrogue_arrow_direction::up;
-        //             events.push(outputEvent);
-        //             break;
-        //         case SDLK_DOWN:
-        //             outputEvent.type = webrogue_event_type::Arrow;
-        //             outputEvent.data1 = webrogue_arrow_direction::down;
-        //             events.push(outputEvent);
-        //             break;
-        //         case SDLK_LEFT:
-        //             outputEvent.type = webrogue_event_type::Arrow;
-        //             outputEvent.data1 = webrogue_arrow_direction::left;
-        //             events.push(outputEvent);
-        //             break;
-        //         case SDLK_RIGHT:
-        //             outputEvent.type = webrogue_event_type::Arrow;
-        //             outputEvent.data1 = webrogue_arrow_direction::right;
-        //             events.push(outputEvent);
-        //             break;
-        //         case SDLK_KP_ENTER:
-        //             outputEvent.type = webrogue_event_type::Key;
-        //             outputEvent.data1 = 0x157;
-        //             events.push(outputEvent);
-        //             break;
-        //         case SDLK_BACKSPACE:
-        //             outputEvent.type = webrogue_event_type::Key;
-        //             outputEvent.data1 = '\177';
-        //             events.push(outputEvent);
-        //             break;
-        //         default:
-        //             outputEvent.type = webrogue_event_type::Key;
-        //             outputEvent.data1 = event.key.keysym.sym;
-        //             events.push(outputEvent);
-        //             break;
-        //         }
-        //     }
-        //     continue;
-        // }
-        // if (event.type == SDL_TEXTINPUT) {
-        //     for (int i = 0; i < 32 && event.text.text[i]; i++) {
-        //         outputEvent.type = webrogue_event_type::Char;
-        //         outputEvent.data1 = event.text.text[i];
-        //         events.push(outputEvent);
-        //     }
-        //     continue;
-        // }
     }
+    auto *sdlTerminal = reinterpret_cast<SDLTerminal *>(terminal.get());
+    sdlTerminal->poll(eventManager);
+    sdlTerminal->bufferedDraw();
 }
 
 SDLDisplay::~SDLDisplay() {

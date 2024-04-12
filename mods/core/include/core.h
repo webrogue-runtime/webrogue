@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common/colors.h"
 #include "common/events.h"
 
 #ifdef __cplusplus

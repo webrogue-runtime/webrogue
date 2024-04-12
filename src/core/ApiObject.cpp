@@ -1,4 +1,3 @@
-#include "../../mods/core/include/common/colors.h"
 #include "Config.hpp"
 #include "ModsRuntime.hpp"
 #include "wasm_types.hpp"

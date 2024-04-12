@@ -3,6 +3,7 @@
 #include "../../core/Display.hpp"
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <optional>
 
 namespace webrogue {
 namespace displays {
@@ -14,6 +15,9 @@ public:
     void poll(core::EventManager &eventManager) override;
     SDL_Window *window;
     ~SDLDisplay() override;
+
+private:
+    std::optional<SDL_KeyboardEvent> lastKeyboardEvent;
 };
 } // namespace sdl
 } // namespace displays

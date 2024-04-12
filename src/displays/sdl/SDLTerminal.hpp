@@ -19,6 +19,8 @@ public:
     int getHeight() override;
     void refreshWindowSize();
     void draw() override;
+    void keyPressed(uint32_t keysym, uint32_t ascii, unsigned int mods,
+                    uint32_t unicode);
 
     ~SDLTerminal() override;
 
@@ -48,7 +50,7 @@ private:
     int charCountX, charCountY;
     int dx, dy;
 
-    void drawGlyph(int x, int y, uint32_t glyph) override;
+    void drawGlyph(int x, int y, uint32_t glyph, GlyphColor color) override;
 };
 } // namespace sdl
 } // namespace displays

@@ -1,5 +1,4 @@
 #include "../include/core.h"
-#include "../include/common/colors.h"
 #include "../include/common/events.h"
 #include "../include/macros.h"
 #include "../include/wr_api.h"

@@ -8,16 +8,9 @@ extern "C" {
 
 typedef enum webrogue_event_type {
     None = 0,
-    Arrow,
-    Key,
-    Char,
     Close,
-    MouseLeftButtonPressed,
-    MouseLeftButtonReleased,
-    MouseMoved,
-    Deadline,
-    Console,
     Resize,
+    Stdin,
 } webrogue_event_type;
 
 typedef enum webrogue_arrow_direction {

@@ -15,10 +15,14 @@ public:
     void registerPollable(Pollable *pollable);
     std::vector<webrogue_event> const &getEvents();
     void clearEvents();
+    void writeStdin(const std::vector<uint8_t> stdinBuffer);
 
 private:
     std::vector<webrogue_event> eventBuffer;
     std::vector<Pollable *> pollables;
+
+    std::vector<uint8_t> stdinBuffer;
+    bool hasStdinEvent = false;
 };
 } // namespace core
 } // namespace webrogue

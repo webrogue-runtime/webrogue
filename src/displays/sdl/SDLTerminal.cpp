@@ -71,9 +71,11 @@ SDLTerminal::GlyphMapValue::~GlyphMapValue() {
     SDL_DestroyTexture(texture);
 }
 
-void SDLTerminal::drawGlyph(int x, int y, uint32_t glyph) {
-    SDL_Color const foregroundColor = {255, 255, 255, 0};
-    SDL_Color const backgroundColor = {0, 0, 0, 0};
+void SDLTerminal::drawGlyph(int x, int y, uint32_t glyph, GlyphColor color) {
+    SDL_Color const foregroundColor = {
+        color.foregroundRed, color.foregroundGreen, color.foregroundBlue, 0};
+    SDL_Color const backgroundColor = {
+        color.backgroundRed, color.backgroundGreen, color.backgroundBlue, 0};
     GlyphMapKey const key = {glyph};
     if (!glyphMap.count(key)) {
         SDL_Surface *surface = TTF_RenderGlyph32_Shaded(
@@ -99,6 +101,10 @@ int SDLTerminal::getWidth() {
 }
 int SDLTerminal::getHeight() {
     return charCountY;
+}
+void SDLTerminal::keyPressed(uint32_t keysym, uint32_t ascii, unsigned int mods,
+                             uint32_t unicode) {
+    tsm_vte_handle_keyboard(vte, keysym, ascii, mods, unicode);
 }
 SDLTerminal::~SDLTerminal() {
     SDL_DestroyTexture(mainTexture);
