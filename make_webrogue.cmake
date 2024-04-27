@@ -182,6 +182,19 @@ set(
 )
 
 set(
+    WEBROGUE_WASMTIME_RUNTIME_SOURCE_FILES
+
+    ${WEBROGUE_ROOT_PATH}/src/runtimes/wasmtime/wasmtime_runtime.cpp
+    ${WEBROGUE_ROOT_PATH}/src/runtimes/wasmtime/wasmtime_runtime.hpp
+    ${WEBROGUE_ROOT_PATH}/src/runtimes/wasmtime/wasmtime_templates.hpp
+)
+set(
+    WEBROGUE_WASMTIME_RUNTIME_DEFAULT_FACTORY_SOURCE_FILES
+    ${WEBROGUE_ROOT_PATH}/src/runtimes/wasmtime/default_factory.cpp
+)
+
+
+set(
     WASI_SOURCE_FILES
 
     ${WEBROGUE_ROOT_PATH}/src/core/wasi_templates.hpp
@@ -452,6 +465,9 @@ function(make_webrogue_runtime)
     elseif(${ARGS_TYPE} STREQUAL WEB)
         set(SOURCES ${WEBROGUE_WEB_RUNTIME_SOURCE_FILES})
         set(DEFAULT_FACTORY_SOURCES ${WEBROGUE_WEB_RUNTIME_DEFAULT_FACTORY_SOURCE_FILES})
+    elseif(${ARGS_TYPE} STREQUAL WASMTIME)
+        set(SOURCES ${WEBROGUE_WASMTIME_RUNTIME_SOURCE_FILES})
+        set(DEFAULT_FACTORY_SOURCES ${WEBROGUE_WASMTIME_RUNTIME_DEFAULT_FACTORY_SOURCE_FILES})
     else()
         message(FATAL_ERROR "Unknown runtime type: ${ARGS_TYPE}")
     endif()
@@ -581,12 +597,17 @@ function(link_to_wasmtime)
     corrosion_import_crate(
         MANIFEST_PATH ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/Cargo.toml 
         NO_DEFAULT_FEATURES
+        FEATURES cache
         CRATE_TYPES ${RUST_CRATE_TYPE}
         CRATES wasmtime-c-api
     )
 
     target_link_libraries(${ARGS_LIB_NAME} wasmtime)
-    target_include_directories(${ARGS_LIB_NAME} PRIVATE ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/wasm-c-api/include)
+    target_include_directories(
+        ${ARGS_LIB_NAME} PRIVATE 
+        ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/wasm-c-api/include
+        ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/include
+    )
 endfunction()
 
 function(link_to_wasmer)

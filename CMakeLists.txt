@@ -157,19 +157,15 @@ FetchContent_Declare(
     GIT_TAG 0a3bdf4
 )
 FetchContent_MakeAvailable(Corrosion)
-corrosion_import_crate(
-    MANIFEST_PATH ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/Cargo.toml 
-    NO_DEFAULT_FEATURES
-    CRATE_TYPES ${RUST_CRATE_TYPE}
-    CRATES wasmtime-c-api
-)
 make_webrogue_runtime(
     LIB_NAME webrogue_runtime_wasmtime
-    TYPE WASM_C_API
+    TYPE WASMTIME
     ${WEBROGUE_LIBRARY_TYPE}
 )
-target_link_libraries(webrogue_runtime_wasmtime wasmtime)
-target_include_directories(webrogue_runtime_wasmtime PRIVATE ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/wasm-c-api/include)
+link_to_wasmtime(
+    LIB_NAME webrogue_runtime_wasmtime
+    ${WEBROGUE_LIBRARY_TYPE}
+)
 list(APPEND WEBROGUE_RUNTIMES wasmtime)
 
 
