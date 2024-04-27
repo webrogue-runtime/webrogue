@@ -125,6 +125,7 @@ WR_API_FUNCTION_IMPL(WASMRawI32, wr_interrupt, ()) {
             output->lazyEnd();
         }
     } // frames loop
+    auto a = WASMRawI32::make(0); // TODO remove (JUST FOR DEBUG)
 }
 
 WR_API_FUNCTION_IMPL(void, wr_copy_events,

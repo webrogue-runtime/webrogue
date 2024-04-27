@@ -326,7 +326,7 @@ if(CLANG_HAS_WASM)
             --toolchain=tools/generated_toolchain.cmake
             ${MODS_BUILD_GENERATOR_ARGS}
             -DCMAKE_MODULE_PATH=${WEBROGUE_ROOT_PATH}/cmake 
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_LINKER=a
             -DWEBROGUE_MOD_NAMES=${WEBROGUE_MOD_NAME_CONFIGURE_ARG}
     )
@@ -522,7 +522,7 @@ function(make_webrogue_runtime)
                 set(NATIVE_MOD_SUBDIRS ${NATIVE_MOD_SUBDIRS} ${mod_to_embed})
                 set(NATIVE_MOD_SUBDIRS ${NATIVE_MOD_SUBDIRS} PARENT_SCOPE)
             endif()
-            target_link_libraries(${ARGS_WEBROGUE_CORE_LIB} ${mod_to_embed})
+            # target_link_libraries(${ARGS_WEBROGUE_CORE_LIB} ${mod_to_embed})
         endforeach()
         target_link_libraries(${ARGS_LIB_NAME} ${ARGS_NATIVE_RUNTIME_MODS})
 
@@ -580,27 +580,28 @@ function(link_to_wasmtime)
     set(oneValueArgs LIB_NAME)
     set(multiValueArgs)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-    include(FetchContent)
-    FetchContent_Declare(
-        Corrosion
-        GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
-        GIT_TAG 0a3bdf4
-    )
-    FetchContent_MakeAvailable(Corrosion)
-    if(${ARGS_STATIC})
-        set(RUST_CRATE_TYPE staticlib)
-    elseif(${ARGS_SHARED})
-        set(RUST_CRATE_TYPE cdylib)
-    else()
-        message(FATAL_ERROR "Specify STATIC or SHARED library")
-    endif()
-    corrosion_import_crate(
-        MANIFEST_PATH ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/Cargo.toml 
-        NO_DEFAULT_FEATURES
-        FEATURES cache
-        CRATE_TYPES ${RUST_CRATE_TYPE}
-        CRATES wasmtime-c-api
-    )
+    # include(FetchContent)
+    # FetchContent_Declare(
+    #     Corrosion
+    #     GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+    #     GIT_TAG 0a3bdf4
+    # )
+    # FetchContent_MakeAvailable(Corrosion)
+    # if(${ARGS_STATIC})
+    #     set(RUST_CRATE_TYPE staticlib)
+    # elseif(${ARGS_SHARED})
+    #     set(RUST_CRATE_TYPE cdylib)
+    # else()
+    #     message(FATAL_ERROR "Specify STATIC or SHARED library")
+    # endif()
+    # corrosion_import_crate(
+    #     MANIFEST_PATH ${WEBROGUE_ROOT_PATH}/external/wasmtime/crates/c-api/Cargo.toml 
+    #     # NO_DEFAULT_FEATURES
+    #     FEATURES parallel-compilation # cache
+    #     CRATE_TYPES ${RUST_CRATE_TYPE}
+    #     CRATES wasmtime-c-api
+    # )
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/wasmtime/crates/c-api wasmtime)
 
     target_link_libraries(${ARGS_LIB_NAME} wasmtime)
     target_include_directories(

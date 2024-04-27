@@ -71,7 +71,7 @@ void WasmtimeModsRuntime::initMods() {
 
     wasmtimeConfig = wasm_config_new();
     wasmtime_config_debug_info_set(wasmtimeConfig, true);
-    wasmtime_config_cache_config_load(wasmtimeConfig, NULL);
+    // wasmtime_config_cache_config_load(wasmtimeConfig, NULL);
     engine = wasm_engine_new_with_config(wasmtimeConfig);
     assert(engine != NULL);
 
@@ -160,6 +160,7 @@ void WasmtimeModsRuntime::initMods() {
         exit_with_error("failed to instantiate", error, trap);
 
     *wrout << "initializing mods...\n";
+
     callExportedFunc("__wasm_call_ctors");
     for (std::string const modName : resourceStorage->modNames)
         callExportedFunc("init_mod_" + modName);
@@ -186,6 +187,7 @@ bool WasmtimeModsRuntime::callExportedFunc(std::string funcName) {
 
 void WasmtimeModsRuntime::start() {
     callExportedFunc("wr_start");
+    // callExportedFunc("_start");
 }
 
 bool WasmtimeModsRuntime::getVMData(void *outPtr, uint64_t offset,
