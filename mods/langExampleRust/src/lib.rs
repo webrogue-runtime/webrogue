@@ -6,7 +6,8 @@ use std::os::raw::c_char;
 extern crate lazy_static;
 
 extern "C" {
-    fn addLangExample(name: *const c_char, func: unsafe extern "C" fn() -> *const c_char);
+    fn addLangExample(name: *const c_char, func: unsafe extern "C" fn());
+    fn langExampleReturn(name: *const c_char);
     // fn webrogue_core_print(s: *const c_char);
 }
 
@@ -14,8 +15,10 @@ lazy_static! {
     static ref GLOBAL_DATA: Result<CString, NulError> = CString::new("Hello from Rust!5");
 }
 
-extern "C" fn lang_example_rust() -> *const c_char {
-    GLOBAL_DATA.as_ref().expect("CString::new failed").as_ptr()
+extern "C" fn lang_example_rust() {
+    unsafe {
+        langExampleReturn(GLOBAL_DATA.as_ref().expect("CString::new failed").as_ptr());
+    }
 }
 
 #[no_mangle]

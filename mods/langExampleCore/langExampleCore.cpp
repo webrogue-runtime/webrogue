@@ -6,16 +6,21 @@
 extern "C" {
 #include "langExampleCore.h"
 }
+#include <stdio.h>
 
 std::map<std::string, langExampleFunc> exampleFuncs;
+std::string langExampleResult;
 
 extern "C" void addLangExample(const char *name, langExampleFunc func) {
     exampleFuncs[name] = func;
 }
 
+extern "C" void langExampleReturn(const char *result) {
+    langExampleResult = result;
+}
+
 void langExampleCoreInitializationStep() {
     bool hasLastResult = false;
-    std::string lastResult;
     while (true) {
         size_t eventCount;
         webrogue_event *events = webrogue_core_get_events(&eventCount);
@@ -51,16 +56,24 @@ void langExampleCoreInitializationStep() {
         for (auto &pair : exampleFuncs) {
             if (hasMouseEvent && mouseY == y) {
                 hasLastResult = true;
-                lastResult = pair.second();
+                pair.second();
             }
             printStr(pair.first);
         }
-        if (hasLastResult)
-            printStr(lastResult);
+        if (hasLastResult) {
+            printStr("");
+            printStr(langExampleResult);
+        }
         webrogue_core_interrupt();
     }
 }
 
+void langExampleCore() {
+    langExampleReturn("langExampleCore");
+}
+
 extern "C" WR_EXPORTED(void, init_mod_langExampleCore)() {
     webrogue_core_add_initialization_step(langExampleCoreInitializationStep);
+
+    addLangExample("initial item", langExampleCore);
 }

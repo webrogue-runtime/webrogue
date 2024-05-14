@@ -1,5 +1,7 @@
 #pragma once
 
-typedef const char *(*langExampleFunc)();
+typedef void (*langExampleFunc)();
 
 void addLangExample(const char *name, langExampleFunc func);
+
+void langExampleReturn(const char *result);
