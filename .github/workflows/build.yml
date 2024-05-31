@@ -216,7 +216,7 @@ jobs:
 
     - name: Install rust tools
       run: |
-        rustup target add aarch64-apple-darwin
+        rustup target add aarch64-apple-darwin x86_64-apple-darwin
         cargo install cargo-lipo
 
     - name: Cmake Cache
