@@ -12,6 +12,7 @@ crate-type = ["staticlib"]
 
 
 [dependencies]
-lazy_static = "1.4.0"
+rand = "0.8"
+# lazy_static = "1.4.0"
 # libc_alloc = "1.0.6"
 

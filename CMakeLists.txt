@@ -62,10 +62,17 @@ make_webrogue_core(
     ${WEBROGUE_LIBRARY_TYPE}
 )
 
+set(WEBROGUE_USE_WASM_LD OFF CACHE BOOL "weather wasm-ld should be used instead of compact_linker")
 set(WEBROGUE_WASM_LD_PATH "" CACHE STRING "path to wasm-ld executable to use instead if compact_linker (debug only)")
 set(WEBROGUE_WASM_LD_PLAYGROUND_PATH "" CACHE STRING "path (slash terminated) to put temporary files to when using wasm-ld instead if compact_linker (debug only)")
 
-if(WEBROGUE_WASM_LD_PATH)
+if(WEBROGUE_USE_WASM_LD)
+    if(NOT WEBROGUE_WASM_LD_PATH)
+        message(FATAL_ERROR "WEBROGUE_WASM_LD_PATH not defined")
+    endif()
+    if(NOT WEBROGUE_WASM_LD_PLAYGROUND_PATH)
+        message(FATAL_ERROR "WEBROGUE_WASM_LD_PLAYGROUND_PATH not defined")
+    endif()
     target_compile_definitions(
         webrogue_core PRIVATE
         WEBROGUE_WASM_LD_PATH=${WEBROGUE_WASM_LD_PATH} 

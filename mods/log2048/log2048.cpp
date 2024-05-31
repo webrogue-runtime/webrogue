@@ -64,11 +64,11 @@ void moveField(bool f, bool v) {
                                     !getCell(x - freeCells - 1, y, f, v);
                      freeCells++)
                     ;
-                int probableFreeX = x - freeCells;
-                bool hasFreeSpace = probableFreeX < x;
-                bool isFirst = x == 0;
-                int prevX = probableFreeX - 1;
-                bool isPrevSame =
+                int const probableFreeX = x - freeCells;
+                bool const hasFreeSpace = probableFreeX < x;
+                bool const isFirst = x == 0;
+                int const prevX = probableFreeX - 1;
+                bool const isPrevSame =
                     !isFirst && getCell(prevX, y, f, v) == thisCell;
                 if (isPrevSame) {
                     getCell(prevX, y, f, v)++;
@@ -139,9 +139,9 @@ void log2048InitializationStep() {
                 lastPressY = event.data2;
             } break;
             case webrogue_event_type::MouseLeftButtonReleased: {
-                int dx = 2*(event.data1 - lastPressX);
+                int dx = 2 * (event.data1 - lastPressX);
                 int dy = event.data2 - lastPressY;
-                if(abs(dx) == abs(dy))
+                if (abs(dx) == abs(dy))
                     break;
                 if (abs(dx) > abs(dy)) {
                     arrowDirection = dx < 0 ? webrogue_arrow_direction::left
