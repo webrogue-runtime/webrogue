@@ -210,6 +210,8 @@ jobs:
 
     - name: Install packages
       run: |
+        python3 -m venv .venv
+        . .venv/bin/activate
         python3 -m pip install zstd
 
     - name: Install rust tools
@@ -225,6 +227,7 @@ jobs:
 
     - name: Configure and build
       run: |
+        . .venv/bin/activate
         sh platforms/MacOS/build.sh --release --universal
 
     - name: Pack to DMG
@@ -258,6 +261,8 @@ jobs:
         
       - name: Install packages
         run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
           python3 -m pip install zstd
           
       - name: Install rust tools
@@ -273,6 +278,7 @@ jobs:
 
       - name: Configure and build
         run: |
+          . .venv/bin/activate
           sh platforms/iOS/build.sh --release
 
   build_pages:
