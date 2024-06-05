@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Webrogue
+Name=webrogue
 Exec=webrogue
-Comment=Webrogue runtime
+Comment=webrogue runtime
 Icon=webrogue
 Categories=Development;
 Terminal=false

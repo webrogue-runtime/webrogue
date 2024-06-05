@@ -105,7 +105,7 @@ jobs:
         sh platforms/Linux/ubuntu.sh
         sh platforms/Linux/deb2appimage.sh
         mkdir artifacts
-        mv platforms/Linux/webrogue.deb platforms/Linux/webrogue.rpm platforms/Linux/Webrogue-x86_64.AppImage artifacts
+        mv platforms/Linux/webrogue.deb platforms/Linux/webrogue.rpm platforms/Linux/webrogue-x86_64.AppImage artifacts
 
     - uses: actions/upload-artifact@v4
       with:
