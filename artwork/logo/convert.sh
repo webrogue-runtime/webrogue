@@ -107,4 +107,4 @@ original | to_png_transparent 512 ../../platforms/MacOS/Webrogue/Assets.xcassets
 original | to_png_transparent 1024 ../../platforms/MacOS/Webrogue/Assets.xcassets/AppIcon.appiconset/macos512_x2.png
 
 # For iOS
-original | to_png_transparent 1024 ../../platforms/iOS/Webrogue/Assets.xcassets/AppIcon.appiconset/ios1024.png
+original | to_png_white 1024 ../../platforms/iOS/Webrogue/Assets.xcassets/AppIcon.appiconset/ios1024.png
