@@ -77,7 +77,7 @@ echo Building rust lib
     rm rust-toolchain || true
 
     cd lib/c-api
-    # rustup target add aarch64-apple-darwin
+    # rustup target add aarch64-apple-ios
     # cargo install cargo-lipo
     CARGO_TARGET_DIR=../../../../platforms/iOS/rust_target cargo lipo $CARGO_RELEASE_FLAG --targets=$CARGO_TARGETS --no-default-features --features jsc 
     cd ../../../../platforms/iOS
@@ -92,5 +92,5 @@ echo Building xcode project
     xcodebuild $XCODEBUILD_FLAGS "$XCODE_DESTINATION_FLAG_2"
     XC_BUILD_DIR=$(xcodebuild $XCODEBUILD_FLAGS "$XCODE_DESTINATION_FLAG_2" -showBuildSettings | grep -m 1 "BUILT_PRODUCTS_DIR" | grep -oEi "\/.*" || exit 3)
     mkdir ../../artifacts
-    cp -r $XC_BUILD_DIR/Webrogue.app ../../artifacts
+    cp -r $XC_BUILD_DIR/Webrogue.app ../../artifacts/webrogue.app 
 }

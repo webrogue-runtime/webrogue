@@ -1,4 +1,4 @@
-name: Webrogue artifacts
+name: webrogue artifacts
 
 on:
   workflow_dispatch:
@@ -233,14 +233,14 @@ jobs:
     - name: Pack to DMG
       run: |
         npm install --global create-dmg
-        create-dmg artifacts/Webrogue.app artifacts --dmg-title=Webrogue || true
-        mv artifacts/webrogue\ 0.1.dmg Webrogue.dmg
+        create-dmg artifacts/webrogue.app artifacts --dmg-title=webrogue || true
+        mv artifacts/webrogue\ 0.1.dmg webrogue.dmg
 
     - uses: actions/upload-artifact@v4
       with:
         name: Artifacts-MacOS
         path: |
-          Webrogue.dmg
+          webrogue.dmg
 
   ios:
     runs-on: macos-latest

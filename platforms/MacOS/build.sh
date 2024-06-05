@@ -70,5 +70,5 @@ echo Building xcode project
     xcodebuild $XCODEBUILD_FLAGS -parallelizeTargets
     XC_BUILD_DIR=$(xcodebuild $XCODEBUILD_FLAGS -showBuildSettings | grep -m 1 "BUILT_PRODUCTS_DIR" | grep -oEi "\/.*" || exit 3)
     mkdir ../../artifacts
-    cp -r $XC_BUILD_DIR/Webrogue.app ../../artifacts
+    cp -r $XC_BUILD_DIR/Webrogue.app ../../artifacts/webrogue.app
 }
