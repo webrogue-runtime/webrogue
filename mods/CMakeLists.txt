@@ -90,13 +90,15 @@ endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/tools/linker_path.cmake)
 
-find_program(
-    PYTHON_PROGRAM
-    python3
-    REQUIRED
-)
-
-set(PYTHON_PROGRAM python3)
+if(APPLE)
+    find_program(
+        PYTHON_PROGRAM
+        python3
+        REQUIRED
+    )
+else()
+    set(PYTHON_PROGRAM python3)
+endif()
 
 foreach(mod ${mods})
     set(WEBROGUE_MOD_NAME ${mod})
