@@ -124,7 +124,7 @@ WR_API_FUNCTION_IMPL(WASMRawI32, wr_interrupt, ()) {
             }
             output->lazyEnd();
         }
-    } // frames loop
+    }                             // frames loop
     auto a = WASMRawI32::make(0); // TODO remove (JUST FOR DEBUG)
 }
 
@@ -159,6 +159,10 @@ WR_API_FUNCTION_IMPL(void, wr_debug_print,
     hostData[size.get()] = '\0';
     std::string hostString = hostData.data();
     *runtime->wrout << hostString;
+}
+
+WR_API_FUNCTION_IMPL(WASMRawI32, wr_is_keyboard_available, ()) {
+    return WASMRawI32::make(output->isKeyboardAvailable());
 }
 
 // sqlite

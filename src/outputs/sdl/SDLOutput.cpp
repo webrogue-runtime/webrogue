@@ -27,11 +27,33 @@ bool WRGlyphComparator::operator()(const wr_glyph &a, const wr_glyph &b) const {
     return false;
 }
 
+// clang-format off
+#if defined(__EMSCRIPTEN__)
+EM_JS(bool, isMobileBrowser, (), {
+    const toMatch = [
+        /Android/i,
+        /webOS/i,
+        /iPhone/i,
+        /iPad/i,
+        /iPod/i,
+        /BlackBerry/i,
+        /Windows Phone/i
+    ];
+    
+    return toMatch.some((toMatchItem) => {
+        return navigator.userAgent.match(toMatchItem);
+    });
+});
+#endif
+// clang-format on
+
 bool SDLOutput::isKeyboardAvailable() {
 #if defined(__ANDROID__)
     return false;
 #elif defined(TARGET_OS_IPHONE)
     return false;
+#elif defined(__EMSCRIPTEN__)
+    return !isMobileBrowser();
 #else
     return true;
 #endif

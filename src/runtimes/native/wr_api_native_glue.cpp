@@ -50,6 +50,10 @@ extern "C" void wr_debug_print(uint64_t in_buff_offset, int64_t size) {
     return webrogue::runtimes::native::sharedApiObject->wr_debug_print(WASMRawU64::make(in_buff_offset), WASMRawI64::make(size));
 }
 
+extern "C" int32_t wr_is_keyboard_available() {
+    return webrogue::runtimes::native::sharedApiObject->wr_is_keyboard_available().get();
+}
+
 extern "C" int64_t wr_sqlite3_errmsg_size() {
     return webrogue::runtimes::native::sharedApiObject->wr_sqlite3_errmsg_size().get();
 }
