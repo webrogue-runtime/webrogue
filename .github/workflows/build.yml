@@ -296,6 +296,7 @@ jobs:
     - name: Install packages
       run: |
         sudo apt-get install python3-zstd
+        rustup target add wasm32-wasi
 
     - name: Build mods
       run: |
