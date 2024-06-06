@@ -96,6 +96,8 @@ find_program(
     REQUIRED
 )
 
+set(PYTHON_PROGRAM python3)
+
 foreach(mod ${mods})
     set(WEBROGUE_MOD_NAME ${mod})
     set(WEBROGUE_NATIVE_MODS FALSE)

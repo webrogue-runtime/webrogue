@@ -1,4 +1,4 @@
-name: Webrogue CI
+name: webrogue CI
 
 on:
   push:
@@ -227,3 +227,29 @@ jobs:
       run: |
         . .venv/bin/activate
         sh platforms/iOS/build.sh --release
+
+  mods:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --recursive mods/brogue
+        git submodule update --init --single-branch --recursive mods/coremark
+        git submodule update --init --single-branch --recursive mods/rugpt2
+        
+    - name: Install packages
+      run: |
+        sudo apt-get install python3-zstd
+
+    - name: Build mods
+      run: |
+        cmake -DWEBROGUE_MOD_NAMES="core;log2048" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        cmake -DWEBROGUE_MOD_NAMES="core;brogue" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        cmake -DWEBROGUE_MOD_NAMES="core;coremark" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        cmake -DWEBROGUE_MOD_NAMES="core;rugpt2" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        cmake -DWEBROGUE_MOD_NAMES="core;langExampleCore;langExampleC;langExampleRust" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        mkdir artifacts
+        mv mods/*/*.wrmod artifacts
