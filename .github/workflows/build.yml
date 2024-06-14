@@ -2,6 +2,9 @@ name: webrogue artifacts
 
 on:
   workflow_dispatch:
+  push:
+    branches: 
+      main
 
 jobs:
   windows:
