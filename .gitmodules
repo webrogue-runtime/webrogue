@@ -77,3 +77,7 @@
 [submodule "external/libtsm"]
 	path = external/libtsm
 	url = https://github.com/Aetf/libtsm
+[submodule "mods/langExampleJS/external/quickjs"]
+	path = mods/langExampleJS/external/quickjs
+	url = https://github.com/bellard/quickjs.git
+	ignore = dirty

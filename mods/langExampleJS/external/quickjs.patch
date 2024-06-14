@@ -1,0 +1,44 @@
+diff --git a/quickjs.c b/quickjs.c
+index f000ff7..993bd26 100644
+--- a/quickjs.c
++++ b/quickjs.c
+@@ -49,7 +49,7 @@
+ 
+ #define OPTIMIZE         1
+ #define SHORT_OPCODES    1
+-#if defined(EMSCRIPTEN)
++#if defined(EMSCRIPTEN) || !defined(WEBROGUE) 
+ #define DIRECT_DISPATCH  0
+ #else
+ #define DIRECT_DISPATCH  1
+@@ -61,18 +61,18 @@
+ #define MALLOC_OVERHEAD  8
+ #endif
+ 
+-#if !defined(_WIN32)
++#if !defined(_WIN32) && !defined(WEBROGUE) 
+ /* define it if printf uses the RNDN rounding mode instead of RNDNA */
+ #define CONFIG_PRINTF_RNDN
+ #endif
+ 
+ /* define to include Atomics.* operations which depend on the OS
+    threads */
+-#if !defined(EMSCRIPTEN)
++#if !defined(EMSCRIPTEN) && !defined(WEBROGUE) 
+ #define CONFIG_ATOMICS
+ #endif
+ 
+-#if !defined(EMSCRIPTEN)
++#if !defined(EMSCRIPTEN) && !defined(WEBROGUE) 
+ /* enable stack limitation */
+ #define CONFIG_STACK_CHECK
+ #endif
+@@ -1706,7 +1706,7 @@ static size_t js_def_malloc_usable_size(const void *ptr)
+     return malloc_size(ptr);
+ #elif defined(_WIN32)
+     return _msize((void *)ptr);
+-#elif defined(EMSCRIPTEN)
++#elif defined(EMSCRIPTEN) || defined(WEBROGUE) 
+     return 0;
+ #elif defined(__linux__)
+     return malloc_usable_size((void *)ptr);

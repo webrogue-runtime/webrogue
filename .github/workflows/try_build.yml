@@ -251,6 +251,6 @@ jobs:
         cmake -DWEBROGUE_MOD_NAMES="core;brogue" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
         cmake -DWEBROGUE_MOD_NAMES="core;coremark" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
         cmake -DWEBROGUE_MOD_NAMES="core;rugpt2" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
-        cmake -DWEBROGUE_MOD_NAMES="core;langExampleCore;langExampleC;langExampleRust" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        cmake -DWEBROGUE_MOD_NAMES="core;langExampleCore;langExampleC;langExampleRust;langExampleJS" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
         mkdir artifacts
         mv mods/*/*.wrmod artifacts

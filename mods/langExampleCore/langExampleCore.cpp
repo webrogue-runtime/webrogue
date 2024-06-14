@@ -48,17 +48,29 @@ void langExampleCoreInitializationStep() {
                 drawingArea[width * y + x] = {' ', 0};
         int y = 0;
         auto printStr = [width, height, drawingArea, &y](std::string str) {
-            for (int x = 0; x < str.size(); x++) {
-                drawingArea[width * y + x] = {static_cast<wr_char>(str[x]), 0};
+            int x = 0;
+            for (int i = 0; i < str.size(); i++) {
+                if (str[i] == '\n') {
+                    x = 0;
+                    y++;
+                } else {
+                    drawingArea[width * y + x] = {static_cast<wr_char>(str[i]),
+                                                  0};
+                    x++;
+                    if (x >= width) {
+                        x = 0;
+                        y++;
+                    }
+                }
             }
-            y += str.size() / width + 1;
+            y++;
         };
         for (auto &pair : exampleFuncs) {
             if (hasMouseEvent && mouseY == y) {
                 hasLastResult = true;
                 pair.second();
             }
-            printStr(pair.first);
+            printStr("> " + pair.first);
         }
         if (hasLastResult) {
             printStr("");
