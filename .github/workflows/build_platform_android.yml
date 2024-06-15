@@ -6,7 +6,7 @@ on:
         type: boolean
 
 jobs:
-  build:
+  android:
     runs-on: ubuntu-latest
     
     steps:

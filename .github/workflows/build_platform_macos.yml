@@ -6,7 +6,7 @@ on:
         type: boolean
 
 jobs:
-  build:
+  macos:
     runs-on: macos-latest
 
     steps:

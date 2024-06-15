@@ -6,7 +6,7 @@ on:
         type: boolean
 
 jobs:
-  build:
+  ios:
     runs-on: macos-latest
     if: ${{ !inputs.is_release }}
 

@@ -6,7 +6,7 @@ on:
         type: boolean
 
 jobs:
-  build:
+  windows:
     runs-on: windows-latest
     
     steps:

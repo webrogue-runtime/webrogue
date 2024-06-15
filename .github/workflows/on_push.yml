@@ -8,19 +8,19 @@ jobs:
     uses: ./.github/workflows/build_mods.yml
     with:
       is_release: ${{ github.ref_name == 'main' }}
-  dbg:
+  debug:
     uses: ./.github/workflows/build.yml
     with:
       is_release: false
-  rel:
+  release:
     if: ${{ github.ref_name == 'main' }}
     uses: ./.github/workflows/build.yml
-    needs: dbg
+    needs: debug
     with:
       is_release: true
   deploy:
     permissions:
       pages: write
       id-token: write
-    needs: [rel, mods]
+    needs: [release, mods]
     uses: ./.github/workflows/deploy.yml

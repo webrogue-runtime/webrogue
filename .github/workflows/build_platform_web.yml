@@ -6,7 +6,7 @@ on:
         type: boolean
 
 jobs:
-  build:
+  web:
     runs-on: ubuntu-latest
     if: ${{ !inputs.is_release }}
 
