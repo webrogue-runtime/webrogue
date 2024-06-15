@@ -7,10 +7,10 @@ on:
 
 jobs:
   platforms:
-    uses: ./.github/workflows/reusable/platforms/all.yml
+    uses: ./.github/workflows/build_platforms.yml
     with:
       is_release: ${{inputs.is_release}}
   mods:
-    uses: ./.github/workflows/reusable/mods/all.yml
+    uses: ./.github/workflows/build_mods.yml
     with:
       is_release: ${{inputs.is_release}}
