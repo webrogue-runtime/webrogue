@@ -2,15 +2,18 @@ name: CI/CD
 
 on:
   push:
+    branches: 
+      main
+      develop
     
 jobs:
   build_debug:
-    uses: ./.github/workflows/reusable_build.yml
+    uses: ./.github/workflows/reusable/build.yml
     with:
       is_release: false
   build_release:
     if: ${{ github.ref_name == 'main' }}
-    uses: ./.github/workflows/reusable_build.yml
+    uses: ./.github/workflows/reusable/build.yml
     needs: build_debug
     with:
       is_release: true
@@ -19,4 +22,4 @@ jobs:
       pages: write
       id-token: write
     needs: build_release
-    uses: ./.github/workflows/reusable_deploy.yml
+    uses: ./.github/workflows/reusable/deploy.yml

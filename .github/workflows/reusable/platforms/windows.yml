@@ -1,0 +1,38 @@
+on:
+  workflow_call:
+    inputs:
+      is_release:
+        required: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/wasmer/;
+        git submodule update --init --recursive --single-branch external/xz/;
+        git submodule update --init --recursive --single-branch external/dirent/;
+        git submodule update --init --recursive --single-branch external/pdcurses/;
+        git submodule update --init --recursive --single-branch external/libuv/;
+        git submodule update --init --recursive --single-branch external/uvwasi/;
+
+    - uses: ilammy/msvc-dev-cmd@v1
+    
+    - name: Install packages
+      run: |
+        python3 -m pip install zstd
+        
+    - name: Build
+      run: |
+        ./platforms/Windows/build.ps1 Release;
+
+    - uses: actions/upload-artifact@v4
+      if: ${{ inputs.is_release }}
+      with:
+        name: Artifacts-Windows-Installer
+        path: ./artifacts/webrogue_installer.exe

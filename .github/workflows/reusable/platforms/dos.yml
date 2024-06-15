@@ -1,0 +1,37 @@
+on:
+  workflow_call:
+    inputs:
+      is_release:
+        required: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.is_release }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install packages
+      run: |
+        sudo apt-get install -y libfl2
+        sudo apt-get install python3-zstd
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/xz/
+        git submodule update --init --recursive --single-branch external/argparse/
+        git submodule update --init --recursive --single-branch external/pdcurses/
+        git submodule update --init --recursive --single-branch external/libuv/
+        git submodule update --init --recursive --single-branch external/uvwasi/
+
+    - name: Install DJGPP toolchain
+      run: |
+        wget https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2
+        sudo tar -xjvf djgpp-linux64-gcc1220.tar.bz2 -C /usr/local/
+
+    - name: Configure and build
+      run: |
+        cmake --toolchain=djgpp_toolchain.cmake -S platforms/DOS/ -B platforms/DOS/build -DCMAKE_BUILD_TYPE=Debug
+        cmake --build platforms/DOS/build --target pack_executable_to_artifacts -j 

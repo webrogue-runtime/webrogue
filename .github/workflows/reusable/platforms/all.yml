@@ -1,0 +1,36 @@
+on:
+  workflow_call:
+    inputs:
+      is_release:
+        required: true
+        type: boolean
+
+jobs:
+  windows:
+    uses: ./.github/workflows/reusable/platforms/windows.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  linux:
+    uses: ./.github/workflows/reusable/platforms/linux.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  macos:
+    uses: ./.github/workflows/reusable/platforms/macos.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  android:
+    uses: ./.github/workflows/reusable/platforms/android.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  ios:
+    uses: ./.github/workflows/reusable/platforms/ios.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  web:
+    uses: ./.github/workflows/reusable/platforms/web.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  dos:
+    uses: ./.github/workflows/reusable/platforms/dos.yml
+    with:
+      is_release: ${{inputs.is_release}}

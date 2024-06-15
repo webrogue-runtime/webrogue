@@ -1,0 +1,42 @@
+on:
+  workflow_call:
+    inputs:
+      is_release:
+        required: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.is_release }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch \
+          external/xz/ \
+          external/libuv/ \
+          external/uvwasi/
+
+    - name: Install Emscripten
+      run: |
+        git clone https://github.com/emscripten-core/emsdk.git
+        ./emsdk/emsdk install latest
+        ./emsdk/emsdk activate latest
+    
+    - name: Install packages
+      run: |
+        sudo apt-get install python3-zstd
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+
+    - name: Configure and build
+      run: |        
+        . ./emsdk/emsdk_env.sh
+        emcmake cmake -B platforms/Web/build -S platforms/Web -DCMAKE_BUILD_TYPE=${{env.CMAKE_VARIANT}}
+        cmake --build platforms/Web/build --target pack_artifacts -j

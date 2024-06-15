@@ -1,0 +1,42 @@
+on:
+  workflow_call:
+    inputs:
+      is_release:
+        required: true
+        type: boolean
+
+jobs:
+  mods:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --recursive mods/brogue
+        git submodule update --init --single-branch --recursive mods/coremark
+        git submodule update --init --single-branch --recursive mods/rugpt2
+        git submodule update --init --single-branch --recursive mods/langExampleJS/external/quickjs
+        
+    - name: Install packages
+      run: |
+        sudo apt-get install python3-zstd
+        rustup target add wasm32-wasi
+
+    - name: Build mods
+      run: |
+        cmake -DWEBROGUE_MOD_NAMES="core;log2048" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        cmake -DWEBROGUE_MOD_NAMES="core;brogue" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake 
+        cmake -DWEBROGUE_MOD_NAMES="core;coremark" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        cmake -DWEBROGUE_MOD_NAMES="core;rugpt2" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        cmake -DWEBROGUE_MOD_NAMES="core;langExampleCore;langExampleC;langExampleRust;langExampleJS" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
+        mkdir artifacts
+        mv mods/*/*.wrmod artifacts
+
+    - uses: actions/upload-artifact@v4
+      if: ${{ inputs.is_release }}
+      with:
+        name: Artifacts-Mods
+        path: |
+          artifacts/

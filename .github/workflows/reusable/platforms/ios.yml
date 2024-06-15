@@ -1,0 +1,47 @@
+on:
+  workflow_call:
+    inputs:
+      is_release:
+        required: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: macos-latest
+    if: ${{ !inputs.is_release }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/xz/
+        git submodule update --init --recursive --single-branch external/libuv/
+        git submodule update --init --recursive --single-branch external/uvwasi/
+        git submodule update --init --recursive --single-branch external/wasm3/
+        git submodule update --init --recursive --single-branch external/wasmer/
+        git submodule update --init --recursive --single-branch platforms/iOS/external/SnapKit
+        git submodule update --init --recursive --single-branch external/SDL/
+        git submodule update --init --recursive --single-branch external/SDL_ttf/
+
+    - name: Install packages
+      run: |
+        python3 -m venv .venv
+        . .venv/bin/activate
+        python3 -m pip install zstd
+
+    - name: Install rust tools
+      run: |
+        cargo install cargo-lipo
+        rustup target add aarch64-apple-ios
+
+    - name: Cmake Cache
+      uses: actions/cache@v4
+      with:
+        path: platforms/iOS/cmake_build/CMakeCache.txt
+        key: ios-cmake-cache
+
+    - name: Configure and build
+      run: |
+        . .venv/bin/activate
+        sh platforms/iOS/build.sh --release

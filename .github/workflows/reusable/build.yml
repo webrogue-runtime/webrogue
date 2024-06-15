@@ -1,0 +1,16 @@
+on:
+  workflow_call:
+    inputs:
+      is_release:
+        required: true
+        type: boolean
+
+jobs:
+  platforms:
+    uses: ./.github/workflows/reusable/platforms/all.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  mods:
+    uses: ./.github/workflows/reusable/mods/all.yml
+    with:
+      is_release: ${{inputs.is_release}}

@@ -1,0 +1,49 @@
+on:
+  workflow_call:
+    inputs:
+      is_release:
+        required: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '17'
+
+      - name: Submodules
+        run: |
+          git submodule update --init --recursive --single-branch external/wamr/
+          git submodule update --init --recursive --single-branch external/wasmer/
+          git submodule update --init --recursive --single-branch external/xz/
+          git submodule update --init --recursive --single-branch external/SDL/
+          git submodule update --init --recursive --single-branch external/SDL_ttf/
+          git submodule update --init --recursive --single-branch external/libuv/
+          git submodule update --init --recursive --single-branch external/uvwasi/
+
+      - name: Install packages
+        run: |
+          sudo apt-get install python3-zstd
+
+      - name: Install rust targets
+        run: |
+          rustup target add aarch64-linux-android
+          rustup target add x86_64-linux-android
+
+      - name: build
+        run: |
+          cd platforms/Android
+          ./gradlew --no-daemon ${{inputs.is_release && 'assembleRelease' || 'assembleDebug'}}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.is_release }}
+        with:
+          name: Artifacts-Android
+          path: artifacts/webrogue.apk

@@ -1,0 +1,39 @@
+on:
+  workflow_call:
+    inputs:
+      is_release:
+        required: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --recursive --single-branch external/wasmer/
+        git submodule update --init --recursive --single-branch external/xz/
+        git submodule update --init --recursive --single-branch external/argparse/
+        git submodule update --init --recursive --single-branch external/libuv/
+        git submodule update --init --recursive --single-branch external/uvwasi/
+        git submodule update --init --recursive --single-branch external/SDL/
+        git submodule update --init --recursive --single-branch external/SDL_ttf/
+
+    - name: Install packages
+      run: |
+        sudo apt-get install python3-zstd
+
+    - name: Configure and build
+      run: |
+        cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=${{inputs.is_release && 'Release' || 'Debug'}}
+        cmake --build platforms/Linux/build --target webrogue --parallel 
+
+    - uses: actions/upload-artifact@v4
+      if: ${{ inputs.is_release }}
+      with:
+        name: Artifacts-Linux
+        path: |
+          ./artifacts
