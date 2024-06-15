@@ -4,6 +4,10 @@ on:
   push:
     
 jobs:
+  mods:
+    uses: ./.github/workflows/build_mods.yml
+    with:
+      is_release: ${{ github.ref_name == 'main' }}
   dbg:
     uses: ./.github/workflows/build.yml
     with:
@@ -18,5 +22,5 @@ jobs:
     permissions:
       pages: write
       id-token: write
-    needs: rel
+    needs: [rel, mods]
     uses: ./.github/workflows/deploy.yml

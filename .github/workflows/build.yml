@@ -6,11 +6,31 @@ on:
         type: boolean
 
 jobs:
-  example_matrix:
-    strategy:
-      matrix:
-        platform: [windows, linux, macos, android, ios, web, dos]
-
-    uses: ./.github/workflows/build_platform_${{ matrix.platform }}.yml
+  windows:
+    uses: ./.github/workflows/build_platform_windows.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  linux:
+    uses: ./.github/workflows/build_platform_linux.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  macos:
+    uses: ./.github/workflows/build_platform_macos.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  android:
+    uses: ./.github/workflows/build_platform_android.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  ios:
+    uses: ./.github/workflows/build_platform_ios.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  web:
+    uses: ./.github/workflows/build_platform_web.yml
+    with:
+      is_release: ${{inputs.is_release}}
+  dos:
+    uses: ./.github/workflows/build_platform_dos.yml
     with:
       is_release: ${{inputs.is_release}}
