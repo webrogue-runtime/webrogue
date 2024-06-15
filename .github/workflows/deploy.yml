@@ -2,7 +2,7 @@ on:
   workflow_call:
 
 jobs:
-  build_pages:
+  local_pages:
     runs-on: ubuntu-latest
     steps:
     - name: Setup Pages
@@ -48,8 +48,8 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: actions/deploy-pages@v4
 
-  update_pages:
-    needs: build_pages
+  remote_pages:
+    needs: local_pages
     env:
       GH_TOKEN: ${{secrets.PAGES_UPDATE_TOKEN}}
     runs-on: ubuntu-latest
