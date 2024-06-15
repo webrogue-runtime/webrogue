@@ -6,11 +6,11 @@ on:
         type: boolean
 
 jobs:
-  platforms:
-    uses: ./.github/workflows/build_platforms.yml
-    with:
-      is_release: ${{inputs.is_release}}
-  mods:
-    uses: ./.github/workflows/build_mods.yml
+  example_matrix:
+    strategy:
+      matrix:
+        platform: [windows, linux, macos, android, ios, web, dos]
+
+    uses: ./.github/workflows/build_platform_${{ matrix.platform }}.yml
     with:
       is_release: ${{inputs.is_release}}

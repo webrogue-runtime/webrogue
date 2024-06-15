@@ -4,19 +4,19 @@ on:
   push:
     
 jobs:
-  build_debug:
+  dbg:
     uses: ./.github/workflows/build.yml
     with:
       is_release: false
-  build_release:
+  rel:
     if: ${{ github.ref_name == 'main' }}
     uses: ./.github/workflows/build.yml
-    needs: build_debug
+    needs: dbg
     with:
       is_release: true
   deploy:
     permissions:
       pages: write
       id-token: write
-    needs: build_release
+    needs: rel
     uses: ./.github/workflows/deploy.yml
