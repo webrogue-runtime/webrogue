@@ -6,9 +6,9 @@ on:
       is_release:
         required: true
         type: boolean
-    secrets:
-      token:
-        required: true
+    # secrets:
+    #   token:
+    #     required: true
 
 jobs:
   windows:

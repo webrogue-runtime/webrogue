@@ -4,8 +4,8 @@ on:
   push:
     
 jobs:
-  call_build_workflow:
+  ci:
     uses: ./.github/workflows/reusable.yml
     with:
       is_release: false
-    secrets: inherit
+    # secrets: inherit
