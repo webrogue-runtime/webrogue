@@ -6,9 +6,6 @@ on:
       is_release:
         required: true
         type: boolean
-    # secrets:
-    #   token:
-    #     required: true
 
 env:
   CMAKE_VARIANT: ${{inputs.is_release && 'Release' || 'Debug'}}
@@ -37,6 +34,12 @@ jobs:
     - name: Build
       run: |
         ./platforms/Windows/build.ps1 Release;
+
+    - uses: actions/upload-artifact@v4
+      if: ${{ !inputs.is_release }}
+      with:
+        name: Artifacts-Windows-Installer
+        path: ./artifacts/webrogue_installer.exe
 
   web:
     runs-on: ubuntu-latest
@@ -98,6 +101,12 @@ jobs:
         cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=${{env.CMAKE_VARIANT}}
         cmake --build platforms/Linux/build --target webrogue --parallel 
 
+    - uses: actions/upload-artifact@v4
+      if: ${{ !inputs.is_release }}
+      with:
+        name: Artifacts-Linux
+        path: |
+          ./artifacts
   dos:
     runs-on: ubuntu-latest
     if: ${{ !inputs.is_release }}
@@ -164,6 +173,12 @@ jobs:
           cd platforms/Android
           ./gradlew --no-daemon assemble${{env.CMAKE_VARIANT}}
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.is_release }}
+        with:
+          name: Artifacts-Android
+          path: artifacts/webrogue.apk
+
   macos:
     runs-on: macos-latest
 
@@ -200,8 +215,16 @@ jobs:
         . .venv/bin/activate
         sh platforms/MacOS/build.sh --release
 
+    - uses: actions/upload-artifact@v4
+      if: ${{ !inputs.is_release }}
+      with:
+        name: Artifacts-MacOS
+        path: |
+          webrogue.dmg
+
   ios:
     runs-on: macos-latest
+    if: ${{ !inputs.is_release }}
 
     steps:
     - uses: actions/checkout@v4
@@ -265,4 +288,12 @@ jobs:
         cmake -DWEBROGUE_MOD_NAMES="core;langExampleCore;langExampleC;langExampleRust;langExampleJS" -DMODS_BUILD_DIR=mods_build -P mods/tools/build.cmake
         mkdir artifacts
         mv mods/*/*.wrmod artifacts
+
+    - uses: actions/upload-artifact@v4
+      if: ${{ !inputs.is_release }}
+      with:
+        name: Artifacts-Mods
+        path: |
+          artifacts/
+
 

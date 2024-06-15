@@ -1,0 +1,67 @@
+name: Reusable deploy workflow
+
+on:
+  workflow_call:
+
+jobs:
+  build_pages:
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: Make _site directory
+      run: |
+        mkdir _site
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Linux
+        path: _site
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Android
+        path: _site
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Windows-Installer
+        path: _site
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Windows-MSIX
+        path: _site
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-MacOS
+        path: _site
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Mods
+        path: _site/mods
+          
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
+    
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v4
+
+  update_pages:
+    needs: build_pages
+    env:
+      GH_TOKEN: ${{secrets.PAGES_UPDATE_TOKEN}}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger build action in webrogue-runtime.github.io repo
+        run: |
+          git clone https://github.com/webrogue-runtime/webrogue-runtime.github.io.git &&
+          cd webrogue-runtime.github.io &&
+          gh workflow run update_submodule
