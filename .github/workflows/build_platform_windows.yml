@@ -36,3 +36,9 @@ jobs:
       with:
         name: Artifacts-Windows-Installer
         path: ./artifacts/webrogue_installer.exe
+
+    - uses: actions/upload-artifact@v4
+      if: ${{ inputs.is_release }}
+      with:
+        name: Artifacts-Windows-MSIX
+        path: ./webrogue.msix
