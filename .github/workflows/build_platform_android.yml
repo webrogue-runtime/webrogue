@@ -37,10 +37,16 @@ jobs:
           rustup target add aarch64-linux-android
           rustup target add x86_64-linux-android
 
-      - name: build
+      - name: Build
         run: |
           cd platforms/Android
           ./gradlew --no-daemon ${{inputs.is_release && 'assembleRelease' || 'assembleDebug'}}
+
+      - name: Copy Artefacts
+        if: ${{ inputs.is_release }}
+        run: |
+          mkdir artifacts
+          cp ./platforms/Android/app/build/outputs/apk/release/app-release.apk artifacts/webrogue.apk
 
       - uses: actions/upload-artifact@v4
         if: ${{ inputs.is_release }}
