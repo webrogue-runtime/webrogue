@@ -36,7 +36,7 @@ jobs:
         ./platforms/Windows/build.ps1 Release;
 
     - uses: actions/upload-artifact@v4
-      if: ${{ !inputs.is_release }}
+      if: ${{ inputs.is_release }}
       with:
         name: Artifacts-Windows-Installer
         path: ./artifacts/webrogue_installer.exe
@@ -102,7 +102,7 @@ jobs:
         cmake --build platforms/Linux/build --target webrogue --parallel 
 
     - uses: actions/upload-artifact@v4
-      if: ${{ !inputs.is_release }}
+      if: ${{ inputs.is_release }}
       with:
         name: Artifacts-Linux
         path: |
@@ -174,7 +174,7 @@ jobs:
           ./gradlew --no-daemon assemble${{env.CMAKE_VARIANT}}
 
       - uses: actions/upload-artifact@v4
-        if: ${{ !inputs.is_release }}
+        if: ${{ inputs.is_release }}
         with:
           name: Artifacts-Android
           path: artifacts/webrogue.apk
@@ -216,7 +216,7 @@ jobs:
         sh platforms/MacOS/build.sh --release
 
     - uses: actions/upload-artifact@v4
-      if: ${{ !inputs.is_release }}
+      if: ${{ inputs.is_release }}
       with:
         name: Artifacts-MacOS
         path: |
@@ -290,7 +290,7 @@ jobs:
         mv mods/*/*.wrmod artifacts
 
     - uses: actions/upload-artifact@v4
-      if: ${{ !inputs.is_release }}
+      if: ${{ inputs.is_release }}
       with:
         name: Artifacts-Mods
         path: |
