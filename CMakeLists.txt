@@ -21,7 +21,8 @@ set(WEBROGUE_ROOT_PATH ${CMAKE_CURRENT_LIST_DIR})
 
 # add_subdirectory(external/llvm/llvm)
 
-if(NOT WIN32 AND NOT APPLE)
+option(WEBROGUE_BUILD_WASMEDGE "Build WasmEdge runtime" OFF)
+if(${WEBROGUE_BUILD_WASMEDGE})
     set(WASMEDGE_BUILD_AOT_RUNTIME ON)
     set(WASMEDGE_BUILD_SHARED_LIB OFF)
     set(WASMEDGE_BUILD_STATIC_LIB ON)
@@ -31,7 +32,7 @@ if(NOT WIN32 AND NOT APPLE)
 endif()
 
 # set(WAMR_BUILD_DEBUG_INTERP 1)
-set(WEBROGUE_LIBRARY_TYPE SHARED)
+set(WEBROGUE_LIBRARY_TYPE STATIC)
 if(APPLE)
     add_subdirectory(${WEBROGUE_ROOT_PATH}/platforms/MacOS/wamr wamr)
 
@@ -122,7 +123,7 @@ list(APPEND WEBROGUE_RUNTIMES m3)
 
 include(${WEBROGUE_ROOT_PATH}/cmake/make_compact_linker.cmake)
 
-if(NOT WIN32 AND NOT APPLE)
+if(${WEBROGUE_BUILD_WASMEDGE})
     make_webrogue_runtime(
         LIB_NAME webrogue_runtime_wasmedge
         TYPE WASMEDGE

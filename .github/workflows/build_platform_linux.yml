@@ -27,9 +27,18 @@ jobs:
         sudo apt-get install python3-zstd
 
     - name: Configure and build
+      if: ${{ !inputs.is_release }}
       run: |
         cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=${{inputs.is_release && 'Release' || 'Debug'}}
         cmake --build platforms/Linux/build --target webrogue --parallel 
+
+    - name: Build RPM and DEB packages
+      if: ${{ inputs.is_release }}
+      run: |
+        sh platforms/Linux/ubuntu.sh
+        sh platforms/Linux/deb2appimage.sh
+        mkdir artifacts
+        mv platforms/Linux/webrogue.deb platforms/Linux/webrogue.rpm platforms/Linux/webrogue-x86_64.AppImage artifacts
 
     - uses: actions/upload-artifact@v4
       if: ${{ inputs.is_release }}
