@@ -9,8 +9,9 @@ jobs:
     with:
       is_release: false
   build_release:
-    # if: ${{ github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'main' }}
     uses: ./.github/workflows/reusable_build.yml
+    needs: build_debug
     with:
       is_release: true
   deploy:
