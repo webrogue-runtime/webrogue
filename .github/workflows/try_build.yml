@@ -5,7 +5,7 @@ on:
     
 jobs:
   call_build_workflow:
-    uses: ${{GITHUB_REPOSITORY}}/.github/reusable.yml@${{GITHUB_SHA}}
+    uses: ${{GITHUB_REPOSITORY}}/.github/workflows/reusable.yml@${{GITHUB_SHA}}
     with:
       config-path: .github/reusable.yml
     secrets: inherit
