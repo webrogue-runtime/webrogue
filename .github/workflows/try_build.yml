@@ -9,3 +9,8 @@ jobs:
     with:
       is_release: false
     # secrets: inherit
+  deploy:
+    # if: ${{ github.ref_name == 'main' }}
+    uses: ./.github/workflows/reusable.yml
+    with:
+      is_release: true

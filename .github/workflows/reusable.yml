@@ -10,6 +10,9 @@ on:
     #   token:
     #     required: true
 
+env:
+  CMAKE_VARIANT: ${{inputs.is_release && 'Release' || 'Debug'}}
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -37,6 +40,7 @@ jobs:
 
   web:
     runs-on: ubuntu-latest
+    if: !inputs.is_release
 
     steps:
     - uses: actions/checkout@v4
@@ -66,7 +70,7 @@ jobs:
     - name: Configure and build
       run: |        
         . ./emsdk/emsdk_env.sh
-        emcmake cmake -B platforms/Web/build -S platforms/Web -DCMAKE_BUILD_TYPE=Debug
+        emcmake cmake -B platforms/Web/build -S platforms/Web -DCMAKE_BUILD_TYPE=${{env.CMAKE_VARIANT}}
         cmake --build platforms/Web/build --target pack_artifacts -j
 
   linux:
@@ -91,11 +95,12 @@ jobs:
 
     - name: Configure and build
       run: |
-        cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=Debug
+        cmake -S platforms/Linux -B platforms/Linux/build -DCMAKE_BUILD_TYPE=${{env.CMAKE_VARIANT}}
         cmake --build platforms/Linux/build --target webrogue --parallel 
 
   dos:
     runs-on: ubuntu-latest
+    if: !inputs.is_release
 
     steps:
     - uses: actions/checkout@v4
@@ -157,7 +162,7 @@ jobs:
       - name: build
         run: |
           cd platforms/Android
-          ./gradlew --no-daemon assembleDebug
+          ./gradlew --no-daemon assemble${{env.CMAKE_VARIANT}}
 
   macos:
     runs-on: macos-latest
