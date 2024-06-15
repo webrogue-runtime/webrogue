@@ -16,6 +16,7 @@ jobs:
       is_release: true
   mods:
     uses: ./.github/workflows/build_mods.yml
+    needs: debug
     with:
       is_release: ${{ github.ref_name == 'main' }}
   deploy:
