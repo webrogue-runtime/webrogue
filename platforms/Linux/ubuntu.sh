@@ -11,6 +11,8 @@ docker run \
   $image_name \
   bash -c "
     cd /webrogue &&\
+    git config --global --add safe.directory /webrogue &&\
+    git clean -d -f -x &&\
     . scripts/make_venv.sh &&\
     sh platforms/Linux/build.sh
   "

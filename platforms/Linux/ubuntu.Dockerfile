@@ -11,23 +11,24 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.29.0-rc2/cmake-3.
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
-# WORKDIR "/"
+WORKDIR "/"
+RUN git clone https://github.com/webrogue-runtime/webrogue.git
 # COPY / /webrogue
-# WORKDIR "/webrogue"
+WORKDIR "/webrogue"
 
-# RUN git submodule update --init --recursive external/wasmer/ && \
-#     git submodule update --init --recursive external/xz/ && \
-#     git submodule update --init --recursive external/argparse/ && \
-#     git submodule update --init --recursive external/libuv/ && \
-#     git submodule update --init --recursive external/uvwasi/ && \
-#     git submodule update --init --recursive external/SDL/ && \
-#     git submodule update --init --recursive external/SDL_ttf/
+RUN git submodule update --init --recursive external/wasmer/ && \
+    git submodule update --init --recursive external/xz/ && \
+    git submodule update --init --recursive external/argparse/ && \
+    git submodule update --init --recursive external/libuv/ && \
+    git submodule update --init --recursive external/uvwasi/ && \
+    git submodule update --init --recursive external/SDL/ && \
+    git submodule update --init --recursive external/SDL_ttf/
 
-# RUN . scripts/make_venv.sh && sh platforms/Linux/build.sh
+RUN . scripts/make_venv.sh && sh platforms/Linux/build.sh
 
-# FROM ubuntu:20.04
-# # FROM fedora:38
-# COPY --from=builder /webrogue/platforms/Linux/webrogue.deb webrogue.deb
-# COPY --from=builder /webrogue/platforms/Linux/webrogue.rpm webrogue.rpm
-# RUN apt-get install -y ./webrogue.deb
-# RUN rpm -i webrogue.rpm
+FROM ubuntu:20.04
+# FROM fedora:38
+COPY --from=builder /webrogue/platforms/Linux/webrogue.deb webrogue.deb
+COPY --from=builder /webrogue/platforms/Linux/webrogue.rpm webrogue.rpm
+RUN apt-get install -y ./webrogue.deb
+RUN rpm -i webrogue.rpm

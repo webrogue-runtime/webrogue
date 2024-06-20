@@ -24,18 +24,14 @@ namespace core {
 int win_stdio_fd(DWORD stdio_type, bool rdonly) {
     HANDLE handle = GetStdHandle(stdio_type);
     if (handle == INVALID_HANDLE_VALUE || !handle) {
-        handle = CreateFile(
-            "nul",       
-            rdonly ? GENERIC_READ : GENERIC_WRITE,  
-            rdonly ? FILE_SHARE_READ : 0,
-            NULL,        
-            OPEN_EXISTING,  
-            rdonly ? FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED : FILE_ATTRIBUTE_NORMAL,
-            NULL
-        );
+        handle =
+            CreateFile("nul", rdonly ? GENERIC_READ : GENERIC_WRITE,
+                       rdonly ? FILE_SHARE_READ : 0, NULL, OPEN_EXISTING,
+                       rdonly ? FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED
+                              : FILE_ATTRIBUTE_NORMAL,
+                       NULL);
     }
-    return  _open_osfhandle((intptr_t)handle,
-                    rdonly ? _O_RDONLY : _O_WRONLY);
+    return _open_osfhandle((intptr_t)handle, rdonly ? _O_RDONLY : _O_WRONLY);
 }
 #endif
 
@@ -55,7 +51,7 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
 #else
     initOptions.in = 0;
     initOptions.out = 1;
-    initOptions.err = 2; 
+    initOptions.err = 2;
 #endif
     initOptions.fd_table_size = 3;
     initOptions.argc = 0;
@@ -64,12 +60,12 @@ WASIObject::WASIObject(ModsRuntime *pRuntime, ResourceStorage *resourceStorage,
     initOptions.envp = envp;
     std::vector<uvwasi_preopen_t> preopens;
     preopens.push_back({
-        "/", // mapped_path
-        config->dataPath.c_str()  // real_path
+        "/",                     // mapped_path
+        config->dataPath.c_str() // real_path
     });
     preopens.push_back({
-        "./", // mapped_path
-        config->dataPath.c_str()   // real_path
+        "./",                    // mapped_path
+        config->dataPath.c_str() // real_path
     });
     initOptions.preopenc = preopens.size();
     initOptions.preopens = preopens.data();
@@ -192,7 +188,8 @@ WASI_FUNCTION_IMPL(WASMRawI32, fd_filestat_set_times,
     abort();
 }
 WASI_FUNCTION_IMPL(WASMRawI32, args_sizes_get, (WASMRawU32 a, WASMRawU32 b)) {
-    abort();
+    uvwasi_args_sizes_get(uvwasi_t * uvwasi, uvwasi_size_t * argc,
+                          uvwasi_size_t * argv_buf_size) abort();
 }
 WASI_FUNCTION_IMPL(WASMRawI32, fd_filestat_set_size,
                    (WASMRawU32 a, WASMRawU64 b)) {

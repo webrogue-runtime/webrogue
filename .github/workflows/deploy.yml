@@ -44,6 +44,9 @@ jobs:
       with: 
         name: Artifacts-Mods
         path: _site/mods
+
+    - name: Delete some mods
+      run: rm _site/mods/core.wrmod _site/mods/rugpt2.wrmod
           
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
