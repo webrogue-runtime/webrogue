@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:20.04 as builder
 
 # Timezone fix for old images
 ENV TZ=Asia/Dubai
