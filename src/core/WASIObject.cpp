@@ -188,8 +188,7 @@ WASI_FUNCTION_IMPL(WASMRawI32, fd_filestat_set_times,
     abort();
 }
 WASI_FUNCTION_IMPL(WASMRawI32, args_sizes_get, (WASMRawU32 a, WASMRawU32 b)) {
-    uvwasi_args_sizes_get(uvwasi_t * uvwasi, uvwasi_size_t * argc,
-                          uvwasi_size_t * argv_buf_size) abort();
+    abort();
 }
 WASI_FUNCTION_IMPL(WASMRawI32, fd_filestat_set_size,
                    (WASMRawU32 a, WASMRawU64 b)) {
