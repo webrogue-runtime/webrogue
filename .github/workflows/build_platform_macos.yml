@@ -42,6 +42,12 @@ jobs:
         . .venv/bin/activate
         sh platforms/MacOS/build.sh --release
 
+    - name: Pack to DMG
+      run: |
+        npm install --global create-dmg
+        create-dmg artifacts/webrogue.app artifacts --dmg-title=Webrogue || true
+        mv artifacts/webrogue\ 0.1.dmg webrogue.dmg
+
     - uses: actions/upload-artifact@v4
       if: ${{ inputs.is_release }}
       with:
