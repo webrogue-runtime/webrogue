@@ -25,5 +25,4 @@ jobs:
       id-token: write
     needs: [release, mods]
     uses: ./.github/workflows/deploy.yml
-    secrets:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    secrets: inherit
