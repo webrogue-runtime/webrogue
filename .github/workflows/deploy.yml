@@ -1,7 +1,7 @@
 on:
   workflow_call:
     secrets:
-      GH_TOKEN:
+      PAGES_UPDATE_TOKEN:
         required: true
 
 jobs:
