@@ -31,4 +31,4 @@ FROM ubuntu:20.04
 COPY --from=builder /webrogue/platforms/Linux/webrogue.deb webrogue.deb
 COPY --from=builder /webrogue/platforms/Linux/webrogue.rpm webrogue.rpm
 RUN apt-get install -y ./webrogue.deb
-RUN rpm -i webrogue.rpm
+# RUN rpm -i webrogue.rpm
