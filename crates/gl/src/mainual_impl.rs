@@ -524,10 +524,10 @@ pub fn glGetUniformIndices(
 pub fn glMapBufferRange(
     _memory_factory: &mut Box<dyn webrogue_runtime::MemoryFactory>,
     _context: &mut Context,
-    target: u32,
-    offset: i32,
-    length: i32,
-    access: u32,
+    _target: u32,
+    _offset: i32,
+    _length: i32,
+    _access: u32,
 ) -> u32 {
     todo!()
 }

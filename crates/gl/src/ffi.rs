@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
+#![allow(unreachable_patterns)]
 
 // DO NOT EDIT! This file is generated automatically
 

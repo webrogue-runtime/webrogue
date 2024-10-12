@@ -1,6 +1,14 @@
-use std::io::Write;
+mod c_guest;
+mod c_guest_loader;
+mod common;
+mod parse;
+mod proc_addresses;
+mod rust_ffi;
+mod rust_wasm_imports_imps;
+mod types;
+mod wr_defs;
 
-use webrogue_gl_gen_common::*;
+use std::io::Write;
 
 fn run_flavor(
     f: impl Fn(&mut std::fs::File, &types::ParseResults),
@@ -11,6 +19,7 @@ fn run_flavor(
     f(&mut file, commands);
 }
 
+// TODO get rid of run_macro
 fn run_macro(
     preamble: &str,
     f: impl Fn(&types::ParseResults) -> String,
@@ -47,6 +56,7 @@ fn main() {
         "#![allow(dead_code)]
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
+#![allow(unreachable_patterns)]
 
 // DO NOT EDIT! This file is generated automatically
 
