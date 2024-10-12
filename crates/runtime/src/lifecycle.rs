@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use crate::backend::Backend;
 use anyhow::bail;
 pub use anyhow::Result;
@@ -14,12 +16,15 @@ impl Lifecycle {
         backend: impl Backend<Imports>,
         imports: Imports,
         context_vec: crate::context::ContextVec,
-        archive_reader: webrogue_wrapp::Wrapp,
+        archive_reader: webrogue_wrapp::WrappHandle,
     ) -> Result<()> {
-        let mut archive_reader = archive_reader;
+        let archive_reader = archive_reader;
         let runtime = backend.make_runtime();
         let parser = wasmparser::Parser::new(0);
-        let bytecode = archive_reader.read_wasm()?;
+        let mut wasm_file = archive_reader.open_file("main.wasm").unwrap();
+
+        let mut bytecode = Vec::new();
+        wasm_file.read_to_end(&mut bytecode)?;
         let mut memory_size_range = None;
         for payload in parser.parse_all(&bytecode) {
             let payload = payload.map_err(|wasm_err| {

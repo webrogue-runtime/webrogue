@@ -1,64 +1,85 @@
-use std::{
-    io::Cursor,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
-#[derive(Clone)]
-pub struct Wrapp<'a> {
-    seekable: Arc<Mutex<dyn crate::seekable_provider::SeekableProvider<'a>>>,
-    config: Arc<Mutex<crate::config::Config>>,
+pub struct Wrapp {
+    seekable: Box<dyn crate::seekable_provider::SeekableProvider<'static>>,
+    config: crate::config::Config,
+    file_index: crate::file_index::FileIndex,
 }
 
-impl Wrapp<'_> {
-    pub fn from_file_path(path: std::path::PathBuf) -> anyhow::Result<Self> {
-        let mut overall_reader = std::fs::File::open(path).unwrap();
+#[derive(Clone)]
+pub struct WrappHandle(Arc<Mutex<Wrapp>>);
+
+impl WrappHandle {
+    fn make_wrapp_handle(
+        mut overall_reader: impl std::io::Read + std::io::Seek + 'static,
+    ) -> anyhow::Result<Self> {
         let preamble = crate::preamble_reader::parse_preamble(&mut overall_reader)?;
-        let seekable =
+        let mut seekable =
             crate::seekable_provider::ZSTDSeekableProvider::new(overall_reader, preamble.offset)?;
-        anyhow::Ok(Self {
-            seekable: Arc::new(Mutex::new(seekable)),
-            config: Arc::new(Mutex::new(preamble.config)),
+
+        let file_index = crate::file_index::FileIndex::new(&mut seekable);
+
+        let wrapp = Wrapp {
+            seekable: Box::new(seekable),
+            config: preamble.config,
+            file_index,
+        };
+        anyhow::Ok(WrappHandle {
+            0: Arc::new(Mutex::new(wrapp)),
         })
+    }
+    pub fn from_file_path(path: std::path::PathBuf) -> anyhow::Result<Self> {
+        Self::make_wrapp_handle(std::fs::File::open(path)?)
     }
 
     pub fn from_vec(bytes: Vec<u8>) -> anyhow::Result<Self> {
-        let mut overall_reader = Cursor::new(bytes);
-        let preamble = crate::preamble_reader::parse_preamble(&mut overall_reader)?;
-        let seekable =
-            crate::seekable_provider::ZSTDSeekableProvider::new(overall_reader, preamble.offset)?;
-        anyhow::Ok(Self {
-            seekable: Arc::new(Mutex::new(seekable)),
-            config: Arc::new(Mutex::new(preamble.config)),
-        })
+        Self::make_wrapp_handle(std::io::Cursor::new(bytes))
     }
 
     pub fn from_static_slice(bytes: &'static [u8]) -> anyhow::Result<Self> {
-        let mut overall_reader = Cursor::new(bytes);
-        let preamble = crate::preamble_reader::parse_preamble(&mut overall_reader)?;
-        let seekable =
-            crate::seekable_provider::ZSTDSeekableProvider::new(overall_reader, preamble.offset)?;
-        anyhow::Ok(Self {
-            seekable: Arc::new(Mutex::new(seekable)),
-            config: Arc::new(Mutex::new(preamble.config)),
-        })
+        Self::make_wrapp_handle(std::io::Cursor::new(bytes))
     }
 }
 
-impl Wrapp<'_> {
-    pub fn read_wasm(&mut self) -> anyhow::Result<Vec<u8>> {
-        let mut seekable: std::sync::MutexGuard<dyn crate::seekable_provider::SeekableProvider> =
-            self.seekable.lock().unwrap();
-        let mut decompressed = vec![];
-        for frame in 0..seekable.get_num_frames() {
-            let size = seekable.get_frame_decompressed_size(frame);
-            let n = decompressed.len();
-            decompressed.extend(std::iter::repeat(0).take(size));
-            seekable.decompress_frame(&mut decompressed[n..], frame);
-        }
-        return anyhow::Ok(decompressed);
+impl WrappHandle {
+    pub(crate) fn get_frame_decompressed_size(&self, frame_index: usize) -> usize {
+        let wrapp = self.0.lock().unwrap();
+        wrapp.seekable.get_frame_decompressed_size(frame_index)
     }
 
-    pub fn get_config(&self) -> crate::config::Config {
-        return self.config.lock().unwrap().clone();
+    pub(crate) fn get_num_frames(&self) -> usize {
+        let wrapp = self.0.lock().unwrap();
+        wrapp.seekable.get_num_frames()
+    }
+
+    pub(crate) fn decompress_frame(&self, dest: &mut [u8], index: usize) -> usize {
+        let mut wrapp = self.0.lock().unwrap();
+        wrapp.seekable.decompress_frame(dest, index)
+    }
+
+    pub(crate) fn get_frame_and_relative_offset(
+        &mut self,
+        absolute_offset: usize,
+    ) -> (usize, usize) {
+        let mut wrapp = self.0.lock().unwrap();
+        wrapp
+            .seekable
+            .get_frame_and_relative_offset(absolute_offset)
+    }
+
+    pub fn config(&self) -> crate::config::Config {
+        let wrapp = self.0.lock().unwrap();
+        wrapp.config.clone()
+    }
+
+    pub fn open_file(&self, path: &str) -> Option<crate::FileReader> {
+        let wrapp = self.0.lock().unwrap();
+        let position = wrapp
+            .file_index
+            .file_positions
+            .get(path)
+            .and_then(|f| Some(*f));
+        drop(wrapp);
+        position.and_then(|position| Some(crate::FileReader::new(self.clone(), position)))
     }
 }

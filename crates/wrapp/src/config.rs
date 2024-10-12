@@ -1,30 +1,15 @@
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Config {
-    name: String,
-    filesystem: Option<FilesystemConfig>,
+    pub name: String,
+    pub filesystem: Option<FilesystemConfig>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct FilesystemConfig {
-    dirs: Vec<FilesystemDirConfig>,
-    resources: Vec<FilesystemResourceConfig>,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct FilesystemDirConfig {
-    #[serde(rename = "type")]
-    ty: String,
-    name: String,
-    path: String,
+    pub resources: Vec<FilesystemResourceConfig>,
 }
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct FilesystemResourceConfig {
-    real_path: String,
-    dirs: Vec<FilesystemResourceDirConfig>,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct FilesystemResourceDirConfig {
-    name: String,
-    path: String,
+    pub real_path: String,
+    pub mapped_path: String,
 }

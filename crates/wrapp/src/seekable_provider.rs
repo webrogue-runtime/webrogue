@@ -4,6 +4,7 @@ pub trait SeekableProvider<'a>: Send {
     fn get_num_frames(&self) -> usize;
     fn get_frame_decompressed_size(&self, frame_index: usize) -> usize;
     fn decompress_frame(&mut self, dest: &mut [u8], index: usize) -> usize;
+    fn get_frame_and_relative_offset(&mut self, absolute_offset: usize) -> (usize, usize);
 }
 
 pub struct ZSTDSeekableProvider<'a, OverallReader: Read + Seek> {
@@ -35,5 +36,13 @@ impl<OverallReader: Read + Seek> SeekableProvider<'_> for ZSTDSeekableProvider<'
 
     fn decompress_frame(&mut self, dest: &mut [u8], index: usize) -> usize {
         self.seekable.decompress_frame(dest, index)
+    }
+
+    fn get_frame_and_relative_offset(&mut self, absolute_offset: usize) -> (usize, usize) {
+        let frame = self
+            .seekable
+            .seekable_offset_to_frame_index(absolute_offset as u64);
+        let frame_offset = self.seekable.get_frame_decompressed_offset(frame) as usize;
+        (frame, absolute_offset - frame_offset)
     }
 }
