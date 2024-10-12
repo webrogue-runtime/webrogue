@@ -33,9 +33,13 @@ impl FileReader {
     }
 
     fn seek_to_absolute_offset(&mut self, absolute_target_offset: usize) {
+        // TODO cache cz get_frame_and_relative_offset is called too frequently
         let frame_and_relative_offset = self
             .handle
             .get_frame_and_relative_offset(absolute_target_offset);
+        if frame_and_relative_offset.0 == self.cursor_frame_index {
+            return;
+        }
         self.cursor_frame_index = frame_and_relative_offset.0;
         self.cursor_frame_absolute_offset = absolute_target_offset - frame_and_relative_offset.1;
         let frame_size = self
@@ -57,12 +61,14 @@ impl std::io::Seek for FileReader {
             std::io::SeekFrom::End(d) => (self.file_position.size as i64 + d) as usize,
         };
         let absolute_target_offset = self.file_position.absolute_offset + target_offset;
-        // TODO check file bounds
-        if absolute_target_offset < self.cursor_frame_absolute_offset
+        if absolute_target_offset < self.file_position.absolute_offset
             || absolute_target_offset
-                > self.cursor_frame_absolute_offset + self.cursor_frame_data.len()
+                >= self.file_position.absolute_offset + self.file_position.size
         {
-            self.seek_to_absolute_offset(absolute_target_offset);
+            return std::io::Result::Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "wrapp seek is out of bounds",
+            ));
         }
         self.cursor = target_offset;
         return std::io::Result::Ok(target_offset as u64);
@@ -74,11 +80,17 @@ impl std::io::Read for FileReader {
         let mut result_size: usize = 0;
 
         while result_size < buf.len() {
+            let remain_file_length = self.file_position.size - self.cursor;
+
+            if remain_file_length == 0 {
+                return std::io::Result::Ok(result_size);
+            }
+
+            self.seek_to_absolute_offset(self.cursor + self.file_position.absolute_offset);
             let available_in_this_frame = self.cursor_frame_absolute_offset
                 + self.cursor_frame_data.len()
                 - self.file_position.absolute_offset
                 - self.cursor;
-            let remain_file_length = self.file_position.size - self.cursor;
             let to_read = std::cmp::min(
                 std::cmp::min(available_in_this_frame, buf.len() - result_size),
                 remain_file_length,
@@ -92,19 +104,8 @@ impl std::io::Read for FileReader {
             );
             result_size += to_read;
             self.cursor += to_read;
-            // if remain_file_length == available_in_this_frame, then FileReader
-            // goes to state where cursor doesn't fits into current frame to
-            // prevent decompressing invalid frame
-            // TODO decompress frame right before reading
             if remain_file_length == to_read {
                 break;
-            }
-            if available_in_this_frame == to_read {
-                assert_eq!(
-                    self.cursor + self.file_position.absolute_offset,
-                    self.cursor_frame_absolute_offset + self.cursor_frame_data.len()
-                );
-                self.seek_to_absolute_offset(self.cursor + self.file_position.absolute_offset);
             }
         }
 
