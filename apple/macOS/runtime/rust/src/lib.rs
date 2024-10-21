@@ -28,7 +28,7 @@ fn main(wrapp_path: String) -> anyhow::Result<()> {
     webrogue_std_stream_os::bind_streams(&mut wasi);
     let backend = make_backend();
 
-    let reader = webrogue_runtime::wrapp::Wrapp::from_file_path(std::path::PathBuf::from(wrapp_path))?;
+    let reader = webrogue_runtime::wrapp::WrappHandle::from_file_path(std::path::PathBuf::from(wrapp_path))?;
     let mut webrogue_gfx_context = webrogue_gfx::Context::new(Box::new(webrogue_gfx_ffi::make_system));
     let mut webrogue_gl_context = webrogue_gl::api::Context::new(
         &mut webrogue_gfx_context,

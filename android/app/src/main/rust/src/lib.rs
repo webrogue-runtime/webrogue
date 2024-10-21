@@ -123,7 +123,7 @@ fn main() -> anyhow::Result<()> {
     
     let wrapp_path = unsafe { std::ffi::CStr::from_ptr(webrogue_android_path()).to_str().unwrap().to_owned() };
     
-    let reader = webrogue_runtime::wrapp::Wrapp::from_file_path(std::path::PathBuf::from(wrapp_path))?;
+    let reader = webrogue_runtime::wrapp::WrappHandle::from_file_path(std::path::PathBuf::from(wrapp_path))?;
 
     let mut webrogue_gfx_context =
         webrogue_gfx::Context::new(Box::new(webrogue_gfx_ffi::make_system));
