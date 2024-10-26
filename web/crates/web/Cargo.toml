@@ -1,0 +1,16 @@
+[package]
+name = "webrogue_web"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+webrogue_web_main = { path = "../main" }
+
+# just to silence compile_error using "fallback" feature
+iana-time-zone = { version = ">=0.1.61", features = ["fallback"] }
+
+[patch.crates-io]
+zstd-seekable = { path = '../../external/zstd-seekable' }

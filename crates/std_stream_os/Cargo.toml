@@ -1,15 +1,16 @@
 [package]
 name = "webrogue_std_stream_os"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
-webrogue_runtime = { path = "../runtime" }
-wiggle = { path = "../../external/wasmtime/crates/wiggle", default-features = false  }
+webrogue_runtime = { workspace = true }
+wiggle = { workspace = true, default-features = false }
 
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "0.38.31", features = ["fs", "event"] }
+rustix = { workspace = true, features = ["fs", "event"] }
 
 [target.'cfg(windows)'.dependencies]
-rustix = { version = "0.38.31", features = ["net"] }
-io-extras = "0.18.1"
+rustix = { workspace = true, features = ["net"] }
+io-extras = { workspace = true }

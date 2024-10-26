@@ -1,4 +1,4 @@
-use anyhow::Result;
+pub use anyhow::Result;
 use clap::Parser;
 use webrogue_runtime::WasiFactory;
 
@@ -35,7 +35,7 @@ struct Cli {
     path: std::path::PathBuf,
 }
 
-fn main() -> Result<()> {
+pub fn main() -> Result<()> {
     let lifecycle = webrogue_runtime::Lifecycle::new();
 
     let wasi_factory = make_wasi_factory();

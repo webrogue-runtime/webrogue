@@ -1,7 +1,0 @@
-[package]
-name = "webrogue_gl_gen_builder"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-roxmltree = "0.20.0"

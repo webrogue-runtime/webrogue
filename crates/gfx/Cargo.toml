@@ -1,8 +1,9 @@
 [package]
 name = "webrogue_gfx"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
-webrogue_runtime = { path = "../runtime" }
-anyhow = { version = "1" }
+webrogue_runtime = { workspace = true }
+anyhow = { workspace = true }

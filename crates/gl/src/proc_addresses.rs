@@ -255,6 +255,7 @@ pub struct ProcAddresses {
 
 #[rustfmt::skip]
 impl ProcAddresses {
+    #[allow(invalid_value)]
     pub fn new() -> Self {
         unsafe { std::mem::MaybeUninit::<ProcAddresses>::zeroed().assume_init() }
     }

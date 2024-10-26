@@ -1,9 +1,10 @@
 [package]
 name = "webrogue_wrapp_cli"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
-anyhow = { version = "1" }
-clap = { version = "4.0", features = ["derive"] }
-webrogue_wrapp = { path = "../wrapp" }
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+webrogue_wrapp = { workspace = true }

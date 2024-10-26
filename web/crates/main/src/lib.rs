@@ -22,7 +22,7 @@ webrogue_backend_web::make_funcs!({
     }
 });
 
-fn main() -> anyhow::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     std::env::set_var("RUST_BACKTRACE", "full");
 
     let lifecycle = webrogue_runtime::Lifecycle::new();
@@ -70,19 +70,4 @@ fn main() -> anyhow::Result<()> {
     drop(wasi);
 
     Ok(())
-}
-
-#[no_mangle]
-extern "C" fn rust_main() {
-    // std::thread::spawn(|| {
-    match main() {
-        Err(e) => {
-            panic!("{}", e.to_string())
-        }
-        Ok(_) => {}
-    }
-    // });
-    // loop {
-    //     unsafe { wr_rs_sleep(1) };
-    // }
 }

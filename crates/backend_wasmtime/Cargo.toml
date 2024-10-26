@@ -1,11 +1,12 @@
 [package]
 name = "webrogue_backend_wasmtime"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
 # All default but async and profiling features
-wasmtime = { path = "../../external/wasmtime/crates/wasmtime", default-features = false, features = ["cache", "gc", "wat", "parallel-compilation", "cranelift", "pooling-allocator", "demangle", "addr2line", "coredump", "debug-builtins", "runtime", "component-model", "threads", "std"] }
-webrogue_runtime = { path = "../runtime"}
-anyhow = { version = "1" }
-webrogue_backend_wasmtime_macro = { path = "macro" }
+wasmtime = { workspace = true, default-features = false, features = ["cache", "gc", "wat", "parallel-compilation", "cranelift", "pooling-allocator", "demangle", "addr2line", "coredump", "debug-builtins", "runtime", "component-model", "threads", "std"] }
+webrogue_runtime = { workspace = true }
+anyhow = { workspace = true }
+webrogue_backend_wasmtime_macro = { workspace = true }

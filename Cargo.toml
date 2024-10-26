@@ -1,41 +1,99 @@
 [package]
-name = "webrogue_rs"
-version = "0.1.0"
-edition = "2021"
+name = "webrogue"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+default-run = "webrogue_default_runtime"
 
-[features]
-default = ["backend_wasmtime", "wasi_sync", "gl"]
-
-backend_v8 = ["dep:webrogue_backend_v8"]
-backend_wasmer_cranelift = ["_backend_wasmer", "webrogue_backend_wasmer/cranelift"]
-backend_wasmer_llvm = ["_backend_wasmer", "webrogue_backend_wasmer/llvm"]
-backend_wasmer_singlepass = ["_backend_wasmer", "webrogue_backend_wasmer/singlepass"]
-backend_wasmtime = ["dep:webrogue_backend_wasmtime"]
-_backend_wasmer = ["dep:webrogue_backend_wasmer"]
-
-wasi_sync = ["dep:webrogue_wasi_sync"]
-
-gl = ["_gfx", "dep:webrogue_gl"]
-_gfx = ["dep:webrogue_gfx", "dep:webrogue_gfx_rust_sdl"]
+[[bin]]
+name = "webrogue_default_runtime"
+path = "crates/default_runtime/src/main.rs"
+doc = false
 
 [dependencies]
+webrogue_default_runtime = { workspace = true }
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Artem Borovik"]
+edition = "2021"
+
+[workspace]
+resolver = '2'
+members = [
+  "crates/backend_v8",
+  "crates/backend_v8/macro",
+  "crates/backend_wasmer",
+  "crates/backend_wasmer/macro",
+  "crates/backend_wasmtime",
+  "crates/backend_wasmtime/macro",
+  "crates/default_runtime",
+  "crates/gfx",
+  "crates/gfx_ffi",
+  "crates/gfx_rust_sdl",
+  "crates/gl",
+  "crates/gl/builder",
+  "crates/macro_common",
+  "crates/runtime",
+  "crates/std_stream_os",
+  "crates/wasi",
+  "crates/wasi_sync",
+  "crates/wrapp",
+  "crates/wrapp_cli",
+
+  "android/app/src/main/rust",
+
+  "web/crates/main",
+  "web/crates/backend",
+  "web/crates/backend/macro",
+
+  "apple/iOS/rust",
+  "apple/macOS/runtime/rust",
+]
+exclude = [
+  "external/wasmtime",
+  "web/crates/web",
+]
+
+[workspace.dependencies]
+# Webrogue crates
+webrogue_default_runtime = { path = "crates/default_runtime" }
 webrogue_runtime = { path = "crates/runtime" }
-anyhow = { version = "1" }
-clap = { version = "4.0", features = ["derive"] }
 webrogue_wasi = { path = "crates/wasi" }
-
-webrogue_gl = { path = "crates/gl", optional = true }
-webrogue_gfx = { path = "crates/gfx", optional = true }
-webrogue_gfx_rust_sdl = { path = "crates/gfx_rust_sdl", optional = true }
-webrogue_gfx_ffi = { path = "crates/gfx_ffi", optional = true }
-webrogue_backend_v8 = { path = "crates/backend_v8", optional = true }
-webrogue_backend_wasmer = { path = "crates/backend_wasmer", optional = true }
-webrogue_backend_wasmtime = { path = "crates/backend_wasmtime", optional = true }
+webrogue_gl = { path = "crates/gl" }
+webrogue_macro_common = { path = "crates/macro_common" }
+webrogue_gfx = { path = "crates/gfx" }
+webrogue_gfx_ffi = { path = "crates/gfx_ffi" }
+webrogue_backend_v8 = { path = "crates/backend_v8" }
+webrogue_backend_v8_macro = { path = "crates/backend_v8/macro" }
+webrogue_backend_wasmer = { path = "crates/backend_wasmer" }
+webrogue_backend_wasmer_macro = { path = "crates/backend_wasmer/macro" }
+webrogue_backend_wasmtime = { path = "crates/backend_wasmtime" }
+webrogue_backend_wasmtime_macro = { path = "crates/backend_wasmtime/macro" }
 webrogue_std_stream_os = { path = "crates/std_stream_os" }
-webrogue_wasi_sync = { path = "crates/wasi_sync", optional = true }
+webrogue_wasi_sync = { path = "crates/wasi_sync" }
+webrogue_gfx_rust_sdl = { path = "crates/gfx_rust_sdl", default-features = false }
+webrogue_wrapp = { path = "crates/wrapp" }
 
-[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
-webrogue_gfx_rust_sdl = { path = "crates/gfx_rust_sdl", optional = true, features = ["sdl_static", "sdl_bundled"] }
+# Platform-specific crates
+webrogue_backend_web = { path = "web/crates/backend" }
+webrogue_backend_web_macro = { path = "web/crates/backend/macro" }
 
-[target.'cfg(not(any(target_os = "macos", target_os = "windows")))'.dependencies]
-webrogue_gfx_rust_sdl = { path = "crates/gfx_rust_sdl", optional = true, features = [] }
+# Wasmtime crates
+wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
+wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
+wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
+cap-std = { version = "3.1" }
+
+# Other crates
+v8 = { version = "0.99" } # git = "https://github.com/denoland/rusty_v8.git"
+# TODO add wasmer
+clap = { version = "4.0", default-features = false, features = ["std"] }
+futures =  { version = "0.3" }
+wasmparser = { version = ">=0.215" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+anyhow = { version = "1" }
+zstd-seekable = { version = "0.1.23" }
+io-extras = { version = "0.18.1" }
+rustix = { version = "0.38.31" }

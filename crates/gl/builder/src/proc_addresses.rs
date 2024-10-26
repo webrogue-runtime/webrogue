@@ -13,6 +13,7 @@ pub fn get_as_str(parse_results: &ParseResults) -> String {
     let mut init_func_ptrs = r#"
 #[rustfmt::skip]
 impl ProcAddresses {
+    #[allow(invalid_value)]
     pub fn new() -> Self {
         unsafe { std::mem::MaybeUninit::<ProcAddresses>::zeroed().assume_init() }
     }

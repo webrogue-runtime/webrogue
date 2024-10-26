@@ -1,14 +1,15 @@
 [package]
 name = "webrogue_gfx_rust_sdl"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [features]
 sdl_static = ["sdl2/static-link"]
 sdl_bundled = ["sdl2/bundled"]
 
 [dependencies]
-webrogue_gfx = { path = "../gfx" }
+webrogue_gfx = { workspace = true }
 sdl2 = { version = ">=0.37.0" }
 
 [build-dependencies]

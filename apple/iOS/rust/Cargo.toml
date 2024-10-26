@@ -1,21 +1,20 @@
 [package]
 name = "webrogue_ios"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [lib]
 name = "webrogue_ios"
 crate-type = ["staticlib"]
 
-[features]
-
 [dependencies]
-anyhow = { version = "1" }
-webrogue_runtime = { path = "../../../crates/runtime" }
-webrogue_backend_wasmtime = { path = "../../../crates/backend_wasmtime" }
-webrogue_wasi = { path = "../../../crates/wasi" }
-webrogue_gl = { path = "../../../crates/gl" }
-webrogue_gfx = { path = "../../../crates/gfx" }
-webrogue_wasi_sync = { path = "../../../crates/wasi_sync" }
-webrogue_std_stream_os = { path = "../../../crates/std_stream_os", default-features = false }
-webrogue_gfx_ffi = { path = "../../../crates/gfx_ffi" }
+anyhow = { workspace = true }
+webrogue_runtime = { workspace = true }
+webrogue_backend_wasmtime = { workspace = true }
+webrogue_wasi = { workspace = true }
+webrogue_gl = { workspace = true }
+webrogue_gfx = { workspace = true }
+webrogue_wasi_sync = { workspace = true }
+webrogue_std_stream_os = { workspace = true }
+webrogue_gfx_ffi = { workspace = true }

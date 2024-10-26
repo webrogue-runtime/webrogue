@@ -1,7 +1,8 @@
 [package]
 name = "webrogue_backend_wasmer"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [features]
 singlepass = ["wasmer/jit", "wasmer/singlepass"]
@@ -10,7 +11,7 @@ llvm = ["wasmer/jit", "wasmer/llvm"]
 jsc = ["wasmer/jsc", "wasmer/std"]
 
 [dependencies]
-webrogue_runtime = { path = "../runtime"}
-anyhow = { version = "1" }
+webrogue_runtime = { workspace = true }
+anyhow = { workspace = true }
 wasmer = { version = "4.3.1", default-features = false }
-webrogue_backend_wasmer_macro = { path = "macro" }
+webrogue_backend_wasmer_macro = { workspace = true }

@@ -1,8 +1,8 @@
 [package]
-name = "webrogue_gfx_ffi"
+name = "webrogue_gl_builder"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-webrogue_gfx = { workspace = true }
+roxmltree = "0.20.0"

@@ -36,19 +36,15 @@ fn main() {
 
     run_flavor(
         c_guest::write_to_file,
-        "../../../examples/libs/GLES2/gl2.inc",
+        "examples/libs/GLES2/gl2.inc",
         &parse_results,
     );
 
-    run_flavor(
-        wr_defs::write_to_file,
-        "../../../crates/gl/defs.in",
-        &parse_results,
-    );
+    run_flavor(wr_defs::write_to_file, "crates/gl/defs.in", &parse_results);
 
     run_flavor(
         c_guest_loader::write_to_file,
-        "../../../examples/libs/webrogue_gfx/webrogue_gl_loader.c",
+        "examples/libs/webrogue_gfx/webrogue_gl_loader.c",
         &parse_results,
     );
 
@@ -62,7 +58,7 @@ fn main() {
 
 ",
         rust_ffi::get_as_str,
-        "../../../crates/gl/src/ffi.rs",
+        "crates/gl/src/ffi.rs",
         &parse_results,
     );
 
@@ -76,7 +72,7 @@ pub use crate::mainual_impl::*;
 
 ",
         rust_wasm_imports_imps::get_as_str,
-        "../../../crates/gl/src/api.rs",
+        "crates/gl/src/api.rs",
         &parse_results,
     );
 
@@ -84,7 +80,7 @@ pub use crate::mainual_impl::*;
         "#![allow(non_snake_case)]
 ",
         proc_addresses::get_as_str,
-        "../../../crates/gl/src/proc_addresses.rs",
+        "crates/gl/src/proc_addresses.rs",
         &parse_results,
     );
 }
