@@ -5,12 +5,14 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-default = ["backend_wasmer_singlepass", "wasi_sync", "gl"]
+default = ["backend_wasmer_aot", "wasi_sync", "gl"]
 
 backend_v8 = ["dep:webrogue_backend_v8"]
 backend_wasmer_cranelift = ["_backend_wasmer", "webrogue_backend_wasmer/cranelift"]
 backend_wasmer_llvm = ["_backend_wasmer", "webrogue_backend_wasmer/llvm"]
 backend_wasmer_singlepass = ["_backend_wasmer", "webrogue_backend_wasmer/singlepass"]
+backend_wasmer_aot = ["_backend_wasmer", "webrogue_backend_wasmer/aot"]
+backend_wasmer_wamr = ["_backend_wasmer", "webrogue_backend_wasmer/wamr"]
 backend_wasmtime = ["dep:webrogue_backend_wasmtime"]
 _backend_wasmer = ["dep:webrogue_backend_wasmer"]
 

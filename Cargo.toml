@@ -52,6 +52,7 @@ members = [
 ]
 exclude = [
   "external/wasmtime",
+  "external/wasmer",
   "web/crates/web",
 ]
 
@@ -83,11 +84,12 @@ webrogue_backend_web_macro = { path = "web/crates/backend/macro" }
 wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
 wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
 wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
-cap-std = { version = "3.1" }
 
 # Other crates
+wasmer = { path = "external/wasmer/lib/api", default-features = false }
+# wasmer-cli = { path = "external/wasmer/lib/cli", default-features = false }
+wasmer-c-api = { path = "external/wasmer/lib/c-api", default-features = false }
 v8 = { version = "0.99" } # git = "https://github.com/denoland/rusty_v8.git"
-# TODO add wasmer
 clap = { version = "4.0", default-features = false, features = ["std"] }
 futures =  { version = "0.3" }
 wasmparser = { version = ">=0.215" }
@@ -97,3 +99,5 @@ anyhow = { version = "1" }
 zstd-seekable = { version = "0.1.23" }
 io-extras = { version = "0.18.1" }
 rustix = { version = "0.38.31" }
+cap-std = { version = "3.1" }
+cc = { version = "1" }

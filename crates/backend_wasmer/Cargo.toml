@@ -5,13 +5,19 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-singlepass = ["wasmer/jit", "wasmer/singlepass"]
-cranelift = ["wasmer/jit", "wasmer/cranelift"]
-llvm = ["wasmer/jit", "wasmer/llvm"]
+singlepass = ["wasmer/engine", "wasmer/singlepass"]
+cranelift = ["wasmer/engine", "wasmer/cranelift"]
+llvm = ["wasmer/engine", "wasmer/llvm"]
 jsc = ["wasmer/jsc", "wasmer/std"]
+aot = ["wasmer/sys", "wasmer/static-artifact-load"]
+wamr = ["wasmer/wamr"]
 
 [dependencies]
 webrogue_runtime = { workspace = true }
 anyhow = { workspace = true }
-wasmer = { version = "4.3.1", default-features = false }
+wasmer = { workspace = true, default-features = false }
 webrogue_backend_wasmer_macro = { workspace = true }
+
+[build-dependencies]
+cc = { workspace = true }
+# wasmer = { workspace = true, default-features = false, features = ["static-artifact-load", "llvm"] }

@@ -8,6 +8,12 @@ impl Runtime {
     }
 }
 
+#[cfg(feature = "aot")]
+extern "C" {
+    static WASMER_METADATA_WR_AOT: u8;
+    static WASMER_METADATA_WR_AOT_SIZE: usize;
+}
+
 impl webrogue_runtime::Runtime<crate::Imports> for Runtime {
     fn run(
         &self,
@@ -17,13 +23,23 @@ impl webrogue_runtime::Runtime<crate::Imports> for Runtime {
         memory_size_range: Option<(u64, u64)>,
     ) -> anyhow::Result<()> {
         let mut store = wasmer::Store::default();
+
+        #[cfg(feature = "aot")]
+        let module = unsafe {
+            wasmer::Module::deserialize(
+                &store,
+                std::slice::from_raw_parts(&WASMER_METADATA_WR_AOT, WASMER_METADATA_WR_AOT_SIZE),
+            )?
+        };
+        #[cfg(not(feature = "aot"))]
+        let module = wasmer::Module::new(&store, &bytecode)?;
+
         let context = crate::context::Context {
             memory_factory: Box::new(crate::memory::StubMemoryFactory {}),
             context_vec,
         };
         // webrogue_runtime::Context::new(, wasi);
         let context_arc = Arc::new(Mutex::new(context));
-        let module = wasmer::Module::new(&store, &bytecode)?;
         let env = wasmer::FunctionEnv::new(
             &mut store,
             crate::context::Env {
@@ -53,7 +69,7 @@ impl webrogue_runtime::Runtime<crate::Imports> for Runtime {
                 )?,
             )
         }
-        
+
         let instance = wasmer::Instance::new(&mut store, &module, &import_object)?;
         let memory = instance.exports.get_memory("memory")?;
         context_arc.lock().unwrap().memory_factory = Box::new(crate::memory::MemoryFactory {
