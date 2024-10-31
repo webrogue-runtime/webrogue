@@ -1,5 +1,5 @@
-XCODE_PATH="$HOME/.cargo/bin:$PATH"
-MODIFIED_PATH="$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+XCODE_PATH="$(dirname $(whereis -q cargo)):$PATH"
+MODIFIED_PATH="$(dirname $(whereis -q cargo)):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 # SDKROOT env variable somehow breaks build for ios
 unset SDKROOT
