@@ -81,6 +81,7 @@ android {
 //            if (toolchain.target == "armv7-linux-androideabi"
 //                            || toolchain.target == "i686-linux-android") {
             spec.environment("V8_FROM_SOURCE", "1")
+            spec.environment("CARGO_TARGET_DIR", "target")
 //            }
         }
     }
