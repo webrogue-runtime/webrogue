@@ -1,9 +1,9 @@
 use webrogue_runtime::WasiFactory;
 
-fn make_backend() -> webrogue_backend_wasmtime::Backend {
-    webrogue_backend_wasmtime::Backend::new()
+fn make_backend() -> webrogue_backend_wasmer::Backend {
+    webrogue_backend_wasmer::Backend::new()
 }
-use webrogue_backend_wasmtime::make_funcs;
+use webrogue_backend_wasmer::make_funcs;
 
 make_funcs!({
     "wasi_snapshot_preview1": {
@@ -28,11 +28,11 @@ fn main(wrapp_path: String) -> anyhow::Result<()> {
     webrogue_std_stream_os::bind_streams(&mut wasi);
     let backend = make_backend();
 
-    let reader = webrogue_runtime::wrapp::WrappHandle::from_file_path(std::path::PathBuf::from(wrapp_path))?;
-    let mut webrogue_gfx_context = webrogue_gfx::Context::new(Box::new(webrogue_gfx_ffi::make_system));
-    let mut webrogue_gl_context = webrogue_gl::api::Context::new(
-        &mut webrogue_gfx_context,
-    );
+    let reader =
+        webrogue_runtime::wrapp::WrappHandle::from_file_path(std::path::PathBuf::from(wrapp_path))?;
+    let mut webrogue_gfx_context =
+        webrogue_gfx::Context::new(Box::new(webrogue_gfx_ffi::make_system));
+    let mut webrogue_gl_context = webrogue_gl::api::Context::new(&mut webrogue_gfx_context);
     lifecycle.run(
         backend,
         make_imports(),
@@ -49,6 +49,9 @@ fn main(wrapp_path: String) -> anyhow::Result<()> {
 
 #[no_mangle]
 pub unsafe extern "C" fn webrogue_ios_main(wrapp_path: *const i8) {
-    let wrapp_path = std::ffi::CStr::from_ptr(wrapp_path as *const _).to_str().unwrap().to_owned();
+    let wrapp_path = std::ffi::CStr::from_ptr(wrapp_path as *const _)
+        .to_str()
+        .unwrap()
+        .to_owned();
     main(wrapp_path).unwrap();
 }

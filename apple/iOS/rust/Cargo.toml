@@ -11,7 +11,7 @@ crate-type = ["staticlib"]
 [dependencies]
 anyhow = { workspace = true }
 webrogue_runtime = { workspace = true }
-webrogue_backend_wasmtime = { workspace = true }
+webrogue_backend_wasmer = { workspace = true, features = ["wamr"] }
 webrogue_wasi = { workspace = true }
 webrogue_gl = { workspace = true }
 webrogue_gfx = { workspace = true }

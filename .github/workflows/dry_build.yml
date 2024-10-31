@@ -38,6 +38,7 @@ jobs:
     - name: Submodules
       run: |
         git submodule update --init external/wasmtime
+        git submodule update --init external/wasmer
     
     - name: Setup
       run: |
