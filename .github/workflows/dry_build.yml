@@ -47,6 +47,7 @@ jobs:
         rustup target add x86_64-apple-ios
         rustup target add aarch64-apple-ios-sim
         brew install xcodegen
+        brew install ninja
         sh apple/setup.command
 
     - name: Build
