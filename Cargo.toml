@@ -48,7 +48,7 @@ members = [
   "web/crates/backend/macro",
 
   "apple/iOS/rust",
-  "apple/macOS/runtime/rust",
+  "apple/macOS/Runtime/rust",
 ]
 exclude = [
   "external/wasmtime",
