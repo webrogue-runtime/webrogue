@@ -15,7 +15,7 @@ wamr = ["wasmer/wamr"]
 [dependencies]
 webrogue_runtime = { workspace = true }
 anyhow = { workspace = true }
-wasmer = { path = "../../external/wasmer/lib/api", default-features = false }
+wasmer = { workspace = true, default-features = false }
 webrogue_backend_wasmer_macro = { workspace = true }
 
 [build-dependencies]

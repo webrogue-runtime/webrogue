@@ -86,7 +86,7 @@ wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features 
 wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
 
 # Other crates
-# TODO add wasmer
+wasmer = { path = "external/wasmer/lib/api", default-features = false }
 v8 = { version = "0.99" } # git = "https://github.com/denoland/rusty_v8.git"
 clap = { version = "4.0", default-features = false, features = ["std"] }
 futures =  { version = "0.3" }
