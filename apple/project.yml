@@ -63,10 +63,10 @@ targets:
       embed: true
       codeSign: true
     preBuildScripts:
-      - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/macOS/Runtime/rust/scripts/download_angle_bin.sh"
+      - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/download_angle_bin.sh"
         name: Download ANGLE
         inputFiles:
-          - ${SRCROOT}/macOS/runtime/rust/scripts/download_angle_bin.sh
+          - ${SRCROOT}/scripts/download_angle_bin.sh
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/macos_fat.zip
           - ${BUILT_PRODUCTS_DIR}/libEGL.dylib
@@ -75,13 +75,13 @@ targets:
     type: tool
     platform: macOS
     sources:
-    - path: macOS/Runtime
+    - path: macOS/runtime
       excludes:
       - "**/rust"
     - ../crates/gfx_ffi/src/webrogue_gfx_ffi_sdl2.c
     settings:
       base:
-        CODE_SIGN_ENTITLEMENTS: macOS/Runtime/runtime.entitlements
+        CODE_SIGN_ENTITLEMENTS: macOS/runtime/runtime.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueLauncher.Runtime
         PRODUCT_NAME: webrogue_runtime
         OTHER_LDFLAGS: "-lwebrogue_macos"
@@ -163,14 +163,14 @@ targets:
     platform: iOS
     legacy:
       toolPath: /bin/sh
-      arguments: iOS/rust/scripts/cargo_lipo_builder.sh
+      arguments: iOS/rust/cargo_lipo_builder.sh
       workingDirectory: $(SRCROOT)/
       passSettings: true
   Cargo_macOS:
     platform: macOS
     legacy:
       toolPath: /bin/sh
-      arguments: macOS/runtime/rust/scripts/cargo_lipo_builder.sh
+      arguments: macOS/runtime/rust/cargo_lipo_builder.sh
       workingDirectory: $(SRCROOT)/
       passSettings: true
 schemes:

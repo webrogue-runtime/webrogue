@@ -1,6 +1,6 @@
 set -ex
 
-cd $(dirname $0)/../../../external
+cd $(dirname $0)/../external
 
 if [ ! -f "angle_ios_headers.zip" ]; then
     wget https://github.com/webrogue-runtime/angle-builder/releases/latest/download/ios_headers.zip -O angle_ios_headers.zip

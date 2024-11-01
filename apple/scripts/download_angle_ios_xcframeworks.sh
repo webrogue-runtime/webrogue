@@ -1,7 +1,6 @@
-cd $(dirname $0)
 set -ex
 
-cd ../../../external
+cd $(dirname $0)/../external
 
 if [ ! -d "libEGL.xcframework" ]; then
     wget https://github.com/webrogue-runtime/angle-builder/releases/latest/download/ios_libEGL.xcframework.zip -O libEGL.xcframework.zip
