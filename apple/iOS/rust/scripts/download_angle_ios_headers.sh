@@ -1,16 +1,11 @@
 set -ex
 
-cd $BUILT_PRODUCTS_DIR
+cd $(dirname $0)/../../../external
 
-if [ ! -d "angle_ios" ]; then
-    mkdir angle_ios
+if [ ! -f "angle_ios_headers.zip" ]; then
+    wget https://github.com/webrogue-runtime/angle-builder/releases/latest/download/ios_headers.zip -O angle_ios_headers.zip
 fi
-
-cd angle_ios
-
-if [ ! -f "ios_headers.zip" ]; then
-    wget https://github.com/webrogue-runtime/angle-builder/releases/latest/download/ios_headers.zip -O ios_headers.zip
-fi
-if [ ! -d "ios_headers" ]; then
-    tar -xf ios_headers.zip
+if [ ! -d "angle_ios_headers" ]; then
+    tar -xf angle_ios_headers.zip
+    mv ios_headers angle_ios_headers
 fi

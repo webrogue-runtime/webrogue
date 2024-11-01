@@ -13,6 +13,11 @@ settings:
     GENERATE_INFOPLIST_FILE: true
     MARKETING_VERSION: 0.1
     CURRENT_PROJECT_VERSION: 1
+    DEAD_CODE_STRIPPING: true
+    ENABLE_USER_SCRIPT_SANDBOXING: true
+    ENABLE_MODULE_VERIFIER: true
+    MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS: "gnu11 gnu++14"
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: true
   configs:
     Debug:
       CODE_SIGN_IDENTITY: "-"
@@ -117,21 +122,13 @@ targets:
         HEADER_SEARCH_PATHS: 
         - "$(SRCROOT)/external/SDL2/include"
         SYSTEM_HEADER_SEARCH_PATHS: 
-        - "$(BUILT_PRODUCTS_DIR)/angle_ios/ios_headers"
+        - "$(SRCROOT)/external/angle_ios_headers"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
         ENABLE_PREVIEWS: true
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen.storyboard
-    preBuildScripts:
-      - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/iOS/rust/scripts/download_angle_ios_headers.sh"
-        name: Download ANGLE
-        inputFiles:
-          - ${SRCROOT}/iOS/rust/scripts/download_angle_ios_headers.sh
-        outputFiles:
-          - ${BUILT_PRODUCTS_DIR}/angle_ios/ios_headers.zip
-          - ${BUILT_PRODUCTS_DIR}/angle_ios/ios_headers
     dependencies:
     - target: Cargo_iOS
     - target: SDL/Static Library-iOS

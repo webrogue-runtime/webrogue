@@ -4,6 +4,8 @@ import WebrogueCommon
 struct WrappListView: View {
     @State var isFileImporterPresented = false
 
+    @ObservedObject var wrappStorage = LauncherApp.wrappStorage
+
     var body: some View {
         VStack {
             Image(systemName: "globe")
@@ -18,14 +20,17 @@ struct WrappListView: View {
         }
         .fileImporter(
             isPresented: $isFileImporterPresented,
-            allowedContentTypes: [
-                WrappStorage.wrappType
-            ]
+            allowedContentTypes: [.wrappType],
+            allowsMultipleSelection: false
         ) { result in
             switch result {
-            case .success(let url):
-//                WrappStorage.store(url)
-                break
+            case .success(let files):
+                for file in files {
+                    let gotAccess = file.startAccessingSecurityScopedResource()
+                    if !gotAccess { continue }
+                    wrappStorage.store(file)
+                    file.stopAccessingSecurityScopedResource()
+                }
             case .failure(_):
                 break
             }

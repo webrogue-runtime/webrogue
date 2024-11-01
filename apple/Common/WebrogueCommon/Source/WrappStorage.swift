@@ -1,12 +1,7 @@
 import Foundation
-import UniformTypeIdentifiers
 import Combine
 
 public final class WrappStorage: ObservableObject {
-    public static let wrappType = UTType.init(
-        exportedAs: "io.github.webrogue-runtime.wrapp"
-    )
-
     let wrappDirectoryPath: String
     let fileManager: FileManager
 
@@ -43,8 +38,9 @@ public final class WrappStorage: ObservableObject {
         }
     }
 
+    @discardableResult
     public func store(_ url: URL) -> WrappRef? {
-        guard 
+        guard
             let fileHandle = FileHandle(forReadingAtPath: url.relativePath),
             let metadata = WrappMetadata(fileHandle: fileHandle)
         else {

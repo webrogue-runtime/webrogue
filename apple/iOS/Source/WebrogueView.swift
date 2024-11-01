@@ -3,13 +3,13 @@ import WebrogueCommon
 import UniformTypeIdentifiers
 
 struct WebrogueView: View {
-    @ObservedObject var stoarge = WebrogueAppDelegate.wrappStorage
+    @ObservedObject var wrappStorage = WebrogueAppDelegate.wrappStorage
     @State var isFileImporterPresented = false
 
     var body: some View {
         NavigationView {
             Group {
-                List(stoarge.refs, id: \.metadata.sha256) { ref in
+                List(wrappStorage.refs, id: \.metadata.sha256) { ref in
                     NavigationLink {
                         WrappRefView(ref: ref)
                     } label: {
@@ -27,14 +27,17 @@ struct WebrogueView: View {
                 }
                 .fileImporter(
                     isPresented: $isFileImporterPresented,
-                    allowedContentTypes: [
-                        UTType.data,
-                        WrappStorage.wrappType,
-                    ]
+                    allowedContentTypes: [.wrappType],
+                    allowsMultipleSelection: false
                 ) { result in
                     switch result {
-                    case .success(let url):
-                        stoarge.store(url)
+                    case .success(let files):
+                        for file in files {
+                            let gotAccess = file.startAccessingSecurityScopedResource()
+                            if !gotAccess { continue }
+                            wrappStorage.store(file)
+                            file.stopAccessingSecurityScopedResource()
+                        }
                     case .failure(_):
                         break
                     }

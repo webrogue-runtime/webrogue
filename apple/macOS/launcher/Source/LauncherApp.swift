@@ -3,7 +3,8 @@ import WebrogueCommon
 
 @main
 struct LauncherApp: App {
-    @StateObject var wrappStorage = WrappStorage()
+    static var wrappStorage = WrappStorage()
+    @ObservedObject var wrappStorage = Self.wrappStorage
 
     var documentGroup: some Scene {
         let result = DocumentGroup(viewing: WrappDocument.self) { file in
