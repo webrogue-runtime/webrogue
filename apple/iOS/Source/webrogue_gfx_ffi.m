@@ -1,13 +1,13 @@
+#include "../../../crates/gfx-ffi/src/webrogue_gfx_ffi.h"
 #include "SDL.h"
-#include "SDL_video.h"
 #include "SDL_metal.h"
-#include "../../../crates/gfx_ffi/src/webrogue_gfx_ffi.h"
-#include <stdlib.h>
+#include "SDL_video.h"
 #import <QuartzCore/CAMetalLayer.h>
+#include <stdlib.h>
 #import <webrogue-Swift.h>
 
 typedef struct System {
-  AngleHelperSystem* angle_helper_system;
+  AngleHelperSystem *angle_helper_system;
 } System;
 
 void *webrogue_gfx_ffi_create_system(void) {
@@ -22,12 +22,13 @@ void webrogue_gfx_ffi_destroy_system(void *raw_system_ptr) {
   free(raw_system_ptr);
 }
 typedef struct Window {
-  AngleHelperWindow* angle_helper_window;
+  AngleHelperWindow *angle_helper_window;
 } Window;
 void *webrogue_gfx_ffi_create_window(void *raw_system_ptr) {
   System *system_ptr = (System *)raw_system_ptr;
   Window *window_ptr = malloc(sizeof(Window));
-  window_ptr->angle_helper_window = [system_ptr->angle_helper_system makeWindow];
+  window_ptr->angle_helper_window =
+      [system_ptr->angle_helper_system makeWindow];
   return window_ptr;
 }
 void webrogue_gfx_ffi_destroy_window(void *raw_window_ptr) {
@@ -59,7 +60,6 @@ void webrogue_gfx_ffi_present_window(void *raw_window_ptr) {
   SDL_PollEvent(&event);
 }
 
-
-CAMetalLayer* wr_SDL_Metal_GetLayer(SDL_MetalView view) {
+CAMetalLayer *wr_SDL_Metal_GetLayer(SDL_MetalView view) {
   return CFBridgingRelease(SDL_Metal_GetLayer(view));
 }
