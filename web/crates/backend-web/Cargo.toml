@@ -1,5 +1,5 @@
 [package]
-name = "webrogue-gfx"
+name = "webrogue-backend-web"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -7,3 +7,4 @@ edition.workspace = true
 [dependencies]
 webrogue-runtime = { workspace = true }
 anyhow = { workspace = true }
+webrogue-backend-web-macro = { workspace = true }

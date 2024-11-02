@@ -1,11 +1,11 @@
 [package]
-name = "webrogue_wasi"
+name = "webrogue-wasi"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-webrogue_runtime = { workspace = true }
+webrogue-runtime = { workspace = true }
 wasi-common = { workspace = true, default-features = false, features = ["trace_log"] }
 wiggle = { workspace = true, default-features = false, features = ["wiggle_metadata"] }
 futures =  { workspace = true }

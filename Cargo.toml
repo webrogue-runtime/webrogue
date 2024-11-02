@@ -3,15 +3,15 @@ name = "webrogue"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
-default-run = "webrogue_default_runtime"
+default-run = "webrogue-default-runtime"
 
 [[bin]]
-name = "webrogue_default_runtime"
-path = "crates/default_runtime/src/main.rs"
+name = "webrogue-default-runtime"
+path = "crates/default-runtime/src/main.rs"
 doc = false
 
 [dependencies]
-webrogue_default_runtime = { workspace = true }
+webrogue-default-runtime = { workspace = true }
 
 [workspace.package]
 version = "0.1.0"
@@ -21,31 +21,31 @@ edition = "2021"
 [workspace]
 resolver = '2'
 members = [
-  "crates/backend_v8",
-  "crates/backend_v8/macro",
-  "crates/backend_wasmer",
-  "crates/backend_wasmer/macro",
-  "crates/backend_wasmtime",
-  "crates/backend_wasmtime/macro",
-  "crates/default_runtime",
+  "crates/backend-v8",
+  "crates/backend-v8-macro",
+  "crates/backend-wasmer",
+  "crates/backend-wasmer-macro",
+  "crates/backend-wasmtime",
+  "crates/backend-wasmtime-macro",
+  "crates/default-runtime",
   "crates/gfx",
-  "crates/gfx_ffi",
-  "crates/gfx_rust_sdl",
+  "crates/gfx-ffi",
+  "crates/gfx-rust-sdl",
   "crates/gl",
   "crates/gl/builder",
-  "crates/macro_common",
+  "crates/macro-common",
   "crates/runtime",
-  "crates/std_stream_os",
+  "crates/std-stream-os",
   "crates/wasi",
-  "crates/wasi_sync",
+  "crates/wasi-sync",
   "crates/wrapp",
-  "crates/wrapp_cli",
+  "crates/wrapp-cli",
 
   "android/app/src/main/rust",
 
+  "web/crates/backend-web",
+  "web/crates/backend-web-macro",
   "web/crates/main",
-  "web/crates/backend",
-  "web/crates/backend/macro",
 
   "apple/iOS/rust",
   "apple/macOS/runtime/rust",
@@ -58,27 +58,27 @@ exclude = [
 
 [workspace.dependencies]
 # Webrogue crates
-webrogue_default_runtime = { path = "crates/default_runtime" }
-webrogue_runtime = { path = "crates/runtime" }
-webrogue_wasi = { path = "crates/wasi" }
-webrogue_gl = { path = "crates/gl" }
-webrogue_macro_common = { path = "crates/macro_common" }
-webrogue_gfx = { path = "crates/gfx" }
-webrogue_gfx_ffi = { path = "crates/gfx_ffi" }
-webrogue_backend_v8 = { path = "crates/backend_v8" }
-webrogue_backend_v8_macro = { path = "crates/backend_v8/macro" }
-webrogue_backend_wasmer = { path = "crates/backend_wasmer" }
-webrogue_backend_wasmer_macro = { path = "crates/backend_wasmer/macro" }
-webrogue_backend_wasmtime = { path = "crates/backend_wasmtime" }
-webrogue_backend_wasmtime_macro = { path = "crates/backend_wasmtime/macro" }
-webrogue_std_stream_os = { path = "crates/std_stream_os" }
-webrogue_wasi_sync = { path = "crates/wasi_sync" }
-webrogue_gfx_rust_sdl = { path = "crates/gfx_rust_sdl", default-features = false }
-webrogue_wrapp = { path = "crates/wrapp" }
+webrogue-default-runtime = { path = "crates/default-runtime" }
+webrogue-runtime = { path = "crates/runtime" }
+webrogue-wasi = { path = "crates/wasi" }
+webrogue-gl = { path = "crates/gl" }
+webrogue-macro-common = { path = "crates/macro-common" }
+webrogue-gfx = { path = "crates/gfx" }
+webrogue-gfx-ffi = { path = "crates/gfx-ffi" }
+webrogue-backend-v8 = { path = "crates/backend-v8" }
+webrogue-backend-v8-macro = { path = "crates/backend-v8-macro" }
+webrogue-backend-wasmer = { path = "crates/backend-wasmer" }
+webrogue-backend-wasmer-macro = { path = "crates/backend-wasmer-macro" }
+webrogue-backend-wasmtime = { path = "crates/backend-wasmtime" }
+webrogue-backend-wasmtime-macro = { path = "crates/backend-wasmtime-macro" }
+webrogue-std-stream-os = { path = "crates/std-stream-os" }
+webrogue-wasi-sync = { path = "crates/wasi-sync" }
+webrogue-gfx-rust-sdl = { path = "crates/gfx-rust-sdl", default-features = false }
+webrogue-wrapp = { path = "crates/wrapp" }
 
 # Platform-specific crates
-webrogue_backend_web = { path = "web/crates/backend" }
-webrogue_backend_web_macro = { path = "web/crates/backend/macro" }
+webrogue-backend-web = { path = "web/crates/backend-web" }
+webrogue-backend-web-macro = { path = "web/crates/backend-web-macro" }
 
 # Wasmtime crates
 wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }

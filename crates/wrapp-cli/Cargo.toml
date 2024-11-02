@@ -1,9 +1,10 @@
 [package]
-name = "webrogue-gfx"
+name = "webrogue-wrapp-cli"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-webrogue-runtime = { workspace = true }
 anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+webrogue-wrapp = { workspace = true }

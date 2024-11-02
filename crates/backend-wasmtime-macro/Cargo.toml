@@ -1,0 +1,11 @@
+[package]
+name = "webrogue-backend-wasmtime-macro"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+webrogue-macro-common = { workspace = true }
+
+[lib]
+proc-macro = true

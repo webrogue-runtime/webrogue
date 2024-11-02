@@ -1,0 +1,12 @@
+[package]
+name = "webrogue-backend-wasmtime"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+# All default but async and profiling features
+wasmtime = { workspace = true, default-features = false, features = ["cache", "gc", "wat", "parallel-compilation", "cranelift", "pooling-allocator", "demangle", "addr2line", "coredump", "debug-builtins", "runtime", "component-model", "threads", "std"] }
+webrogue-runtime = { workspace = true }
+anyhow = { workspace = true }
+webrogue-backend-wasmtime-macro = { workspace = true }

@@ -1,0 +1,17 @@
+[package]
+name = "webrogue-gfx-rust-sdl"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[features]
+sdl-static = ["sdl2/static-link"]
+sdl-bundled = ["sdl2/bundled"]
+
+[dependencies]
+webrogue-gfx = { workspace = true }
+sdl2 = { version = ">=0.37.0" }
+
+[build-dependencies]
+reqwest = { version = "0.12", features = ["blocking"] }
+zip-extract = { version = "0.2.1" }

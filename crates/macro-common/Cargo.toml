@@ -1,0 +1,9 @@
+[package]
+name = "webrogue-macro-common"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+syn = { version = "2", features = ["full"] }
+proc-macro2 = { version = "1" }

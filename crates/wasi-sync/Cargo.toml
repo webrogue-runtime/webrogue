@@ -1,0 +1,10 @@
+[package]
+name = "webrogue-wasi-sync"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+webrogue-runtime = { workspace = true }
+wasi-common = { workspace = true, default-features = false, features = ["trace_log", "sync"] }
+cap-std = { workspace = true }

@@ -1,0 +1,16 @@
+[package]
+name = "webrogue-std-stream-os"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+webrogue-runtime = { workspace = true }
+wiggle = { workspace = true, default-features = false }
+
+[target.'cfg(unix)'.dependencies]
+rustix = { workspace = true, features = ["fs", "event"] }
+
+[target.'cfg(windows)'.dependencies]
+rustix = { workspace = true, features = ["net"] }
+io-extras = { workspace = true }

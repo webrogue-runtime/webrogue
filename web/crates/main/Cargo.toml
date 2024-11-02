@@ -1,20 +1,20 @@
 [package]
-name = "webrogue_web_main"
+name = "webrogue-web-main"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
 [features]
 default = ["gl"]
-gl = ["dep:webrogue_gl", "dep:webrogue_gfx", "dep:webrogue_gfx_ffi"]
+gl = ["dep:webrogue-gl", "dep:webrogue-gfx", "dep:webrogue-gfx-ffi"]
 
 [dependencies]
-webrogue_runtime = { workspace = true }
-webrogue_wasi_sync = { workspace = true }
-webrogue_std_stream_os = { workspace = true }
-webrogue_backend_web = { workspace = true }
+webrogue-runtime = { workspace = true }
+webrogue-wasi-sync = { workspace = true }
+webrogue-std-stream-os = { workspace = true }
+webrogue-backend-web = { workspace = true }
 anyhow = { workspace = true }
-webrogue_wasi = { workspace = true }
-webrogue_gl = { workspace = true, optional = true }
-webrogue_gfx = { workspace = true, optional = true }
-webrogue_gfx_ffi = { workspace = true, optional = true }
+webrogue-wasi = { workspace = true }
+webrogue-gl = { workspace = true, optional = true }
+webrogue-gfx = { workspace = true, optional = true }
+webrogue-gfx-ffi = { workspace = true, optional = true }

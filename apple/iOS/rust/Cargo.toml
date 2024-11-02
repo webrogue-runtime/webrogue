@@ -1,5 +1,5 @@
 [package]
-name = "webrogue_ios"
+name = "webrogue-ios"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -10,11 +10,11 @@ crate-type = ["staticlib"]
 
 [dependencies]
 anyhow = { workspace = true }
-webrogue_runtime = { workspace = true }
-webrogue_backend_wasmer = { workspace = true, features = ["wamr"] }
-webrogue_wasi = { workspace = true }
-webrogue_gl = { workspace = true }
-webrogue_gfx = { workspace = true }
-webrogue_wasi_sync = { workspace = true }
-webrogue_std_stream_os = { workspace = true }
-webrogue_gfx_ffi = { workspace = true }
+webrogue-runtime = { workspace = true }
+webrogue-backend-wasmer = { workspace = true, features = ["wamr"] }
+webrogue-wasi = { workspace = true }
+webrogue-gl = { workspace = true }
+webrogue-gfx = { workspace = true }
+webrogue-wasi-sync = { workspace = true }
+webrogue-std-stream-os = { workspace = true }
+webrogue-gfx-ffi = { workspace = true }

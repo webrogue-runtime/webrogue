@@ -82,11 +82,11 @@ impl WasiFile for Stdout {
     }
 }
 
-#[cfg(feature = "backend_wasmtime")]
-use webrogue_backend_wasmtime::{Backend, make_funcs};
+#[cfg(feature = "backend-wasmtime")]
+use webrogue_backend_wasmtime::{make_funcs, Backend};
 
-#[cfg(feature = "backend_v8")]
-use webrogue_backend_v8::{Backend, make_funcs};
+#[cfg(feature = "backend-v8")]
+use webrogue_backend_v8::{make_funcs, Backend};
 
 make_funcs!({
     "wasi_snapshot_preview1": {
@@ -120,10 +120,15 @@ fn main() -> anyhow::Result<()> {
     // webrogue_std_stream_os::bind_streams(&mut wasi);
     let backend = Backend::new();
 
-    
-    let wrapp_path = unsafe { std::ffi::CStr::from_ptr(webrogue_android_path()).to_str().unwrap().to_owned() };
-    
-    let reader = webrogue_runtime::wrapp::WrappHandle::from_file_path(std::path::PathBuf::from(wrapp_path))?;
+    let wrapp_path = unsafe {
+        std::ffi::CStr::from_ptr(webrogue_android_path())
+            .to_str()
+            .unwrap()
+            .to_owned()
+    };
+
+    let reader =
+        webrogue_runtime::wrapp::WrappHandle::from_file_path(std::path::PathBuf::from(wrapp_path))?;
 
     let mut webrogue_gfx_context =
         webrogue_gfx::Context::new(Box::new(webrogue_gfx_ffi::make_system));

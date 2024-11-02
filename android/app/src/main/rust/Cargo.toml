@@ -1,5 +1,5 @@
 [package]
-name = "webrogue_android"
+name = "webrogue-android"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -9,21 +9,21 @@ name = "webrogue_android"
 crate-type = ["staticlib"]
 
 [features]
-default = ["backend_wasmtime"]
-backend_v8 = ["dep:webrogue_backend_v8"]
-backend_wasmtime = ["dep:webrogue_backend_wasmtime"]
+default = ["backend-wasmtime"]
+backend-v8 = ["dep:webrogue-backend-v8"]
+backend-wasmtime = ["dep:webrogue-backend-wasmtime"]
 
 [dependencies]
 anyhow = { workspace = true }
-webrogue_runtime = { workspace = true }
-webrogue_backend_v8 = { workspace = true, optional = true }
-webrogue_backend_wasmtime = { workspace = true, optional = true }
-webrogue_wasi = { workspace = true }
-webrogue_wasi_sync = { workspace = true }
-webrogue_gl = { workspace = true }
-webrogue_gfx = { workspace = true }
-webrogue_std_stream_os = { workspace = true }
-webrogue_gfx_ffi = { workspace = true }
+webrogue-runtime = { workspace = true }
+webrogue-backend-v8 = { workspace = true, optional = true }
+webrogue-backend-wasmtime = { workspace = true, optional = true }
+webrogue-wasi = { workspace = true }
+webrogue-wasi-sync = { workspace = true }
+webrogue-gl = { workspace = true }
+webrogue-gfx = { workspace = true }
+webrogue-std-stream-os = { workspace = true }
+webrogue-gfx-ffi = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true, features = ["fs", "event"] }

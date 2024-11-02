@@ -1,9 +1,9 @@
 [package]
-name = "webrogue_gl"
+name = "webrogue-gl"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-webrogue_runtime = { workspace = true }
-webrogue_gfx = { workspace = true }
+webrogue-runtime = { workspace = true }
+webrogue-gfx = { workspace = true }

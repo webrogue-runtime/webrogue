@@ -1,9 +1,8 @@
 [package]
-name = "webrogue-gfx"
+name = "webrogue-gfx-ffi"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-webrogue-runtime = { workspace = true }
-anyhow = { workspace = true }
+webrogue-gfx = { workspace = true }

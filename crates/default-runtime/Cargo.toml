@@ -1,0 +1,44 @@
+[package]
+name = "webrogue-default-runtime"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[features]
+default = ["backend-wasmer-aot", "wasi-sync", "gl"]
+
+backend-v8 = ["dep:webrogue-backend-v8"]
+backend-wasmer-cranelift = ["_backend-wasmer", "webrogue-backend-wasmer/cranelift"]
+backend-wasmer-llvm = ["_backend-wasmer", "webrogue-backend-wasmer/llvm"]
+backend-wasmer-singlepass = ["_backend-wasmer", "webrogue-backend-wasmer/singlepass"]
+backend-wasmer-aot = ["_backend-wasmer", "webrogue-backend-wasmer/aot"]
+backend-wasmer-wamr = ["_backend-wasmer", "webrogue-backend-wasmer/wamr"]
+backend-wasmtime = ["dep:webrogue-backend-wasmtime"]
+_backend-wasmer = ["dep:webrogue-backend-wasmer"]
+
+wasi-sync = ["dep:webrogue-wasi-sync"]
+
+gl = ["_gfx", "dep:webrogue-gl"]
+_gfx = ["dep:webrogue-gfx", "dep:webrogue-gfx-rust-sdl"]
+
+[dependencies]
+webrogue-runtime = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+webrogue-wasi = { workspace = true }
+
+webrogue-gl = { workspace = true, optional = true }
+webrogue-gfx = { workspace = true, optional = true }
+webrogue-gfx-rust-sdl = { workspace = true, optional = true }
+webrogue-gfx-ffi = { workspace = true, optional = true }
+webrogue-backend-v8 = { workspace = true, optional = true }
+webrogue-backend-wasmer = { workspace = true, optional = true }
+webrogue-backend-wasmtime = { workspace = true, optional = true }
+webrogue-std-stream-os = { workspace = true }
+webrogue-wasi-sync = { workspace = true, optional = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+webrogue-gfx-rust-sdl = { workspace = true, optional = true, features = ["sdl-static", "sdl-bundled"] }
+
+[target.'cfg(not(any(target_os = "macos", target_os = "windows")))'.dependencies]
+webrogue-gfx-rust-sdl = { workspace = true, optional = true, features = [] }
