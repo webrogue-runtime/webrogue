@@ -32,7 +32,7 @@ add_subdirectory("${WEBROGUE_SDL_DIR}" SDL2)
 add_library(
     webrogue SHARED
     webrogue_runtime.cpp
-    ../../../../../crates/gfx_ffi/src/webrogue_gfx_ffi_sdl2.c
+    ../../../../../crates/gfx-ffi/src/webrogue_gfx_ffi_sdl2.c
 )
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)")

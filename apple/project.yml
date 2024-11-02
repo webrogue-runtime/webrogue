@@ -78,7 +78,7 @@ targets:
     - path: macOS/runtime
       excludes:
       - "**/rust"
-    - ../crates/gfx_ffi/src/webrogue_gfx_ffi_sdl2.c
+    - ../crates/gfx-ffi/src/webrogue-gfx_ffi_sdl2.c
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: macOS/runtime/runtime.entitlements

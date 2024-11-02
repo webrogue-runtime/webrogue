@@ -53,8 +53,8 @@ add_link_options(
 add_executable(
     webrogue
     main.c
-    crates/backend/src/em_js.c
-    ../crates/gfx_ffi/src/webrogue_gfx_ffi_sdl3.c
+    crates/backend-web/src/em_js.c
+    ../crates/gfx-ffi/src/webrogue_gfx_ffi_sdl3.c
 )
 
 add_custom_target(example_wrapp DEPENDS ${CMAKE_SOURCE_DIR}/../examples/raylib/raylib.wrapp)
