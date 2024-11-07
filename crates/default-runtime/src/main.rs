@@ -1,3 +1,3 @@
-fn main() -> webrogue_default_runtime::Result<()> {
+fn main() -> anyhow::Result<()> {
     webrogue_default_runtime::main()
 }

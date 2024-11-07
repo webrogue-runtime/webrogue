@@ -151,9 +151,9 @@ impl syn::parse::Parse for Imports {
                 let wasm_module = module_config.0.clone();
                 let file_content = match module_config.1.defs.clone() {
                     None => match wasm_module.as_str() {
-                        "wasi_snapshot_preview1" => {
-                            String::from_utf8_lossy(include_bytes!("../../wasi/defs.in"))
-                        }
+                        // "wasi_snapshot_preview1" => {
+                        //     String::from_utf8_lossy(include_bytes!("../../wasi/defs.in"))
+                        // }
                         "webrogue_gl" => {
                             String::from_utf8_lossy(include_bytes!("../../gl/defs.in"))
                         }
