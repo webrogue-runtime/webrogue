@@ -4,6 +4,10 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+fallback = []
+
 [dependencies]
-webrogue-runtime = { workspace = true }
 webrogue-gfx = { workspace = true }
+wasmer = { workspace = true, default-features = false }
+anyhow = { workspace = true }

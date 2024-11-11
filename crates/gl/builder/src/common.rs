@@ -2,12 +2,12 @@
 
 pub const EXCLUDED: [&str; 2] = ["glGetString", "glGetStringi"];
 
-pub const MANUAL_IMPL: [&str; 10] = [
+pub const MANUAL_IMPL: [&str; 9] = [
     "glShaderSource",
     "glVertexAttribPointer",
     "glVertexAttribIPointer",
     "glTexImage2D",
-    "glBufferSubData",
+    // "glBufferSubData",
     "glDrawElements",
     "glDrawElementsInstanced",
     "glDrawRangeElements",

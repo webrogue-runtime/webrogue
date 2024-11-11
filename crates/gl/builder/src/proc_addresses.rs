@@ -18,7 +18,7 @@ impl ProcAddresses {
         unsafe { std::mem::MaybeUninit::<ProcAddresses>::zeroed().assume_init() }
     }
 
-    pub fn fill(&mut self, _context: &mut webrogue_gfx::Context) {
+    pub fn fill(&mut self, context: std::sync::Arc<webrogue_gfx::GFX>) {
         unsafe {
 "#
     .to_owned();
@@ -40,7 +40,7 @@ impl ProcAddresses {
             },
         );
         init_func_ptrs += &format!(
-            "            self.{} = std::mem::transmute(crate::utils::get_proc_address(_context, \"{}\"));\n",
+            "            self.{} = std::mem::transmute(context.gl_get_proc_address(\"{}\"));\n",
             command.name, command.name
         );
     }

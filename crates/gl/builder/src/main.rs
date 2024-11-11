@@ -6,7 +6,6 @@ mod proc_addresses;
 mod rust_ffi;
 mod rust_wasm_imports_imps;
 mod types;
-mod wr_defs;
 
 use std::io::Write;
 
@@ -40,8 +39,6 @@ fn main() {
         &parse_results,
     );
 
-    run_flavor(wr_defs::write_to_file, "crates/gl/defs.in", &parse_results);
-
     run_flavor(
         c_guest_loader::write_to_file,
         "examples/libs/webrogue_gfx/webrogue_gl_loader.c",
@@ -63,16 +60,9 @@ fn main() {
     );
 
     run_macro(
-        "#![allow(non_snake_case)]
-
-pub use crate::context::Context;
-pub use crate::mainual_impl::*;
-
-// DO NOT EDIT! This file is generated automatically
-
-",
+        "",
         rust_wasm_imports_imps::get_as_str,
-        "crates/gl/src/api.rs",
+        "crates/gl/src/auto_impl.rs",
         &parse_results,
     );
 

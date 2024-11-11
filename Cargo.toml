@@ -25,11 +25,12 @@ members = [
   # "crates/backend-wasmer",
   # "crates/backend-wasmer-macro",
   "crates/default-runtime",
-  # "crates/gfx",
+  "crates/gfx",
+  "crates/gfx-fallback",
   # "crates/gfx-ffi",
   # "crates/gfx-rust-sdl",
-  # "crates/gl",
-  # "crates/gl/builder",
+  "crates/gl",
+  "crates/gl/builder",
   # "crates/macro-common",
   "crates/runtime",
   "crates/wrapp",
@@ -45,7 +46,6 @@ members = [
   # "apple/macOS/runtime/rust",
 ]
 exclude = [
-  "external/wasmtime",
   "external/wasmer",
   "web/crates/web",
 ]
@@ -54,9 +54,10 @@ exclude = [
 # Webrogue crates
 webrogue-default-runtime = { path = "crates/default-runtime" }
 webrogue-runtime = { path = "crates/runtime" }
-# webrogue-gl = { path = "crates/gl" }
+webrogue-gl = { path = "crates/gl" }
 # webrogue-macro-common = { path = "crates/macro-common" }
-# webrogue-gfx = { path = "crates/gfx" }
+webrogue-gfx = { path = "crates/gfx" }
+webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
 # webrogue-gfx-ffi = { path = "crates/gfx-ffi" }
 # webrogue-backend-wasmer = { path = "crates/backend-wasmer" }
 # webrogue-backend-wasmer-macro = { path = "crates/backend-wasmer-macro" }
@@ -76,6 +77,7 @@ webrogue-wrapp = { path = "crates/wrapp" }
 wasmer = { path = "external/wasmer/lib/api", default-features = false }
 wasmer-wasix = { path = "external/wasmer/lib/wasix" }
 virtual-fs = { path = "external/wasmer/lib/virtual-fs" }
+wai-bindgen-wasmer = { path = "external/wasmer/lib/wai-bindgen-wasmer" }
 
 
 # v8 = { version = "0.99" } # git = "https://github.com/denoland/rusty_v8.git"
@@ -90,3 +92,4 @@ zstd-seekable = { version = "0.1.23" }
 # rustix = { version = "0.38.31" }
 # cap-std = { version = "3.1" }
 cc = { version = "1" }
+tokio = { version = "1" }

@@ -1,0 +1,6 @@
+make-window: func()
+present: func()
+get-window-width: func() -> u32
+get-window-height: func() -> u32
+get-gl-width: func() -> u32
+get-gl-height: func() -> u32

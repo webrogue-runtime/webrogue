@@ -59,7 +59,7 @@ fn main() {
                         .join("Cargo.toml"),
                 )
                 .arg("--target-dir")
-                .arg(target_dir.clone())
+                .arg(target_dir)
                 .arg("--features=cranelift");
             run_cmd(cargo_run.args(args));
         };
