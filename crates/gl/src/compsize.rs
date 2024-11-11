@@ -1,11 +1,11 @@
-use crate::context::Context;
 use crate::ffi::{self};
+use crate::gl::GL;
 
 // GLEnumGroupBuffer
 
 #[allow(non_snake_case)]
 pub(crate) fn glClearBufferfv_value_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     buffer: Option<ffi::GLEnumGroupBuffer>,
 ) -> usize {
     match buffer {
@@ -19,24 +19,24 @@ pub(crate) fn glClearBufferfv_value_compsize(
 }
 #[allow(non_snake_case)]
 pub(crate) fn glClearBufferiv_value_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     buffer: Option<ffi::GLEnumGroupBuffer>,
 ) -> usize {
-    glClearBufferfv_value_compsize(_context, buffer)
+    glClearBufferfv_value_compsize(_gl, buffer)
 }
 #[allow(non_snake_case)]
 pub(crate) fn glClearBufferuiv_value_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     buffer: Option<ffi::GLEnumGroupBuffer>,
 ) -> usize {
-    glClearBufferfv_value_compsize(_context, buffer)
+    glClearBufferfv_value_compsize(_gl, buffer)
 }
 
 // GLEnumGroupUniformBlockPName
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetActiveUniformBlockiv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     program: u32,
     uniformBlockIndex: u32,
     pname: Option<ffi::GLEnumGroupUniformBlockPName>,
@@ -48,7 +48,7 @@ pub(crate) fn glGetActiveUniformBlockiv_params_compsize(
             ffi::GLEnumGroupUniformBlockPName::GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES => {
                 let mut indices: i32 = 0;
                 unsafe {
-                    (_context.proc_addresses.glGetActiveUniformBlockiv)(
+                    (_gl.proc_addresses.glGetActiveUniformBlockiv)(
                         program,
                         uniformBlockIndex,
                         ffi::GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS,
@@ -70,7 +70,7 @@ pub(crate) fn glGetActiveUniformBlockiv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetActiveUniformsiv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     uniformCount: i32,
     pname: Option<ffi::GLEnumGroupUniformPName>,
 ) -> usize {
@@ -94,7 +94,7 @@ pub(crate) fn glGetActiveUniformsiv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetBooleanv_data_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupGetPName>,
 ) -> usize {
     match pname {
@@ -256,37 +256,37 @@ pub(crate) fn glGetBooleanv_data_compsize(
 }
 #[allow(non_snake_case)]
 pub(crate) fn glGetFloatv_data_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupGetPName>,
 ) -> usize {
-    glGetBooleanv_data_compsize(_context, pname)
+    glGetBooleanv_data_compsize(_gl, pname)
 }
 #[allow(non_snake_case)]
 pub(crate) fn glGetIntegerv_data_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupGetPName>,
 ) -> usize {
-    glGetBooleanv_data_compsize(_context, pname)
+    glGetBooleanv_data_compsize(_gl, pname)
 }
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetInteger64v_data_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupGetPName>,
 ) -> usize {
-    glGetBooleanv_data_compsize(_context, pname)
+    glGetBooleanv_data_compsize(_gl, pname)
 }
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetInteger64i_v_data_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     _pname: Option<ffi::GLEnumGroupGetPName>,
 ) -> usize {
     1 // indexed
 }
 #[allow(non_snake_case)]
 pub(crate) fn glGetIntegeri_v_data_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     _pname: Option<ffi::GLEnumGroupGetPName>,
 ) -> usize {
     1 // indexed
@@ -296,7 +296,7 @@ pub(crate) fn glGetIntegeri_v_data_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetBufferParameteri64v_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupBufferPNameARB>,
 ) -> usize {
     match pname {
@@ -314,17 +314,17 @@ pub(crate) fn glGetBufferParameteri64v_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetBufferParameteriv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     _pname: Option<ffi::GLEnumGroupBufferPNameARB>,
 ) -> usize {
-    glGetBufferParameteri64v_params_compsize(_context, _pname)
+    glGetBufferParameteri64v_params_compsize(_gl, _pname)
 }
 
 // GLEnumGroupFramebufferAttachmentParameterName
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetFramebufferAttachmentParameteriv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupFramebufferAttachmentParameterName>,
 ) -> usize {
     match pname {
@@ -343,7 +343,7 @@ pub(crate) fn glGetFramebufferAttachmentParameteriv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetProgramiv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupProgramPropertyARB>,
 ) -> usize {
     match pname {
@@ -372,7 +372,7 @@ pub(crate) fn glGetProgramiv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetQueryObjectuiv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupQueryObjectParameterName>,
 ) -> usize {
     match pname {
@@ -388,7 +388,7 @@ pub(crate) fn glGetQueryObjectuiv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetQueryiv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupQueryParameterName>,
 ) -> usize {
     match pname {
@@ -403,7 +403,7 @@ pub(crate) fn glGetQueryiv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetRenderbufferParameteriv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupRenderbufferParameterName>,
 ) -> usize {
     match pname {
@@ -427,7 +427,7 @@ pub(crate) fn glGetRenderbufferParameteriv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetSamplerParameterfv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupSamplerParameterF>,
 ) -> usize {
     match pname {
@@ -444,7 +444,7 @@ pub(crate) fn glGetSamplerParameterfv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetSamplerParameteriv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupSamplerParameterI>,
 ) -> usize {
     match pname {
@@ -464,17 +464,17 @@ pub(crate) fn glGetSamplerParameteriv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glSamplerParameteriv_param_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupSamplerParameterI>,
 ) -> usize {
-    glGetSamplerParameteriv_params_compsize(_context, pname)
+    glGetSamplerParameteriv_params_compsize(_gl, pname)
 }
 
 // GLEnumGroupShaderParameterName
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetShaderiv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupShaderParameterName>,
 ) -> usize {
     match pname {
@@ -493,7 +493,7 @@ pub(crate) fn glGetShaderiv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetTexParameterfv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupGetTextureParameter>,
 ) -> usize {
     match pname {
@@ -514,10 +514,10 @@ pub(crate) fn glGetTexParameterfv_params_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glGetTexParameteriv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupGetTextureParameter>,
 ) -> usize {
-    glGetTexParameterfv_params_compsize(_context, pname)
+    glGetTexParameterfv_params_compsize(_gl, pname)
 }
 
 // GLEnumGroupPixelFormat
@@ -627,7 +627,7 @@ fn gl_format_component_num(format: Option<ffi::GLEnumGroupPixelFormat>) -> usize
 
 #[allow(non_snake_case)]
 pub(crate) fn glReadPixels_pixels_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     format: Option<ffi::GLEnumGroupPixelFormat>,
     ty: Option<ffi::GLEnumGroupPixelType>,
     width: i32,
@@ -637,7 +637,7 @@ pub(crate) fn glReadPixels_pixels_compsize(
 }
 #[allow(non_snake_case)]
 pub(crate) fn glTexImage3D_pixels_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     format: Option<ffi::GLEnumGroupPixelFormat>,
     ty: Option<ffi::GLEnumGroupPixelType>,
     width: i32,
@@ -648,7 +648,7 @@ pub(crate) fn glTexImage3D_pixels_compsize(
 }
 #[allow(non_snake_case)]
 pub(crate) fn glTexSubImage2D_pixels_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     format: Option<ffi::GLEnumGroupPixelFormat>,
     ty: Option<ffi::GLEnumGroupPixelType>,
     width: i32,
@@ -658,7 +658,7 @@ pub(crate) fn glTexSubImage2D_pixels_compsize(
 }
 #[allow(non_snake_case)]
 pub(crate) fn glTexSubImage3D_pixels_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     format: Option<ffi::GLEnumGroupPixelFormat>,
     ty: Option<ffi::GLEnumGroupPixelType>,
     width: i32,
@@ -670,7 +670,7 @@ pub(crate) fn glTexSubImage3D_pixels_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glTexImage2D_pixels_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     format: Option<ffi::GLEnumGroupPixelFormat>,
     ty: Option<ffi::GLEnumGroupPixelType>,
     width: i32,
@@ -683,7 +683,7 @@ pub(crate) fn glTexImage2D_pixels_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glSamplerParameterfv_param_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupSamplerParameterF>,
 ) -> usize {
     match pname {
@@ -700,7 +700,7 @@ pub(crate) fn glSamplerParameterfv_param_compsize(
 
 #[allow(non_snake_case)]
 pub(crate) fn glTexParameterfv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupTextureParameterName>,
 ) -> usize {
     match pname {
@@ -731,17 +731,17 @@ pub(crate) fn glTexParameterfv_params_compsize(
 }
 #[allow(non_snake_case)]
 pub(crate) fn glTexParameteriv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     pname: Option<ffi::GLEnumGroupTextureParameterName>,
 ) -> usize {
-    glTexParameterfv_params_compsize(_context, pname)
+    glTexParameterfv_params_compsize(_gl, pname)
 }
 
 // GLEnumGroupDrawElementsType
 
 #[allow(non_snake_case)]
 pub(crate) fn glDrawElements_indices_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     count: i32,
     _type: Option<ffi::GLEnumGroupDrawElementsType>,
 ) -> usize {
@@ -759,29 +759,21 @@ pub(crate) fn glDrawElements_indices_compsize(
 // WIP
 
 #[allow(non_snake_case)]
-pub(crate) fn glGetUniformfv_params_compsize(
-    _context: &mut Context,
-    _program: u32,
-    _location: i32,
-) -> usize {
+pub(crate) fn glGetUniformfv_params_compsize(_gl: &mut GL, _program: u32, _location: i32) -> usize {
     // TODO somehow check, cz it is unsafe
     // try glGetActiveUniform
     4
 }
 
 #[allow(non_snake_case)]
-pub(crate) fn glGetUniformiv_params_compsize(
-    _context: &mut Context,
-    _program: u32,
-    _location: i32,
-) -> usize {
+pub(crate) fn glGetUniformiv_params_compsize(_gl: &mut GL, _program: u32, _location: i32) -> usize {
     // TODO somehow check, cz it is unsafe
     // try glGetActiveUniform
     4
 }
 #[allow(non_snake_case)]
 pub(crate) fn glGetUniformuiv_params_compsize(
-    _context: &mut Context,
+    _gl: &mut GL,
     _program: u32,
     _location: i32,
 ) -> usize {

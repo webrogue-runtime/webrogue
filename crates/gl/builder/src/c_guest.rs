@@ -25,7 +25,7 @@ pub fn write_to_file(file: &mut std::fs::File, parse_results: &ParseResults) {
             format!(
                 r#"
 __attribute__((import_name("{}")))
-__attribute__((import_module("webrogue_gl")))
+__attribute__((import_module("webrogue-gl")))
 {} imported_{}({});
 
 {} {}({}) {{

@@ -4,6 +4,11 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+fallback = ["dep:webrogue-gfx-fallback"]
+
 [dependencies]
-webrogue-runtime = { workspace = true }
 anyhow = { workspace = true }
+wasmer = { workspace = true, default-features = false }
+wai-bindgen-wasmer = { workspace = true }
+webrogue-gfx-fallback = { workspace = true, optional = true }

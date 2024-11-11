@@ -1,6 +1,3 @@
-[submodule "external/wasmtime"]
-	path = external/wasmtime
-	url = https://github.com/webrogue-runtime/wasmtime.git
 [submodule "examples"]
 	path = examples
 	url = https://github.com/webrogue-runtime/webrogue-examples.git

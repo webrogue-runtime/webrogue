@@ -112,21 +112,21 @@ impl GLType {
         .to_owned()
     }
 
-    pub fn wasm_type_size(&self) -> usize {
-        match self {
-            GLType::Float => 4,
-            GLType::I8 => 1,
-            GLType::ISizeT => 4,
-            GLType::Int => 4,
-            GLType::U8 => 1,
-            GLType::UInt => 4,
-            GLType::U64 => 8,
-            GLType::I64 => 8,
-            GLType::Void => 1,
-            GLType::OpaqueSync => 4,
-            GLType::Ptr(_, _) => 4,
-        }
-    }
+    // pub fn wasm_type_size(&self) -> usize {
+    //     match self {
+    //         GLType::Float => 4,
+    //         GLType::I8 => 1,
+    //         GLType::ISizeT => 4,
+    //         GLType::Int => 4,
+    //         GLType::U8 => 1,
+    //         GLType::UInt => 4,
+    //         GLType::U64 => 8,
+    //         GLType::I64 => 8,
+    //         GLType::Void => 1,
+    //         GLType::OpaqueSync => 4,
+    //         GLType::Ptr(_, _) => 4,
+    //     }
+    // }
 }
 
 #[derive(Clone)]

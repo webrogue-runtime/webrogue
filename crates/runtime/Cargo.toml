@@ -4,11 +4,26 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+gl = ["gfx", "dep:webrogue-gl"]
+gfx = ["dep:webrogue-gfx"]
+
+aot = ["wasmer/sys", "wasmer/static-artifact-load"]
+singlepass = ["wasmer/singlepass"]
+cranelift = ["wasmer/cranelift"]
+llvm = ["wasmer/llvm"]
+wamr = ["wasmer/wamr"]
+
 [dependencies]
+webrogue-gl = { workspace = true, optional = true }
+webrogue-gfx = { workspace = true, optional = true }
+
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
-futures =  { workspace = true }
-wasmparser = { workspace = true }
-wasmer = { workspace = true, default-features = false, features = ["cranelift"] }
+wasmer = { workspace = true, default-features = false }
 wasmer-wasix = { workspace = true }
 virtual-fs = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
+
+[build-dependencies]
+cc = { workspace = true }
