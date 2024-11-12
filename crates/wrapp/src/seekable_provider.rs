@@ -1,7 +1,7 @@
 use std::io::{Read, Seek};
 
 pub trait SeekableProvider<'a>: Send {
-    fn get_num_frames(&self) -> usize;
+    // fn get_num_frames(&self) -> usize;
     fn get_frame_decompressed_size(&self, frame_index: usize) -> usize;
     fn decompress_frame(&mut self, dest: &mut [u8], index: usize) -> usize;
     fn get_frame_and_relative_offset(&mut self, absolute_offset: usize) -> (usize, usize);
@@ -26,9 +26,9 @@ impl<'a, OverallReader: Read + Seek> ZSTDSeekableProvider<'a, OverallReader> {
 }
 
 impl<OverallReader: Read + Seek> SeekableProvider<'_> for ZSTDSeekableProvider<'_, OverallReader> {
-    fn get_num_frames(&self) -> usize {
-        self.seekable.get_num_frames()
-    }
+    // fn get_num_frames(&self) -> usize {
+    //     self.seekable.get_num_frames()
+    // }
 
     fn get_frame_decompressed_size(&self, frame_index: usize) -> usize {
         self.seekable.get_frame_decompressed_size(frame_index)
