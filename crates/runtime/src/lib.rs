@@ -42,14 +42,18 @@ pub fn run(wrapp_handle: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     };
     #[cfg(not(feature = "aot"))]
     let module = wasmer::Module::new(&store, &bytecode)?;
-    let mut import_object = wasi_env.import_object(&mut store, &module)?;
+    let mut import_object = wasi_env.import_object_for_all_wasi_versions(&mut store, &module)?;
+
+    let mut shared_memory = None;
 
     if let Some(memory_import) = module
         .imports()
         .find(|i| i.module() == "env" && i.name() == "memory")
     {
-        if let Some(memory) = memory_import.ty().memory() {
-            import_object.define("env", "memory", wasmer::Memory::new(&mut store, *memory)?);
+        if let Some(memory_type) = memory_import.ty().memory() {
+            let memory = wasmer::Memory::new(&mut store, *memory_type)?;
+            import_object.define("env", "memory", memory.clone());
+            shared_memory = Some(memory);
         }
     }
 
@@ -64,9 +68,9 @@ pub fn run(wrapp_handle: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     #[cfg(feature = "gfx")]
     gfx_callback(&instance, &store)?;
     #[cfg(feature = "gl")]
-    gl_callback(&instance, &store)?;
+    gl_callback(&instance, shared_memory.clone())?;
 
-    wasi_env.initialize(&mut store, instance.clone())?;
+    wasi_env.initialize_with_memory(&mut store, instance.clone(), shared_memory, true)?;
 
     let start_fn: wasmer::TypedFunction<(), ()> =
         instance.exports.get_typed_function(&mut store, "_start")?;

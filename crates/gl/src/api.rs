@@ -9,7 +9,7 @@ pub fn add_to_imports(
     store: &mut wasmer::Store,
     imports: &mut wasmer::Imports,
     gl: Arc<RefCell<GL>>,
-) -> impl FnOnce(&wasmer::Instance, &dyn wasmer::AsStoreRef) -> Result<(), anyhow::Error> {
+) -> impl FnOnce(&wasmer::Instance, Option<wasmer::Memory>) -> Result<(), anyhow::Error> {
     let lazy = std::rc::Rc::new(OnceCell::new());
     let env = EnvWrapper {
         gl,
@@ -23,9 +23,13 @@ pub fn add_to_imports(
     crate::manual_impl::add_to_imports(&mut exports, &mut store, &env);
 
     imports.register_namespace("webrogue-gl", exports);
-    move |_instance: &wasmer::Instance, _store: &dyn wasmer::AsStoreRef| {
-        let memory = _instance.exports.get_memory("memory")?.clone();
-        lazy.set(LazyInitialized { memory })
+    move |instance: &wasmer::Instance, memory: Option<wasmer::Memory>| {
+        let resolved_memory = if let Some(memory) = memory {
+            memory
+        } else {
+            instance.exports.get_memory("memory")?.clone()
+        };
+        lazy.set(LazyInitialized { memory: resolved_memory })
             .map_err(|_e| anyhow::anyhow!("Couldn't set lazy initialized data"))?;
         Ok(())
     }
