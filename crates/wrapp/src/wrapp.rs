@@ -47,10 +47,10 @@ impl WrappHandle {
         wrapp.seekable.get_frame_decompressed_size(frame_index)
     }
 
-    pub(crate) fn get_num_frames(&self) -> usize {
-        let wrapp = self.0.lock().unwrap();
-        wrapp.seekable.get_num_frames()
-    }
+    // pub(crate) fn get_num_frames(&self) -> usize {
+    //     let wrapp = self.0.lock().unwrap();
+    //     wrapp.seekable.get_num_frames()
+    // }
 
     pub(crate) fn decompress_frame(&self, dest: &mut [u8], index: usize) -> usize {
         let mut wrapp = self.0.lock().unwrap();
