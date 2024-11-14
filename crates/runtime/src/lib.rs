@@ -7,7 +7,7 @@ extern "C" {
     static WASMER_METADATA_WR_AOT_SIZE: usize;
 }
 
-pub fn run(wrapp_handle: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
+pub fn run(wrapp_handle: webrogue_wrapp::WrappHandle, stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>) -> anyhow::Result<()> {
     let mut store = wasmer::Store::default();
 
     #[cfg(feature = "gfx")]
@@ -25,7 +25,7 @@ pub fn run(wrapp_handle: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     let mut wasi_env = wasmer_wasix::WasiEnv::builder(wrapp_handle.config().name)
         // .args(&["world"])
         // .env("KEY", "Value")
-        .stdout(Box::new(virtual_fs::host_fs::Stdout::default()))
+        .stdout(stdout.unwrap_or(Box::new(virtual_fs::host_fs::Stdout::default())))
         .finalize(&mut store)?;
 
     let mut wasm_file = wrapp_handle.open_file("main.wasm").unwrap();
