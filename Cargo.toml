@@ -22,16 +22,11 @@ edition = "2021"
 [workspace]
 resolver = '2'
 members = [
-  # "crates/backend-wasmer",
-  # "crates/backend-wasmer-macro",
   "crates/default-runtime",
   "crates/gfx",
   "crates/gfx-fallback",
-  # "crates/gfx-ffi",
-  # "crates/gfx-rust-sdl",
   "crates/gl",
   "crates/gl/builder",
-  # "crates/macro-common",
   "crates/runtime",
   "crates/wrapp",
   "crates/wrapp-cli",
@@ -42,8 +37,8 @@ members = [
   # "web/crates/backend-web-macro",
   # "web/crates/main",
 
-  # "apple/iOS/rust",
-  # "apple/macOS/runtime/rust",
+  "apple/iOS/rust",
+  "apple/macOS/runtime/rust",
 ]
 exclude = [
   "external/wasmer",
@@ -55,23 +50,13 @@ exclude = [
 webrogue-default-runtime = { path = "crates/default-runtime" }
 webrogue-runtime = { path = "crates/runtime" }
 webrogue-gl = { path = "crates/gl" }
-# webrogue-macro-common = { path = "crates/macro-common" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
-# webrogue-gfx-ffi = { path = "crates/gfx-ffi" }
-# webrogue-backend-wasmer = { path = "crates/backend-wasmer" }
-# webrogue-backend-wasmer-macro = { path = "crates/backend-wasmer-macro" }
-# webrogue-gfx-rust-sdl = { path = "crates/gfx-rust-sdl", default-features = false }
 webrogue-wrapp = { path = "crates/wrapp" }
 
 # Platform-specific crates
 # webrogue-backend-web = { path = "web/crates/backend-web" }
 # webrogue-backend-web-macro = { path = "web/crates/backend-web-macro" }
-
-# Wasmtime crates
-# wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
-# wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
-# wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
 
 # Wasmer crates
 wasmer = { path = "external/wasmer/lib/api", default-features = false }
@@ -80,7 +65,6 @@ virtual-fs = { path = "external/wasmer/lib/virtual-fs" }
 wai-bindgen-wasmer = { path = "external/wasmer/lib/wai-bindgen-wasmer" }
 
 
-# v8 = { version = "0.99" } # git = "https://github.com/denoland/rusty_v8.git"
 clap = { version = "4.0", default-features = false, features = ["std"] }
 futures =  { version = "0.3" }
 wasmparser = { version = ">=0.215" }
@@ -88,8 +72,5 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 anyhow = { version = "1" }
 zstd-seekable = { version = "0.1.23" }
-# io-extras = { version = "0.18.1" }
-# rustix = { version = "0.38.31" }
-# cap-std = { version = "3.1" }
 cc = { version = "1" }
 tokio = { version = "1" }

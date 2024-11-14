@@ -1,4 +1,4 @@
-#include "../../../crates/gfx-ffi/src/webrogue_gfx_ffi.h"
+#include "../../../crates/gfx-fallback/webrogue_gfx_ffi.h"
 #include "SDL.h"
 #include "SDL_metal.h"
 #include "SDL_video.h"

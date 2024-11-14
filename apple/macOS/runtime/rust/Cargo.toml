@@ -9,12 +9,5 @@ name = "webrogue_macos"
 crate-type = ["staticlib"]
 
 [dependencies]
-anyhow =  { workspace = true }
-webrogue-runtime =  { workspace = true }
-webrogue-backend-wasmtime =  { workspace = true }
-webrogue-wasi =  { workspace = true }
-webrogue-gl =  { workspace = true }
-webrogue-gfx =  { workspace = true }
-webrogue-wasi-sync =  { workspace = true }
-webrogue-std-stream-os = { workspace = true }
-webrogue-gfx-ffi = { workspace = true }
+anyhow = { workspace = true }
+webrogue-runtime = { workspace = true, features = ["gl", "cranelift"] }
