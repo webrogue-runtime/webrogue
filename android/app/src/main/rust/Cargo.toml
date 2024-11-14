@@ -8,26 +8,8 @@ edition.workspace = true
 name = "webrogue_android"
 crate-type = ["staticlib"]
 
-[features]
-default = ["backend-wasmtime"]
-backend-v8 = ["dep:webrogue-backend-v8"]
-backend-wasmtime = ["dep:webrogue-backend-wasmtime"]
-
 [dependencies]
 anyhow = { workspace = true }
-webrogue-runtime = { workspace = true }
-webrogue-backend-v8 = { workspace = true, optional = true }
-webrogue-backend-wasmtime = { workspace = true, optional = true }
-webrogue-wasi = { workspace = true }
-webrogue-wasi-sync = { workspace = true }
-webrogue-gl = { workspace = true }
-webrogue-gfx = { workspace = true }
-webrogue-std-stream-os = { workspace = true }
-webrogue-gfx-ffi = { workspace = true }
-
-[target.'cfg(unix)'.dependencies]
-rustix = { workspace = true, features = ["fs", "event"] }
-
-[target.'cfg(windows)'.dependencies]
-rustix = { workspace = true, features = ["net"] }
-io-extras = { workspace = true }
+webrogue-runtime = { workspace = true, features = ["gl", "cranelift"] }
+wasmer-wasix = { workspace = true }
+tokio = { workspace = true }

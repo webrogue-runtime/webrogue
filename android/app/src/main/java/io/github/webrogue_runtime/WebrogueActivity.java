@@ -45,7 +45,7 @@ public class WebrogueActivity extends SDLActivity {
     @Keep
     public static void printBytes(byte[] bytes) {
         sharedWebrogueActivity.runOnUiThread(() -> {
-            sharedWebrogueActivity.consoleText += new String(bytes, StandardCharsets.UTF_8) + "\n";
+            sharedWebrogueActivity.consoleText += new String(bytes, StandardCharsets.UTF_8);
             sharedWebrogueActivity.textView.setText(sharedWebrogueActivity.consoleText);
         });
     }
