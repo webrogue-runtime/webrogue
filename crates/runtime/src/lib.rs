@@ -1,5 +1,5 @@
-use std::{cell::RefCell, io::Read, sync::Arc};
-pub use webrogue_wrapp as wrapp;
+use std::{cell::RefCell, sync::Arc};
+// pub use webrogue_wrapp as wrapp;
 
 #[cfg(feature = "aot")]
 extern "C" {
@@ -7,31 +7,20 @@ extern "C" {
     static WASMER_METADATA_WR_AOT_SIZE: usize;
 }
 
-pub fn run(wrapp_handle: webrogue_wrapp::WrappHandle, stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>) -> anyhow::Result<()> {
+async fn run_task(
+    container: webc::Container,
+    stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
+    gfx: Arc<webrogue_gfx::GFX>,
+    gl: Arc<RefCell<webrogue_gl::GL>>,
+) -> anyhow::Result<()> {
     let mut store = wasmer::Store::default();
 
-    #[cfg(feature = "gfx")]
-    let gfx = Arc::new(webrogue_gfx::GFX::new());
+    // let mut wasm_file = wrapp_handle.open_file("main.wasm").unwrap();
 
-    #[cfg(feature = "gl")]
-    let gl = Arc::new(RefCell::new(webrogue_gl::GL::new(gfx.clone())));
+    let bytecode = container.get_atom("raylib").unwrap();
 
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    let tokio_guard = runtime.enter();
-
-    let mut wasi_env = wasmer_wasix::WasiEnv::builder(wrapp_handle.config().name)
-        // .args(&["world"])
-        // .env("KEY", "Value")
-        .stdout(stdout.unwrap_or(Box::new(virtual_fs::host_fs::Stdout::default())))
-        .finalize(&mut store)?;
-
-    let mut wasm_file = wrapp_handle.open_file("main.wasm").unwrap();
-
-    let mut bytecode = Vec::new();
-    wasm_file.read_to_end(&mut bytecode)?;
+    // let mut bytecode = Vec::new();
+    // wasm_file.read_to_end(&mut bytecode)?;
 
     #[cfg(feature = "aot")]
     let module = unsafe {
@@ -42,6 +31,31 @@ pub fn run(wrapp_handle: webrogue_wrapp::WrappHandle, stdout: Option<Box<dyn was
     };
     #[cfg(not(feature = "aot"))]
     let module = wasmer::Module::new(&store, &bytecode)?;
+
+    let mut wasix_runtime = wasmer_wasix::runtime::PluggableRuntime::new(Arc::new(
+        wasmer_wasix::runtime::task_manager::tokio::TokioTaskManager::default(),
+    ));
+    wasix_runtime
+        .set_package_loader(wasmer_wasix::runtime::package_loader::BuiltinPackageLoader::new());
+
+    let wasix_runtime_arc = Arc::new(wasix_runtime);
+
+
+
+    let mut wasi_env_builder = wasmer_wasix::WasiEnv::builder("raylib")
+        .runtime(wasix_runtime_arc.clone())
+        .stdout(stdout.unwrap_or(Box::new(virtual_fs::host_fs::Stdout::default())));
+
+    wasi_env_builder.add_webc(
+        wasmer_wasix::bin_factory::BinaryPackage::from_webc(
+            &container,
+            wasix_runtime_arc.as_ref(),
+        )
+        .await?,
+    );
+
+    let mut wasi_env = wasi_env_builder.finalize(&mut store)?;
+
     let mut import_object = wasi_env.import_object_for_all_wasi_versions(&mut store, &module)?;
 
     let mut shared_memory = None;
@@ -76,6 +90,28 @@ pub fn run(wrapp_handle: webrogue_wrapp::WrappHandle, stdout: Option<Box<dyn was
         instance.exports.get_typed_function(&mut store, "_start")?;
     wasi_env.on_exit(&mut store, None);
     start_fn.call(&mut store)?;
+
+    Ok(())
+}
+
+pub fn run(
+    container: webc::Container,
+    stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
+) -> anyhow::Result<()> {
+    #[cfg(feature = "gfx")]
+    let gfx = Arc::new(webrogue_gfx::GFX::new());
+
+    #[cfg(feature = "gl")]
+    let gl = Arc::new(RefCell::new(webrogue_gl::GL::new(gfx.clone())));
+
+    let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let tokio_guard = tokio_runtime.enter();
+
+    tokio_runtime.block_on(run_task(container, stdout, gfx.clone(), gl))?;
+
     drop(tokio_guard);
     #[cfg(feature = "gfx")]
     drop(gfx);

@@ -19,11 +19,12 @@ webrogue-gl = { workspace = true, optional = true }
 webrogue-gfx = { workspace = true, optional = true }
 
 anyhow = { workspace = true }
-webrogue-wrapp = { workspace = true }
+# webrogue-wrapp = { workspace = true }
 wasmer = { workspace = true, default-features = false }
 wasmer-wasix = { workspace = true }
 virtual-fs = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
+webc = { workspace = true }
 
 [build-dependencies]
 cc = { workspace = true }
