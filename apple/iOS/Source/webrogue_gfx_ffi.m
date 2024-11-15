@@ -29,6 +29,7 @@ void *webrogue_gfx_ffi_create_window(void *raw_system_ptr) {
   Window *window_ptr = malloc(sizeof(Window));
   window_ptr->angle_helper_window =
       [system_ptr->angle_helper_system makeWindow];
+  [window_ptr->angle_helper_window makeCurrent];
   return window_ptr;
 }
 void webrogue_gfx_ffi_destroy_window(void *raw_window_ptr) {

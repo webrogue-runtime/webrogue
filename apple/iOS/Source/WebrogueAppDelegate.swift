@@ -31,7 +31,7 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
     }
 
     func runGame(path: String, completion: ((Int) -> Void)? = nil) {
-        DispatchQueue.main.asyncAfter(deadline: .now()) {
+        DispatchQueue.global(qos: .userInteractive).async {
             self.isWebrogueWindowVisible = false
             let ret_code = path.utf8CString.withUnsafeBufferPointer {
                 Int(webrogueMain($0.baseAddress!))

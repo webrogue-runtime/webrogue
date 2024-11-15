@@ -67,6 +67,9 @@ class AngleHelperWindow: NSObject {
         self.surface = surface
         self.display = display
         self.context = context
+    }
+
+    @objc public func makeCurrent() {
         eglMakeCurrent(display, surface, surface, context)
     }
 
@@ -91,6 +94,8 @@ class AngleHelperWindow: NSObject {
     }
 
     deinit {
-        SDL_DestroyWindow(sdl_window);
+        DispatchQueue.main.sync {
+            SDL_DestroyWindow(sdl_window);
+        }
     }
 }
