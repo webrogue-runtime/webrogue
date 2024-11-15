@@ -63,7 +63,8 @@ wasmer = { path = "external/wasmer/lib/api", default-features = false }
 wasmer-wasix = { path = "external/wasmer/lib/wasix" }
 virtual-fs = { path = "external/wasmer/lib/virtual-fs" }
 wai-bindgen-wasmer = { path = "external/wasmer/lib/wai-bindgen-wasmer" }
-
+webc = { version = "7.0.0-rc.1" }
+wasmer-package = { path = "external/wasmer/lib/package" }
 
 clap = { version = "4.0", default-features = false, features = ["std"] }
 futures =  { version = "0.3" }

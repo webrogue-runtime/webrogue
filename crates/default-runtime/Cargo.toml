@@ -5,7 +5,9 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-webrogue-runtime = { workspace = true, features = ["gl", "wamr"] }
+webrogue-runtime = { workspace = true, features = ["gl", "cranelift"] }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 webrogue-gfx = { workspace = true, features = ["fallback"] }
+webc = { workspace = true }
+wasmer-package = { workspace = true }
