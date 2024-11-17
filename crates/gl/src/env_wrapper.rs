@@ -1,8 +1,8 @@
 use crate::gl::GL;
 use std::{
-    cell::{RefCell, UnsafeCell},
+    cell::UnsafeCell,
     panic::{RefUnwindSafe, UnwindSafe},
-    sync::Arc,
+    sync::{Arc, RwLock},
 };
 
 pub struct LazyInitialized {
@@ -10,7 +10,7 @@ pub struct LazyInitialized {
 }
 #[derive(Clone)]
 pub struct EnvWrapper {
-    pub gl: Arc<RefCell<GL>>,
+    pub gl: Arc<RwLock<GL>>,
     pub lazy: std::rc::Rc<OnceCell<LazyInitialized>>,
 }
 

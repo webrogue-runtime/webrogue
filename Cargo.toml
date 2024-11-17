@@ -26,7 +26,7 @@ members = [
   "crates/gfx",
   "crates/gfx-fallback",
   "crates/gl",
-  "crates/gl/builder",
+  "crates/gl-bindgen",
   "crates/runtime",
   "crates/wrapp",
   "crates/wrapp-cli",
