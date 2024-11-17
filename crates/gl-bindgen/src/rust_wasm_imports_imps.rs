@@ -249,7 +249,7 @@ pub fn add_to_imports(
             mut store: wasmer::FunctionEnvMut<EnvWrapper>,{}
         | -> Result<{}, wasmer::RuntimeError> {{
                 let gl_arc = store.data_mut().gl.clone();
-                let {}gl = gl_arc.borrow_mut();
+                let {}gl = gl_arc.{}().unwrap();
 {}{}
                 let result = unsafe {{
                     (gl.proc_addresses.{})({}
@@ -268,6 +268,7 @@ pub fn add_to_imports(
                 _ => command.ret.to_wasm_param_type(),
             },
             if is_gl_mut { "mut " } else { "" },
+            if is_gl_mut { "write" } else { "read" },
             memory_init,
             converts.join("\n"),
             command.name,

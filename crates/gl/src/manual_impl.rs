@@ -14,7 +14,7 @@ pub fn add_to_imports(
             env,
             move |mut store: wasmer::FunctionEnvMut<EnvWrapper>|
                   -> Result<(), wasmer::RuntimeError> {
-                let mut gl = store.data_mut().gl.borrow_mut();
+                let mut gl = store.data_mut().gl.write().unwrap();
                 let gfx = gl.gfx.clone();
                 gl.proc_addresses.fill(gfx);
                 Ok(())
@@ -34,7 +34,7 @@ pub fn add_to_imports(
                   length: u32|
                   -> Result<(), wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let gl = gl_arc.borrow_mut();
+                let gl = gl_arc.read().unwrap();
                 let memory =
                     MemoryHandle::new(store.data().lazy.get().unwrap().memory.clone(), &store);
 
@@ -105,7 +105,7 @@ pub fn add_to_imports(
                   pointer: u32|
                   -> Result<(), wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let gl = gl_arc.borrow_mut();
+                let gl = gl_arc.read().unwrap();
                 unsafe {
                     (gl.proc_addresses.glVertexAttribPointer)(
                         index,
@@ -133,7 +133,7 @@ pub fn add_to_imports(
                   indices: u32|
                   -> Result<(), wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let mut gl = gl_arc.borrow_mut();
+                let mut gl = gl_arc.write().unwrap();
                 let memory =
                     MemoryHandle::new(store.data().lazy.get().unwrap().memory.clone(), &store);
                 let mut element_array_buffer = 0;
@@ -181,7 +181,7 @@ pub fn add_to_imports(
                   instancecount: i32|
                   -> Result<(), wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let mut gl = gl_arc.borrow_mut();
+                let mut gl = gl_arc.write().unwrap();
                 let memory =
                     MemoryHandle::new(store.data().lazy.get().unwrap().memory.clone(), &store);
                 let mut element_array_buffer = 0;
@@ -237,7 +237,7 @@ pub fn add_to_imports(
                   indices: u32|
                   -> Result<(), wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let mut gl = gl_arc.borrow_mut();
+                let mut gl = gl_arc.write().unwrap();
                 let memory =
                     MemoryHandle::new(store.data().lazy.get().unwrap().memory.clone(), &store);
                 let mut element_array_buffer = 0;
@@ -294,7 +294,7 @@ pub fn add_to_imports(
                   uniform_indices: u32|
                   -> Result<(), wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let gl = gl_arc.borrow_mut();
+                let gl = gl_arc.read().unwrap();
                 let memory =
                     MemoryHandle::new(store.data().lazy.get().unwrap().memory.clone(), &store);
                 let uniform_names_ptrs =
@@ -371,7 +371,7 @@ pub fn add_to_imports(
                   pixels: u32|
                   -> Result<(), wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let mut gl = gl_arc.borrow_mut();
+                let mut gl = gl_arc.write().unwrap();
                 let memory =
                     MemoryHandle::new(store.data().lazy.get().unwrap().memory.clone(), &store);
                 let converted_target = target;
@@ -431,7 +431,7 @@ pub fn add_to_imports(
                   pointer: u32|
                   -> Result<(), wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let gl = gl_arc.borrow_mut();
+                let gl = gl_arc.read().unwrap();
 
                 unsafe {
                     (gl.proc_addresses.glVertexAttribIPointer)(
@@ -458,7 +458,7 @@ pub fn add_to_imports(
                   data_ptr: u32|
                   -> Result<(), wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let mut gl = gl_arc.borrow_mut();
+                let mut gl = gl_arc.write().unwrap();
 
                 if let Some(s) = get_string_i(&mut gl, i, name) {
                     let memory =
@@ -479,7 +479,7 @@ pub fn add_to_imports(
                   name: u32|
                   -> Result<i32, wasmer::RuntimeError> {
                 let gl_arc = store.data_mut().gl.clone();
-                let mut gl = gl_arc.borrow_mut();
+                let mut gl = gl_arc.write().unwrap();
                 let result = match get_string_i(&mut gl, i, name) {
                     None => -1,
                     Some(s) => s.len() as i32,

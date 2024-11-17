@@ -1,5 +1,5 @@
 [package]
-name = "webrogue_gl_builder"
+name = "webrogue-gl-bindgen"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

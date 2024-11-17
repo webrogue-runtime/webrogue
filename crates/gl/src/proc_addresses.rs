@@ -260,7 +260,7 @@ impl ProcAddresses {
         unsafe { std::mem::MaybeUninit::<ProcAddresses>::zeroed().assume_init() }
     }
 
-    pub fn fill(&mut self, context: std::sync::Arc<webrogue_gfx::GFX>) {
+    pub fn fill(&mut self, context: std::sync::Arc<webrogue_gfx::GFXSystem>) {
         unsafe {
             self.glActiveTexture = std::mem::transmute(context.gl_get_proc_address("glActiveTexture"));
             self.glAttachShader = std::mem::transmute(context.gl_get_proc_address("glAttachShader"));

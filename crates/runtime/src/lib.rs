@@ -1,4 +1,4 @@
-use std::{cell::RefCell, sync::Arc};
+use std::sync::{Arc, RwLock};
 // pub use webrogue_wrapp as wrapp;
 
 #[cfg(feature = "aot")]
@@ -7,18 +7,66 @@ extern "C" {
     static WASMER_METADATA_WR_AOT_SIZE: usize;
 }
 
+#[derive(Debug)]
+struct AdditionalImportsBuilder {
+    #[cfg(feature = "gfx")]
+    gfx: Arc<webrogue_gfx::GFXSystem>,
+    #[cfg(feature = "gl")]
+    gl: Arc<RwLock<webrogue_gl::GL>>,
+}
+
+unsafe impl Sync for AdditionalImportsBuilder {}
+unsafe impl Send for AdditionalImportsBuilder {}
+
+impl wasmer_wasix::AdditionalImportsBuilder for AdditionalImportsBuilder {
+    fn initialize(
+        &self,
+        store: &mut dyn wasmer::AsStoreMut,
+    ) -> (wasmer::Imports, wasmer_wasix::AdditionalImportsInitializer) {
+        let mut import_object = wasmer::Imports::new();
+        #[cfg(feature = "gfx")]
+        let gfx_callback = webrogue_gfx::GFXInterface::new(self.gfx.clone())
+            .add_to_imports(store, &mut import_object);
+
+        #[cfg(feature = "gl")]
+        let gl_callback = webrogue_gl::add_to_imports(store, &mut import_object, self.gl.clone());
+
+        (
+            import_object,
+            Box::new(move |instance, memory, store| {
+                #[cfg(feature = "gfx")]
+                gfx_callback()?;
+                #[cfg(feature = "gl")]
+                gl_callback(memory.clone())?;
+
+                Ok(())
+            }),
+        )
+    }
+}
+
 async fn run_task(
     container: webc::Container,
     stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
-    gfx: Arc<webrogue_gfx::GFX>,
-    gl: Arc<RefCell<webrogue_gl::GL>>,
+    #[cfg(feature = "gfx")] gfx: Arc<webrogue_gfx::GFXSystem>,
+    #[cfg(feature = "gl")] gl: Arc<RwLock<webrogue_gl::GL>>,
 ) -> anyhow::Result<()> {
-    let mut store = wasmer::Store::default();
+    let store = wasmer::Store::default();
 
     // let mut wasm_file = wrapp_handle.open_file("main.wasm").unwrap();
-
-    let bytecode = container.get_atom("raylib").unwrap();
-
+    let entrypoint_name = container
+        .manifest()
+        .entrypoint
+        .clone()
+        .ok_or(anyhow::anyhow!("webc entrypoint is not specified"))?;
+    let _entrypoint_atom = container
+        .manifest()
+        .atoms
+        .get(&entrypoint_name)
+        .ok_or(anyhow::anyhow!("webc entrypoint is not found in commands"))?;
+    let bytecode = container
+        .get_atom(&entrypoint_name)
+        .ok_or(anyhow::anyhow!("webc entrypoint is not found in container"))?;
     // let mut bytecode = Vec::new();
     // wasm_file.read_to_end(&mut bytecode)?;
 
@@ -40,56 +88,22 @@ async fn run_task(
 
     let wasix_runtime_arc = Arc::new(wasix_runtime);
 
-
-
-    let mut wasi_env_builder = wasmer_wasix::WasiEnv::builder("raylib")
+    let mut wasi_env_builder = wasmer_wasix::WasiEnv::builder(entrypoint_name)
         .runtime(wasix_runtime_arc.clone())
-        .stdout(stdout.unwrap_or(Box::new(virtual_fs::host_fs::Stdout::default())));
+        .stdout(stdout.unwrap_or(Box::new(virtual_fs::host_fs::Stdout::default())))
+        .import_builder(Arc::new(AdditionalImportsBuilder {
+            #[cfg(feature = "gfx")]
+            gfx: gfx,
+            #[cfg(feature = "gl")]
+            gl: gl,
+        }));
 
     wasi_env_builder.add_webc(
-        wasmer_wasix::bin_factory::BinaryPackage::from_webc(
-            &container,
-            wasix_runtime_arc.as_ref(),
-        )
-        .await?,
+        wasmer_wasix::bin_factory::BinaryPackage::from_webc(&container, wasix_runtime_arc.as_ref())
+            .await?,
     );
 
-    let mut wasi_env = wasi_env_builder.finalize(&mut store)?;
-
-    let mut import_object = wasi_env.import_object_for_all_wasi_versions(&mut store, &module)?;
-
-    let mut shared_memory = None;
-
-    if let Some(memory_import) = module
-        .imports()
-        .find(|i| i.module() == "env" && i.name() == "memory")
-    {
-        if let Some(memory_type) = memory_import.ty().memory() {
-            let memory = wasmer::Memory::new(&mut store, *memory_type)?;
-            import_object.define("env", "memory", memory.clone());
-            shared_memory = Some(memory);
-        }
-    }
-
-    #[cfg(feature = "gfx")]
-    let gfx_callback =
-        webrogue_gfx::GFXInterface::new(gfx.clone()).add_to_imports(&mut store, &mut import_object);
-
-    #[cfg(feature = "gl")]
-    let gl_callback = webrogue_gl::add_to_imports(&mut store, &mut import_object, gl);
-
-    let instance = wasmer::Instance::new(&mut store, &module, &import_object)?;
-    #[cfg(feature = "gfx")]
-    gfx_callback(&instance, &store)?;
-    #[cfg(feature = "gl")]
-    gl_callback(&instance, shared_memory.clone())?;
-
-    wasi_env.initialize_with_memory(&mut store, instance.clone(), shared_memory, true)?;
-
-    let start_fn: wasmer::TypedFunction<(), ()> =
-        instance.exports.get_typed_function(&mut store, "_start")?;
-    wasi_env.on_exit(&mut store, None);
-    start_fn.call(&mut store)?;
+    wasi_env_builder.run(module)?;
 
     Ok(())
 }
@@ -99,10 +113,10 @@ pub fn run(
     stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
 ) -> anyhow::Result<()> {
     #[cfg(feature = "gfx")]
-    let gfx = Arc::new(webrogue_gfx::GFX::new());
+    let gfx = Arc::new(webrogue_gfx::GFXSystem::new());
 
     #[cfg(feature = "gl")]
-    let gl = Arc::new(RefCell::new(webrogue_gl::GL::new(gfx.clone())));
+    let gl = Arc::new(RwLock::new(webrogue_gl::GL::new(gfx.clone())));
 
     let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    fmt::Debug,
+    sync::{Arc, Mutex},
+};
 
 struct GLOpaqueObjects {
     pub opaque_sync_objects: std::collections::BTreeMap<u32, *mut ()>,
@@ -34,13 +37,19 @@ impl GLOpaqueObjects {
 }
 
 pub struct GL {
-    pub gfx: Arc<webrogue_gfx::GFX>,
+    pub gfx: Arc<webrogue_gfx::GFXSystem>,
     pub proc_addresses: crate::proc_addresses::ProcAddresses,
     opaque_objects: Arc<Mutex<GLOpaqueObjects>>,
 }
 
+impl Debug for GL {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("GL").field(&self.gfx).finish()
+    }
+}
+
 impl GL {
-    pub fn new(gfx: Arc<webrogue_gfx::GFX>) -> Self {
+    pub fn new(gfx: Arc<webrogue_gfx::GFXSystem>) -> Self {
         Self {
             gfx,
             proc_addresses: crate::proc_addresses::ProcAddresses::new(),
