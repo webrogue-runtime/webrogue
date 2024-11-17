@@ -1,5 +1,3 @@
-mod run;
-
 fn main() -> anyhow::Result<()> {
-    run::run()
+    webrogue_default_runtime::run()
 }
