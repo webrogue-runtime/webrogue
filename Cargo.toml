@@ -7,7 +7,7 @@ default-run = "webrogue-default-runtime"
 
 [[bin]]
 name = "webrogue-default-runtime"
-path = "crates/default-runtime/src/main.rs"
+path = "crates/default-runtime/src/main_workspace.rs"
 doc = false
 
 [dependencies]
@@ -22,6 +22,9 @@ edition = "2021"
 [workspace]
 resolver = '2'
 members = [
+  "crates/aot-compiler",
+  "crates/aot-data",
+  "crates/aot-lib",
   "crates/default-runtime",
   "crates/gfx",
   "crates/gfx-fallback",
@@ -47,6 +50,8 @@ exclude = [
 
 [workspace.dependencies]
 # Webrogue crates
+webrogue-aot-compiler = { path = "crates/aot-compiler" }
+webrogue-aot-data = { path = "crates/aot-data" }
 webrogue-default-runtime = { path = "crates/default-runtime" }
 webrogue-runtime = { path = "crates/runtime" }
 webrogue-gl = { path = "crates/gl" }
@@ -61,10 +66,12 @@ webrogue-wrapp = { path = "crates/wrapp" }
 # Wasmer crates
 wasmer = { path = "external/wasmer/lib/api", default-features = false }
 wasmer-wasix = { path = "external/wasmer/lib/wasix" }
-virtual-fs = { path = "external/wasmer/lib/virtual-fs" }
-wai-bindgen-wasmer = { path = "external/wasmer/lib/wai-bindgen-wasmer" }
-webc = { version = "7.0.0-rc.1" }
+wasmer-compiler = { path = "external/wasmer/lib/compiler" }
+wasmer-compiler-cranelift = { path = "external/wasmer/lib/compiler-cranelift" }
 wasmer-package = { path = "external/wasmer/lib/package" }
+wasmer-types = { path = "external/wasmer/lib/types" }
+virtual-fs = { path = "external/wasmer/lib/virtual-fs" }
+webc = { version = "7.0.0-rc.1" }
 
 clap = { version = "4.0", default-features = false, features = ["std"] }
 futures =  { version = "0.3" }
@@ -75,3 +82,8 @@ anyhow = { version = "1" }
 zstd-seekable = { version = "0.1.23" }
 cc = { version = "1" }
 tokio = { version = "1" }
+
+[profile.release-lto]
+inherits = "release"
+lto = true
+panic = "abort"

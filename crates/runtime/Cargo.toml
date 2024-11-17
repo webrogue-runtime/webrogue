@@ -8,7 +8,7 @@ edition.workspace = true
 gl = ["gfx", "dep:webrogue-gl"]
 gfx = ["dep:webrogue-gfx"]
 
-aot = ["wasmer/sys", "wasmer/static-artifact-load"]
+aot = ["wasmer/sys", "wasmer/static-artifact-load", "dep:webrogue-aot-data"]
 singlepass = ["wasmer/singlepass"]
 cranelift = ["wasmer/cranelift"]
 llvm = ["wasmer/llvm"]
@@ -26,5 +26,4 @@ virtual-fs = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
 webc = { workspace = true }
 
-[build-dependencies]
-cc = { workspace = true }
+webrogue-aot-data = { workspace = true, optional = true }

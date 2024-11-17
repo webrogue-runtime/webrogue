@@ -1,12 +1,6 @@
 use std::sync::{Arc, RwLock};
 // pub use webrogue_wrapp as wrapp;
 
-#[cfg(feature = "aot")]
-extern "C" {
-    static WASMER_METADATA_WR_AOT: u8;
-    static WASMER_METADATA_WR_AOT_SIZE: usize;
-}
-
 #[derive(Debug)]
 struct AdditionalImportsBuilder {
     #[cfg(feature = "gfx")]
@@ -33,7 +27,7 @@ impl wasmer_wasix::AdditionalImportsBuilder for AdditionalImportsBuilder {
 
         (
             import_object,
-            Box::new(move |instance, memory, store| {
+            Box::new(move |_instance, memory, _store| {
                 #[cfg(feature = "gfx")]
                 gfx_callback()?;
                 #[cfg(feature = "gl")]
@@ -64,21 +58,16 @@ async fn run_task(
         .atoms
         .get(&entrypoint_name)
         .ok_or(anyhow::anyhow!("webc entrypoint is not found in commands"))?;
-    let bytecode = container
-        .get_atom(&entrypoint_name)
-        .ok_or(anyhow::anyhow!("webc entrypoint is not found in container"))?;
-    // let mut bytecode = Vec::new();
-    // wasm_file.read_to_end(&mut bytecode)?;
 
     #[cfg(feature = "aot")]
-    let module = unsafe {
-        wasmer::Module::deserialize(
-            &store,
-            std::slice::from_raw_parts(&WASMER_METADATA_WR_AOT, WASMER_METADATA_WR_AOT_SIZE),
-        )?
-    };
+    let module = unsafe { wasmer::Module::deserialize(&store, webrogue_aot_data::aot_data())? };
     #[cfg(not(feature = "aot"))]
-    let module = wasmer::Module::new(&store, &bytecode)?;
+    let module = {
+        let bytecode = container
+            .get_atom(&entrypoint_name)
+            .ok_or(anyhow::anyhow!("webc entrypoint is not found in container"))?;
+        wasmer::Module::new(&store, &bytecode)?
+    };
 
     let mut wasix_runtime = wasmer_wasix::runtime::PluggableRuntime::new(Arc::new(
         wasmer_wasix::runtime::task_manager::tokio::TokioTaskManager::default(),

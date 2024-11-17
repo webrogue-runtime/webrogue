@@ -1,0 +1,12 @@
+[package]
+name = "webrogue-aot-data"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[features]
+skip-compiling = []
+
+[build-dependencies]
+cc = { workspace = true }
+webrogue-aot-compiler = { workspace = true }

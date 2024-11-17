@@ -1,0 +1,13 @@
+[package]
+name = "webrogue-aot-compiler"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+clap = { workspace = true, features = ["derive"] }
+anyhow = { workspace = true }
+# wasmer = { workspace = true, default-features = false }
+wasmer-compiler = { workspace = true, features = ["static-artifact-create"] }
+wasmer-compiler-cranelift = { workspace = true }
+wasmer-types = { workspace = true }
