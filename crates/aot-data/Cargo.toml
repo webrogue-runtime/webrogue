@@ -5,8 +5,8 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-skip-compiling = []
+compiling = ["dep:cc", "dep:webrogue-aot-compiler"]
 
 [build-dependencies]
-cc = { workspace = true }
-webrogue-aot-compiler = { workspace = true }
+cc = { workspace = true, optional = true }
+webrogue-aot-compiler = { workspace = true, optional = true }

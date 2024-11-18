@@ -15,4 +15,3 @@ gfx-fallback = ["webrogue-gfx/fallback"]
 webrogue-runtime = { workspace = true, features = ["aot", "gl"] }
 wasmer-package = { workspace = true }
 webrogue-gfx = { workspace = true }
-webrogue-aot-data = { workspace = true, features = ["skip-compiling"] }

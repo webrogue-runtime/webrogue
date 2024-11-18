@@ -1,6 +1,8 @@
 fn main() {
-    #[cfg(not(feature = "skip-compiling"))]
+    #[cfg(feature = "compiling")]
     {
+        extern crate cc;
+        extern crate webrogue_aot_compiler;
         use std::str::FromStr;
 
         let out_dir = std::path::PathBuf::from_str(&std::env::var("OUT_DIR").unwrap()).unwrap();

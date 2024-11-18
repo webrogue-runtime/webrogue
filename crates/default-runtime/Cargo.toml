@@ -8,6 +8,8 @@ edition.workspace = true
 webrogue-runtime = { workspace = true, features = ["gl", "aot"] }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
-webrogue-gfx = { workspace = true, features = ["fallback"] }
 webc = { workspace = true }
 wasmer-package = { workspace = true }
+
+webrogue-aot-data = { workspace = true, features = ["compiling"] }
+webrogue-gfx = { workspace = true, features = ["fallback"] }
