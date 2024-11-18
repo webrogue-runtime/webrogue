@@ -4,12 +4,20 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+gl = ["webrogue-runtime/gl", "dep:webrogue-gfx"]
+singlepass = ["webrogue-runtime/singlepass"]
+cranelift = ["webrogue-runtime/cranelift"]
+llvm = ["webrogue-runtime/llvm"]
+wamr = ["webrogue-runtime/wamr"]
+aot = ["webrogue-runtime/aot", "dep:webrogue-aot-data"]
+
 [dependencies]
-webrogue-runtime = { workspace = true, features = ["gl", "aot"] }
+webrogue-runtime = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 webc = { workspace = true }
 wasmer-package = { workspace = true }
 
-webrogue-aot-data = { workspace = true, features = ["compiling"] }
-webrogue-gfx = { workspace = true, features = ["fallback"] }
+webrogue-aot-data = { workspace = true, features = ["compiling"], optional = true }
+webrogue-gfx = { workspace = true, features = ["fallback"], optional = true }

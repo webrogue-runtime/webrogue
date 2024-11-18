@@ -10,6 +10,15 @@ name = "webrogue-default-runtime"
 path = "crates/default-runtime/src/main_workspace.rs"
 doc = false
 
+[features]
+default = ["gl", "cranelift"]
+gl = ["webrogue-default-runtime/gl"]
+singlepass = ["webrogue-default-runtime/singlepass"]
+cranelift = ["webrogue-default-runtime/cranelift"]
+llvm = ["webrogue-default-runtime/llvm"]
+wamr = ["webrogue-default-runtime/wamr"]
+aot = ["webrogue-default-runtime/aot"]
+
 [dependencies]
 webrogue-default-runtime = { workspace = true }
 anyhow = { workspace = true }
