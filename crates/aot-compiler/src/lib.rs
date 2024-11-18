@@ -1,2 +1,2 @@
 mod compile;
-pub use compile::compile_wasm_file;
+pub use compile::compile_webc_file;

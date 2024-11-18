@@ -2,13 +2,13 @@ cd $(dirname $0)
 set -ex
 
 
-sh build_aot_artifacts.sh
+sh build_linux_aot_artifacts.sh
 
 cargo run \
     --manifest-path=../crates/aot-compiler/Cargo.toml \
     --target-dir=./target \
     --release \
-    ../examples/raylib/main.wasm \
+    ../examples/gears/gears.webc \
     wr_aot.o \
     x86_64-linux-gnu
 

@@ -15,8 +15,8 @@ fn target_triple_to_target(
     wasmer_types::Target::new(target_triple.clone(), features)
 }
 
-pub fn compile_wasm_file(
-    wasm_file_path: std::path::PathBuf,
+pub fn compile_webc_file(
+    webc_file_path: std::path::PathBuf,
     object_file_path: std::path::PathBuf,
     triple_str: &str,
 ) -> anyhow::Result<()> {
@@ -25,9 +25,17 @@ pub fn compile_wasm_file(
 
     let target = target_triple_to_target(&triple, &[]);
 
-    let mut data = Vec::new();
-    let mut file = std::fs::File::open(wasm_file_path)?;
-    std::io::copy(&mut file, &mut data)?;
+    let container = wasmer_package::utils::from_disk(webc_file_path)?;
+
+    let atom = container
+        .get_atom(
+            &container
+                .manifest()
+                .entrypoint
+                .clone()
+                .ok_or(anyhow::anyhow!("webc has no entrypoint"))?,
+        )
+        .ok_or(anyhow::anyhow!("webc atom retrieval failed"))?;
 
     let prefix = "wr_aot";
     let engine = wasmer_compiler::EngineBuilder::new(cranelift)
@@ -40,7 +48,7 @@ pub fn compile_wasm_file(
     let tunables = engine.tunables();
     let (_, obj, _, _) = wasmer_compiler::Artifact::generate_object(
         compiler,
-        &data,
+        &atom,
         Some(prefix),
         &target,
         tunables,

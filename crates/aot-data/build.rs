@@ -34,7 +34,7 @@ fn main() {
             }
         };
 
-        webrogue_aot_compiler::compile_wasm_file(wasm_path.into(), obj_path.clone(), target)
+        webrogue_aot_compiler::compile_webc_file(wasm_path.into(), obj_path.clone(), target)
             .expect("webrogue_aot_compiler failed");
 
         cc::Build::new().object(obj_path).compile("wr_aot");

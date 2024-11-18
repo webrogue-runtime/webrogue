@@ -10,6 +10,6 @@ struct Cli {
 
 fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
-    compile::compile_wasm_file(args.wasm_path, args.out_path, &args.target)?;
+    compile::compile_webc_file(args.wasm_path, args.out_path, &args.target)?;
     Ok(())
 }

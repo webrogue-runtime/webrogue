@@ -11,3 +11,5 @@ anyhow = { workspace = true }
 wasmer-compiler = { workspace = true, features = ["static-artifact-create"] }
 wasmer-compiler-cranelift = { workspace = true }
 wasmer-types = { workspace = true }
+webc = { workspace = true }
+wasmer-package = { workspace = true }
