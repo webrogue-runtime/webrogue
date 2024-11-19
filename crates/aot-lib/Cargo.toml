@@ -9,9 +9,18 @@ edition.workspace = true
 crate-type=["staticlib"]
 
 [features]
-gfx-fallback = ["webrogue-gfx/fallback"]
+gfx-fallback-cmake = ["webrogue-gfx/fallback", "dep:webrogue-gfx-fallback", "webrogue-gfx-fallback/sdl2", "webrogue-gfx-fallback/cmake"]
+gfx-fallback-cc = ["webrogue-gfx/fallback", "dep:webrogue-gfx-fallback", "webrogue-gfx-fallback/sdl2", "webrogue-gfx-fallback/cc"]
 
 [dependencies]
 webrogue-runtime = { workspace = true, features = ["aot", "gl"] }
 wasmer-package = { workspace = true }
 webrogue-gfx = { workspace = true }
+webrogue-gfx-fallback = { workspace = true, optional = true }
+
+[target.x86_64-pc-windows-msvc]
+linker = "lld-link"
+
+# needed for cross-compiling
+[target.'cfg(target_env = "msvc")'.dependencies]
+blake3 = { version = "1", features = ["pure"] }

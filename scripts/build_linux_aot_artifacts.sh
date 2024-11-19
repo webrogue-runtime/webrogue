@@ -7,7 +7,7 @@ mkdir ../aot_artifacts
 export NUM_JOBS=$(nproc)
 
 # rustup target add x86_64-unknown-linux-gnu
-cargo build --manifest-path=../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-unknown-linux-gnu --features=gfx-fallback --profile release-lto
+cargo build --manifest-path=../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-unknown-linux-gnu --features=gfx-fallback-cmake --profile release-lto
 
 mkdir ../aot_artifacts/x86_64-linux-gnu
 cp target/x86_64-unknown-linux-gnu/release-lto/libwebrogue_aot_lib.a ../aot_artifacts/x86_64-linux-gnu

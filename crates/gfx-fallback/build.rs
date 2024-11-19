@@ -17,13 +17,24 @@ fn main() {
     let crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
     download_sdl_source(&crate_manifest_dir.join("SDL"));
-    let dst = cmake::Config::new(crate_manifest_dir)
-        .define("SDL_CMAKE_DEBUG_POSTFIX", "")
-        .build();
-    println!(
-        "cargo:rustc-link-search=native={}",
-        dst.join("lib").display()
-    );
-    println!("cargo:rustc-link-lib=static=wrgfxfallback");
-    println!("cargo:rustc-link-lib=static=SDL2");
+
+    #[cfg(feature = "cmake")]
+    {
+        let dst = cmake::Config::new(crate_manifest_dir)
+            .define("SDL_CMAKE_DEBUG_POSTFIX", "")
+            .build();
+        println!(
+            "cargo:rustc-link-search=native={}",
+            dst.join("lib").display()
+        );
+        println!("cargo:rustc-link-lib=static=wrgfxfallback");
+        println!("cargo:rustc-link-lib=static=SDL2");
+    }
+    #[cfg(feature = "cc")]
+    {
+        cc::Build::new()
+            .file("webrogue_gfx_ffi_sdl2.c")
+            .include("SDL/include")
+            .compile("wr_aot");
+    }
 }

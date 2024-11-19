@@ -4,7 +4,13 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+sdl2 = []
+cmake = ["dep:cmake"]
+cc = ["dep:cc"]
+
 [build-dependencies]
-cmake = { version = "^0.1.47" }
+cmake = { version = "^0.1.47", optional = true }
+cc = { version = "1", optional = true }
 reqwest = { version = "0.12", features = ["blocking"] }
 zip-extract = { version = "0.2.1" }

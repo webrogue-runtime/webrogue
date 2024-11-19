@@ -1,3 +1,9 @@
 /target
 /wr_aot.o
+/wr_aot.obj
 /a.out
+/a.exe
+/xwin
+/.xwin-cache
+/*.dll
+/*.zip
