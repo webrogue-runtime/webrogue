@@ -2,15 +2,16 @@
 cd $(dirname $0)
 set -ex
 
-rm -rf ../aot_artifacts/x86_64-linux-gnu
-mkdir -p ../aot_artifacts/x86_64-linux-gnu
+OUT_DIR="../aot_artifacts/x86_64-linux-gnu"
+rm -rf "$OUT_DIR"
 
 export NUM_JOBS=$(nproc)
 
 # rustup target add x86_64-unknown-linux-gnu
 cargo build --manifest-path=../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-unknown-linux-gnu --features=gfx-fallback-cmake --profile release-lto
 
-cp target/x86_64-unknown-linux-gnu/release-lto/libwebrogue_aot_lib.a ../aot_artifacts/x86_64-linux-gnu
+mkdir -p "$OUT_DIR"
+cp target/x86_64-unknown-linux-gnu/release-lto/libwebrogue_aot_lib.a "$OUT_DIR"
 
 clang main.c -nostdlib -c -o main.o
 
@@ -27,11 +28,13 @@ clang main.c -nostdlib -c -o main.o
 #     -fuse-ld=lld \
 #     -Wl,--threads=1
 
-llvm-ar q ../aot_artifacts/x86_64-linux-gnu/libwebrogue_aot_lib.a \
+llvm-ar q \
+    "$OUT_DIR/libwebrogue_aot_lib.a" \
     "main.o"
     
 
-llvm-ar qLs ../aot_artifacts/x86_64-linux-gnu/libwebrogue_aot_lib.a \
+llvm-ar qLs \
+    "$OUT_DIR/libwebrogue_aot_lib.a" \
     /usr/lib/x86_64-linux-gnu/libc_nonshared.a
 
 cp \
@@ -45,5 +48,6 @@ cp \
     /lib/x86_64-linux-gnu/libpthread.so.0 \
     /lib/x86_64-linux-gnu/libc.so.6 \
     "/usr/lib/x86_64-linux-gnu/crtn.o" \
-     ../aot_artifacts/x86_64-linux-gnu/
+    "$OUT_DIR"
+
 rm main.o
