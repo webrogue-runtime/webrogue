@@ -113,7 +113,14 @@ pub fn run(
         .unwrap();
     let tokio_guard = tokio_runtime.enter();
 
-    tokio_runtime.block_on(run_task(container, stdout, gfx.clone(), gl))?;
+    tokio_runtime.block_on(run_task(
+        container,
+        stdout,
+        #[cfg(feature = "gfx")]
+        gfx.clone(),
+        #[cfg(feature = "gl")]
+        gl,
+    ))?;
 
     drop(tokio_guard);
     #[cfg(feature = "gfx")]

@@ -76,7 +76,7 @@ pub fn compile_webc_file(
 
     webrogue_aot_linker::link_linux(object_file_path.clone(), output_file_path);
 
-    std::fs::remove_file(object_file_path);
+    let _ = std::fs::remove_file(object_file_path);
 
     Ok(())
 }

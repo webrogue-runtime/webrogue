@@ -17,23 +17,15 @@ fn main() {
         "cargo:rustc-link-search=native={}",
         dst.join("lib").display()
     );
-    // println!("cargo:rustc-link-lib=static=stdc++");
-    // println!("cargo:rustc-link-lib=static=c++");
-    // let link_type = "static";
-    // let libs = "lldCommon lldCOFF lldELF lldMachO lldMinGW lldWasm LLVMSupport LLVMCodeGen LLVMCore LLVMDebugInfoDWARF LLVMDemangle LLVMMC LLVMOption LLVMTarget LLVMTargetParser";
 
-    // println!("cargo:rustc-link-lib={}=lldAsLib", link_type);
-    // for lib in libs.split(' ') {
-    //     println!("cargo:rustc-link-lib={}={}", link_type, lib);
-    // }
-   
-    // println!("cargo::rustc-link-arg=-lstdc++");
     let deps_path = dst.join("build/lldAsLib_deps.txt");
     let deps = std::fs::read_to_string(deps_path).unwrap();
 
     for dep in deps.split(';') {
         println!("cargo:rustc-link-lib=static={}", dep);
     }
-
+    #[cfg(target_os = "linux")] 
+    println!("cargo:rustc-link-lib=dylib=stdc++");
+    #[cfg(target_os = "macos")]
     println!("cargo:rustc-link-lib=dylib=c++");
 }

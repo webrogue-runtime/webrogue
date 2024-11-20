@@ -18,9 +18,6 @@ wasmer-package = { workspace = true }
 webrogue-gfx = { workspace = true }
 webrogue-gfx-fallback = { workspace = true, optional = true }
 
-[target.x86_64-pc-windows-msvc]
-linker = "lld-link"
-
 # needed for cross-compiling
 [target.'cfg(target_env = "msvc")'.dependencies]
 blake3 = { version = "1", features = ["pure"] }
