@@ -1,9 +1,9 @@
 cd $(dirname $0)
 set -ex
 
-rm -rf ../aot_artifacts
-mkdir ../aot_artifacts
 
+OUT_DIR="../aot_artifacts/x86_64-windows-msvc"
+rm -rf "$OUT_DIR"
 cargo install xwin --locked
 
 XWIN_PATH="$(pwd)/xwin"
@@ -11,8 +11,7 @@ test -d "$XWIN_PATH" || xwin --accept-license splat --output "$XWIN_PATH"
 
 cargo xwin build --manifest-path=../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-pc-windows-msvc --profile release-lto --features=gfx-fallback-cc
 
-OUT_DIR="../aot_artifacts/x86_64-windows-msvc"
-mkdir "$OUT_DIR"
+mkdir -p "$OUT_DIR"
 cp target/x86_64-pc-windows-msvc/release-lto/webrogue_aot_lib.lib "$OUT_DIR"
 
 clang -target x86_64-pc-win32 -c main.c -o main.obj \
