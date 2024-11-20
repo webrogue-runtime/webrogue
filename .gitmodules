@@ -4,3 +4,6 @@
 [submodule "external/wasmer"]
 	path = external/wasmer
 	url = https://github.com/webrogue-runtime/wasmer.git
+[submodule "external/llvm"]
+	path = external/llvm
+	url = https://github.com/llvm/llvm-project.git
