@@ -13,3 +13,4 @@ wasmer-compiler-cranelift = { workspace = true }
 wasmer-types = { workspace = true }
 webc = { workspace = true }
 wasmer-package = { workspace = true }
+webrogue-aot-linker = { workspace = true }

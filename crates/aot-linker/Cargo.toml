@@ -1,0 +1,11 @@
+[package]
+name = "webrogue-aot-linker"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+# link-cplusplus = "1.0"
+
+[build-dependencies]
+cmake = { workspace = true }

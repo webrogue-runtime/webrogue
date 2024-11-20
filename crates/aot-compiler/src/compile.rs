@@ -15,7 +15,7 @@ fn target_triple_to_target(
     wasmer_types::Target::new(target_triple.clone(), features)
 }
 
-pub fn compile_webc_file(
+fn compile_webc_to_object(
     webc_file_path: std::path::PathBuf,
     object_file_path: std::path::PathBuf,
     triple_str: &str,
@@ -59,6 +59,24 @@ pub fn compile_webc_file(
     obj.write_stream(&mut writer)
         .map_err(|err| anyhow::anyhow!(err.to_string()))?;
     writer.flush()?;
+
+    Ok(())
+}
+
+pub fn compile_webc_file(
+    webc_file_path: std::path::PathBuf,
+    output_file_path: std::path::PathBuf,
+    triple_str: &str,
+) -> anyhow::Result<()> {
+    let object_file_path = output_file_path
+        .parent()
+        .ok_or(anyhow::anyhow!("Path error"))?
+        .join("aot.o");
+    compile_webc_to_object(webc_file_path, object_file_path.clone(), triple_str)?;
+
+    webrogue_aot_linker::link_linux(object_file_path.clone(), output_file_path);
+
+    std::fs::remove_file(object_file_path);
 
     Ok(())
 }
