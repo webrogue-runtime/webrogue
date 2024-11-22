@@ -88,3 +88,30 @@ pub fn link_windows(object_file_path: std::path::PathBuf, output_file_path: std:
 
     // TODO copy SDL2.dll, libGLESv2.dll & libEGL.dll
 }
+
+pub fn link_windows_mingw(
+    object_file_path: std::path::PathBuf,
+    output_file_path: std::path::PathBuf,
+) {
+    run_lld_adapter(
+        vec![
+            "ld.lld",
+            "-m",
+            "i386pep",
+            "-Bdynamic",
+            "-o",
+            output_file_path.clone().as_os_str().to_str().unwrap(),
+            "aot_artifacts/x86_64-windows-gnu/crt2.o",
+            "aot_artifacts/x86_64-windows-gnu/crtbegin.o",
+            "aot_artifacts/x86_64-windows-gnu/main.o",
+            "aot_artifacts/x86_64-windows-gnu/libwebrogue_aot_lib.a",
+            object_file_path.clone().as_os_str().to_str().unwrap(),
+            "aot_artifacts/x86_64-windows-gnu/crtend.o",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>(),
+    );
+
+    // TODO copy libGLESv2.dll & libEGL.dll
+}

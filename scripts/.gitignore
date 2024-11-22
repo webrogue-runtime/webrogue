@@ -7,3 +7,5 @@
 /.xwin-cache
 /*.dll
 /*.zip
+/llvm-mingw-*-ucrt-* 
+/mingw_sdl_build

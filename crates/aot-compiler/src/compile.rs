@@ -79,7 +79,8 @@ pub fn compile_webc_file(
 
     let triple = match target {
         "linux" => "x86_64-linux-gnu",
-        "windows" => "x86_64-windows-msvc",
+        "windows-msvc" => "x86_64-windows-msvc",
+        "windows-mingw" => "x86_64-windows-gnu",
         _ => anyhow::bail!("Unsupported compilation target: {}", target),
     };
 
@@ -87,7 +88,12 @@ pub fn compile_webc_file(
 
     match target {
         "linux" => webrogue_aot_linker::link_linux(object_file_path.clone(), output_file_path),
-        "windows" => webrogue_aot_linker::link_windows(object_file_path.clone(), output_file_path),
+        "windows-msvc" => {
+            webrogue_aot_linker::link_windows(object_file_path.clone(), output_file_path)
+        }
+        "windows-mingw" => {
+            webrogue_aot_linker::link_windows_mingw(object_file_path.clone(), output_file_path)
+        }
         _ => anyhow::bail!("Unsupported compilation target: {}", target),
     };
 
