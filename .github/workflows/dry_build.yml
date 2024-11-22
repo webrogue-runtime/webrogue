@@ -12,7 +12,6 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init external/wasmtime
         git submodule update --init external/wasmer
     
     - name: Setup
@@ -38,7 +37,6 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init external/wasmtime
         git submodule update --init external/wasmer
     
     - name: Setup
@@ -68,7 +66,6 @@ jobs:
     
     - name: Submodules
       run: |
-        git submodule update --init external/wasmtime
         git submodule update --init external/wasmer
         git submodule update --init --recursive --single-branch examples
 
@@ -98,7 +95,6 @@ jobs:
     
     - name: Submodules
       run: |
-        git submodule update --init --single-branch external/wasmtime
         git submodule update --init external/wasmer
         git submodule update --init --recursive --single-branch examples
     
