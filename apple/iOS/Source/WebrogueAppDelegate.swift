@@ -3,7 +3,7 @@ import WebrogueCommon
 @main
 public class WebrogueAppDelegate: SDLUIKitDelegate {
     static var shared: WebrogueAppDelegate!
-    static var wrappStorage = WrappStorage()
+    static var containerStorage = ContainerStorage()
     var webrogueWindow: UIWindow!
     var isWebrogueWindowVisible = true
 
@@ -46,7 +46,7 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
         open url: URL,
         options: [UIApplication.OpenURLOptionsKey : Any] = [:]
     ) -> Bool {
-        WebrogueAppDelegate.wrappStorage.store(url)
+        WebrogueAppDelegate.containerStorage.store(url)
         return true
     }
 }

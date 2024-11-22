@@ -1,13 +1,13 @@
 import SwiftUI
 import WebrogueCommon
 
-struct WrappRefView: View {
-    let ref: WrappRef
-    @StateObject private var viewModel = WrappRefViewModel()
+struct ContainerReferenceView: View {
+    let ref: ContainerReference
+    @StateObject private var viewModel = ContainerReferenceViewModel()
     @State var s = ""
 
 
-    init(for ref: WrappRef) {
+    init(for ref: ContainerReference) {
         self.ref = ref
     }
 

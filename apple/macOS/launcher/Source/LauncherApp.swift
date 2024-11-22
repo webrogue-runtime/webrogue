@@ -3,17 +3,17 @@ import WebrogueCommon
 
 @main
 struct LauncherApp: App {
-    static var wrappStorage = WrappStorage()
-    @ObservedObject var wrappStorage = Self.wrappStorage
+    static var containerStorage = ContainerStorage()
+    @ObservedObject var containerStorage = Self.containerStorage
 
     var documentGroup: some Scene {
-        let result = DocumentGroup(viewing: WrappDocument.self) { file in
+        let result = DocumentGroup(viewing: ContainerDocument.self) { file in
             if
                 let url = file.fileURL,
-                let metadata = WrappMetadata(url: url)
+                let metadata = ContainerMetadata(url: url)
             {
-                WrappRefView(
-                    for: WrappRef(
+                ContainerReferenceView(
+                    for: ContainerReference(
                         path: url.relativePath,
                         metadata: metadata
                     )
@@ -35,7 +35,7 @@ struct LauncherApp: App {
 
     var body: some Scene {
 //        WindowGroup {
-//            WrappListView()
+//            ContainerListView()
 //        }
         documentGroup
             .commands {

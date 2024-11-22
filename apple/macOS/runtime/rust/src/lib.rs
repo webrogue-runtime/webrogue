@@ -1,6 +1,8 @@
 fn main(wrapp_path: String) -> anyhow::Result<()> {
-    let handle = webrogue_runtime::wrapp::WrappHandle::from_file_path(std::path::PathBuf::from(wrapp_path))?;
-    webrogue_runtime::run(handle, None)?;
+    webrogue_runtime::run(
+        wasmer_package::utils::from_disk(std::path::PathBuf::from(wrapp_path))?,
+        None,
+    )?;
     Ok(())
 }
 

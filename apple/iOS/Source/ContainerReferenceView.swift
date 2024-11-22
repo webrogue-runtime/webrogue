@@ -1,15 +1,8 @@
-//
-//  WrappRefView.swift
-//  Launcher iOS
-//
-//  Created by Artem on 25.09.24.
-//
-
 import SwiftUI
 import WebrogueCommon
 
-struct WrappRefView: View {
-    let ref: WrappRef
+struct ContainerReferenceView: View {
+    let ref: ContainerReference
 
     var body: some View {
         VStack {

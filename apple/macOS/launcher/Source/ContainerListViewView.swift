@@ -1,10 +1,10 @@
 import SwiftUI
 import WebrogueCommon
 
-struct WrappListView: View {
+struct ContainerListView: View {
     @State var isFileImporterPresented = false
 
-    @ObservedObject var wrappStorage = LauncherApp.wrappStorage
+    @ObservedObject var containerStorage = LauncherApp.containerStorage
 
     var body: some View {
         VStack {
@@ -20,7 +20,7 @@ struct WrappListView: View {
         }
         .fileImporter(
             isPresented: $isFileImporterPresented,
-            allowedContentTypes: [.wrappType],
+            allowedContentTypes: [.webc],
             allowsMultipleSelection: false
         ) { result in
             switch result {
@@ -28,7 +28,7 @@ struct WrappListView: View {
                 for file in files {
                     let gotAccess = file.startAccessingSecurityScopedResource()
                     if !gotAccess { continue }
-                    wrappStorage.store(file)
+                    containerStorage.store(file)
                     file.stopAccessingSecurityScopedResource()
                 }
             case .failure(_):
@@ -40,5 +40,5 @@ struct WrappListView: View {
 }
 
 #Preview {
-    WrappListView()
+    ContainerListView()
 }

@@ -3,15 +3,15 @@ import WebrogueCommon
 import UniformTypeIdentifiers
 
 struct WebrogueView: View {
-    @ObservedObject var wrappStorage = WebrogueAppDelegate.wrappStorage
+    @ObservedObject var containerStorage = WebrogueAppDelegate.containerStorage
     @State var isFileImporterPresented = false
 
     var body: some View {
         NavigationView {
             Group {
-                List(wrappStorage.refs, id: \.metadata.sha256) { ref in
+                List(containerStorage.refs, id: \.metadata.sha256) { ref in
                     NavigationLink {
-                        WrappRefView(ref: ref)
+                        ContainerReferenceView(ref: ref)
                     } label: {
                         Text(ref.metadata.sha256)
                     }
@@ -27,7 +27,7 @@ struct WebrogueView: View {
                 }
                 .fileImporter(
                     isPresented: $isFileImporterPresented,
-                    allowedContentTypes: [.wrappType],
+                    allowedContentTypes: [.webc],
                     allowsMultipleSelection: false
                 ) { result in
                     switch result {
@@ -35,7 +35,7 @@ struct WebrogueView: View {
                         for file in files {
                             let gotAccess = file.startAccessingSecurityScopedResource()
                             if !gotAccess { continue }
-                            wrappStorage.store(file)
+                            containerStorage.store(file)
                             file.stopAccessingSecurityScopedResource()
                         }
                     case .failure(_):

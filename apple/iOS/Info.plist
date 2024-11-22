@@ -2,43 +2,39 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>UISupportsDocumentBrowser</key>
-	<true/>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>webrogue app file</string>
+			<string>WebContainer</string>
 			<key>LSHandlerRank</key>
-			<string>Owner</string>
+			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>io.github.webrogue-runtime.wrapp</string>
+				<string>io.github.webrogue-runtime.webc</string>
 			</array>
 		</dict>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<false/>
-	<key>UTExportedTypeDeclarations</key>
+	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>
-			<key>UTTypeIconFiles</key>
-			<array>
-				<string>Document.png</string>
-			</array>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>Webrogue app file</string>
+			<string>WebContainer</string>
+			<key>UTTypeIconFiles</key>
+			<array/>
 			<key>UTTypeIdentifier</key>
-			<string>io.github.webrogue-runtime.wrapp</string>
+			<string>io.github.webrogue-runtime.webc</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
 				<array>
-					<string>wrapp</string>
+					<string>webc</string>
 				</array>
 			</dict>
 		</dict>

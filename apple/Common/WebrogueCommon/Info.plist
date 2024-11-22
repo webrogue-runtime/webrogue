@@ -3,24 +3,6 @@
 <plist version="1.0">
 <dict>
 	<key>UTExportedTypeDeclarations</key>
-	<array>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>webrogue app file</string>
-			<key>UTTypeIdentifier</key>
-			<string>io.github.webrogue-runtime.wrapp</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>wrapp</string>
-				</array>
-			</dict>
-		</dict>
-	</array>
+	<array/>
 </dict>
 </plist>

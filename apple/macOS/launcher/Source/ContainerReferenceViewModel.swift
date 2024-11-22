@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-class WrappRefViewModel: ObservableObject {
+class ContainerReferenceViewModel: ObservableObject {
     @Published var decodedData = ""
     var terminate: (() -> Void)?
     @Published var isRunning = false

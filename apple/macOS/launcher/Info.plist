@@ -14,16 +14,16 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
-			<string>Owner</string>
+			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>io.github.webrogue-runtime.wrapp</string>
+				<string>io.github.webrogue-runtime.webc</string>
 			</array>
 			<key>NSDocumentClass</key>
 			<string>NSDocument</string>
 		</dict>
 	</array>
-	<key>UTExportedTypeDeclarations</key>
+	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>
 			<key>UTTypeConformsTo</key>
@@ -31,21 +31,21 @@
 				<string>public.data</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>webrogue app file</string>
+			<string>WebContainer</string>
 			<key>UTTypeIcons</key>
 			<dict>
 				<key>UTTypeIconBadgeName</key>
 				<string>DocumentIcon</string>
 				<key>UTTypeIconText</key>
-				<string>wrapp</string>
+				<string>webc</string>
 			</dict>
 			<key>UTTypeIdentifier</key>
-			<string>io.github.webrogue-runtime.wrapp</string>
+			<string>io.github.webrogue-runtime.webc</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
 				<array>
-					<string>wrapp</string>
+					<string>webc</string>
 				</array>
 			</dict>
 		</dict>
