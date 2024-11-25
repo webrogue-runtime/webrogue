@@ -11,5 +11,6 @@ crate-type = ["staticlib"]
 [dependencies]
 anyhow = { workspace = true }
 webrogue-runtime = { workspace = true, features = ["gl", "cranelift"] }
+wasmer-package = { workspace = true }
 wasmer-wasix = { workspace = true }
 tokio = { workspace = true }

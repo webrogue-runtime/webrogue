@@ -10,7 +10,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -37,14 +36,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.webrogue_runtime.ui.theme.WebrogueTheme
-import io.github.webrogue_runtime.wrapp.WrappFileManage
-import io.github.webrogue_runtime.wrapp.WrappRef
+import io.github.webrogue_runtime.container.ContainerFileManage
+import io.github.webrogue_runtime.container.ContainerReference
 import java.util.function.Consumer
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WrappCard(
-    ref: WrappRef,
+    ref: ContainerReference,
     delete: () -> Unit,
     launch: () -> Unit
 ) {
@@ -97,7 +96,7 @@ fun WrappCard(
 }
 
 class WebrogueLauncherActivity : ComponentActivity() {
-    private var wrappFileManage: WrappFileManage? = null
+    private var containerFileManage: ContainerFileManage? = null
     private var onNewIntentListeners: Set<Consumer<Unit>> = setOf()
 
     override fun onNewIntent(intent: Intent?) {
@@ -111,17 +110,17 @@ class WebrogueLauncherActivity : ComponentActivity() {
         if(intent != null && intent.action != Intent.ACTION_MAIN && intent.type != null) {
             val uri = intent.data ?: return
             val stream = contentResolver.openInputStream(uri) ?: return
-            wrappFileManage?.storeWrappFromStream(stream)
+            containerFileManage?.storeWrappFromStream(stream)
         }
     }
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
-        wrappFileManage = WrappFileManage(filesDir)
+        containerFileManage = ContainerFileManage(filesDir)
         super.onCreate(savedInstanceState)
         processIntent(intent)
         enableEdgeToEdge()
         setContent {
-            var refs: List<WrappRef> by remember { mutableStateOf(wrappFileManage!!.listMods()) }
+            var refs: List<ContainerReference> by remember { mutableStateOf(containerFileManage!!.listMods()) }
             WebrogueTheme {
                 Scaffold(
                     topBar = {
@@ -144,7 +143,7 @@ class WebrogueLauncherActivity : ComponentActivity() {
                                 ref = ref,
                                 delete = {
                                     ref.delete()
-                                    refs = wrappFileManage!!.listMods()
+                                    refs = containerFileManage!!.listMods()
                                 },
                                 launch = {
                                     val myIntent = Intent(
@@ -163,7 +162,7 @@ class WebrogueLauncherActivity : ComponentActivity() {
             }
             DisposableEffect(1) {
                 val listener = Consumer<Unit> {
-                    refs = wrappFileManage!!.listMods()
+                    refs = containerFileManage!!.listMods()
                 }
                 onNewIntentListeners += listener
                 onDispose { onNewIntentListeners -= listener }

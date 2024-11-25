@@ -38,7 +38,7 @@ public class WebrogueActivity extends SDLActivity {
         mLayout.addView(textView, layoutParams);
     }
     @Keep
-    public static String getWrappPath() {
+    public static String getContainerPath() {
         return sharedWebrogueActivity.wrappPath;
     }
 

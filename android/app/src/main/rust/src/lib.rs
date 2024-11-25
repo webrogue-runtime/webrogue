@@ -119,17 +119,17 @@ impl tokio::io::AsyncSeek for Stdout {
 }
 
 fn main() -> anyhow::Result<()> {
-    let wrapp_path = unsafe {
+    let container_path = unsafe {
         std::ffi::CStr::from_ptr(webrogue_android_path())
             .to_str()
             .unwrap()
             .to_owned()
     };
 
-    let handle =
-        webrogue_runtime::wrapp::WrappHandle::from_file_path(std::path::PathBuf::from(wrapp_path))?;
-
-    webrogue_runtime::run(handle, Some(Box::new(Stdout::new())))?;
+    webrogue_runtime::run(
+        wasmer_package::utils::from_disk(std::path::PathBuf::from(container_path))?,
+        Some(Box::new(Stdout::new())),
+    )?;
 
     Ok(())
 }
