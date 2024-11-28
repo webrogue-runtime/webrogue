@@ -1,18 +1,20 @@
 plugins {
+    alias(libs.plugins.rust.android)
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
 }
 
-apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
+// apply plugin: 'com.android.application'
+// apply plugin: 'com.jetbrains.kotlin.android'
 
 def cargoProfile = "release"
 
 android {
-    namespace 'io.github.webrogue_runtime'
+    namespace 'io.github.webrogue_runtime.launcher'
     compileSdk 34
 
     defaultConfig {
-        applicationId "io.github.webrogue_runtime"
+        applicationId "io.github.webrogue_runtime.launcher"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -70,19 +72,21 @@ android {
             task.dependsOn 'cargoBuild'
         }
     }
+
+    tasks.whenTaskAdded { task ->
+        if ((task.name == 'mergeDebugJniLibFolders' || task.name == 'mergeReleaseJniLibFolders')) {
+            task.dependsOn 'cargoBuild'
+        }
+    }
     cargo {
         pythonCommand = "python3"
         profile = cargoProfile
-        module  = "src/main/rust"
+        module  = "../common/src/main/rust"
         libname = "webrogue_android"
         // targets = ["arm", "x86", "arm64", "x86_64"]
         targets = ["arm64"]
         exec { spec, toolchain ->
-//            if (toolchain.target == "armv7-linux-androideabi"
-//                            || toolchain.target == "i686-linux-android") {
-            spec.environment("V8_FROM_SOURCE", "1")
-            spec.environment("CARGO_TARGET_DIR", "target")
-//            }
+            spec.environment("CARGO_TARGET_DIR", "../../../../launcher/src/main/rust_target")
         }
     }
     externalNativeBuild {
@@ -94,8 +98,8 @@ android {
     defaultConfig {
         externalNativeBuild {
             cmake {
-                abiFilters 'arm64-v8a'
                 // abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+                abiFilters 'arm64-v8a'
             }
         }
     }
@@ -117,6 +121,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":common"))
+
     implementation libs.androidx.core.ktx
     implementation libs.androidx.lifecycle.runtime.ktx
     implementation libs.androidx.activity.compose
@@ -133,3 +139,15 @@ dependencies {
     debugImplementation libs.androidx.ui.tooling
     debugImplementation libs.androidx.ui.test.manifest
 }
+
+// afterEvaluate {
+//     // The `cargoBuild` task isn't available until after evaluation.
+//     android.applicationVariants.all { variant ->
+//         def productFlavor = ""
+//         variant.productFlavors.each {
+//             productFlavor += "${it.name.capitalize()}"
+//         }
+//         def buildType = "${variant.buildType.name.capitalize()}"
+//         tasks["generate${productFlavor}${buildType}Assets"].dependsOn(tasks["cargoBuild"])
+//     }
+// }

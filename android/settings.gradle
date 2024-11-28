@@ -20,4 +20,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "webrogue"
-include ':app'
+include ':launcher'
+include ':common'

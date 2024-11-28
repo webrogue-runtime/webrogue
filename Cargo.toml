@@ -44,7 +44,7 @@ members = [
   "crates/wrapp",
   "crates/wrapp-cli",
 
-  "android/app/src/main/rust",
+  "android/common/src/main/rust",
 
   # "web/crates/backend-web",
   # "web/crates/backend-web-macro",

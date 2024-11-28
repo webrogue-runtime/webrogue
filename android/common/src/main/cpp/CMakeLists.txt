@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
-project("webrogue")
+
+project("webrogue_common")
 
 set(WEBROGUE_SDL_VERSION "2.30.6")
 set(WEBROGUE_SDL_HASH "5aef5ee599a1bbfad081f6f05755059f77d8a13248e7eb3d0c556b117c45249e")
@@ -52,11 +53,18 @@ target_link_libraries(
 
     android
     log
-    ${CMAKE_CURRENT_LIST_DIR}/../rust/target/${CARGO_TARGET}/${CARGO_PROFILE}/libwebrogue_android.a
+    ${RUST_TARGET_DIR}/${CARGO_TARGET}/${CARGO_PROFILE}/libwebrogue_android.a
     SDL2
     # SDL2_ttf
 )
 
+# message(FATAL_ERROR "${WEBROGUE_SDL_DIR}/android-project/app/src/main/java/org/libsdl/app/" 
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../java/org/libsdl/app")
+    
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E make_directory 
+    "${CMAKE_CURRENT_SOURCE_DIR}/../java/org/libsdl"
+)
 execute_process(
     COMMAND ${CMAKE_COMMAND} -E copy_directory 
     "${WEBROGUE_SDL_DIR}/android-project/app/src/main/java/org/libsdl/app/" 

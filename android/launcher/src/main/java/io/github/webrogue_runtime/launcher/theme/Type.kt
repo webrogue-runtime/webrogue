@@ -1,4 +1,4 @@
-package io.github.webrogue_runtime.ui.theme
+package io.github.webrogue_runtime.launcher.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

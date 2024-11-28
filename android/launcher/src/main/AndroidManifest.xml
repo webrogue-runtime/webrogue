@@ -59,7 +59,7 @@
                 <data android:scheme="content"/>
                 <data android:scheme="file"/>
                 <data android:mimeType="application/octet-stream"/>
-                <data android:pathPattern="*.wrmod"/>
+                <data android:pathPattern="*.webc"/>
 <!--                <data android:pathSuffix =".wrmod"/>-->
             </intent-filter>
 
@@ -73,7 +73,7 @@
         -->
         <!--            -->
         <activity
-            android:name=".WebrogueActivity"
+            android:name="io.github.webrogue_runtime.common.WebrogueActivity"
             android:alwaysRetainTaskState="true"
             android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
             android:exported="false"

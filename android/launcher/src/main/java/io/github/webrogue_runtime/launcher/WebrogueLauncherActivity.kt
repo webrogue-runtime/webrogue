@@ -1,4 +1,4 @@
-package io.github.webrogue_runtime
+package io.github.webrogue_runtime.launcher
 
 import android.content.Intent
 import android.os.Bundle
@@ -35,9 +35,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.webrogue_runtime.ui.theme.WebrogueTheme
-import io.github.webrogue_runtime.container.ContainerFileManage
-import io.github.webrogue_runtime.container.ContainerReference
+import io.github.webrogue_runtime.launcher.theme.WebrogueTheme
+import io.github.webrogue_runtime.common.container.ContainerFileManage
+import io.github.webrogue_runtime.common.container.ContainerReference
+import io.github.webrogue_runtime.common.WebrogueActivity
 import java.util.function.Consumer
 
 @OptIn(ExperimentalFoundationApi::class)

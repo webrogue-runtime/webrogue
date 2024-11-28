@@ -1,4 +1,4 @@
-package io.github.webrogue_runtime.ui.theme
+package io.github.webrogue_runtime.launcher.theme
 
 import android.app.Activity
 import android.os.Build

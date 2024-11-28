@@ -1,4 +1,4 @@
-package io.github.webrogue_runtime;
+package io.github.webrogue_runtime.common;
 
 import android.graphics.Color;
 import android.os.Bundle;
