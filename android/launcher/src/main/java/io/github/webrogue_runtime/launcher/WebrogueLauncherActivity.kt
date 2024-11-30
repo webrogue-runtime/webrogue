@@ -36,8 +36,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.webrogue_runtime.launcher.theme.WebrogueTheme
-import io.github.webrogue_runtime.common.container.ContainerFileManage
-import io.github.webrogue_runtime.common.container.ContainerReference
+import io.github.webrogue_runtime.launcher.container.ContainerFileManage
+import io.github.webrogue_runtime.launcher.container.ContainerReference
 import io.github.webrogue_runtime.common.WebrogueActivity
 import java.util.function.Consumer
 

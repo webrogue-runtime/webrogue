@@ -4,13 +4,17 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+launcher = ["webrogue-runtime/cranelift"]
+runner = ["webrogue-runtime/aot"]
+
 [lib]
 name = "webrogue_android"
 crate-type = ["staticlib"]
 
 [dependencies]
 anyhow = { workspace = true }
-webrogue-runtime = { workspace = true, features = ["gl", "cranelift"] }
+webrogue-runtime = { workspace = true, features = ["gl"] }
 wasmer-package = { workspace = true }
 wasmer-wasix = { workspace = true }
 tokio = { workspace = true }

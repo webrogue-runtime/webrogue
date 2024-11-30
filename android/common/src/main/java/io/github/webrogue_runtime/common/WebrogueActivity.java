@@ -17,12 +17,10 @@ import java.nio.charset.StandardCharsets;
 public class WebrogueActivity extends SDLActivity {
     private TextView textView;
     private String consoleText = "";
-    private static WebrogueActivity sharedWebrogueActivity;
     private String wrappPath = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        sharedWebrogueActivity = this;
         wrappPath = getIntent().getStringExtra("wrapp_path");
         super.onCreate(savedInstanceState);
         setWindowStyle(true);
@@ -38,15 +36,15 @@ public class WebrogueActivity extends SDLActivity {
         mLayout.addView(textView, layoutParams);
     }
     @Keep
-    public static String getContainerPath() {
-        return sharedWebrogueActivity.wrappPath;
+    public String getContainerPath() {
+        return wrappPath;
     }
 
     @Keep
-    public static void printBytes(byte[] bytes) {
-        sharedWebrogueActivity.runOnUiThread(() -> {
-            sharedWebrogueActivity.consoleText += new String(bytes, StandardCharsets.UTF_8);
-            sharedWebrogueActivity.textView.setText(sharedWebrogueActivity.consoleText);
+    public void printBytes(byte[] bytes) {
+        runOnUiThread(() -> {
+            consoleText += new String(bytes, StandardCharsets.UTF_8);
+            textView.setText(consoleText);
         });
     }
     @Override
@@ -59,9 +57,13 @@ public class WebrogueActivity extends SDLActivity {
         super.onDestroy();
     }
 
+    public boolean exitOnBack() {
+        return true;
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if(event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+        if(event.getKeyCode() == KeyEvent.KEYCODE_BACK && exitOnBack()) {
 //            Process.killProcess(Process.myPid());
             this.finishAndRemoveTask();
             return true;

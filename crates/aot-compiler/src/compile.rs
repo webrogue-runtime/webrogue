@@ -15,7 +15,7 @@ fn target_triple_to_target(
     wasmer_types::Target::new(target_triple.clone(), features)
 }
 
-fn compile_webc_to_object(
+pub fn compile_webc_to_object(
     webc_file_path: std::path::PathBuf,
     object_file_path: std::path::PathBuf,
     triple_str: &str,

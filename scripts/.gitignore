@@ -9,3 +9,7 @@
 /*.zip
 /llvm-mingw-*-ucrt-* 
 /mingw_sdl_build
+/android_sdk
+/cmdline-tools
+/android_build
+/*.jks
