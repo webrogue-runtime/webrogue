@@ -42,9 +42,10 @@ enum Commands {
 #[derive(Subcommand, Debug)]
 enum AndroidCommands {
     /// Make Gradle Android project
-    Gradle {
-        /// Path to Android SDK
-        sdk_path: std::path::PathBuf,
+    Project {
+        /// Path to Android SDK. If not specified, ANDROID_HOME environment variable is used
+        #[arg(short, long, value_name = "PATH")]
+        sdk: Option<std::path::PathBuf>,
         /// Path to WebC
         webc_path: std::path::PathBuf,
         /// Path where resulting project will be placed
@@ -79,12 +80,21 @@ fn main() -> anyhow::Result<()> {
             linux::build_linux(webc_path, out_path)?;
         }
         Commands::Android { commands } => match commands {
-            AndroidCommands::Gradle {
-                sdk_path,
+            AndroidCommands::Project {
+                sdk,
                 webc_path,
                 build_dir,
             } => {
-                android_gradle::build_android_gradle(sdk_path, webc_path, build_dir)?;
+                let sdk = sdk
+                    .or_else(|| {
+                        std::env::var("ANDROID_HOME")
+                            .and_then(|e| Ok(std::path::PathBuf::from(e)))
+                            .ok()
+                    })
+                    .ok_or(anyhow::anyhow!(
+                        "sdk_path argument or ANDROID_HOME environment variable must be provided"
+                    ))?;
+                android_gradle::build_android_gradle(sdk, webc_path, build_dir)?;
             }
         },
         Commands::Windows { commands } => match commands {
