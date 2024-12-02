@@ -63,42 +63,42 @@ pub fn compile_webc_to_object(
     Ok(())
 }
 
-pub fn compile_webc_file(
-    webc_file_path: std::path::PathBuf,
-    output_file_path: std::path::PathBuf,
-    target: &str,
-) -> anyhow::Result<()> {
-    let object_file_path = output_file_path
-        .parent()
-        .ok_or(anyhow::anyhow!("Path error"))?
-        .join("aot.o");
-    let copied_webc_path = output_file_path
-        .parent()
-        .ok_or(anyhow::anyhow!("Path error"))?
-        .join("aot.webc");
+// pub fn compile_webc_file(
+//     webc_file_path: std::path::PathBuf,
+//     output_file_path: std::path::PathBuf,
+//     target: &str,
+// ) -> anyhow::Result<()> {
+//     let object_file_path = output_file_path
+//         .parent()
+//         .ok_or(anyhow::anyhow!("Path error"))?
+//         .join("aot.o");
+//     let copied_webc_path = output_file_path
+//         .parent()
+//         .ok_or(anyhow::anyhow!("Path error"))?
+//         .join("aot.webc");
 
-    let triple = match target {
-        "linux" => "x86_64-linux-gnu",
-        "windows-msvc" => "x86_64-windows-msvc",
-        "windows-mingw" => "x86_64-windows-gnu",
-        _ => anyhow::bail!("Unsupported compilation target: {}", target),
-    };
+//     let triple = match target {
+//         "linux" => "x86_64-linux-gnu",
+//         "windows-msvc" => "x86_64-windows-msvc",
+//         "windows-mingw" => "x86_64-windows-gnu",
+//         _ => anyhow::bail!("Unsupported compilation target: {}", target),
+//     };
 
-    compile_webc_to_object(webc_file_path.clone(), object_file_path.clone(), triple)?;
+//     compile_webc_to_object(webc_file_path.clone(), object_file_path.clone(), triple)?;
 
-    match target {
-        "linux" => webrogue_aot_linker::link_linux(object_file_path.clone(), output_file_path),
-        "windows-msvc" => {
-            webrogue_aot_linker::link_windows(object_file_path.clone(), output_file_path)
-        }
-        "windows-mingw" => {
-            webrogue_aot_linker::link_windows_mingw(object_file_path.clone(), output_file_path)
-        }
-        _ => anyhow::bail!("Unsupported compilation target: {}", target),
-    };
+//     match target {
+//         "linux" => webrogue_aot_linker::link_linux(object_file_path.clone(), output_file_path),
+//         "windows-msvc" => {
+//             webrogue_aot_linker::link_windows(object_file_path.clone(), output_file_path)
+//         }
+//         "windows-mingw" => {
+//             webrogue_aot_linker::link_windows_mingw(object_file_path.clone(), output_file_path)
+//         }
+//         _ => anyhow::bail!("Unsupported compilation target: {}", target),
+//     };
 
-    let _ = std::fs::remove_file(object_file_path.clone());
-    std::fs::copy(webc_file_path, copied_webc_path)?;
+//     let _ = std::fs::remove_file(object_file_path.clone());
+//     std::fs::copy(webc_file_path, copied_webc_path)?;
 
-    Ok(())
-}
+//     Ok(())
+// }

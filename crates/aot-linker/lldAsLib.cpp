@@ -14,7 +14,6 @@ using namespace llvm::sys;
 
 namespace lld {
 
-
 // Bypass the crash recovery handler, which is only meant to be used in
 // LLD-as-lib scenarios.
 int unsafeLldMain(llvm::ArrayRef<const char *> args,
@@ -29,8 +28,9 @@ LLD_HAS_DRIVER(mingw)
 LLD_HAS_DRIVER(macho)
 LLD_HAS_DRIVER(wasm)
 
-extern "C" void webrogue_lld_adapter(int argc, char **argv) {
+extern "C" int webrogue_lld_adapter(int argc, char **argv) {
   ArrayRef<const char *> args(argv, argv + argc);
 
-  lld::unsafeLldMain(args, llvm::outs(), llvm::errs(), LLD_ALL_DRIVERS, false);
+  return lld::unsafeLldMain(args, llvm::outs(), llvm::errs(), LLD_ALL_DRIVERS,
+                            false);
 }

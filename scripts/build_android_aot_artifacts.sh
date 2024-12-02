@@ -1,3 +1,4 @@
+cd $(dirname $0)
 set -ex
 
 CMDLINE_TOOLS_VERSION=linux-11076708_latest

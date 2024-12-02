@@ -24,7 +24,7 @@ fn main() {
     for dep in deps.split(';') {
         println!("cargo:rustc-link-lib=static={}", dep);
     }
-    #[cfg(target_os = "linux")] 
+    #[cfg(target_os = "linux")]
     println!("cargo:rustc-link-lib=dylib=stdc++");
     #[cfg(target_os = "macos")]
     println!("cargo:rustc-link-lib=dylib=c++");
