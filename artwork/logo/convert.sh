@@ -66,16 +66,16 @@ stroke_width() {
 
 # For Android
 android_old() {
-    ofsize 40 | stroke_width 2 | to_png_white $1 ../../android/app/src/main/res/mipmap-$2/ic_launcher.png
+    ofsize 40 | stroke_width 2 | to_png_white $1 ../../android/launcher/src/main/res/mipmap-$2/ic_launcher.png
 }
 android_old 48 mdpi
 android_old 72 hdpi
 android_old 96 xhdpi
 android_old 144 xxhdpi
 android_old 192 xxxhdpi
-ofsize 62 | to_png_transparent 512 ../../android/app/src/main/res/drawable/ic_launcher_foreground.png
-ofsize 62 | parse_colors | outer_fill_color 00000000 | default_colors | to_png_transparent 512 ../../android/app/src/main/res/drawable/ic_launcher_monochrome.png
-rpngconvert -size 512x512 xc:white ../../android/app/src/main/res/drawable/ic_launcher_background.png
+ofsize 62 | to_png_transparent 512 ../../android/launcher/src/main/res/drawable/ic_launcher_foreground.png
+ofsize 62 | parse_colors | outer_fill_color 00000000 | default_colors | to_png_transparent 512 ../../android/launcher/src/main/res/drawable/ic_launcher_monochrome.png
+rpngconvert -size 512x512 xc:white ../../android/launcher/src/main/res/drawable/ic_launcher_background.png
 # # For Linux
 # ofsize 64 | to_png_transparent 256 ../../platforms/Linux/TemplateAppDir/.DirIcon
 # ofsize 64 | to_svg ../../platforms/Linux/TemplateAppDir/webrogue.svg
@@ -118,17 +118,17 @@ macos_document_ico() {
     MACOS_ICO_DIR=../../apple/macOS/launcher/Assets/Assets.xcassets/DocumentIcon.iconset
     ofsize 51 | stroke_width $STROKE_WIDTH | to_png_transparent $SIZE $MACOS_ICO_DIR/$FILENAME.png
 }
-for flawor in macos_ico macos_document_ico; do
-    $flawor 16      3   icon_16x16
-    $flawor 32      3   icon_16x16@2x
-    $flawor 32      2   icon_32x32
-    $flawor 64      2   icon_32x32@2x
-    $flawor 128     1.5 icon_128x128
-    $flawor 256     1.5 icon_128x128@2x
-    $flawor 256     1.5 icon_256x256
-    $flawor 512     1.5 icon_256x256@2x
-    $flawor 512     1.5 icon_512x512
-    $flawor 1024    1.5 icon_512x512@2x
+for flavor in macos_ico macos_document_ico; do
+    $flavor 16      3   icon_16x16
+    $flavor 32      3   icon_16x16@2x
+    $flavor 32      2   icon_32x32
+    $flavor 64      2   icon_32x32@2x
+    $flavor 128     1.5 icon_128x128
+    $flavor 256     1.5 icon_128x128@2x
+    $flavor 256     1.5 icon_256x256
+    $flavor 512     1.5 icon_256x256@2x
+    $flavor 512     1.5 icon_512x512
+    $flavor 1024    1.5 icon_512x512@2x
 done
 # For iOS
 ofsize 40 | to_png_white 1024 ../../apple/iOS/Assets/Assets.xcassets/AppIcon.appiconset/ios1024.png

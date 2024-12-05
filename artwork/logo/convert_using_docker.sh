@@ -2,7 +2,7 @@ set -ex
 
 cd $(dirname $0)
 
-image_name=webrogue_ogo_converter
+image_name=webrogue_logo_converter
 docker build -t $image_name -f convert.Dockerfile .
 echo $(dirname $(dirname $(pwd)))
 docker run \
