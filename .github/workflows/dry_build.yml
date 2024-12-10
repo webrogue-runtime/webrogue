@@ -58,35 +58,6 @@ jobs:
         XC_BUILD_DIR=$(echo $XC_BUILD_DIR | sed "s/iphoneos/iphonesimulator/")
         du -h -d 0 $XC_BUILD_DIR/webrogue.app
 
-  web:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Submodules
-      run: |
-        git submodule update --init external/wasmer
-        git submodule update --init --recursive --single-branch examples
-
-    - name: Setup
-      run: |
-        rustup toolchain install nightly
-        rustup component add rust-src --toolchain nightly
-        git clone https://github.com/emscripten-core/emsdk.git
-        ./emsdk/emsdk install latest
-        ./emsdk/emsdk activate latest
-
-    - name: Build Wrapps
-      run: |
-        make -C examples
-
-    - name: Build
-      run: |
-        . ./emsdk/emsdk_env.sh
-        sh web/build.sh
-        du -h web/root/webrogue.wasm web/root/webrogue.js
-
   android:
     runs-on: ubuntu-latest
 
@@ -116,6 +87,6 @@ jobs:
     - name: Build
       run: |
         cd android
-        ./gradlew --no-daemon assembleRelease
+        ./gradlew --no-daemon :launcher:assembleRelease
         cd ..
         du -h android/app/build/outputs/apk/release/app-release-unsigned.apk
