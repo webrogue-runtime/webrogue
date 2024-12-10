@@ -80,10 +80,6 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Build Wrapps
-      run: |
-        make -C examples
-
     - name: Build
       run: |
         cd android
