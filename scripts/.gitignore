@@ -12,4 +12,5 @@
 /android_sdk
 /cmdline-tools
 /android_build*
+/apple_build*
 /*.jks

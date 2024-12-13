@@ -1,0 +1,5 @@
+/webrogue.xcodeproj
+/bin
+/aot
+/scripts/lipo_object_combiner.sh
+/macos/runner.entitlements

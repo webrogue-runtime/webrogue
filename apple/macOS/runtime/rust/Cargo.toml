@@ -4,11 +4,18 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+runtime = ["webrogue-runtime/cranelift"]
+runner = ["webrogue-runtime/aot"]
+
 [lib]
 name = "webrogue_macos"
 crate-type = ["staticlib"]
 
 [dependencies]
 anyhow = { workspace = true }
-webrogue-runtime = { workspace = true, features = ["gl", "cranelift"] }
+webrogue-runtime = { workspace = true, features = ["gl"] }
 wasmer-package = { workspace = true }
+
+[build-dependencies]
+cc = { workspace = true }

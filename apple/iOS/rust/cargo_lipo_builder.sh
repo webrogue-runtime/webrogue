@@ -17,7 +17,7 @@ case "$CARGO_CONFIG" in
         CARGO_CONFIG_NAME="debug"
         ;;
     Release)
-        FLAGS_CONFIG="--release"
+        FLAGS_CONFIG="--profile=release-lto"
         CARGO_CONFIG_NAME="release"
         ;;
     *)
@@ -71,5 +71,5 @@ for DEST_ARCH in $ARCHS; do
     LIPO_PATHS[$LIPO_PATHS_I]="$BUILT_PRODUCTS_DIR/rust_target/$CARGO_TARGET/$CARGO_CONFIG_NAME/libwebrogue_ios.a"
     LIPO_PATHS_I=$(expr $LIPO_PATHS_I '+' 1)
 done
-mkdir -p "$BUILD_DIR/rust_artifacts/$CONFIGURATION/$PLATFORM_NAME"
-lipo -create "${LIPO_PATHS[@]}" -output "$BUILD_DIR/rust_artifacts/$CONFIGURATION/$PLATFORM_NAME/libwebrogue_ios.a"
+mkdir -p "$BUILD_DIR/rust_artifacts/runtime_ios/$CONFIGURATION/$PLATFORM_NAME"
+lipo -create "${LIPO_PATHS[@]}" -output "$BUILD_DIR/rust_artifacts/runtime_ios/$CONFIGURATION/$PLATFORM_NAME/libwebrogue_ios.a"

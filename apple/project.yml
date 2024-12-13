@@ -78,7 +78,6 @@ targets:
     - path: macOS/runtime
       excludes:
       - "**/rust"
-    - ../crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: macOS/runtime/runtime.entitlements
@@ -89,7 +88,7 @@ targets:
         HEADER_SEARCH_PATHS: "$(SRCROOT)/external/SDL2/include"
         ENABLE_HARDENED_RUNTIME: true
     dependencies:
-    - target: Cargo_macOS
+    - target: Cargo_macos_runtime
     - target: SDL/Static Library
     - sdk: Quartz.framework
     - sdk: Metal.framework
@@ -118,10 +117,10 @@ targets:
         PRODUCT_NAME: webrogue
         SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/iOS/Source/webrogue-Bridging-Header.h"
         OTHER_LDFLAGS: "-lwebrogue_ios"
-        LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        HEADER_SEARCH_PATHS: 
+        LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/runtime_ios/$(CONFIGURATION)/$(PLATFORM_NAME)"
+        HEADER_SEARCH_PATHS:
         - "$(SRCROOT)/external/SDL2/include"
-        SYSTEM_HEADER_SEARCH_PATHS: 
+        SYSTEM_HEADER_SEARCH_PATHS:
         - "$(SRCROOT)/external/angle_ios_headers"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
@@ -166,30 +165,114 @@ targets:
       arguments: iOS/rust/cargo_lipo_builder.sh
       workingDirectory: $(SRCROOT)/
       passSettings: true
-  Cargo_macOS:
+  Cargo_macos_runtime:
     platform: macOS
     legacy:
       toolPath: /bin/sh
-      arguments: macOS/runtime/rust/cargo_lipo_builder.sh
+      arguments: macOS/runtime/rust/cargo_lipo_builder.sh runtime
       workingDirectory: $(SRCROOT)/
       passSettings: true
+  Cargo_macos_runner:
+    platform: macOS
+    legacy:
+      toolPath: /bin/sh
+      arguments: macOS/runtime/rust/cargo_lipo_builder.sh runner
+      workingDirectory: $(SRCROOT)/
+      passSettings: true
+  Runner:
+    type: application
+    platform: macOS
+    sources:
+    - path: macOS/runner
+      excludes:
+      - "**/rust"
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: macOS/runner/runner.entitlements
+        INFOPLIST_FILE: macOS/runner/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueLauncher.Runner
+        PRODUCT_NAME: webrogue_runner
+        OTHER_LDFLAGS:
+        - "-lwebrogue_macos"
+        - "$(BUILD_DIR)/rust_artifacts/runner/$(CONFIGURATION)/$(PLATFORM_NAME)/aot_lipo.o"
+        LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/runner/$(CONFIGURATION)/$(PLATFORM_NAME)"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/external/SDL2/include"
+        ENABLE_HARDENED_RUNTIME: true
+    dependencies:
+    - target: Cargo_macos_runner
+    - target: SDL/Static Library
+    - sdk: Quartz.framework
+    - sdk: Metal.framework
+    - sdk: IOKit.framework
+    - sdk: GameController.framework
+    - sdk: ForceFeedback.framework
+    - sdk: CoreVideo.framework
+    - sdk: CoreHaptics.framework
+    - sdk: CoreFoundation.framework
+    - sdk: CoreAudio.framework
+    - sdk: Cocoa.framework
+    - sdk: Carbon.framework
+    - sdk: AudioToolbox.framework
+    - bundle: libEGL.dylib
+      embed: true
+      codeSign: true
+    - bundle: libGLESv2.dylib
+      embed: true
+      codeSign: true
+    preBuildScripts:
+      - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/macOS/runner ${BUILD_DIR}/rust_artifacts/runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o"
+        name: Combine object to lipo
+        inputFiles:
+          - ${SRCROOT}/macOS/runner/aot_x86_64.o
+          - ${SRCROOT}/macOS/runner/aot_arm64.o
+          - ${SRCROOT}/scripts/lipo_object_combiner.sh
+        outputFiles:
+          - ${BUILD_DIR}/rust_artifacts/runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o
+          - ${BUILD_DIR}/rust_artifacts/runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o.lipo
+      - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/download_angle_bin.sh"
+        name: Download ANGLE
+        inputFiles:
+          - ${SRCROOT}/scripts/download_angle_bin.sh
+        outputFiles:
+          - ${BUILT_PRODUCTS_DIR}/macos_fat.zip
+          - ${BUILT_PRODUCTS_DIR}/libEGL.dylib
+          - ${BUILT_PRODUCTS_DIR}/libGLESv2.dylib
 schemes:
-  MacOS_Debug:
+  MacOS_Launcher_Debug:
     build:
       targets:
         Launcher: Debug
     run:
       config: Debug
-  MacOS_Release:
+  MacOS_Launcher_Release:
     build:
       targets:
         Launcher: Release
     run:
       config: Release
-  MacOS_ReleaseLocal:
+  MacOS_Launcher_ReleaseLocal:
     build:
       targets:
         Launcher: ReleaseLocal
+        SDL/Static Library: Release
+    run:
+      config: ReleaseLocal
+  MacOS_Runner_Debug:
+    build:
+      targets:
+        Runner: Debug
+    run:
+      config: Debug
+  MacOS_Runner_Release:
+    build:
+      targets:
+        Runner: Release
+    run:
+      config: Release
+  MacOS_Runner_ReleaseLocal:
+    build:
+      targets:
+        Runner: ReleaseLocal
     run:
       config: ReleaseLocal
   iOS_Debug:

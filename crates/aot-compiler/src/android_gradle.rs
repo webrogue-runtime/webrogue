@@ -1,35 +1,3 @@
-fn copy_dir(
-    source: &std::path::PathBuf,
-    dest: &std::path::PathBuf,
-    parts: &mut Vec<String>,
-) -> anyhow::Result<()> {
-    let mut source_path = source.clone();
-    let mut dest_path = dest.clone();
-    for part in parts.clone() {
-        source_path.push(part.clone());
-        dest_path.push(part.clone());
-    }
-    if !std::fs::exists(dest_path.clone())? {
-        std::fs::create_dir(dest_path.clone())?;
-    }
-    for dir_entry in std::fs::read_dir(source_path.clone())? {
-        let dir_entry = dir_entry?;
-        let file_type = dir_entry.file_type()?;
-        let name = dir_entry.file_name();
-        if file_type.is_dir() {
-            parts.push(name.clone().into_string().unwrap());
-            copy_dir(source, dest, parts)?;
-            parts.pop().unwrap();
-        } else if file_type.is_file() {
-            if !std::fs::exists(dest_path.join(name.clone()))? {
-                std::fs::copy(source_path.join(name.clone()), dest_path.join(name.clone()))?;
-            }
-        }
-    }
-
-    return anyhow::Ok(());
-}
-
 pub fn build_android_gradle(
     android_sdk_dir: std::path::PathBuf,
     container_path: std::path::PathBuf,
@@ -56,8 +24,7 @@ pub fn build_android_gradle(
     // if std::fs::exists(build_dir.clone())? {
     //     std::fs::remove_dir_all(build_dir.clone())?;
     // };
-    let mut path_parts = vec![];
-    copy_dir(&template_dir, &build_dir, &mut path_parts)?;
+    crate::utils::copy_dir(&template_dir, &build_dir)?;
     crate::compile::compile_webc_to_object(
         container_path.clone(),
         object_path.clone(),

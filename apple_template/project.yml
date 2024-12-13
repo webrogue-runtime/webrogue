@@ -1,0 +1,115 @@
+name: webrogue
+configs:
+  Debug: debug
+  Release: release
+  ReleaseLocal: release
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: 12.0
+    IPHONEOS_DEPLOYMENT_TARGET: 14.0
+    GENERATE_INFOPLIST_FILE: true
+    MARKETING_VERSION: 0.1
+    CURRENT_PROJECT_VERSION: 1
+    DEAD_CODE_STRIPPING: true
+    ENABLE_USER_SCRIPT_SANDBOXING: true
+    ENABLE_MODULE_VERIFIER: true
+    MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS: "gnu11 gnu++14"
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: false
+  configs:
+    Debug:
+      CODE_SIGN_IDENTITY: "-"
+      CARGO_CONFIG: Debug
+      CODE_SIGN_STYLE: Manual
+    Release:
+      CODE_SIGN_IDENTITY: "Apple Development"
+      CARGO_CONFIG: Release
+      CODE_SIGN_STYLE: Automatic
+      DEVELOPMENT_TEAM: LC5F8UX2W7
+    ReleaseLocal:
+      CODE_SIGN_IDENTITY: "-"
+      CARGO_CONFIG: Release
+      CODE_SIGN_STYLE: Manual
+options:
+  createIntermediateGroups: true
+targets:
+  MacOSRunner:
+    type: application
+    platform: macOS
+    sources:
+    - macos/main.m
+    - aot/aot.webc
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: macos/runner.entitlements
+        # INFOPLIST_FILE: macos/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueRunner
+        PRODUCT_NAME: webrogue Runner
+        ENABLE_HARDENED_RUNTIME: true
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        OTHER_LDFLAGS:
+          - "-lwebrogue_macos"
+          - "-lSDL2"
+          - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
+        LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
+    dependencies:
+    - bundle: libEGL.dylib
+      embed: true
+      codeSign: true
+    - bundle: libGLESv2.dylib
+      embed: true
+      codeSign: true
+      dependencies:
+    - sdk: Quartz.framework
+    - sdk: Metal.framework
+    - sdk: IOKit.framework
+    - sdk: GameController.framework
+    - sdk: ForceFeedback.framework
+    - sdk: CoreVideo.framework
+    - sdk: CoreHaptics.framework
+    - sdk: CoreFoundation.framework
+    - sdk: CoreAudio.framework
+    - sdk: Cocoa.framework
+    - sdk: Carbon.framework
+    - sdk: AudioToolbox.framework
+    preBuildScripts:
+      - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/copy_bin.sh"
+        name: Copy ANGLE
+        inputFiles:
+          - ${SRCROOT}/scripts/copy_bin.sh
+          - ${SRCROOT}/bin/libEGL.macosx.dylib
+          - ${SRCROOT}/bin/libGLESv2.macosx.dylib
+          - ${SRCROOT}/bin/libwebrogue_macos.macosx.a
+          - ${SRCROOT}/bin/libSDL2.macosx.a
+        outputFiles:
+          - ${BUILT_PRODUCTS_DIR}/libEGL.dylib
+          - ${BUILT_PRODUCTS_DIR}/libGLESv2.dylib
+          - ${BUILT_PRODUCTS_DIR}/libSDL2.a
+          - ${BUILT_PRODUCTS_DIR}/libwebrogue_macos.a
+      - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
+        name: Combine object to lipo
+        inputFiles:
+          - ${SRCROOT}/aot/aot_x86_64.o
+          - ${SRCROOT}/aot/aot_arm64.o
+          - ${SRCROOT}/scripts/lipo_object_combiner.sh
+        outputFiles:
+          - ${BUILT_PRODUCTS_DIR}/aot_lipo.o
+          - ${BUILT_PRODUCTS_DIR}/aot_lipo.o.lipo
+schemes:
+  MacOS_Debug:
+    build:
+      targets:
+        MacOSRunner: Debug
+    run:
+      config: Debug
+  MacOS_Release:
+    build:
+      targets:
+        MacOSRunner: Release
+    run:
+      config: Release
+  MacOS_ReleaseLocal:
+    build:
+      targets:
+        MacOSRunner: ReleaseLocal
+    run:
+      config: ReleaseLocal

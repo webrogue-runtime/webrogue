@@ -1,7 +1,9 @@
 use clap::{Parser, Subcommand};
 mod android_gradle;
+mod apple_xcode;
 mod compile;
 mod linux;
+mod utils;
 mod windows_mingw;
 
 /// webrogue-aot-compiler builds native applications from WebC files
@@ -38,11 +40,16 @@ enum Commands {
         out_path: std::path::PathBuf,
         target: String,
     },
+    /// Apple-related commands
+    Apple {
+        #[command(subcommand)]
+        commands: AppleCommands,
+    },
 }
 #[derive(Subcommand, Debug)]
 enum AndroidCommands {
     /// Make Gradle Android project
-    Project {
+    Gradle {
         /// Path to Android SDK. If not specified, ANDROID_HOME environment variable is used
         #[arg(short, long, value_name = "PATH")]
         sdk: Option<std::path::PathBuf>,
@@ -60,6 +67,16 @@ enum WindowsCommands {
         webc_path: std::path::PathBuf,
         /// Path where resulting executable will be placed
         out_path: std::path::PathBuf,
+    },
+}
+#[derive(Subcommand, Debug)]
+enum AppleCommands {
+    /// Make Gradle Apple Xcode project
+    Xcode {
+        /// Path to WebC
+        webc_path: std::path::PathBuf,
+        /// Path where resulting project will be placed
+        build_dir: std::path::PathBuf,
     },
 }
 
@@ -80,7 +97,7 @@ fn main() -> anyhow::Result<()> {
             linux::build_linux(webc_path, out_path)?;
         }
         Commands::Android { commands } => match commands {
-            AndroidCommands::Project {
+            AndroidCommands::Gradle {
                 sdk,
                 webc_path,
                 build_dir,
@@ -102,6 +119,14 @@ fn main() -> anyhow::Result<()> {
                 webc_path,
                 out_path,
             } => windows_mingw::build_windows_mingw(webc_path, out_path)?,
+        },
+        Commands::Apple { commands } => match commands {
+            AppleCommands::Xcode {
+                webc_path,
+                build_dir,
+            } => {
+                apple_xcode::build_apple_xcode(webc_path, build_dir)?;
+            }
         },
     }
 

@@ -9,3 +9,5 @@ if [ ! -d "external/SDL2" ]; then
     mv external/SDL-release-2.30.6 external/SDL2
     patch --forward external/SDL2/src/video/uikit/SDL_uikitappdelegate.m external/sdl.patch
 fi
+
+sed -i '' 's/defaultConfigurationName = Debug/defaultConfigurationName = Release/g' external/SDL2/Xcode/SDL/SDL.xcodeproj/project.pbxproj
