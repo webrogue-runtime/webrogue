@@ -18,7 +18,7 @@ impl ProcAddresses {
         unsafe { std::mem::MaybeUninit::<ProcAddresses>::zeroed().assume_init() }
     }
 
-    pub fn fill(&mut self, context: std::sync::Arc<webrogue_gfx::GFX>) {
+    pub fn fill(&mut self, context: std::sync::Arc<webrogue_gfx::GFXSystem>) {
         unsafe {
 "#
     .to_owned();
@@ -31,7 +31,7 @@ impl ProcAddresses {
             ffi_arg_types.push(format!("{}: {}", mapped_name, param.ty.to_rust_type()));
         }
         result += &format!(
-            "    pub {}: unsafe extern \"stdcall\" fn({}) -> {},\n",
+            "    pub {}: unsafe extern \"C\" fn({}) -> {},\n",
             command.name,
             ffi_arg_types.join(","),
             match command.ret {
