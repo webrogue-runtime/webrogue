@@ -109,7 +109,7 @@ fn main() -> anyhow::Result<()> {
                             .ok()
                     })
                     .ok_or(anyhow::anyhow!(
-                        "sdk_path argument or ANDROID_HOME environment variable must be provided"
+                        "--sdk argument or ANDROID_HOME environment variable must be provided"
                     ))?;
                 android_gradle::build_android_gradle(sdk, webc_path, build_dir)?;
             }
