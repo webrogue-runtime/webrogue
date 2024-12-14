@@ -80,22 +80,22 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Build template
-      run: |
-        unset ANDROID_SDK_ROOT
-        unset ANDROID_NDK
-        unset ANDROID_NDK_HOME
-        unset ANDROID_NDK_LATEST_HOME
-        unset ANDROID_NDK_ROOT
-        unset ANDROID_SDK_ROOT
+    # - name: Build template
+    #   run: |
+    #     unset ANDROID_SDK_ROOT
+    #     unset ANDROID_NDK
+    #     unset ANDROID_NDK_HOME
+    #     unset ANDROID_NDK_LATEST_HOME
+    #     unset ANDROID_NDK_ROOT
+    #     unset ANDROID_SDK_ROOT
 
-        sh android/template/build_template.sh
+    #     sh android/template/build_template.sh
 
     - name: Build launcher
       run: |
         unset ANDROID_SDK_ROOT
         unset ANDROID_NDK
-        unset ANDROID_NDK_HOME
+        # unset ANDROID_NDK_HOME
         unset ANDROID_NDK_LATEST_HOME
         unset ANDROID_NDK_ROOT
         unset ANDROID_SDK_ROOT
