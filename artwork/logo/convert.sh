@@ -66,16 +66,16 @@ stroke_width() {
 
 # For Android
 android_old() {
-    ofsize 40 | stroke_width 2 | to_png_white $1 ../../android/launcher/src/main/res/mipmap-$2/ic_launcher.png
+    ofsize 40 | stroke_width 2 | to_png_white $1 ../../android/runtime/launcher/src/main/res/mipmap-$2/ic_launcher.png
 }
 android_old 48 mdpi
 android_old 72 hdpi
 android_old 96 xhdpi
 android_old 144 xxhdpi
 android_old 192 xxxhdpi
-ofsize 62 | to_png_transparent 512 ../../android/launcher/src/main/res/drawable/ic_launcher_foreground.png
-ofsize 62 | parse_colors | outer_fill_color 00000000 | default_colors | to_png_transparent 512 ../../android/launcher/src/main/res/drawable/ic_launcher_monochrome.png
-rpngconvert -size 512x512 xc:white ../../android/launcher/src/main/res/drawable/ic_launcher_background.png
+ofsize 62 | to_png_transparent 512 ../../android/runtime/launcher/src/main/res/drawable/ic_launcher_foreground.png
+ofsize 62 | parse_colors | outer_fill_color 00000000 | default_colors | to_png_transparent 512 ../../android/runtime/launcher/src/main/res/drawable/ic_launcher_monochrome.png
+rpngconvert -size 512x512 xc:white ../../android/runtime/launcher/src/main/res/drawable/ic_launcher_background.png
 # # For Linux
 # ofsize 64 | to_png_transparent 256 ../../platforms/Linux/TemplateAppDir/.DirIcon
 # ofsize 64 | to_svg ../../platforms/Linux/TemplateAppDir/webrogue.svg
