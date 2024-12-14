@@ -69,6 +69,8 @@ cp \
     runtime/gradlew.bat \
     ../aot_artifacts/android_gradle/template
 
-cp -r \
-    runtime/gradle/wrapper \
+mkdir -p ../aot_artifacts/android_gradle/template/gradle/wrapper
+cp \
+    runtime/gradle/wrapper/gradle-wrapper.jar \
+    runtime/gradle/wrapper/gradle-wrapper.properties \
     ../aot_artifacts/android_gradle/template/gradle/wrapper
