@@ -100,6 +100,7 @@ jobs:
         unset ANDROID_NDK_ROOT
         unset ANDROID_SDK_ROOT
 
+        sdkmanager --sdk_root=sdk "ndk;26.1.10909125"
         cd android/runtime
         ./gradlew --no-daemon :launcher:assembleRelease
         cd ..
