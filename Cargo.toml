@@ -51,7 +51,7 @@ members = [
   # "web/crates/main",
 
   "apple/runtime/ios/rust",
-  "apple/runtime/macos/runtime/rust",
+  "apple/runtime/macos/rust",
 ]
 exclude = [
   "external/wasmer",

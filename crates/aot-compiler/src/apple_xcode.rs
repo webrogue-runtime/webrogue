@@ -16,13 +16,28 @@ pub fn build_apple_xcode(
 
     crate::compile::compile_webc_to_object(
         container_path.clone(),
-        aot_dir.join("aot_x86_64.o"),
+        aot_dir.join("aot.x86_64.macosx.o"),
         "x86_64-apple-darwin",
     )?;
     crate::compile::compile_webc_to_object(
         container_path.clone(),
-        aot_dir.join("aot_arm64.o"),
+        aot_dir.join("aot.arm64.macosx.o"),
         "arm64-apple-darwin",
+    )?;
+    crate::compile::compile_webc_to_object(
+        container_path.clone(),
+        aot_dir.join("aot.x86_64.iphonesimulator.o"),
+        "x86_64-apple-ios",
+    )?;
+    crate::compile::compile_webc_to_object(
+        container_path.clone(),
+        aot_dir.join("aot.arm64.iphonesimulator.o"),
+        "arm64-apple-ios-sim",
+    )?;
+    crate::compile::compile_webc_to_object(
+        container_path.clone(),
+        aot_dir.join("aot.arm64.iphoneos.o"),
+        "arm64-apple-ios",
     )?;
 
     return anyhow::Ok(());

@@ -73,7 +73,7 @@ targets:
     - sdk: AudioToolbox.framework
     preBuildScripts:
       - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/copy_bin.sh"
-        name: Copy ANGLE
+        name: Copy libraries
         inputFiles:
           - ${SRCROOT}/scripts/copy_bin.sh
           - ${SRCROOT}/bin/libEGL.macosx.dylib
@@ -90,6 +90,73 @@ targets:
         inputFiles:
           - ${SRCROOT}/aot/aot.x86_64.macosx.o
           - ${SRCROOT}/aot/aot.arm64.macosx.o
+          - ${SRCROOT}/scripts/lipo_object_combiner.sh
+        outputFiles:
+          - ${BUILT_PRODUCTS_DIR}/aot_lipo.o
+          - ${BUILT_PRODUCTS_DIR}/aot_lipo.o.lipo
+  iOSRunner:
+    type: application
+    platform: iOS
+    sources:
+    - ios
+    - aot/aot.webc
+    settings:
+      base:
+        INFOPLIST_FILE: ios/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ios/ios.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueRunner
+        PRODUCT_NAME: Webrogue Runner
+        OTHER_LDFLAGS:
+        - "-lwebrogue_ios"
+        - "-lwrios"
+        - "-lSDL2"
+        - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
+        LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/Bridging-Header.h"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
+        ENABLE_PREVIEWS: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen.storyboard
+    dependencies:
+    - sdk: UIKit.framework
+    - sdk: QuartzCore.framework
+    - sdk: Metal.framework
+    - sdk: IOKit.framework
+    - sdk: GameController.framework
+    - sdk: CoreVideo.framework
+    - sdk: CoreMotion.framework
+    - sdk: CoreHaptics.framework
+    - sdk: CoreGraphics.framework
+    - sdk: CoreFoundation.framework
+    - sdk: CoreBluetooth.framework
+    - sdk: CoreAudio.framework
+    - sdk: AVFoundation.framework
+    - sdk: AudioToolbox.framework
+    - framework: bin/libEGL.xcframework
+    - framework: bin/libGLESv2.xcframework
+    preBuildScripts:
+      - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/copy_bin_ios.sh"
+        name: Copy libraries
+        inputFiles:
+          - ${SRCROOT}/scripts/copy_bin_ios.sh
+          - ${SRCROOT}/bin/libwebrogue_ios.iphonesimulator.a
+          - ${SRCROOT}/bin/libwrios.iphonesimulator.a
+          - ${SRCROOT}/bin/libSDL2.iphonesimulator.a
+          - ${SRCROOT}/bin/libwebrogue_ios.iphoneos.a
+          - ${SRCROOT}/bin/libwrios.iphoneos.a
+          - ${SRCROOT}/bin/libSDL2.iphoneos.a
+        outputFiles:
+          - ${BUILT_PRODUCTS_DIR}/libwebrogue_ios.a
+          - ${BUILT_PRODUCTS_DIR}/libwrios.a
+          - ${BUILT_PRODUCTS_DIR}/libSDL2.a
+      - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
+        name: Combine object to lipo
+        inputFiles:
+          - ${SRCROOT}/aot/aot.x86_64.iphonesimulator.o
+          - ${SRCROOT}/aot/aot.arm64.iphonesimulator.o
+          - ${SRCROOT}/aot/aot.arm64.iphoneos.o 
           - ${SRCROOT}/scripts/lipo_object_combiner.sh
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/aot_lipo.o
@@ -111,5 +178,23 @@ schemes:
     build:
       targets:
         MacOSRunner: ReleaseLocal
+    run:
+      config: ReleaseLocal
+  iOS_Debug:
+    build:
+      targets:
+        iOSRunner: Debug
+    run:
+      config: Debug
+  iOS_Release:
+    build:
+      targets:
+        iOSRunner: Release
+    run:
+      config: Release
+  iOS_ReleaseLocal:
+    build:
+      targets:
+        iOSRunner: ReleaseLocal
     run:
       config: ReleaseLocal

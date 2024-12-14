@@ -99,7 +99,7 @@ macos_ico() {
     STROKE_WIDTH=$2
     FILENAME=$3
 
-    MACOS_ICO_DIR=../../apple/runtime/macOS/launcher/Assets/Assets.xcassets/AppIcon.appiconset
+    MACOS_ICO_DIR=../../apple/runtime/macos/launcher/Assets.xcassets/AppIcon.appiconset
     ofsize 32 | stroke_width $STROKE_WIDTH | to_png_transparent $SIZE $MACOS_ICO_DIR/$FILENAME.foreground.png
     MIN_POS=$(expr 100 '*' $SIZE / 1024)
     MAX_POS=$(expr 924 '*' $SIZE / 1024)
@@ -115,7 +115,7 @@ macos_document_ico() {
     STROKE_WIDTH=$2
     FILENAME=$3
 
-    MACOS_ICO_DIR=../../apple/runtime/macOS/launcher/Assets/Assets.xcassets/DocumentIcon.iconset
+    MACOS_ICO_DIR=../../apple/runtime/macos/launcher/Assets.xcassets/DocumentIcon.iconset
     ofsize 51 | stroke_width $STROKE_WIDTH | to_png_transparent $SIZE $MACOS_ICO_DIR/$FILENAME.png
 }
 for flavor in macos_ico macos_document_ico; do
@@ -131,5 +131,5 @@ for flavor in macos_ico macos_document_ico; do
     $flavor 1024    1.5 icon_512x512@2x
 done
 # For iOS
-ofsize 40 | to_png_white 1024 ../../apple/runtime/iOS/Assets/Assets.xcassets/AppIcon.appiconset/ios1024.png
-ofsize 48 | to_png_transparent 1024 ../../apple/runtime/iOS/Assets/Document.png
+ofsize 40 | to_png_white 1024 ../../apple/runtime/ios/launcher/Assets.xcassets/AppIcon.appiconset/ios1024.png
+ofsize 48 | to_png_transparent 1024 ../../apple/runtime/ios/launcher/Document.png

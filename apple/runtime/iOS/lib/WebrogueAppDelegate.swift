@@ -1,6 +1,5 @@
 public class WebrogueAppDelegate: SDLUIKitDelegate {
     static var shared: WebrogueAppDelegate!
-    static var containerStorage = ContainerStorage()
     var webrogueWindow: UIWindow!
     var isWebrogueWindowVisible = true
 
@@ -21,13 +20,30 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
             application,
             didFinishLaunchingWithOptions: launchOptions
         )
-        webrogueWindow = UIWindow(frame: UIScreen.main.bounds)
-        webrogueWindow.rootViewController = WebrogueUIViewController()
-        webrogueWindow.makeKeyAndVisible()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(runPathNotification),
+            name: .init(rawValue: "WebrogueRunPath"),
+            object: nil
+        )
+        if let viewController = webrogueControllerBlock() {
+            webrogueWindow = UIWindow(frame: UIScreen.main.bounds)
+            webrogueWindow.rootViewController = viewController
+            webrogueWindow.makeKeyAndVisible()
+        } else {
+            run(path: Bundle.main.url(forResource: "aot", withExtension: "webc")!.relativePath)
+        }
+
         return result
     }
 
-    func runGame(path: String, completion: ((Int) -> Void)? = nil) {
+    @objc
+    func runPathNotification(notification: Notification) {
+        guard let path = notification.object as? String else { return }
+        run(path: path)
+    }
+
+    func run(path: String, completion: ((Int) -> Void)? = nil) {
         DispatchQueue.global(qos: .userInteractive).async {
             self.isWebrogueWindowVisible = false
             let ret_code = path.utf8CString.withUnsafeBufferPointer {
@@ -43,7 +59,10 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
         open url: URL,
         options: [UIApplication.OpenURLOptionsKey : Any] = [:]
     ) -> Bool {
-        WebrogueAppDelegate.containerStorage.store(url)
+        NotificationCenter.default.post(
+            name: .init(rawValue: "WebrogueURL"),
+            object: url
+        )
         return true
     }
 }

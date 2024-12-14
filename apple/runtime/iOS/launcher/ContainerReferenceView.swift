@@ -13,7 +13,10 @@ struct ContainerReferenceView: View {
             .navigationTitle("webrogue")
             .toolbar {
                 Button("Run") {
-                    WebrogueAppDelegate.shared?.runGame(path: ref.path) { _ in }
+                    NotificationCenter.default.post(
+                        name: .init(rawValue: "WebrogueRunPath"),
+                        object: ref.path
+                    )
                 }
             }
     }

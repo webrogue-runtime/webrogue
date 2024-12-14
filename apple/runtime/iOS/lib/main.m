@@ -17,10 +17,12 @@ int webrogueObjCMain(const char* path) {
     return 0;
 }
 
-int webrogue_ios_main(int argc, char *argv[])
+UIViewController* (^webrogueControllerBlock)(void) = NULL;
+
+int webrogue_ios_main(int argc, char *argv[], UIViewController* (^controllerBlock)(void))
 {
     @autoreleasepool {
+        webrogueControllerBlock = controllerBlock;
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([WebrogueAppDelegate class]));
     }
 }
-

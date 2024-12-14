@@ -9,7 +9,7 @@ projectReferences:
 settings:
   base:
     MACOSX_DEPLOYMENT_TARGET: 12.0
-    IPHONEOS_DEPLOYMENT_TARGET: 14.0
+    IPHONEOS_DEPLOYMENT_TARGET: 15.0
     GENERATE_INFOPLIST_FILE: true
     MARKETING_VERSION: 0.1
     CURRENT_PROJECT_VERSION: 1
@@ -75,9 +75,7 @@ targets:
     type: tool
     platform: macOS
     sources:
-    - path: macos/runtime
-      excludes:
-      - "**/rust"
+    - macos/runtime
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: macos/runtime/runtime.entitlements
@@ -107,7 +105,6 @@ targets:
     platform: iOS
     sources:
     - ios/lib
-    - common
     settings:
       base:
         SWIFT_INSTALL_OBJC_HEADER: false
@@ -122,14 +119,15 @@ targets:
     platform: iOS
     sources:
     - ios/launcher
+    - common
     settings:
       base:
         INFOPLIST_FILE: ios/launcher/Info.plist
         CODE_SIGN_ENTITLEMENTS: ios/launcher/ios.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueLauncher
-        PRODUCT_NAME: webrogue
+        PRODUCT_NAME: Webrogue Runtime
         OTHER_LDFLAGS: "-lwebrogue_ios"
-        LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/runtime_ios/$(CONFIGURATION)/$(PLATFORM_NAME)"
+        LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/ios_launcher/$(CONFIGURATION)/$(PLATFORM_NAME)"
         SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/launcher/webrogue-Bridging-Header.h"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
@@ -138,7 +136,7 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen.storyboard
     dependencies:
-    - target: Cargo_iOS
+    - target: Cargo_iOS_launcher
     - target: SDL/Static Library-iOS
     - target: wrios
     - sdk: UIKit.framework
@@ -157,25 +155,87 @@ targets:
     - sdk: AudioToolbox.framework
     - framework: external/libEGL.xcframework
     - framework: external/libGLESv2.xcframework
-  Cargo_iOS:
+  Runner_iOS:
+    type: application
+    platform: iOS
+    sources:
+    - path: ios/runner
+      excludes:
+      - "aot.*.*.o"
+    settings:
+      base:
+        INFOPLIST_FILE: ios/runner/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ios/runner/ios.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueRunner
+        PRODUCT_NAME: Webrogue Runner
+        OTHER_LDFLAGS:
+        - "-lwebrogue_ios"
+        - "$(BUILD_DIR)/rust_artifacts/ios_runner/$(CONFIGURATION)/$(PLATFORM_NAME)/aot_lipo.o"
+        LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/ios_runner/$(CONFIGURATION)/$(PLATFORM_NAME)"
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/runner/webrogue-Bridging-Header.h"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
+        ENABLE_PREVIEWS: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen.storyboard
+    dependencies:
+    - target: Cargo_iOS_runner
+    - target: SDL/Static Library-iOS
+    - target: wrios
+    - sdk: UIKit.framework
+    - sdk: QuartzCore.framework
+    - sdk: Metal.framework
+    - sdk: IOKit.framework
+    - sdk: GameController.framework
+    - sdk: CoreVideo.framework
+    - sdk: CoreMotion.framework
+    - sdk: CoreHaptics.framework
+    - sdk: CoreGraphics.framework
+    - sdk: CoreFoundation.framework
+    - sdk: CoreBluetooth.framework
+    - sdk: CoreAudio.framework
+    - sdk: AVFoundation.framework
+    - sdk: AudioToolbox.framework
+    - framework: external/libEGL.xcframework
+    - framework: external/libGLESv2.xcframework
+    preBuildScripts:
+      - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/ios/runner ${BUILD_DIR}/rust_artifacts/ios_runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o"
+        name: Combine object to lipo
+        inputFiles:
+          - ${SRCROOT}/ios/runner/aot.x86_64.iphonesimulator.o
+          - ${SRCROOT}/ios/runner/aot.arm64.iphonesimulator.o
+          - ${SRCROOT}/ios/runner/aot.arm64.iphoneos.o 
+          - ${SRCROOT}/scripts/lipo_object_combiner.sh
+        outputFiles:
+          - ${BUILD_DIR}/rust_artifacts/ios_runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o
+          - ${BUILD_DIR}/rust_artifacts/ios_runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o.lipo
+  Cargo_iOS_launcher:
     platform: iOS
     legacy:
       toolPath: /bin/sh
-      arguments: ios/rust/cargo_lipo_builder.sh
+      arguments: ios/rust/cargo_lipo_builder.sh launcher
+      workingDirectory: $(SRCROOT)/
+      passSettings: true
+  Cargo_iOS_runner:
+    platform: iOS
+    legacy:
+      toolPath: /bin/sh
+      arguments: ios/rust/cargo_lipo_builder.sh runner
       workingDirectory: $(SRCROOT)/
       passSettings: true
   Cargo_macos_runtime:
     platform: macOS
     legacy:
       toolPath: /bin/sh
-      arguments: macos/runtime/rust/cargo_lipo_builder.sh runtime
+      arguments: macos/rust/cargo_lipo_builder.sh runtime
       workingDirectory: $(SRCROOT)/
       passSettings: true
   Cargo_macos_runner:
     platform: macOS
     legacy:
       toolPath: /bin/sh
-      arguments: macos/runtime/rust/cargo_lipo_builder.sh runner
+      arguments: macos/rust/cargo_lipo_builder.sh runner
       workingDirectory: $(SRCROOT)/
       passSettings: true
   Runner:
@@ -184,7 +244,7 @@ targets:
     sources:
     - path: macos/runner
       excludes:
-      - "aot_*.o"
+      - "aot.*.*.o"
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: macos/runner/runner.entitlements
@@ -290,5 +350,23 @@ schemes:
     build:
       targets:
         Launcher_iOS: ReleaseLocal
+    run:
+      config: ReleaseLocal
+  iOS_Runner_Debug:
+    build:
+      targets:
+        Runner_iOS: Debug
+    run:
+      config: Debug
+  iOS_Runner_Release:
+    build:
+      targets:
+        Runner_iOS: Release
+    run:
+      config: Release
+  iOS_Runner_ReleaseLocal:
+    build:
+      targets:
+        Runner_iOS: ReleaseLocal
     run:
       config: ReleaseLocal
