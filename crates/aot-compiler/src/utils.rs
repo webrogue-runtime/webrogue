@@ -26,13 +26,17 @@ fn copy_dir_impl(
             copy_dir_impl(source, dest, parts)?;
             parts.pop().unwrap();
         } else if file_type.is_file() {
-            let source_modification_time = dir_entry.metadata()?.modified()?;
             let dest_file_path = dest_path.join(name.clone());
-            let dest_modification_time = std::fs::metadata(dest_file_path.clone())?.modified()?;
+            let should_copy = if std::fs::exists(dest_file_path.clone())? {
+                let source_modification_time = dir_entry.metadata()?.modified()?;
+                let dest_modification_time =
+                    std::fs::metadata(dest_file_path.clone())?.modified()?;
+                source_modification_time > dest_modification_time
+            } else {
+                true
+            };
 
-            if !std::fs::exists(dest_file_path.clone())?
-                || source_modification_time > dest_modification_time
-            {
+            if should_copy {
                 std::fs::copy(source_path.join(name.clone()), dest_file_path)?;
             }
         }

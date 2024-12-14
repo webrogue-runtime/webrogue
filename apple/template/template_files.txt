@@ -1,6 +1,5 @@
 webrogue.xcodeproj/project.pbxproj
 webrogue.xcodeproj/project.xcworkspace/contents.xcworkspacedata
-webrogue.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 webrogue.xcodeproj/xcshareddata/xcschemes/MacOS_Release.xcscheme
 webrogue.xcodeproj/xcshareddata/xcschemes/MacOS_ReleaseLocal.xcscheme
 webrogue.xcodeproj/xcshareddata/xcschemes/MacOS_Debug.xcscheme

@@ -50,8 +50,8 @@ members = [
   # "web/crates/backend-web-macro",
   # "web/crates/main",
 
-  "apple/iOS/rust",
-  "apple/macOS/runtime/rust",
+  "apple/runtime/iOS/rust",
+  "apple/runtime/macOS/runtime/rust",
 ]
 exclude = [
   "external/wasmer",

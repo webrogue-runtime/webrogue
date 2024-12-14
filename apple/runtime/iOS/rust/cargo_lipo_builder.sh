@@ -11,18 +11,15 @@ unset SDKROOT
 cd $(dirname $0)
 IOS_ROOT_DIR=$(pwd)
 
-case "$CARGO_CONFIG" in
-    Debug)
+case "$CARGO_PROFILE" in
+    debug)
         FLAGS_CONFIG=""
-        CARGO_CONFIG_NAME="debug"
         ;;
-    Release)
-        FLAGS_CONFIG="--profile=release-lto"
-        CARGO_CONFIG_NAME="release"
+    release)
+        FLAGS_CONFIG="--release"
         ;;
     *)
-        echo "error: unknown CARGO_CONFIG: $CARGO_CONFIG"
-        exit 1
+        FLAGS_CONFIG="--profile=$CARGO_PROFILE"
         ;;
 esac
 
@@ -68,7 +65,7 @@ for DEST_ARCH in $ARCHS; do
     export PATH="$MODIFIED_PATH"
     CARGO_TARGET_DIR=$BUILT_PRODUCTS_DIR/rust_target cargo build $FLAGS_CONFIG --target=$CARGO_TARGET
     export PATH="$XCODE_PATH"
-    LIPO_PATHS[$LIPO_PATHS_I]="$BUILT_PRODUCTS_DIR/rust_target/$CARGO_TARGET/$CARGO_CONFIG_NAME/libwebrogue_ios.a"
+    LIPO_PATHS[$LIPO_PATHS_I]="$BUILT_PRODUCTS_DIR/rust_target/$CARGO_TARGET/$CARGO_PROFILE/libwebrogue_ios.a"
     LIPO_PATHS_I=$(expr $LIPO_PATHS_I '+' 1)
 done
 mkdir -p "$BUILD_DIR/rust_artifacts/runtime_ios/$CONFIGURATION/$PLATFORM_NAME"

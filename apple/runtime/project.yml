@@ -21,16 +21,16 @@ settings:
   configs:
     Debug:
       CODE_SIGN_IDENTITY: "-"
-      CARGO_CONFIG: Debug
+      CARGO_PROFILE: debug
       CODE_SIGN_STYLE: Manual
     Release:
       CODE_SIGN_IDENTITY: "Apple Development"
-      CARGO_CONFIG: Release
+      CARGO_PROFILE: release-lto
       CODE_SIGN_STYLE: Automatic
       DEVELOPMENT_TEAM: LC5F8UX2W7
     ReleaseLocal:
       CODE_SIGN_IDENTITY: "-"
-      CARGO_CONFIG: Release
+      CARGO_PROFILE: release-lto
       CODE_SIGN_STYLE: Manual
 options:
   createIntermediateGroups: true
@@ -84,7 +84,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueLauncher.Runtime
         PRODUCT_NAME: webrogue_runtime
         OTHER_LDFLAGS: "-lwebrogue_macos"
-        LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/$(CONFIGURATION)/$(PLATFORM_NAME)"
+        LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/runtime/$(CONFIGURATION)/$(PLATFORM_NAME)"
         HEADER_SEARCH_PATHS: "$(SRCROOT)/external/SDL2/include"
         ENABLE_HARDENED_RUNTIME: true
     dependencies:
