@@ -23,6 +23,13 @@ test -d "$ANDROID_NDK_PATH" || ./sdk/cmdline-tools/bin/sdkmanager --sdk_root=sdk
 rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/home/someone/repos/webrogue/crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c.o
 rm -f runtime/runner/build/intermediates/cxx/RelWithDebInfo/*/obj/arm64-v8a/libSDL2.so 
 rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/webrogue_runtime.c.o
+cargo run \
+    --target-dir=../target \
+    --package=webrogue-aot-compiler \
+    object \
+    ../examples/gears/gears.webc \
+    runtime/runner/src/main/cpp/aot.o \
+    aarch64-linux-android
 
 ./runtime/gradlew --project-dir=runtime :runner:assembleRelease
 
