@@ -9,4 +9,4 @@
 /webrogue.xcodeproj
 *.xcbkptlist
 /macOS/runner/aot.webc
-/macOS/runner/aot_*.o
+/macOS/runner/aot.*.*.o

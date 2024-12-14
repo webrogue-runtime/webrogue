@@ -1,5 +1,4 @@
 import SwiftUI
-import WebrogueCommon
 
 struct ContainerReferenceView: View {
     let ref: ContainerReference

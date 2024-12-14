@@ -1,5 +1,4 @@
 import SwiftUI
-import WebrogueCommon
 
 @main
 struct LauncherApp: App {

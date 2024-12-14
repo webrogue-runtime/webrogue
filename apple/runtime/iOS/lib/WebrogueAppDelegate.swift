@@ -1,6 +1,3 @@
-import WebrogueCommon
-
-@main
 public class WebrogueAppDelegate: SDLUIKitDelegate {
     static var shared: WebrogueAppDelegate!
     static var containerStorage = ContainerStorage()
@@ -34,7 +31,7 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
         DispatchQueue.global(qos: .userInteractive).async {
             self.isWebrogueWindowVisible = false
             let ret_code = path.utf8CString.withUnsafeBufferPointer {
-                Int(webrogueMain($0.baseAddress!))
+                Int(webrogueObjCMain($0.baseAddress!))
             }
             self.isWebrogueWindowVisible = true
             completion?(ret_code)

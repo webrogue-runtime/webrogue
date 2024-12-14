@@ -1,5 +1,4 @@
 import SwiftUI
-import WebrogueCommon
 
 struct ContainerListView: View {
     @State var isFileImporterPresented = false

@@ -7,7 +7,7 @@ fn main(wrapp_path: String) -> anyhow::Result<()> {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn webrogue_ios_main(wrapp_path: *const i8) {
+pub unsafe extern "C" fn webrogue_ios_rs_main(wrapp_path: *const i8) {
     let wrapp_path = std::ffi::CStr::from_ptr(wrapp_path as *const _)
         .to_str()
         .unwrap()

@@ -88,8 +88,8 @@ targets:
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         name: Combine object to lipo
         inputFiles:
-          - ${SRCROOT}/aot/aot_x86_64.o
-          - ${SRCROOT}/aot/aot_arm64.o
+          - ${SRCROOT}/aot/aot.x86_64.macosx.o
+          - ${SRCROOT}/aot/aot.arm64.macosx.o
           - ${SRCROOT}/scripts/lipo_object_combiner.sh
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/aot_lipo.o

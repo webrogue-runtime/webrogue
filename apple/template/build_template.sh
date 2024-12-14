@@ -3,12 +3,12 @@ cd $(dirname $0)
 set -e
 # apple/runtime
 cd ../runtime
-cp ../../examples/raylib/raylib.webc macOS/runner/aot.webc
+cp ../../examples/gears/gears.webc macOS/runner/aot.webc
 
 sh setup.command
 
-cargo run --release --manifest-path ../../crates/aot-compiler/Cargo.toml object macOS/runner/aot.webc macOS/runner/aot_x86_64.o x86_64-apple-darwin
-cargo run --release --manifest-path ../../crates/aot-compiler/Cargo.toml object macOS/runner/aot.webc macOS/runner/aot_arm64.o arm64-apple-darwin
+cargo run --release --manifest-path ../../crates/aot-compiler/Cargo.toml object macOS/runner/aot.webc macOS/runner/aot.x86_64.macosx.o x86_64-apple-darwin
+cargo run --release --manifest-path ../../crates/aot-compiler/Cargo.toml object macOS/runner/aot.webc macOS/runner/aot.arm64.macosx.o arm64-apple-darwin
 XC_FLAGS="-destination generic/platform=macOS -workspace webrogue.xcworkspace -scheme MacOS_Runner_ReleaseLocal -configuration ReleaseLocal"
 XC_BUILT_PRODUCTS_DIR=$(xcodebuild $XC_FLAGS -showBuildSettings | grep -m 1 "BUILT_PRODUCTS_DIR =" | grep -oEi "\/.*" || exit 3)
 XC_BUILD_DIR=$(xcodebuild $XC_FLAGS -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
@@ -26,10 +26,11 @@ cp $XC_BUILD_DIR/ReleaseLocal/libGLESv2.dylib template/bin/libGLESv2.macosx.dyli
 
 rm -rf template/aot
 mkdir -p template/aot
-cp runtime/macOS/runner/aot_arm64.o template/aot/aot_arm64.o
-cp runtime/macOS/runner/aot_x86_64.o template/aot/aot_x86_64.o
+cp runtime/macOS/runner/aot.arm64.macosx.o template/aot/aot.arm64.macosx.o
+cp runtime/macOS/runner/aot.x86_64.macosx.o template/aot/aot.x86_64.macosx.o
 cp runtime/macOS/runner/aot.webc template/aot/aot.webc
 
+cp runtime/macos/runner/main.m template/macos/main.m
 cp runtime/scripts/lipo_object_combiner.sh template/scripts/lipo_object_combiner.sh
 cp runtime/macOS/runner/runner.entitlements template/macos/runner.entitlements
 

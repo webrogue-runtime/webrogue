@@ -39,18 +39,18 @@ targets:
     type: application
     platform: macOS
     sources:
-    - macOS/Launcher
+    - macos/launcher
+    - common
     settings:
       base:
-        CODE_SIGN_ENTITLEMENTS: macOS/Launcher/launcher.entitlements
-        INFOPLIST_FILE: macOS/Launcher/Info.plist
+        CODE_SIGN_ENTITLEMENTS: macos/launcher/launcher.entitlements
+        INFOPLIST_FILE: macos/launcher/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueLauncher
         PRODUCT_NAME: webrogue Launcher
         ENABLE_HARDENED_RUNTIME: true
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         ENABLE_PREVIEWS: true
     dependencies:
-    - target: WebrogueCommon
     - target: Runtime
       embed: true
       codeSign: true
@@ -75,12 +75,12 @@ targets:
     type: tool
     platform: macOS
     sources:
-    - path: macOS/runtime
+    - path: macos/runtime
       excludes:
       - "**/rust"
     settings:
       base:
-        CODE_SIGN_ENTITLEMENTS: macOS/runtime/runtime.entitlements
+        CODE_SIGN_ENTITLEMENTS: macos/runtime/runtime.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueLauncher.Runtime
         PRODUCT_NAME: webrogue_runtime
         OTHER_LDFLAGS: "-lwebrogue_macos"
@@ -102,26 +102,35 @@ targets:
     - sdk: Cocoa.framework
     - sdk: Carbon.framework
     - sdk: AudioToolbox.framework
+  wrios:
+    type: library.static
+    platform: iOS
+    sources:
+    - ios/lib
+    - common
+    settings:
+      base:
+        SWIFT_INSTALL_OBJC_HEADER: false
+        HEADER_SEARCH_PATHS:
+        - "$(SRCROOT)/external/SDL2/include"
+        PRODUCT_NAME: wrios
+        SYSTEM_HEADER_SEARCH_PATHS:
+        - "$(SRCROOT)/external/angle_ios_headers"
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/lib/wrios-Bridging-Header.h"
   Launcher_iOS:
     type: application
     platform: iOS
     sources:
-    - path: iOS
-      excludes:
-      - "**/rust"
+    - ios/launcher
     settings:
       base:
-        INFOPLIST_FILE: iOS/Info.plist
-        CODE_SIGN_ENTITLEMENTS: iOS/ios.entitlements
+        INFOPLIST_FILE: ios/launcher/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ios/launcher/ios.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueLauncher
         PRODUCT_NAME: webrogue
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/iOS/Source/webrogue-Bridging-Header.h"
         OTHER_LDFLAGS: "-lwebrogue_ios"
         LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/runtime_ios/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        HEADER_SEARCH_PATHS:
-        - "$(SRCROOT)/external/SDL2/include"
-        SYSTEM_HEADER_SEARCH_PATHS:
-        - "$(SRCROOT)/external/angle_ios_headers"
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/launcher/webrogue-Bridging-Header.h"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
@@ -131,7 +140,7 @@ targets:
     dependencies:
     - target: Cargo_iOS
     - target: SDL/Static Library-iOS
-    - target: WebrogueCommon
+    - target: wrios
     - sdk: UIKit.framework
     - sdk: QuartzCore.framework
     - sdk: Metal.framework
@@ -148,48 +157,38 @@ targets:
     - sdk: AudioToolbox.framework
     - framework: external/libEGL.xcframework
     - framework: external/libGLESv2.xcframework
-  WebrogueCommon:
-    type: framework.static
-    supportedDestinations: [macOS, iOS]
-    sources:
-    - Common/WebrogueCommon
-    settings:
-      base:
-        INFOPLIST_FILE: Common/WebrogueCommon/Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueCommon
-        PRODUCT_NAME: WebrogueCommon
   Cargo_iOS:
     platform: iOS
     legacy:
       toolPath: /bin/sh
-      arguments: iOS/rust/cargo_lipo_builder.sh
+      arguments: ios/rust/cargo_lipo_builder.sh
       workingDirectory: $(SRCROOT)/
       passSettings: true
   Cargo_macos_runtime:
     platform: macOS
     legacy:
       toolPath: /bin/sh
-      arguments: macOS/runtime/rust/cargo_lipo_builder.sh runtime
+      arguments: macos/runtime/rust/cargo_lipo_builder.sh runtime
       workingDirectory: $(SRCROOT)/
       passSettings: true
   Cargo_macos_runner:
     platform: macOS
     legacy:
       toolPath: /bin/sh
-      arguments: macOS/runtime/rust/cargo_lipo_builder.sh runner
+      arguments: macos/runtime/rust/cargo_lipo_builder.sh runner
       workingDirectory: $(SRCROOT)/
       passSettings: true
   Runner:
     type: application
     platform: macOS
     sources:
-    - path: macOS/runner
+    - path: macos/runner
       excludes:
       - "aot_*.o"
     settings:
       base:
-        CODE_SIGN_ENTITLEMENTS: macOS/runner/runner.entitlements
-        INFOPLIST_FILE: macOS/runner/Info.plist
+        CODE_SIGN_ENTITLEMENTS: macos/runner/runner.entitlements
+        INFOPLIST_FILE: macos/runner/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueLauncher.Runner
         PRODUCT_NAME: webrogue_runner
         OTHER_LDFLAGS:
@@ -220,11 +219,11 @@ targets:
       embed: true
       codeSign: true
     preBuildScripts:
-      - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/macOS/runner ${BUILD_DIR}/rust_artifacts/runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o"
+      - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/macos/runner ${BUILD_DIR}/rust_artifacts/runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o"
         name: Combine object to lipo
         inputFiles:
-          - ${SRCROOT}/macOS/runner/aot_x86_64.o
-          - ${SRCROOT}/macOS/runner/aot_arm64.o
+          - ${SRCROOT}/macos/runner/aot.x86_64.macosx.o
+          - ${SRCROOT}/macos/runner/aot.arm64.macosx.o
           - ${SRCROOT}/scripts/lipo_object_combiner.sh
         outputFiles:
           - ${BUILD_DIR}/rust_artifacts/runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o
@@ -275,19 +274,19 @@ schemes:
         Runner: ReleaseLocal
     run:
       config: ReleaseLocal
-  iOS_Debug:
+  iOS_Launcher_Debug:
     build:
       targets:
         Launcher_iOS: Debug
     run:
       config: Debug
-  iOS_Release:
+  iOS_Launcher_Release:
     build:
       targets:
         Launcher_iOS: Release
     run:
       config: Release
-  iOS_ReleaseLocal:
+  iOS_Launcher_ReleaseLocal:
     build:
       targets:
         Launcher_iOS: ReleaseLocal
