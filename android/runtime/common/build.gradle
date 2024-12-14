@@ -14,7 +14,7 @@ class MyDownload extends DefaultTask {
     void download() {
         if (!target.exists()) {
             new URL('https://codeload.github.com/libsdl-org/SDL/zip/refs/tags/release-2.30.10')
-                .withInputStream { i -> target.withOutputStream{ it << i } }
+                    .withInputStream { i -> target.withOutputStream { it << i } }
         }
     }
 }
@@ -31,9 +31,9 @@ task copySDLJavaSources(dependsOn: downloadAndUnzipFile, type: Copy) {
 
 android {
     namespace 'io.github.webrogue_runtime.common'
-    compileSdk 34
+    compileSdk 35
     ndkVersion "27.2.12479018"
-    
+
     tasks.whenTaskAdded { task ->
         if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
             task.dependsOn copySDLJavaSources
@@ -42,9 +42,13 @@ android {
             task.dependsOn copySDLJavaSources
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
     defaultConfig {
         minSdk 24
-        targetSdk 34
+        targetSdk 35
     }
 }
 

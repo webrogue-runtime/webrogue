@@ -11,13 +11,13 @@ def cargoProfile = "release-lto"
 
 android {
     namespace 'io.github.webrogue_runtime.launcher'
-    compileSdk 34
+    compileSdk 35
     ndkVersion "27.2.12479018"
 
     defaultConfig {
         applicationId "io.github.webrogue_runtime.launcher"
         minSdk 24
-        targetSdk 34
+        targetSdk 35
         versionCode 1
         versionName "1.0"
 
@@ -47,8 +47,12 @@ android {
             minifyEnabled false
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
     buildFeatures {
         compose true

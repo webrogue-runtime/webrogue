@@ -4,13 +4,13 @@ plugins {
 
 android {
     namespace 'io.github.webrogue_runtime'
-    compileSdk 34
+    compileSdk 35
     ndkVersion "27.2.12479018"
 
     defaultConfig {
         applicationId "io.github.webrogue_runtime"
         minSdk 24
-        targetSdk 34
+        targetSdk 35
         versionCode 1
         versionName "1.0"
 
