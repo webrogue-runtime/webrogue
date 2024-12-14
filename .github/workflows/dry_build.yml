@@ -93,15 +93,7 @@ jobs:
 
     - name: Build launcher
       run: |
-        unset ANDROID_SDK_ROOT
-        unset ANDROID_NDK
-        # unset ANDROID_NDK_HOME
-        unset ANDROID_NDK_LATEST_HOME
-        unset ANDROID_NDK_ROOT
-        unset ANDROID_SDK_ROOT
-
-        sdkmanager --sdk_root=sdk "ndk;26.1.10909125"
         cd android/runtime
         ./gradlew --no-daemon :launcher:assembleRelease
-        cd ..
+        cd ../..
         du -h android/runtime/launcher/build/outputs/apk/release/launcher-release-unsigned.apk

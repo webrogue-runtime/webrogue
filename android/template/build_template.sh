@@ -5,7 +5,7 @@ set -e
 # android
 cd ..
 CMDLINE_TOOLS_VERSION=linux-11076708_latest
-NDK_VERSION=26.1.10909125
+NDK_VERSION=27.2.12479018
 
 test -d sdk || mkdir sdk
 test -d sdk/cmdline-tools || {

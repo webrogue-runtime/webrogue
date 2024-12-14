@@ -32,6 +32,8 @@ task copySDLJavaSources(dependsOn: downloadAndUnzipFile, type: Copy) {
 android {
     namespace 'io.github.webrogue_runtime.common'
     compileSdk 34
+    ndkVersion "27.2.12479018"
+    
     tasks.whenTaskAdded { task ->
         if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
             task.dependsOn copySDLJavaSources
