@@ -24,7 +24,7 @@ jobs:
     - name: Build
       shell: sh # does not works on zsh
       run: |
-        XCODEBUILD_FLAGS="-destination generic/platform=macOS -workspace apple/runtime/webrogue.xcworkspace -scheme MacOS_ReleaseLocal -configuration ReleaseLocal"
+        XCODEBUILD_FLAGS="-destination generic/platform=macOS -workspace apple/runtime/webrogue.xcworkspace -scheme MacOS_Launcher_ReleaseLocal -configuration ReleaseLocal"
         XC_BUILD_DIR=$(xcodebuild $XCODEBUILD_FLAGS -showBuildSettings | grep -m 1 "BUILT_PRODUCTS_DIR =" | grep -oEi "\/.*" || exit 3)
         xcodebuild $XCODEBUILD_FLAGS -parallelizeTargets -allowProvisioningUpdates
         du -h -d 0 $XC_BUILD_DIR/webrogue\ Launcher.app
@@ -82,11 +82,25 @@ jobs:
 
     - name: Build template
       run: |
+        unset ANDROID_SDK_ROOT
+        unset ANDROID_NDK
+        unset ANDROID_NDK_HOME
+        unset ANDROID_NDK_LATEST_HOME
+        unset ANDROID_NDK_ROOT
+        unset ANDROID_SDK_ROOT
+
         sh android/template/build_template.sh
 
     - name: Build launcher
       run: |
+        unset ANDROID_SDK_ROOT
+        unset ANDROID_NDK
+        unset ANDROID_NDK_HOME
+        unset ANDROID_NDK_LATEST_HOME
+        unset ANDROID_NDK_ROOT
+        unset ANDROID_SDK_ROOT
+
         cd android/runtime
-        ANDROID_HOME=../sdk/ ./gradlew --no-daemon :launcher:assembleRelease
+        export ANDROID_HOME=../sdk/ ./gradlew --no-daemon :launcher:assembleRelease
         cd ..
         du -h android/runtime/launcher/build/outputs/apk/release/launcher-release-unsigned.apk
