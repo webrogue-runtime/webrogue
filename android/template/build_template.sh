@@ -20,6 +20,10 @@ export ANDROID_NDK_PATH="$ANDROID_HOME/ndk/$NDK_VERSION"
 test -d "$ANDROID_HOME/licenses" || yes | ./sdk/cmdline-tools/bin/sdkmanager --licenses --sdk_root=sdk
 test -d "$ANDROID_NDK_PATH" || ./sdk/cmdline-tools/bin/sdkmanager --sdk_root=sdk "ndk;$NDK_VERSION"
 
+rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/home/someone/repos/webrogue/crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c.o
+rm -f runtime/runner/build/intermediates/cxx/RelWithDebInfo/*/obj/arm64-v8a/libSDL2.so 
+rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/webrogue_runtime.c.o
+
 ./runtime/gradlew --project-dir=runtime :runner:assembleRelease
 
 rm -rf ../aot_artifacts/android_gradle

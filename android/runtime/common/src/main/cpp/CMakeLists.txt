@@ -2,26 +2,26 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project("webrogue_common")
 
-set(WEBROGUE_SDL_VERSION "2.30.6")
-set(WEBROGUE_SDL_HASH "5aef5ee599a1bbfad081f6f05755059f77d8a13248e7eb3d0c556b117c45249e")
+set(WEBROGUE_SDL_VERSION "2.30.10")
+set(WEBROGUE_SDL_HASH "d5ebf6989428ad54a1769fe91be7811ff2ab33ac638fdab29b5d04b88a39dff1")
 
 set(WEBROGUE_SDL_DIR_NAME "SDL-release-${WEBROGUE_SDL_VERSION}")
 set(WEBROGUE_SDL_DIR "${CMAKE_CURRENT_LIST_DIR}/external/${WEBROGUE_SDL_DIR_NAME}")
 
-file(
-    DOWNLOAD
-   	"https://codeload.github.com/libsdl-org/SDL/zip/refs/tags/release-${WEBROGUE_SDL_VERSION}"
-    "${WEBROGUE_SDL_DIR}.zip"
-	EXPECTED_HASH "SHA256=${WEBROGUE_SDL_HASH}"
-	SHOW_PROGRESS
-)
-if(NOT EXISTS "${WEBROGUE_SDL_DIR}")
-    file(
-        ARCHIVE_EXTRACT
-        INPUT "${WEBROGUE_SDL_DIR}.zip"
-        DESTINATION "${CMAKE_CURRENT_LIST_DIR}/external"
-    )
-endif()
+# file(
+#     DOWNLOAD
+#    	"https://codeload.github.com/libsdl-org/SDL/zip/refs/tags/release-${WEBROGUE_SDL_VERSION}"
+#     "${WEBROGUE_SDL_DIR}.zip"
+# 	EXPECTED_HASH "SHA256=${WEBROGUE_SDL_HASH}"
+# 	SHOW_PROGRESS
+# )
+# if(NOT EXISTS "${WEBROGUE_SDL_DIR}")
+#     file(
+#         ARCHIVE_EXTRACT
+#         INPUT "${WEBROGUE_SDL_DIR}.zip"
+#         DESTINATION "${CMAKE_CURRENT_LIST_DIR}/external"
+#     )
+# endif()
 
 set(SDL_SHARED ON)
 set(SDL_STATIC OFF)

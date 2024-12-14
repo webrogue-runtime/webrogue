@@ -3,7 +3,7 @@ plugins {
 }
 
 task downloadZipFile(type: MyDownload) {
-    target = project.file('src/main/cpp/external/SDL-release-2.30.6.zip')
+    target = project.file('src/main/cpp/external/SDL-release-2.30.10.zip')
 }
 
 class MyDownload extends DefaultTask {
@@ -13,7 +13,7 @@ class MyDownload extends DefaultTask {
     @TaskAction
     void download() {
         if (!target.exists()) {
-            new URL('https://codeload.github.com/libsdl-org/SDL/zip/refs/tags/release-2.30.6')
+            new URL('https://codeload.github.com/libsdl-org/SDL/zip/refs/tags/release-2.30.10')
                 .withInputStream { i -> target.withOutputStream{ it << i } }
         }
     }
@@ -25,7 +25,7 @@ task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
 }
 
 task copySDLJavaSources(dependsOn: downloadAndUnzipFile, type: Copy) {
-    from project.file('src/main/cpp/external/SDL-release-2.30.6/android-project/app/src/main/java/org/libsdl/app')
+    from project.file('src/main/cpp/external/SDL-release-2.30.10/android-project/app/src/main/java/org/libsdl/app')
     into project.file('src/main/java/org/libsdl/app')
 }
 

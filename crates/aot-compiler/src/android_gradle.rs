@@ -11,8 +11,12 @@ pub fn build_android_gradle(
     }
     let template_dir = std::path::PathBuf::from("aot_artifacts/android_gradle/template");
 
+    let ndk_version = "27.2.12479018";
     let android_ndks_dir = android_sdk_dir.join("ndk");
-    let android_ndk_dir = android_ndks_dir.join(find_ndk_version(android_ndks_dir.clone())?);
+    let android_ndk_dir = android_ndks_dir.join(ndk_version);
+    if !android_ndk_dir.exists() {
+        anyhow::bail!("NDK version {} not installed", ndk_version);
+    }
     let toolchains_dir = android_ndk_dir
         .join("toolchains")
         .join("llvm")
@@ -158,24 +162,6 @@ pub fn build_android_gradle(
     };
     std::fs::copy(container_path, assets_path.join("aot.webc"))?;
     return anyhow::Ok(());
-}
-
-fn find_ndk_version(android_ndks_dir: std::path::PathBuf) -> Result<String, anyhow::Error> {
-    let mut versions = vec![];
-    for dir_entry in android_ndks_dir.read_dir()? {
-        let dir_entry = dir_entry?;
-        if !dir_entry.file_type()?.is_dir() {
-            continue;
-        }
-        versions.push(dir_entry.file_name().to_str().unwrap().to_owned());
-    }
-
-    if versions.is_empty() {
-        anyhow::bail!("No suitable Android NDK version found");
-    }
-    versions.sort();
-
-    return anyhow::Ok(versions[versions.len() - 1].clone());
 }
 
 fn find_ndk_toolchain(android_toolchains_dir: std::path::PathBuf) -> Result<String, anyhow::Error> {
