@@ -101,6 +101,6 @@ jobs:
         unset ANDROID_SDK_ROOT
 
         cd android/runtime
-        export ANDROID_HOME=../sdk/ ./gradlew --no-daemon :launcher:assembleRelease
+        ./gradlew --no-daemon :launcher:assembleRelease
         cd ..
         du -h android/runtime/launcher/build/outputs/apk/release/launcher-release-unsigned.apk
