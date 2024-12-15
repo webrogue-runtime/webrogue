@@ -51,7 +51,7 @@ jobs:
     - name: Build
       shell: sh # does not works on zsh
       run: |
-        XCODEBUILD_FLAGS="-workspace apple/runtime/webrogue.xcworkspace -scheme iOS_ReleaseLocal -configuration ReleaseLocal -destination"
+        XCODEBUILD_FLAGS="-workspace apple/runtime/webrogue.xcworkspace -scheme iOS_Launcher_ReleaseLocal -configuration ReleaseLocal -destination"
         XCODEBUILD_DESTINATION_FLAGS="generic/platform=iOS Simulator"
         XC_BUILD_DIR=$(xcodebuild $XCODEBUILD_FLAGS "$XCODEBUILD_DESTINATION_FLAGS" -showBuildSettings | grep -m 1 "BUILT_PRODUCTS_DIR =" | grep -oEi "\/.*" || exit 3)
         xcodebuild $XCODEBUILD_FLAGS "$XCODEBUILD_DESTINATION_FLAGS" -parallelizeTargets -allowProvisioningUpdates
