@@ -25,6 +25,8 @@ rm -f runtime/runner/build/intermediates/cxx/RelWithDebInfo/*/obj/arm64-v8a/libS
 rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/webrogue_runtime.c.o
 cargo run \
     --target-dir=../target \
+    --release \
+    --no-default-features \
     --package=webrogue-aot-compiler \
     object \
     ../examples/gears/gears.webc \

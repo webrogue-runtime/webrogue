@@ -4,6 +4,10 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+default = ["llvm"]
+llvm = ["dep:webrogue-aot-linker"]
+
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
@@ -13,4 +17,4 @@ wasmer-compiler-cranelift = { workspace = true }
 wasmer-types = { workspace = true }
 webc = { workspace = true }
 wasmer-package = { workspace = true }
-webrogue-aot-linker = { workspace = true }
+webrogue-aot-linker = { workspace = true, optional = true }

@@ -44,3 +44,10 @@ fn copy_dir_impl(
 
     return anyhow::Ok(());
 }
+
+pub fn run_lld(args: Vec<String>) -> anyhow::Result<()> {
+    #[cfg(feature = "llvm")]
+    return webrogue_aot_linker::run_lld(args);
+    #[cfg(not(feature = "llvm"))]
+    anyhow::bail!("LLVM feature is disabled at build time")
+}

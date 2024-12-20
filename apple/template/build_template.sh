@@ -8,11 +8,11 @@ cp ../../examples/gears/gears.webc ios/runner/aot.webc
 
 sh setup.command
 
-cargo run --release --manifest-path ../../crates/aot-compiler/Cargo.toml object macos/runner/aot.webc macos/runner/aot.x86_64.macosx.o x86_64-apple-darwin
-cargo run --release --manifest-path ../../crates/aot-compiler/Cargo.toml object macos/runner/aot.webc macos/runner/aot.arm64.macosx.o arm64-apple-darwin
-cargo run --release --manifest-path ../../crates/aot-compiler/Cargo.toml object ios/runner/aot.webc ios/runner/aot.x86_64.iphonesimulator.o x86_64-apple-ios
-cargo run --release --manifest-path ../../crates/aot-compiler/Cargo.toml object ios/runner/aot.webc ios/runner/aot.arm64.iphonesimulator.o arm64-apple-ios-sim
-cargo run --release --manifest-path ../../crates/aot-compiler/Cargo.toml object ios/runner/aot.webc ios/runner/aot.arm64.iphoneos.o arm64-apple-ios
+cargo run --release --no-default-features --manifest-path ../../crates/aot-compiler/Cargo.toml object macos/runner/aot.webc macos/runner/aot.x86_64.macosx.o x86_64-apple-darwin
+cargo run --release --no-default-features --manifest-path ../../crates/aot-compiler/Cargo.toml object macos/runner/aot.webc macos/runner/aot.arm64.macosx.o arm64-apple-darwin
+cargo run --release --no-default-features --manifest-path ../../crates/aot-compiler/Cargo.toml object ios/runner/aot.webc ios/runner/aot.x86_64.iphonesimulator.o x86_64-apple-ios
+cargo run --release --no-default-features --manifest-path ../../crates/aot-compiler/Cargo.toml object ios/runner/aot.webc ios/runner/aot.arm64.iphonesimulator.o arm64-apple-ios-sim
+cargo run --release --no-default-features --manifest-path ../../crates/aot-compiler/Cargo.toml object ios/runner/aot.webc ios/runner/aot.arm64.iphoneos.o arm64-apple-ios
 
 XC_FLAGS="-destination generic/platform=macOS -workspace webrogue.xcworkspace -scheme MacOS_Runner_ReleaseLocal -configuration ReleaseLocal"
 XC_BUILD_DIR=$(xcodebuild $XC_FLAGS -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)

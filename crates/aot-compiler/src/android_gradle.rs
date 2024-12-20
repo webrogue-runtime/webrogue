@@ -57,7 +57,7 @@ pub fn build_android_gradle(
         .join("lib")
         .join("linux");
 
-    webrogue_aot_linker::run_lld(
+    crate::utils::run_lld(
         vec![
             "ld.lld",
             "-EL",

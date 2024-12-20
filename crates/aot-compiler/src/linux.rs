@@ -26,7 +26,7 @@ fn link_linux(
     object_file_path: std::path::PathBuf,
     output_file_path: std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    webrogue_aot_linker::run_lld(
+    crate::utils::run_lld(
         vec![
             "ld.lld",
             "-pie",

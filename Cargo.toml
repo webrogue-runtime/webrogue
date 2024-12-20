@@ -99,3 +99,6 @@ cmake = { version = "0.1" }
 inherits = "release"
 lto = true
 panic = "abort"
+codegen-units = 1
+opt-level = 3
+strip = true
