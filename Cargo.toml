@@ -79,6 +79,7 @@ wasmer = { path = "external/wasmer/lib/api", default-features = false }
 wasmer-wasix = { path = "external/wasmer/lib/wasix" }
 wasmer-compiler = { path = "external/wasmer/lib/compiler" }
 wasmer-compiler-cranelift = { path = "external/wasmer/lib/compiler-cranelift" }
+wasmer-compiler-llvm = { path = "external/wasmer/lib/compiler-llvm" }
 wasmer-package = { path = "external/wasmer/lib/package" }
 wasmer-types = { path = "external/wasmer/lib/types" }
 virtual-fs = { path = "external/wasmer/lib/virtual-fs" }

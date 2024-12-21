@@ -1,4 +1,5 @@
 use std::{io::Write as _, str::FromStr as _};
+use wasmer_compiler::CompilerConfig as _;
 
 fn target_triple_to_target(
     target_triple: &wasmer_types::Triple,
@@ -21,7 +22,17 @@ pub fn compile_webc_to_object(
     triple_str: &str,
 ) -> anyhow::Result<()> {
     let triple = wasmer_types::Triple::from_str(triple_str).map_err(|e| anyhow::anyhow!(e))?;
-    let cranelift = wasmer_compiler_cranelift::Cranelift::new();
+    let mut cranelift = wasmer_compiler_cranelift::Cranelift::new();
+    cranelift.opt_level(wasmer_compiler_cranelift::CraneliftOptLevel::SpeedAndSize);
+    // currently not works
+    // #[cfg(feature = "llvm")]
+    // let mut llvm = wasmer_compiler_llvm::LLVM::new();
+    // llvm.enable_pic();
+    let engine_builder = match triple.architecture {
+        // #[cfg(feature = "llvm")]
+        // wasmer_types::Architecture::X86_64 => wasmer_compiler::EngineBuilder::new(llvm),
+        _ => wasmer_compiler::EngineBuilder::new(cranelift),
+    };
 
     let target = target_triple_to_target(&triple, &[]);
 
@@ -38,7 +49,7 @@ pub fn compile_webc_to_object(
         .ok_or(anyhow::anyhow!("webc atom retrieval failed"))?;
 
     let prefix = "wr_aot";
-    let engine = wasmer_compiler::EngineBuilder::new(cranelift)
+    let engine = engine_builder
         .set_features(Some(wasmer_types::Features::new()))
         .set_target(Some(target.clone()))
         .engine();

@@ -1,10 +1,16 @@
+set(LLVM_TARGETS_TO_BUILD "X86;AArch64;RISCV;LoongArch")
+set(LLVM_TARGETS_TO_BUILD "X86;AArch64;RISCV;LoongArch" CACHE STRING "Semicolon-separated list of targets to build, or \"all\".")
+
+set(LLVM_ENABLE_TERMINFO "OFF")
+set(LLVM_ENABLE_TERMINFO "OFF" CACHE STRING "Use terminfo database if available.")
+
 add_subdirectory(../../external/llvm/llvm llvm EXCLUDE_FROM_ALL)
 
 project(webrogue_linker CXX)
 
 add_library(lldAsLib STATIC lldAsLib.cpp)
 
-set(libs lldCommon lldCOFF lldELF lldMachO lldMinGW lldWasm) #  LLVMSupport LLVMCodeGen LLVMCore LLVMDebugInfoDWARF LLVMDemangle LLVMMC LLVMOption LLVMTarget LLVMTargetParser
+set(libs lldCommon lldCOFF lldELF lldMachO lldMinGW lldWasm LLVMExecutionEngine) #  LLVMSupport LLVMCodeGen LLVMCore LLVMDebugInfoDWARF LLVMDemangle LLVMMC LLVMOption LLVMTarget LLVMTargetParser
 
 target_link_libraries(lldAsLib ${libs})
 target_include_directories(
@@ -47,9 +53,10 @@ search_for_libs_to_link(lldELF LIBS_TO_LINK lldELF "${LIBS_TO_LINK}")
 search_for_libs_to_link(lldMachO LIBS_TO_LINK lldMachO "${LIBS_TO_LINK}")
 search_for_libs_to_link(lldMinGW LIBS_TO_LINK lldMinGW "${LIBS_TO_LINK}")
 search_for_libs_to_link(lldWasm LIBS_TO_LINK lldWasm "${LIBS_TO_LINK}")
+search_for_libs_to_link(LLVMExecutionEngine LIBS_TO_LINK LLVMExecutionEngine "${LIBS_TO_LINK}")
 
 message("LIBS_TO_LINK=${LIBS_TO_LINK}")
-list(APPEND LIBS_TO_LINK lldELF lldMachO lldMinGW lldWasm lldAsLib)
+list(APPEND LIBS_TO_LINK lldELF lldMachO lldMinGW lldWasm lldAsLib LLVMExecutionEngine)
 message("LIBS_TO_LINK=${LIBS_TO_LINK}")
 list(REVERSE LIBS_TO_LINK)
 message("LIBS_TO_LINK=${LIBS_TO_LINK}")

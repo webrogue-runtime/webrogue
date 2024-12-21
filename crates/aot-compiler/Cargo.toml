@@ -6,7 +6,7 @@ edition.workspace = true
 
 [features]
 default = ["llvm"]
-llvm = ["dep:webrogue-aot-linker"]
+llvm = ["dep:wasmer-compiler-llvm", "dep:webrogue-aot-linker", "dep:llvm-sys"]
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
@@ -14,7 +14,9 @@ anyhow = { workspace = true }
 # wasmer = { workspace = true, default-features = false }
 wasmer-compiler = { workspace = true, features = ["static-artifact-create"] }
 wasmer-compiler-cranelift = { workspace = true }
+wasmer-compiler-llvm = { workspace = true, optional = true }
 wasmer-types = { workspace = true }
 webc = { workspace = true }
 wasmer-package = { workspace = true }
 webrogue-aot-linker = { workspace = true, optional = true }
+llvm-sys = { version = "*", default-features = false, features=["no-llvm-linking"], optional = true }

@@ -7,10 +7,10 @@ fn main() {
     let dst = cmake::Config::new(crate_manifest_dir)
         .define("LLVM_ENABLE_PROJECTS", "lld")
         .define("BUILD_SHARED_LIBS", "OFF")
-        .define("LLVM_TARGETS_TO_BUILD", "")
         .define("LLVM_ENABLE_LIBXML2", "OFF")
         .define("LLVM_ENABLE_ZLIB", "OFF")
         .define("LLVM_ENABLE_ZSTD", "OFF")
+        .define("LLVM_ENABLE_TERMINFO", "OFF")
         .always_configure(false)
         .build();
     println!(
