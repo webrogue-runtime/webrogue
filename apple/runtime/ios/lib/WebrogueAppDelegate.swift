@@ -26,7 +26,7 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
             name: .init(rawValue: "WebrogueRunPath"),
             object: nil
         )
-        if let viewController = webrogueControllerBlock() {
+        if let viewController = webrogueControllerBlock?() {
             webrogueWindow = UIWindow(frame: UIScreen.main.bounds)
             webrogueWindow.rootViewController = viewController
             webrogueWindow.makeKeyAndVisible()

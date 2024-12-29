@@ -113,7 +113,7 @@ targets:
         PRODUCT_NAME: wrios
         SYSTEM_HEADER_SEARCH_PATHS:
         - "$(SRCROOT)/external/angle_ios_headers"
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/lib/wrios-Bridging-Header.h"
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/lib/Bridging-Header.h"
   Launcher_iOS:
     type: application
     platform: iOS
@@ -128,7 +128,7 @@ targets:
         PRODUCT_NAME: Webrogue Runtime
         OTHER_LDFLAGS: "-lwebrogue_ios"
         LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/ios_launcher/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/launcher/webrogue-Bridging-Header.h"
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/launcher/Bridging-Header.h"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
@@ -172,7 +172,7 @@ targets:
         - "-lwebrogue_ios"
         - "$(BUILD_DIR)/rust_artifacts/ios_runner/$(CONFIGURATION)/$(PLATFORM_NAME)/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/ios_runner/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/runner/webrogue-Bridging-Header.h"
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/runner/Bridging-Header.h"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"

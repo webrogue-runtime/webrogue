@@ -85,7 +85,7 @@ mkdir -p template/ios
 cp runtime/ios/runner/main.swift template/ios/main.swift
 cp runtime/ios/runner/Info.plist template/ios/Info.plist
 cp runtime/ios/runner/ios.entitlements template/ios/ios.entitlements
-cp runtime/ios/runner/webrogue-Bridging-Header.h template/ios/Bridging-Header.h
+cp runtime/ios/runner/Bridging-Header.h template/ios/Bridging-Header.h
 cp runtime/ios/runner/LaunchScreen.storyboard template/ios/LaunchScreen.storyboard
 cp -r runtime/external/libEGL.xcframework template/bin/libEGL.xcframework
 cp -r runtime/external/libGLESv2.xcframework template/bin/libGLESv2.xcframework
