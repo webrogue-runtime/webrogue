@@ -19,4 +19,6 @@ wasmer-types = { workspace = true }
 webc = { workspace = true }
 wasmer-package = { workspace = true }
 webrogue-aot-linker = { workspace = true, optional = true }
+# needed not to let wasmer-compiler-llvm link to other llvm version
 llvm-sys = { version = "*", default-features = false, features=["no-llvm-linking"], optional = true }
+target-lexicon = { workspace = true }

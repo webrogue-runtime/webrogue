@@ -1,19 +1,17 @@
 use std::{io::Write as _, str::FromStr as _};
+use wasmer_compiler::types::target::{CpuFeature, Target};
 use wasmer_compiler::CompilerConfig as _;
 
-fn target_triple_to_target(
-    target_triple: &wasmer_types::Triple,
-    cpu_features: &[wasmer_types::CpuFeature],
-) -> wasmer_types::Target {
-    let mut features = cpu_features
-        .iter()
-        .fold(wasmer_types::CpuFeature::set(), |a, b| a | *b);
+use target_lexicon::{Architecture, Environment, OperatingSystem, Triple};
+
+fn target_triple_to_target(target_triple: &Triple, cpu_features: &[CpuFeature]) -> Target {
+    let mut features = cpu_features.iter().fold(CpuFeature::set(), |a, b| a | *b);
     // Cranelift requires SSE2, so we have this "hack" for now to facilitate
     // usage
-    if target_triple.architecture == wasmer_types::Architecture::X86_64 {
-        features |= wasmer_types::CpuFeature::SSE2;
+    if target_triple.architecture == Architecture::X86_64 {
+        features |= CpuFeature::SSE2;
     }
-    wasmer_types::Target::new(target_triple.clone(), features)
+    Target::new(target_triple.clone(), features)
 }
 
 pub fn compile_webc_to_object(
@@ -21,7 +19,7 @@ pub fn compile_webc_to_object(
     object_file_path: std::path::PathBuf,
     triple_str: &str,
 ) -> anyhow::Result<()> {
-    let triple = wasmer_types::Triple::from_str(triple_str).map_err(|e| anyhow::anyhow!(e))?;
+    let triple = Triple::from_str(triple_str).map_err(|e| anyhow::anyhow!(e))?;
     let mut cranelift = wasmer_compiler_cranelift::Cranelift::new();
     cranelift.opt_level(wasmer_compiler_cranelift::CraneliftOptLevel::SpeedAndSize);
     // currently not works
