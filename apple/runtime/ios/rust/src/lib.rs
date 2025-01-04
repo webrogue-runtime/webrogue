@@ -2,6 +2,7 @@ fn main(wrapp_path: String) -> anyhow::Result<()> {
     webrogue_runtime::run(
         wasmer_package::utils::from_disk(std::path::PathBuf::from(wrapp_path))?,
         None,
+        None,
     )?;
     Ok(())
 }

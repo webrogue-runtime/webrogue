@@ -1,13 +1,10 @@
-extern "C" {
-    fn webrogue_android_print(str: *const std::ffi::c_char, len: usize);
-    fn webrogue_android_path() -> *const std::ffi::c_char;
-}
+use std::io::Write;
 
 #[derive(Debug)]
-struct Stdout {}
+pub struct Stdout {}
 
 impl Stdout {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {}
     }
 }
@@ -75,9 +72,7 @@ impl tokio::io::AsyncWrite for Stdout {
         _cx: &mut std::task::Context<'_>,
         buf: &[u8],
     ) -> std::task::Poll<Result<usize, std::io::Error>> {
-        unsafe {
-            webrogue_android_print(buf.as_ptr() as *const std::ffi::c_char, buf.len());
-        }
+        std::io::stdout().write_all(buf)?;
         std::task::Poll::Ready(Result::Ok(buf.len()))
     }
 
@@ -116,26 +111,4 @@ impl tokio::io::AsyncSeek for Stdout {
             "can not seek stdout",
         )))
     }
-}
-
-fn main() -> anyhow::Result<()> {
-    let container_path = unsafe {
-        std::ffi::CStr::from_ptr(webrogue_android_path())
-            .to_str()
-            .unwrap()
-            .to_owned()
-    };
-
-    webrogue_runtime::run(
-        wasmer_package::utils::from_disk(std::path::PathBuf::from(container_path))?,
-        Some(Box::new(Stdout::new())),
-        Some(Box::new(Stdout::new())),
-    )?;
-
-    Ok(())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn webrogue_main() {
-    main().unwrap();
 }

@@ -10,6 +10,7 @@ extern "C" fn webrogue_aot_main() {
         )
         .unwrap(),
         None,
+        None,
     )
     .unwrap();
 }

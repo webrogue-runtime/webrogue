@@ -13,6 +13,7 @@ pub fn run() -> anyhow::Result<()> {
         // wrapp_handle,
         wasmer_package::utils::from_disk(args.path)?,
         None,
+        None,
     )?;
 
     Ok(())
