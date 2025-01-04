@@ -9,4 +9,4 @@ compiling = ["dep:cc", "dep:webrogue-aot-compiler"]
 
 [build-dependencies]
 cc = { workspace = true, optional = true }
-webrogue-aot-compiler = { workspace = true, optional = true }
+webrogue-aot-compiler = { workspace = true, default-features=false, optional = true }

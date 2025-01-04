@@ -60,7 +60,7 @@ exclude = [
 
 [workspace.dependencies]
 # Webrogue crates
-webrogue-aot-compiler = { path = "crates/aot-compiler" }
+webrogue-aot-compiler = { path = "crates/aot-compiler", default-features=false }
 webrogue-aot-data = { path = "crates/aot-data" }
 webrogue-aot-linker = { path = "crates/aot-linker" }
 webrogue-default-runtime = { path = "crates/default-runtime" }
