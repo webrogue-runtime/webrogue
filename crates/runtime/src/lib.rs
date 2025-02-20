@@ -1,14 +1,11 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 // pub use webrogue_wrapp as wrapp;
 
 mod stdout;
 
 #[derive(Debug)]
 struct AdditionalImportsBuilder {
-    #[cfg(feature = "gfx")]
     gfx: Arc<webrogue_gfx::GFXSystem>,
-    #[cfg(feature = "gl")]
-    gl: Arc<RwLock<webrogue_gl::GL>>,
 }
 
 unsafe impl Sync for AdditionalImportsBuilder {}
@@ -20,20 +17,13 @@ impl wasmer_wasix::AdditionalImportsBuilder for AdditionalImportsBuilder {
         store: &mut dyn wasmer::AsStoreMut,
     ) -> (wasmer::Imports, wasmer_wasix::AdditionalImportsInitializer) {
         let mut import_object = wasmer::Imports::new();
-        #[cfg(feature = "gfx")]
         let gfx_callback = webrogue_gfx::GFXInterface::new(self.gfx.clone())
             .add_to_imports(store, &mut import_object);
-
-        #[cfg(feature = "gl")]
-        let gl_callback = webrogue_gl::add_to_imports(store, &mut import_object, self.gl.clone());
 
         (
             import_object,
             Box::new(move |_instance, memory, _store| {
-                #[cfg(feature = "gfx")]
-                gfx_callback()?;
-                #[cfg(feature = "gl")]
-                gl_callback(memory.clone())?;
+                gfx_callback(memory.clone())?;
 
                 Ok(())
             }),
@@ -45,8 +35,7 @@ async fn run_task(
     container: webc::Container,
     stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
     stderr: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
-    #[cfg(feature = "gfx")] gfx: Arc<webrogue_gfx::GFXSystem>,
-    #[cfg(feature = "gl")] gl: Arc<RwLock<webrogue_gl::GL>>,
+    gfx: Arc<webrogue_gfx::GFXSystem>,
 ) -> anyhow::Result<()> {
     let store = wasmer::Store::default();
 
@@ -85,10 +74,7 @@ async fn run_task(
         .stdout(stdout.unwrap_or(Box::new(stdout::Stdout::new())))
         .stderr(stderr.unwrap_or(Box::new(stdout::Stdout::new())))
         .import_builder(Arc::new(AdditionalImportsBuilder {
-            #[cfg(feature = "gfx")]
             gfx: gfx,
-            #[cfg(feature = "gl")]
-            gl: gl,
         }));
 
     // let root_fs = virtual_fs::RootFileSystemBuilder::new()
@@ -127,11 +113,7 @@ pub fn run(
     stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
     stderr: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
 ) -> anyhow::Result<()> {
-    #[cfg(feature = "gfx")]
     let gfx = Arc::new(webrogue_gfx::GFXSystem::new());
-
-    #[cfg(feature = "gl")]
-    let gl = Arc::new(RwLock::new(webrogue_gl::GL::new(gfx.clone())));
 
     let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -143,14 +125,10 @@ pub fn run(
         container,
         stdout,
         stderr,
-        #[cfg(feature = "gfx")]
         gfx.clone(),
-        #[cfg(feature = "gl")]
-        gl,
     ))?;
 
     drop(tokio_guard);
-    #[cfg(feature = "gfx")]
     drop(gfx);
 
     return Ok(());

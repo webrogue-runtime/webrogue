@@ -1,8 +1,0 @@
-[package]
-name = "webrogue-gl-bindgen"
-version.workspace = true
-authors.workspace = true
-edition.workspace = true
-
-[dependencies]
-roxmltree = "0.20.0"

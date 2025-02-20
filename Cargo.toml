@@ -11,8 +11,7 @@ path = "crates/default-runtime/src/main_workspace.rs"
 doc = false
 
 [features]
-default = ["gl", "cranelift"]
-gl = ["webrogue-default-runtime/gl"]
+default = ["cranelift"]
 singlepass = ["webrogue-default-runtime/singlepass"]
 cranelift = ["webrogue-default-runtime/cranelift"]
 llvm = ["webrogue-default-runtime/llvm"]
@@ -38,8 +37,6 @@ members = [
   "crates/default-runtime",
   "crates/gfx",
   "crates/gfx-fallback",
-  "crates/gl",
-  "crates/gl-bindgen",
   "crates/runtime",
   "crates/wrapp",
   "crates/wrapp-cli",
@@ -65,7 +62,6 @@ webrogue-aot-data = { path = "crates/aot-data" }
 webrogue-aot-linker = { path = "crates/aot-linker" }
 webrogue-default-runtime = { path = "crates/default-runtime" }
 webrogue-runtime = { path = "crates/runtime" }
-webrogue-gl = { path = "crates/gl" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
 webrogue-wrapp = { path = "crates/wrapp" }

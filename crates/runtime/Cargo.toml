@@ -5,9 +5,6 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-gl = ["gfx", "dep:webrogue-gl"]
-gfx = ["dep:webrogue-gfx"]
-
 aot = ["wasmer/sys", "wasmer/static-artifact-load", "dep:webrogue-aot-data"]
 singlepass = ["wasmer/singlepass"]
 cranelift = ["wasmer/cranelift"]
@@ -15,8 +12,7 @@ llvm = ["wasmer/llvm"]
 wamr = ["wasmer/wamr"]
 
 [dependencies]
-webrogue-gl = { workspace = true, optional = true }
-webrogue-gfx = { workspace = true, optional = true }
+webrogue-gfx = { workspace = true }
 
 anyhow = { workspace = true }
 # webrogue-wrapp = { workspace = true }

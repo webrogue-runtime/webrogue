@@ -1,6 +1,7 @@
 use std::str::FromStr as _;
 
 fn main() {
+    panic!("rm this");
     let crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
 

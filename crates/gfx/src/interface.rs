@@ -16,14 +16,22 @@ impl GFXInterface {
         self,
         store: &mut dyn wasmer::AsStoreMut,
         imports: &mut wasmer::Imports,
-    ) -> impl Fn() -> Result<(), anyhow::Error> {
-        let env = crate::env_wrapper::EnvWrapper { data: self };
+    ) -> impl Fn(wasmer::Memory) -> Result<(), anyhow::Error> {
+        let lazy = std::rc::Rc::new(crate::env_wrapper::OnceCell::new());
+        let env = crate::env_wrapper::EnvWrapper { 
+            data: self, 
+            lazy: std::rc::Rc::clone(&lazy), 
+        };
         let mut store = store.as_store_mut();
         let env = wasmer::FunctionEnv::new(&mut store, env);
         let mut exports = wasmer::Exports::new();
         crate::bindings::add_bindings(&mut exports, store, env);
         imports.register_namespace("webrogue-gfx", exports);
-        move || Ok(())
+        move |memory: wasmer::Memory| {
+            lazy.set(crate::env_wrapper::LazyInitialized { memory: memory })
+                .map_err(|_e| anyhow::anyhow!("Couldn't set lazy initialized data"))?;
+            Ok(())
+        }
     }
 }
 
@@ -65,4 +73,24 @@ impl GFXInterface {
             .and_then(|window| Some(window.get_gl_size().1))
             .unwrap_or_default()
     }
+
+    pub fn gl_init(&mut self) {
+        if let Some(window) = &self.window {
+            window.gl_init()
+        }
+    }
+
+    pub fn gl_commit_buffer(&mut self, buf: &[u8]) {
+        if let Some(window) = &self.window {
+            window.gl_commit_buffer(buf)
+        }
+    }
+
+    pub fn gl_ret_buffer_read(&mut self, buf: &mut [u8]) {
+        if let Some(window) = &self.window {
+            window.gl_ret_buffer_read(buf)
+        }
+    }
+
+    
 }

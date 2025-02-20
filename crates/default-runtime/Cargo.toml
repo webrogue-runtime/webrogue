@@ -5,7 +5,6 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-gl = ["webrogue-runtime/gl", "dep:webrogue-gfx", "dep:webrogue-gfx-fallback"]
 singlepass = ["webrogue-runtime/singlepass"]
 cranelift = ["webrogue-runtime/cranelift"]
 llvm = ["webrogue-runtime/llvm"]
@@ -20,5 +19,5 @@ webc = { workspace = true }
 wasmer-package = { workspace = true }
 
 webrogue-aot-data = { workspace = true, features = ["compiling"], optional = true }
-webrogue-gfx = { workspace = true, features = ["fallback"], optional = true }
-webrogue-gfx-fallback = { workspace = true, features = ["sdl2", "cmake"], optional = true }
+webrogue-gfx = { workspace = true, features = ["fallback"] }
+webrogue-gfx-fallback = { workspace = true, features = ["sdl2", "cmake"] }
