@@ -5,8 +5,8 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-default = ["llvm"]
-llvm = ["dep:wasmer-compiler-llvm", "dep:webrogue-aot-linker", "dep:llvm-sys"]
+default = []
+llvm = ["dep:wasmer-compiler-llvm", "dep:webrogue-aot-linker", "dep:llvm-sys", "webrogue-aot-linker/build-llvm"]
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }

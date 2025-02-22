@@ -16,15 +16,15 @@ cp target/x86_64-unknown-linux-gnu/release-lto/libwebrogue_aot_lib.a "$OUT_DIR"
 clang main.c -nostdlib -c -o main.o
 
 
-# rm -f process_dump*
-# strace -s 1000 -o process_dump -ff clang \
+rm -f process_dump*
+# strace -s 1000 -o process_dump -ff clang++ -static -lc++abi \
 #     main.o \
 #     ../aot_artifacts/x86_64-linux-gnu/libwebrogue_aot_lib.a \
 #     ../aot.o \
 #     -lm \
 #     -lpthread \
 #     -ldl \
-#     -o a2.out \
+#     -o a.out \
 #     -fuse-ld=lld \
 #     -Wl,--threads=1
 
@@ -35,7 +35,9 @@ llvm-ar q \
 
 llvm-ar qLs \
     "$OUT_DIR/libwebrogue_aot_lib.a" \
-    /usr/lib/x86_64-linux-gnu/libc_nonshared.a
+    /usr/lib/x86_64-linux-gnu/libc_nonshared.a \
+    /usr/lib/llvm-16/lib/libc++abi.a \
+    /usr/lib/gcc/x86_64-linux-gnu/10/libstdc++.a 
 
 cp \
     "/usr/lib/gcc/x86_64-linux-gnu/10/crtbeginS.o" \

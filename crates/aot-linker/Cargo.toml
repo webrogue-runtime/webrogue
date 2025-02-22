@@ -4,6 +4,9 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+build-llvm = []
+
 [dependencies]
 anyhow = { workspace = true }
 

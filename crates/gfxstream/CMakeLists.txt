@@ -15,6 +15,7 @@ add_library(
     ${AEMU_SRC_DIR}/host-common/vm_operations.cpp
     ${AEMU_SRC_DIR}/host-common/crash_reporter.cpp
     ${AEMU_SRC_DIR}/base/Tracing.cpp
+    ${AEMU_SRC_DIR}/base/Stream.cpp
 )
 
 target_include_directories(

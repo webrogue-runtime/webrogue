@@ -41,6 +41,7 @@ fn main() {
             .file(aemu_src_dir.join("host-common").join("vm_operations.cpp"))
             .file(aemu_src_dir.join("host-common").join("crash_reporter.cpp"))
             .file(aemu_src_dir.join("base").join("Tracing.cpp"))
+            .file(aemu_src_dir.join("base").join("Stream.cpp"))
             .include(gfx_host_src_dir.clone())
             .include(gfx_src_dir.join("include"))
             .include(gfx_host_src_dir.join("apigen-codec-common"))

@@ -1,2 +1,4 @@
 /target
 /main.o
+/a.out
+/process_dump.*

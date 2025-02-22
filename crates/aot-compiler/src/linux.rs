@@ -30,6 +30,7 @@ fn link_linux(
         vec![
             "ld.lld",
             "-pie",
+            "--no-dependent-libraries",
             "--hash-style=gnu",
             "--build-id",
             "--eh-frame-hdr",
@@ -65,3 +66,5 @@ fn link_linux(
         .collect::<Vec<_>>(),
     )
 }
+
+// execve("/usr/lib/llvm-16/bin/ld.lld", ["/usr/lib/llvm-16/bin/ld.lld", "--hash-style=gnu", "--build-id", "--eh-frame-hdr", "-m", "elf_x86_64", "-static", "-o", "a2.out", "/usr/lib/x86_64-linux-gnu/crt1.o", "/usr/lib/x86_64-linux-gnu/crti.o", "/usr/bin/../lib/gcc/x86_64-linux-gnu/10/crtbeginT.o", "-L/usr/bin/../lib/gcc/x86_64-linux-gnu/10", "-L/lib/x86_64-linux-gnu", "-L/lib/../lib64", "-L/usr/lib/x86_64-linux-gnu", "-L/usr/lib/llvm-16/bin/../lib", "-L/lib", "-L/usr/lib", "-lc++abi", "main.o", "../aot_artifacts/x86_64-linux-gnu/libwebrogue_aot_lib.a", "../aot.o", "-lm", "-lpthread", "-ldl", "--threads=1", "-lstdc++", "-lm", "--start-group", "-lgcc", "-lgcc_eh", "-lpthread", "-lc", "--end-group", "/usr/bin/../lib/gcc/x86_64-linux-gnu/10/crtend.o", "/usr/lib/x86_64-linux-gnu/crtn.o"], 0x7ffcf649dee8 /* 9 vars */) = 0

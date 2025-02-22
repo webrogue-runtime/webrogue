@@ -1,7 +1,12 @@
-use std::str::FromStr as _;
-
+#[cfg(not(feature = "build-llvm"))]
 fn main() {
-    panic!("rm this");
+    panic!("build-llvm is disabled");
+}
+
+#[cfg(feature = "build-llvm")]
+use std::str::FromStr as _;
+#[cfg(feature = "build-llvm")]
+fn main() {
     let crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
 
