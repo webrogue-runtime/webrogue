@@ -9,7 +9,7 @@
 	url = https://github.com/llvm/llvm-project.git
 [submodule "external/gfxstream"]
 	path = external/gfxstream
-	url = https://github.com/webrogue-runtime/gfxstream
+	url = https://github.com/webrogue-runtime/gfxstream.git
 [submodule "external/aemu"]
 	path = external/aemu
-	url = https://android.googlesource.com/platform/hardware/google/aemu
+	url = https://github.com/webrogue-runtime/aemu.git

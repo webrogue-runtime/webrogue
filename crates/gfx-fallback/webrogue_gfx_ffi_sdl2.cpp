@@ -3,7 +3,6 @@
 #include "webrogue_gfx_ffi.h"
 #include <stdlib.h>
 #include "gl/gles2_dec/GLESv2Decoder.h"
-#include "../../external/gfxstream/include/GFXSTREAM_webrogue_unimplemented.h"
 #include <cstring>
 
 class WebrogueOutputStream : public gfxstream::IOStream {
@@ -42,7 +41,10 @@ class WebrogueOutputStream : public gfxstream::IOStream {
         if (size == 0) return 0;
         return writeFully(m_buf, size);
     }
-    virtual const unsigned char* readFully(void* buf, size_t len) { GFXSTREAM_NOT_IMPLEMENTED; }
+    virtual const unsigned char* readFully(void* buf, size_t len) { 
+      printf("WebrogueOutputStream::readFully not implemented\n");
+      abort();
+    }
     virtual int writeFully(const void* buf, size_t len) {
         size_t needed_size = m_ret_buf_used + len;
         if(needed_size > m_ret_bufsize) {
@@ -61,10 +63,19 @@ class WebrogueOutputStream : public gfxstream::IOStream {
     virtual void* getDmaForReading(uint64_t guest_paddr) { return nullptr; }
     virtual void unlockDma(uint64_t guest_paddr) {}
 
-    virtual void onSave(android::base::Stream* stream) { GFXSTREAM_NOT_IMPLEMENTED; }
-    virtual unsigned char* onLoad(android::base::Stream* stream) { GFXSTREAM_NOT_IMPLEMENTED; }
+    virtual void onSave(android::base::Stream* stream) { 
+      printf("WebrogueOutputStream::onSave not implemented\n");
+      abort();
+    }
+    virtual unsigned char* onLoad(android::base::Stream* stream) { 
+      printf("WebrogueOutputStream::onLoad not implemented\n");
+      abort();
+    }
 
-    virtual const unsigned char *readRaw(void *buf, size_t *inout_len) { GFXSTREAM_NOT_IMPLEMENTED; }
+    virtual const unsigned char *readRaw(void *buf, size_t *inout_len) { 
+      printf("WebrogueOutputStream::readRaw not implemented\n");
+      abort();
+    }
 
     // buffer for incomplete commits
 

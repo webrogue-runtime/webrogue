@@ -29,11 +29,6 @@ fn main() {
         );
         println!("cargo:rustc-link-lib=static=wrgfxfallback");
         println!("cargo:rustc-link-lib=static=SDL2");
-        println!("cargo:rustc-link-lib=static=aemu-base");
-        println!("cargo:rustc-link-lib=static=logging-base");
-        println!("cargo:rustc-link-lib=static=gles2_dec");
-        println!("cargo:rustc-link-lib=static=GLSnapshot");
-        println!("cargo:rustc-link-lib=static=apigen-codec-common");
 
         #[cfg(target_os = "linux")]
         println!("cargo:rustc-link-lib=dylib=stdc++");
