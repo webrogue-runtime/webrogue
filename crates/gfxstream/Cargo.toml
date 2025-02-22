@@ -1,0 +1,13 @@
+[package]
+name = "webrogue-gfxstream"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[features]
+cmake = ["dep:cmake"]
+cc = ["dep:cc"]
+
+[build-dependencies]
+cmake = { workspace = true, optional = true }
+cc = { workspace = true, optional = true }

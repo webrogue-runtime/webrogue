@@ -21,3 +21,4 @@ wasmer-package = { workspace = true }
 webrogue-aot-data = { workspace = true, features = ["compiling"], optional = true }
 webrogue-gfx = { workspace = true, features = ["fallback"] }
 webrogue-gfx-fallback = { workspace = true, features = ["sdl2", "cmake"] }
+webrogue-gfxstream = { workspace = true, features = ["cmake"] }

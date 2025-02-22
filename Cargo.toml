@@ -37,6 +37,7 @@ members = [
   "crates/default-runtime",
   "crates/gfx",
   "crates/gfx-fallback",
+  "crates/gfxstream",
   "crates/runtime",
   "crates/wrapp",
   "crates/wrapp-cli",
@@ -64,6 +65,7 @@ webrogue-default-runtime = { path = "crates/default-runtime" }
 webrogue-runtime = { path = "crates/runtime" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
+webrogue-gfxstream = { path = "crates/gfxstream" }
 webrogue-wrapp = { path = "crates/wrapp" }
 
 # Platform-specific crates

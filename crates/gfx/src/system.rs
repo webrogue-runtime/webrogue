@@ -21,8 +21,7 @@ impl GFXSystem {
         })
     }
 
-    pub fn gl_get_proc_address(&self, procname: &str) -> *const () {
-        let c_string = std::ffi::CString::new(procname).unwrap();
-        unsafe { crate::ffi::webrogue_gfx_ffi_gl_get_proc_address(self.0 .0, c_string.as_ptr()) }
+    pub fn get_userdata(&self) -> *const () {
+        self.0 .0
     }
 }

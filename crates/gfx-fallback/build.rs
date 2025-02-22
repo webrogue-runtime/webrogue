@@ -29,17 +29,12 @@ fn main() {
         );
         println!("cargo:rustc-link-lib=static=wrgfxfallback");
         println!("cargo:rustc-link-lib=static=SDL2");
-
-        #[cfg(target_os = "linux")]
-        println!("cargo:rustc-link-lib=dylib=stdc++");
-        #[cfg(target_os = "macos")]
-        println!("cargo:rustc-link-lib=dylib=c++");
     }
     #[cfg(feature = "cc")]
     {
         cc::Build::new()
             .file("webrogue_gfx_ffi_sdl2.c")
             .include("SDL/include")
-            .compile("wr_aot");
+            .compile("wrgfxfallback");
     }
 }

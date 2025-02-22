@@ -3,13 +3,18 @@ use std::sync::Arc;
 pub struct GFXInterface {
     gfx: Arc<crate::system::GFXSystem>,
     window: Option<crate::window::Window>,
+    gfxstream_thread: Option<webrogue_gfxstream::Thread>,
 }
 
 impl GFXInterface {
     pub fn new(gfx: Arc<crate::system::GFXSystem>) -> Self {
         #[cfg(feature = "fallback")]
         webrogue_gfx_fallback::dummy();
-        Self { gfx, window: None }
+        Self {
+            gfx,
+            window: None,
+            gfxstream_thread: None,
+        }
     }
 
     pub fn add_to_imports(
@@ -18,9 +23,9 @@ impl GFXInterface {
         imports: &mut wasmer::Imports,
     ) -> impl Fn(wasmer::Memory) -> Result<(), anyhow::Error> {
         let lazy = std::rc::Rc::new(crate::env_wrapper::OnceCell::new());
-        let env = crate::env_wrapper::EnvWrapper { 
-            data: self, 
-            lazy: std::rc::Rc::clone(&lazy), 
+        let env = crate::env_wrapper::EnvWrapper {
+            data: self,
+            lazy: std::rc::Rc::clone(&lazy),
         };
         let mut store = store.as_store_mut();
         let env = wasmer::FunctionEnv::new(&mut store, env);
@@ -76,21 +81,20 @@ impl GFXInterface {
 
     pub fn gl_init(&mut self) {
         if let Some(window) = &self.window {
-            window.gl_init()
+            let get_proc = window.gl_init();
+            self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(get_proc, self.gfx.get_userdata()))
         }
     }
 
     pub fn gl_commit_buffer(&mut self, buf: &[u8]) {
-        if let Some(window) = &self.window {
-            window.gl_commit_buffer(buf)
+        if let Some(gfxstream_thread) = &self.gfxstream_thread {
+            gfxstream_thread.commit(buf);
         }
     }
 
     pub fn gl_ret_buffer_read(&mut self, buf: &mut [u8]) {
-        if let Some(window) = &self.window {
-            window.gl_ret_buffer_read(buf)
+        if let Some(gfxstream_thread) = &self.gfxstream_thread {
+            gfxstream_thread.read(buf)
         }
     }
-
-    
 }

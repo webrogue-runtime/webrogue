@@ -10,4 +10,5 @@ fallback = ["dep:webrogue-gfx-fallback"]
 [dependencies]
 anyhow = { workspace = true }
 wasmer = { workspace = true, default-features = false }
+webrogue-gfxstream = { workspace = true }
 webrogue-gfx-fallback = { workspace = true, optional = true }

@@ -9,10 +9,6 @@ extern "C" {
     pub fn webrogue_gfx_ffi_destroy_system(system_ptr: *const ());
     pub fn webrogue_gfx_ffi_create_window(system_ptr: *const ()) -> *const ();
     pub fn webrogue_gfx_ffi_destroy_window(window_ptr: *const ());
-    pub fn webrogue_gfx_ffi_gl_get_proc_address(
-        system_ptr: *const (),
-        procname: *const std::ffi::c_char,
-    ) -> *const ();
     pub fn webrogue_gfx_ffi_get_window_size(
         window_ptr: *const (),
         out_width: *mut u32,
@@ -24,10 +20,7 @@ extern "C" {
         out_height: *mut u32,
     );
     pub fn webrogue_gfx_ffi_present_window(window_ptr: *const ());
-    pub fn webrogue_gfx_ffi_gl_init(window_ptr: *const ());
-    pub fn webrogue_gfx_ffi_gl_commit_buffer(window_ptr: *const (), buf: *const (), len: u32);
-    pub fn webrogue_gfx_ffi_gl_ret_buffer_read(window_ptr: *const (), buf: *mut (), len: u32);
-    
+    pub fn webrogue_gfx_ffi_gl_init(window_ptr: *const ()) -> *const ();
 }
 
 // for ios DispatchQueue

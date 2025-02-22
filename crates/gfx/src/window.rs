@@ -30,25 +30,9 @@ impl Window {
     pub fn present(&self) {
         unsafe { crate::ffi::webrogue_gfx_ffi_present_window(self.0 .0) }
     }
-    pub fn gl_init(&self) {
+    pub fn gl_init(&self) -> *const () {
         unsafe { crate::ffi::webrogue_gfx_ffi_gl_init(self.0 .0) }
     }
-    pub fn gl_commit_buffer(&self, buf: &[u8]) {
-        unsafe { crate::ffi::webrogue_gfx_ffi_gl_commit_buffer(
-            self.0 .0, 
-            buf.as_ptr() as *const (), 
-            buf.len() as u32
-        ) }
-    }
-    pub fn gl_ret_buffer_read(&self, buf: &mut [u8]) {
-        unsafe { crate::ffi::webrogue_gfx_ffi_gl_ret_buffer_read(
-            self.0 .0, 
-            buf.as_ptr() as *mut (), 
-            buf.len() as u32
-        ) }
-    }
-
-    
 }
 impl Drop for Window {
     fn drop(&mut self) {
