@@ -1,17 +1,3 @@
-use wasmer::AsStoreRef;
-
-pub struct MemoryHandle<'a> {
-    memory: wasmer::MemoryView<'a>,
-}
-
-impl<'a> MemoryHandle<'a> {
-    pub fn new(memory: wasmer::Memory, store: &'a (impl AsStoreRef + ?Sized)) -> Self {
-        Self {
-            memory: memory.view(store),
-        }
-    }
-}
-
 pub fn add_bindings(
     exports: &mut wasmer::Exports,
     mut store: wasmer::StoreMut<'_>,

@@ -73,9 +73,9 @@ cp \
     runtime/runner/src/main/cpp/../rust_target/aarch64-linux-android/release-lto/libwebrogue_android.a \
     ../aot_artifacts/android_gradle/libs
 
-$ANDROID_NDK_PATH/toolchains/llvm/prebuilt/*/bin/llvm-ar qs \
+$ANDROID_NDK_PATH/toolchains/llvm/prebuilt/*/bin/llvm-ar qLs \
     ../aot_artifacts/android_gradle/libs/libwebrogue_android.a \
-    runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/home/someone/repos/webrogue/crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c.o
+    runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/libwebrogue_static.a
 
 cp \
     runtime/gradlew \

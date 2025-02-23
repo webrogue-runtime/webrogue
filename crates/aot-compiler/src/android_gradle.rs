@@ -112,6 +112,16 @@ pub fn build_android_gradle(
                 .as_os_str()
                 .to_str()
                 .unwrap(),
+            lib_path
+                .join("libc++_static.a")
+                .as_os_str()
+                .to_str()
+                .unwrap(),
+            lib_path
+                .join("libc++abi.a")
+                .as_os_str()
+                .to_str()
+                .unwrap(),
             "-landroid",
             "-llog",
             output_path

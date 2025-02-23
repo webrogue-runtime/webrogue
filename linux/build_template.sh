@@ -9,7 +9,7 @@ docker run \
     -v "$(dirname $(dirname $PWD))":/usr/src/myapp \
     -w /usr/src/myapp \
     $IMAGE_NAME \
-    sh linux/_build_linux_aot_artifacts.sh
+    sh linux/_build_template.sh
 # || docker run \
 #     -it \
 #     --rm \

@@ -30,10 +30,28 @@ add_subdirectory("${WEBROGUE_SDL_DIR}" SDL2)
 # set(SDL2TTF_INSTALL OFF)
 # add_subdirectory(external/SDL_ttf)
 
+set(WEBROGUE_GFXSTREAM_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../../../../crates/gfxstream)
+include(${WEBROGUE_GFXSTREAM_DIR}/paths.cmake)
+
+add_library(
+    webrogue_static STATIC
+    ../../../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c
+    ${WEBROGUE_GFXSTREAM_SOURCES}
+)
+
 add_library(
     webrogue SHARED
     webrogue_runtime.c
-    ../../../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c
+)
+
+target_link_libraries(webrogue webrogue_static)
+target_link_libraries(webrogue_static SDL2)
+
+
+
+target_include_directories(
+    webrogue_static PRIVATE
+    ${WEBROGUE_GFXSTREAM_INCLUDE_DIRS}
 )
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)")

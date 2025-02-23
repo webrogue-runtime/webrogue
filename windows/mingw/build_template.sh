@@ -1,7 +1,7 @@
 cd $(dirname $0)
 set -ex
 
-OUT_DIR="../aot_artifacts/x86_64-windows-gnu"
+OUT_DIR="../../aot_artifacts/x86_64-windows-gnu"
 rm -rf "$OUT_DIR"
 
 MINGW_DIR_NAME=llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64
@@ -14,14 +14,14 @@ export PATH="$(pwd)/$MINGW_DIR_NAME/bin:$PATH"
 export CXXFLAGS_x86_64_pc_windows_gnullvm="-I$(pwd)/$MINGW_DIR_NAME/x86_64-w64-mingw32/include/c++/v1"
 cargo build \
     -vv \
-    --manifest-path=../crates/aot-lib/Cargo.toml \
+    --manifest-path=../../crates/aot-lib/Cargo.toml \
     --target-dir=./target \
     --target=x86_64-pc-windows-gnullvm \
     --profile release-lto \
     --features=gfx-fallback-cc
 
 # rm -rf mingw_sdl_build
-cmake -S ../crates/gfx-fallback/SDL -B mingw_sdl_build -DCMAKE_BUILD_TYPE=Release --toolchain=$(pwd)/mingw_llvm_toolchain.cmake
+cmake -S ../../crates/gfx-fallback/SDL -B mingw_sdl_build -DCMAKE_BUILD_TYPE=Release --toolchain=$(pwd)/mingw_llvm_toolchain.cmake
 cmake --build mingw_sdl_build --target SDL2-static
 
 ./$MINGW_DIR_NAME/bin/x86_64-w64-mingw32-clang main.c -c -o main.o
@@ -85,8 +85,6 @@ cp \
     $MINGW_DIR_NAME/x86_64-w64-mingw32/lib/crtend.o \
     "$OUT_DIR"
 
-test -f windows_x64.zip || wget https://github.com/webrogue-runtime/angle-builder/releases/latest/download/windows_x64.zip
-test -f libEGL.dll || unzip -j windows_x64.zip x64/libEGL.dll
-cp libEGL.dll "$OUT_DIR/libEGL.dll"
-test -f libGLESv2.dll || unzip -j windows_x64.zip x64/libGLESv2.dll
-cp libGLESv2.dll "$OUT_DIR/libGLESv2.dll"
+sh ../get_angle.sh
+cp ../libEGL.dll "$OUT_DIR/libEGL.dll"
+cp ../libGLESv2.dll "$OUT_DIR/libGLESv2.dll"

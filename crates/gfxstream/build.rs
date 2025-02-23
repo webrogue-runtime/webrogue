@@ -1,12 +1,12 @@
 use std::str::FromStr as _;
 
 fn main() {
-    let crate_manifest_dir =
+    let _crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
 
     #[cfg(feature = "cmake")]
     {
-        let dst = cmake::Config::new(crate_manifest_dir).build();
+        let dst = cmake::Config::new(_crate_manifest_dir).build();
         println!(
             "cargo:rustc-link-search=native={}",
             dst.join("lib").display()
@@ -20,7 +20,7 @@ fn main() {
     }
     #[cfg(feature = "cc")]
     {
-        let external_dir = crate_manifest_dir
+        let external_dir = _crate_manifest_dir
             .parent()
             .unwrap()
             .parent()

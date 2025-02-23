@@ -52,7 +52,7 @@ class WebrogueOutputStream : public gfxstream::IOStream {
           }
           m_ret_bufsize = needed_size;
         }
-        memcpy(m_ret_buffer + m_ret_buf_used, buf, len);
+        memcpy((char*)m_ret_buffer + m_ret_buf_used, buf, len);
         m_ret_buf_used = needed_size;
         return len;
     }
@@ -91,7 +91,7 @@ class WebrogueOutputStream : public gfxstream::IOStream {
         }
         m_input_bufsize = needed_size;
       }
-      memcpy(m_input_buffer + m_input_buf_used, buf, len);
+      memcpy((char*)m_input_buffer + m_input_buf_used, buf, len);
       m_input_buf_used = needed_size;
       return len;
     }
@@ -106,7 +106,7 @@ class WebrogueOutputStream : public gfxstream::IOStream {
     }
 
     void* getIncompleteCommit() {
-      return m_input_buffer + m_input_buf_consumed;
+      return (char*)m_input_buffer + m_input_buf_consumed;
     }
 
     size_t getIncompleteCommitSize() {
@@ -161,7 +161,7 @@ void webrogue_gfxstream_ffi_commit_buffer(void *raw_thread_ptr, void const* buf,
       thread->checksum_calculator.get()
     );
     if(decoded<len) {
-      stream->addIncompleteCommit(buf+decoded, len-decoded);
+      stream->addIncompleteCommit((char*)buf + decoded, len-decoded);
     }
   }
 }
@@ -171,7 +171,7 @@ void webrogue_gfxstream_ffi_ret_buffer_read(void *raw_thread_ptr, void* buf, uin
   size_t available = stream->m_ret_buf_used - stream->m_ret_buf_consumed;
   assert(len<=available);
   size_t to_read = std::min((size_t)len, stream->m_ret_buf_used);
-  memcpy(buf, stream->m_ret_buffer + stream->m_ret_buf_consumed, to_read);
+  memcpy(buf, (char*)stream->m_ret_buffer + stream->m_ret_buf_consumed, to_read);
   if(to_read == available) {
     stream->m_ret_buf_used = 0;
     stream->m_ret_buf_consumed = 0;
