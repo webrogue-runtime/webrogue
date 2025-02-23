@@ -20,8 +20,4 @@ impl GFXSystem {
             0: unsafe { crate::ffi::webrogue_gfx_ffi_create_window(self.0 .0) },
         })
     }
-
-    pub fn get_userdata(&self) -> *const () {
-        self.0 .0
-    }
 }

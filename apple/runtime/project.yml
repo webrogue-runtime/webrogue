@@ -35,6 +35,24 @@ settings:
 options:
   createIntermediateGroups: true
 targets:
+  GFXStream:
+    type: library.static
+    platform: [macOS, iOS]
+    sources: 
+    - ../../crates/gfxstream/webrogue_gfxstream.cpp
+    - ../../external/gfxstream/host/gl/glsnapshot/GLSnapshot.cpp
+    - ../../external/gfxstream/host/gl/gles2_dec/GLESv2Decoder.cpp
+    - ../../external/gfxstream/host/gl/gles2_dec/gles2_server_context.cpp
+    - ../../external/gfxstream/host/gl/gles2_dec/gles2_dec.cpp
+    - ../../external/gfxstream/host/apigen-codec-common/ChecksumCalculatorThreadInfo.cpp
+    - ../../external/gfxstream/host/apigen-codec-common/ChecksumCalculator.cpp
+    - ../../external/aemu/host-common/vm_operations.cpp
+    - ../../external/aemu/host-common/crash_reporter.cpp
+    - ../../external/aemu/base/Tracing.cpp
+    - ../../external/aemu/base/Stream.cpp
+    settings:
+      base:
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../../external/gfxstream/host $(SRCROOT)/../../external/gfxstream/include $(SRCROOT)/../../external/gfxstream/host/apigen-codec-common $(SRCROOT)/../../external/gfxstream/host/gl/glsnapshot $(SRCROOT)/../../external/aemu/base/include $(SRCROOT)/../../external/aemu/host-common/include"
   Launcher:
     type: application
     platform: macOS
@@ -88,6 +106,7 @@ targets:
     dependencies:
     - target: Cargo_macos_runtime
     - target: SDL/Static Library
+    - target: GFXStream_macOS
     - sdk: Quartz.framework
     - sdk: Metal.framework
     - sdk: IOKit.framework
@@ -100,6 +119,8 @@ targets:
     - sdk: Cocoa.framework
     - sdk: Carbon.framework
     - sdk: AudioToolbox.framework
+    - sdk: libc++.tbd
+    - sdk: libc++abi.tbd
   wrios:
     type: library.static
     platform: iOS
@@ -139,6 +160,7 @@ targets:
     - target: Cargo_iOS_launcher
     - target: SDL/Static Library-iOS
     - target: wrios
+    - target: GFXStream_iOS
     - sdk: UIKit.framework
     - sdk: QuartzCore.framework
     - sdk: Metal.framework
@@ -183,6 +205,7 @@ targets:
     - target: Cargo_iOS_runner
     - target: SDL/Static Library-iOS
     - target: wrios
+    - target: GFXStream_iOS
     - sdk: UIKit.framework
     - sdk: QuartzCore.framework
     - sdk: Metal.framework
@@ -260,6 +283,7 @@ targets:
     dependencies:
     - target: Cargo_macos_runner
     - target: SDL/Static Library
+    - target: GFXStream_macOS
     - sdk: Quartz.framework
     - sdk: Metal.framework
     - sdk: IOKit.framework
@@ -272,6 +296,8 @@ targets:
     - sdk: Cocoa.framework
     - sdk: Carbon.framework
     - sdk: AudioToolbox.framework
+    - sdk: libc++.tbd
+    - sdk: libc++abi.tbd
     - bundle: libEGL.dylib
       embed: true
       codeSign: true

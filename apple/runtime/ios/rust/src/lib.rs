@@ -13,5 +13,11 @@ pub unsafe extern "C" fn webrogue_ios_rs_main(wrapp_path: *const i8) {
         .to_str()
         .unwrap()
         .to_owned();
-    main(wrapp_path).unwrap();
+
+    match main(wrapp_path) {
+        Ok(_) => {}
+        Err(e) => {
+            println!("{}", e)
+        }
+    }
 }

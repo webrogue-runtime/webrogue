@@ -22,6 +22,9 @@ bin/libwebrogue_ios.iphonesimulator.a
 bin/libwebrogue_macos.macosx.a
 bin/libwrios.iphoneos.a
 bin/libwrios.iphonesimulator.a
+bin/libGFXStream.iphoneos.a
+bin/libGFXStream.iphonesimulator.a
+bin/libGFXStream.macosx.a
 ios/Bridging-Header.h
 ios/Info.plist
 ios/LaunchScreen.storyboard

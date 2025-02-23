@@ -8,3 +8,4 @@ if [ ! -f "libGLESv2.dylib" ]; then
 fi
 cp $SRCROOT/bin/libwebrogue_macos.macosx.a libwebrogue_macos.a
 cp $SRCROOT/bin/libSDL2.macosx.a libSDL2.a
+cp $SRCROOT/bin/libGFXStream.macosx.a libGFXStream.a

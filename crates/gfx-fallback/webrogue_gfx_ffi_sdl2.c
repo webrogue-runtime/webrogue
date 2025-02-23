@@ -26,6 +26,7 @@ typedef struct Window {
   SDL_Window *sdl_window;
 } Window;
 void *webrogue_gfx_ffi_create_window(void *raw_system_ptr) {
+  (void)raw_system_ptr;
   // System *system_ptr = (System *)raw_system_ptr;
   Window *window_ptr = malloc(sizeof(Window));
 
@@ -64,11 +65,13 @@ void webrogue_gfx_ffi_present_window(void *raw_window_ptr) {
 }
 
 
-static void *get_proc_address(char *procname, void *raw_system_ptr) {
+static void *get_proc_address(char *procname, void *userdata) {
+  (void)userdata;
   return SDL_GL_GetProcAddress(procname);
 }
-void* webrogue_gfx_ffi_gl_init(void *raw_window_ptr) {
+void webrogue_gfx_ffi_gl_init(void *raw_window_ptr, void** out_func, void** out_userdata) {
   Window *window_ptr = (Window *)raw_window_ptr;
   SDL_GL_CreateContext(window_ptr->sdl_window);
-  return (void*)get_proc_address;
+  *out_func = get_proc_address;
+  *out_userdata = NULL;
 }

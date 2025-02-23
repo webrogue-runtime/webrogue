@@ -30,8 +30,13 @@ impl Window {
     pub fn present(&self) {
         unsafe { crate::ffi::webrogue_gfx_ffi_present_window(self.0 .0) }
     }
-    pub fn gl_init(&self) -> *const () {
-        unsafe { crate::ffi::webrogue_gfx_ffi_gl_init(self.0 .0) }
+    pub fn gl_init(&self) -> (*const (), *const ()) {
+        let mut func = std::ptr::null();
+        let mut userdata = std::ptr::null();
+        unsafe {
+            crate::ffi::webrogue_gfx_ffi_gl_init(self.0 .0, &mut func, &mut userdata);
+        }
+        (func, userdata)
     }
 }
 impl Drop for Window {

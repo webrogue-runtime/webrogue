@@ -22,6 +22,7 @@ rm -rf ../template/bin
 mkdir -p ../template/bin
 cp $XC_BUILD_DIR/rust_artifacts/runner/ReleaseLocal/macosx/libwebrogue_macos.a ../template/bin/libwebrogue_macos.macosx.a
 cp $XC_BUILD_DIR/Release/libSDL2.a ../template/bin/libSDL2.macosx.a
+cp $XC_BUILD_DIR/ReleaseLocal/libGFXStream.a ../template/bin/libGFXStream.macosx.a
 cp $XC_BUILD_DIR/ReleaseLocal/libEGL.dylib ../template/bin/libEGL.macosx.dylib
 cp $XC_BUILD_DIR/ReleaseLocal/libGLESv2.dylib ../template/bin/libGLESv2.macosx.dylib
 
@@ -57,6 +58,11 @@ do
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
     cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libwrios.a ../template/bin/libwrios.$IOS_ENV.a
+
+    XC_FLAGS="-workspace webrogue.xcworkspace -scheme GFXStream_iOS -configuration ReleaseLocal -destination"
+    XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
+    xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
+    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libGFXStream.a ../template/bin/libGFXStream.$IOS_ENV.a
 
     XC_FLAGS="-workspace webrogue.xcworkspace -configuration Release -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -scheme "Static Library-iOS" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)

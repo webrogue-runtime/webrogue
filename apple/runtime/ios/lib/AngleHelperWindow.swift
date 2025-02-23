@@ -93,6 +93,10 @@ class AngleHelperWindow: NSObject {
         Int(self.metal_layer.frame.width)
     }
 
+    @objc public func initGL() {
+        SDL_GL_CreateContext(sdl_window);
+    }
+
     deinit {
         DispatchQueue.main.sync {
             SDL_DestroyWindow(sdl_window);

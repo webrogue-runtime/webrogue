@@ -20,7 +20,11 @@ extern "C" {
         out_height: *mut u32,
     );
     pub fn webrogue_gfx_ffi_present_window(window_ptr: *const ());
-    pub fn webrogue_gfx_ffi_gl_init(window_ptr: *const ()) -> *const ();
+    pub fn webrogue_gfx_ffi_gl_init(
+        window_ptr: *const (),
+        out_func: *mut *const (),
+        out_userdata: *mut *const (),
+    ) -> *const ();
 }
 
 // for ios DispatchQueue

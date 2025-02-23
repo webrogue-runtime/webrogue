@@ -15,6 +15,7 @@ settings:
     ENABLE_MODULE_VERIFIER: true
     MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS: "gnu11 gnu++14"
     ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: false
+    CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: true
   configs:
     Debug:
       CODE_SIGN_IDENTITY: "-"
@@ -49,6 +50,7 @@ targets:
         OTHER_LDFLAGS:
           - "-lwebrogue_macos"
           - "-lSDL2"
+          - "-lGFXStream"
           - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
     dependencies:
@@ -71,6 +73,8 @@ targets:
     - sdk: Cocoa.framework
     - sdk: Carbon.framework
     - sdk: AudioToolbox.framework
+    - sdk: libc++.tbd
+    - sdk: libc++abi.tbd
     preBuildScripts:
       - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/copy_bin.sh"
         name: Copy libraries
@@ -80,10 +84,12 @@ targets:
           - ${SRCROOT}/bin/libGLESv2.macosx.dylib
           - ${SRCROOT}/bin/libwebrogue_macos.macosx.a
           - ${SRCROOT}/bin/libSDL2.macosx.a
+          - ${SRCROOT}/bin/libGFXStream.macosx.a
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/libEGL.dylib
           - ${BUILT_PRODUCTS_DIR}/libGLESv2.dylib
           - ${BUILT_PRODUCTS_DIR}/libSDL2.a
+          - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_macos.a
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         name: Combine object to lipo
@@ -109,6 +115,7 @@ targets:
         OTHER_LDFLAGS:
         - "-lwebrogue_ios"
         - "-lwrios"
+        - "-lGFXStream"
         - "-lSDL2"
         - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
@@ -144,13 +151,16 @@ targets:
           - ${SRCROOT}/bin/libwebrogue_ios.iphonesimulator.a
           - ${SRCROOT}/bin/libwrios.iphonesimulator.a
           - ${SRCROOT}/bin/libSDL2.iphonesimulator.a
+          - ${SRCROOT}/bin/libGFXStream.iphonesimulator.a
           - ${SRCROOT}/bin/libwebrogue_ios.iphoneos.a
           - ${SRCROOT}/bin/libwrios.iphoneos.a
           - ${SRCROOT}/bin/libSDL2.iphoneos.a
+          - ${SRCROOT}/bin/libGFXStream.iphoneos.a
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_ios.a
           - ${BUILT_PRODUCTS_DIR}/libwrios.a
           - ${BUILT_PRODUCTS_DIR}/libSDL2.a
+          - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         name: Combine object to lipo
         inputFiles:

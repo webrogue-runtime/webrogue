@@ -81,8 +81,8 @@ impl GFXInterface {
 
     pub fn gl_init(&mut self) {
         if let Some(window) = &self.window {
-            let get_proc = window.gl_init();
-            self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(get_proc, self.gfx.get_userdata()))
+            let ret = window.gl_init();
+            self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(ret.0, ret.1))
         }
     }
 

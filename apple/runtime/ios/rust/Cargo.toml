@@ -5,7 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-launcher = ["webrogue-runtime/wamr"]
+launcher = ["webrogue-runtime/singlepass"] # jit issue
 runner = ["webrogue-runtime/aot"]
 
 [lib]
