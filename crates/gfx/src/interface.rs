@@ -97,4 +97,12 @@ impl GFXInterface {
             gfxstream_thread.read(buf)
         }
     }
+
+    pub fn poll(&self) -> u32 {
+        self.gfx.poll()
+    }
+
+    pub fn poll_read(&self) -> Option<&'static [u8]> {
+        self.gfx.poll_read()
+    }
 }

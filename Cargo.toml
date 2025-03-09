@@ -35,6 +35,7 @@ members = [
   "crates/aot-lib",
   "crates/aot-linker",
   "crates/default-runtime",
+  "crates/event-apigen",
   "crates/gfx",
   "crates/gfx-fallback",
   "crates/gfxstream",
@@ -81,7 +82,7 @@ wasmer-compiler-llvm = { path = "external/wasmer/lib/compiler-llvm" }
 wasmer-package = { path = "external/wasmer/lib/package" }
 wasmer-types = { path = "external/wasmer/lib/types" }
 virtual-fs = { path = "external/wasmer/lib/virtual-fs" }
-webc = { version = "7.0.0-rc.1" }
+webc = { version = "8.0.0" }
 
 clap = { version = "4" }
 futures =  { version = "0.3" }

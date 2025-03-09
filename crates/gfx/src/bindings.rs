@@ -115,4 +115,33 @@ pub fn add_bindings(
             },
         ),
     );
+    exports.insert(
+        "poll",
+        wasmer::Function::new_typed_with_env(
+            &mut store, 
+            &env,
+            move |mut store:wasmer::FunctionEnvMut<crate::env_wrapper::EnvWrapper>|
+                  -> Result<u32, wasmer::RuntimeError> {
+                let result = store.data_mut().data.poll();
+                Ok(result)
+            },
+        ),
+    );
+    exports.insert(
+        "poll-read",
+        wasmer::Function::new_typed_with_env(
+            &mut store, 
+            &env,
+            move |mut store:wasmer::FunctionEnvMut<crate::env_wrapper::EnvWrapper>,
+                  buf: u32|
+                  -> Result<(), wasmer::RuntimeError> {
+                if let Some(result) = store.data_mut().data.poll_read() {
+                    let memory = store.data().lazy.get().unwrap().memory.clone();
+                    let memory_view = memory.view(&store);
+                    memory_view.write(buf as u64, &result)?;
+                }
+                Ok(())
+            },
+        ),
+    );
 }

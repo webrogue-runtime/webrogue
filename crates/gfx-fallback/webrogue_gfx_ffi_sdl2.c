@@ -2,13 +2,17 @@
 #include "SDL_video.h"
 #include "webrogue_gfx_ffi.h"
 #include <stdlib.h>
+#include "webrogue_event_encoder.h"
 
 typedef struct System {
-
+  webrogue_event_out_buf event_buf;
 } System;
 
 void *webrogue_gfx_ffi_create_system(void) {
   System *system_ptr = malloc(sizeof(System));
+  system_ptr->event_buf.buf = malloc(1024);
+  system_ptr->event_buf.buf_size = 1024;
+  system_ptr->event_buf.used_size = 0;
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -64,7 +68,6 @@ void webrogue_gfx_ffi_present_window(void *raw_window_ptr) {
   SDL_PollEvent(&event);
 }
 
-
 static void *get_proc_address(char *procname, void *userdata) {
   (void)userdata;
   return SDL_GL_GetProcAddress(procname);
@@ -74,4 +77,23 @@ void webrogue_gfx_ffi_gl_init(void *raw_window_ptr, void** out_func, void** out_
   SDL_GL_CreateContext(window_ptr->sdl_window);
   *out_func = get_proc_address;
   *out_userdata = NULL;
+}
+
+void webrogue_gfx_ffi_poll(void *raw_system_ptr, void** out_buf, uint32_t* out_len) {
+  System *system_ptr = (System *)raw_system_ptr;
+  webrogue_event_out_buf* event_buf = &(system_ptr->event_buf);
+  event_buf->used_size = 0;
+  
+  #define RETURN *out_buf = event_buf->buf; *out_len = event_buf->used_size; return;
+  SDL_Event event = { 0 };
+  while (SDL_PollEvent(&event) != 0) {
+    switch (event.type) {
+      case SDL_MOUSEBUTTONUP: {
+        webrogue_event_encode_mouse(event_buf, 0, 0);
+        RETURN
+      } break;
+    }
+  }
+  RETURN;
+  #undef RETURN
 }

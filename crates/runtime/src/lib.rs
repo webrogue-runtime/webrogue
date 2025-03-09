@@ -76,6 +76,7 @@ async fn run_task(
         .import_builder(Arc::new(AdditionalImportsBuilder {
             gfx: gfx,
         }));
+    wasi_env_builder.capabilities_mut().threading.enable_blocking_sleep = true;
 
     // let root_fs = virtual_fs::RootFileSystemBuilder::new()
     //     .with_tty(Box::new(virtual_fs::DeviceFile::new(0)))

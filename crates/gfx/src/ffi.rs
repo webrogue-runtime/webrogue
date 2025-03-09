@@ -25,6 +25,11 @@ extern "C" {
         out_func: *mut *const (),
         out_userdata: *mut *const (),
     ) -> *const ();
+    pub fn webrogue_gfx_ffi_poll(
+        system_ptr: *const (),
+        out_buf: *mut *const (), 
+        out_len: *mut u32
+    );
 }
 
 // for ios DispatchQueue

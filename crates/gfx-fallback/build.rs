@@ -34,6 +34,7 @@ fn main() {
     {
         cc::Build::new()
             .file("webrogue_gfx_ffi_sdl2.c")
+            .file("webrogue_event_ffi_sdl2.c")
             .include("SDL/include")
             .compile("wrgfxfallback");
     }
