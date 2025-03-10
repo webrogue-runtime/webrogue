@@ -1,4 +1,5 @@
-use std::io::{Read, Write};
+mod code_writer;
+mod events;
 
 #[derive(clap::Parser, Clone)]
 struct Cli {
@@ -7,62 +8,17 @@ struct Cli {
     dec_c_path: std::path::PathBuf,
 }
 
-struct CodeWriter {
-    buf: Vec<u8>,
-    indent: usize,
-}
-
-impl CodeWriter {
-    pub fn new() -> Self {
-        CodeWriter {
-            buf: Vec::new(),
-            indent: 0,
-        }
-    }
-
-    pub fn inc_indent(&mut self) {
-        self.indent += 1;
-    }
-
-    pub fn dec_indent(&mut self) {
-        self.indent -= 1;
-    }
-
-    pub fn writeln(&mut self, s: &str) -> anyhow::Result<()> {
-        let new_string = " ".repeat(self.indent * 4) + s + "\n";
-        self.buf.write_all(new_string.as_bytes())?;
-        anyhow::Ok(())
-    }
-
-    pub fn write_to_file(&mut self, path: &std::path::Path) -> anyhow::Result<()> {
-        let mut file = std::fs::OpenOptions::new().read(true).open(path)?;
-        let mut old_content = Vec::new();
-        file.read_to_end(&mut old_content)?;
-        if old_content == self.buf {
-            return Ok(());
-        }
-        drop(file);
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .open(path)?;
-        std::io::Write::write_all(&mut file, &self.buf)?;
-        Ok(())
-    }
-}
-
 fn main() -> anyhow::Result<()> {
     let args = <Cli as clap::Parser>::parse();
 
-    let mut enc_writer = CodeWriter::new();
-    let mut dec_h_writer = CodeWriter::new();
-    let mut dec_c_writer = CodeWriter::new();
+    let mut enc_writer = code_writer::CodeWriter::new();
+    let mut dec_h_writer = code_writer::CodeWriter::new();
+    let mut dec_c_writer = code_writer::CodeWriter::new();
 
     let mut writer = &mut enc_writer;
     macro_rules! write {
         ($($arg:tt)*) => {
-            let args = format_args!($($arg)*);
-            writer.writeln(args.as_str().unwrap())?;
+            writer.writeln(&format!($($arg)*))?;
         };
     }
     {
@@ -83,16 +39,31 @@ fn main() -> anyhow::Result<()> {
         write!("#define BUF_SIZE(LEN) if(out->buf_size < LEN) {{ out->used_size = 0; return; }} out->used_size = LEN");
         write!("#define SET(TYPE, OFFSET, VALUE) *((TYPE*)(((char*)out->buf) + OFFSET)) = VALUE");
         write!("");
-        write!("static inline void webrogue_event_encode_mouse(webrogue_event_out_buf *out, uint32_t x, uint32_t y) {{");
-        writer.inc_indent();
-        {
-            write!("BUF_SIZE(12);");
-            write!("SET(uint32_t, 0, 1);");
-            write!("SET(uint32_t, 4, x);");
-            write!("SET(uint32_t, 8, y);");
+        for event in events::all() {
+            let mut args = vec!["webrogue_event_out_buf *out".to_owned()];
+            for field in event.fields.clone() {
+                args.push(field.ty.c_name().to_owned() + " " + field.name);
+            }
+            write!(
+                "static inline void webrogue_event_encode_{}({}) {{",
+                event.name,
+                args.join(", ")
+            );
+            writer.inc_indent();
+            {
+                write!("BUF_SIZE({});", event.size);
+                write!("SET(uint32_t, 0, {});", event.id);
+                for field in event.fields.clone() {
+                    write!(
+                        "SET({}, {}, {});",
+                        field.ty.c_name(),
+                        field.offset, field.name
+                    );
+                }
+            }
+            writer.dec_indent();
+            write!("}}");
         }
-        writer.dec_indent();
-        write!("}}");
         write!("");
         write!("#undef BUF_SIZE");
         write!("#undef SET");
@@ -111,19 +82,24 @@ fn main() -> anyhow::Result<()> {
         write!("void *webrogueGLLoader(const char *procname);");
         write!("");
         write!("// Events");
-        write!("struct webrogue_event_mouse {{");
-        writer.inc_indent();
-        {
-            write!("uint32_t x;");
-            write!("uint32_t y;");
+        for event in events::all() {
+            write!("struct webrogue_event_{} {{", event.name);
+            writer.inc_indent();
+            {
+                for field in event.fields.clone() {
+                    write!("{} {};", field.ty.c_name(), field.name);
+                }
+            }
+            writer.dec_indent();
+            write!("}};");
         }
-        writer.dec_indent();
-        write!("}};");
         write!("enum webrogue_event_type {{");
         writer.inc_indent();
         {
             write!("webrogue_event_type_invalid = 0,");
-            write!("webrogue_event_type_mouse = 1,");
+            for event in events::all() {
+                write!("webrogue_event_type_{} = {},", event.name, event.id);
+            }
         }
         writer.dec_indent();
         write!("}};");
@@ -134,7 +110,9 @@ fn main() -> anyhow::Result<()> {
             write!("union {{");
             writer.inc_indent();
             {
-                write!("struct webrogue_event_mouse mouse;");
+                for event in events::all() {
+                    write!("struct webrogue_event_{} {};", event.name, event.name);
+                }
             }
             writer.dec_indent();
             write!("}} inner;");
@@ -182,19 +160,21 @@ fn main() -> anyhow::Result<()> {
             write!("switch (result.type) {{");
             writer.inc_indent();
             {
-                write!("case webrogue_event_type_mouse: {{");
-                writer.inc_indent();
-                {
-                    write!("BUF_SIZE(12);");
-                    write!("result.inner.mouse.x = GET(uint32_t, 4);");
-                    write!("result.inner.mouse.y = GET(uint32_t, 8);");
-                    write!("RETURN;");
+                for event in events::all() {
+                    write!("case webrogue_event_type_{}: {{", event.name);
+                    writer.inc_indent();
+                    {
+                        write!("BUF_SIZE({});", event.size);
+                        for field in event.fields.clone() {
+                            write!("result.inner.{}.{} = GET({}, {});", event.name, field.name, field.ty.c_name(), field.offset);
+                        }
+                        write!("RETURN;");
+                    }
+                    writer.dec_indent();
+                    write!("}}");
                 }
-                writer.dec_indent();
-                write!("}}");
             }
             writer.dec_indent();
-
 
             writer.inc_indent();
             {

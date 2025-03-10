@@ -88,8 +88,16 @@ void webrogue_gfx_ffi_poll(void *raw_system_ptr, void** out_buf, uint32_t* out_l
   SDL_Event event = { 0 };
   while (SDL_PollEvent(&event) != 0) {
     switch (event.type) {
+      case SDL_MOUSEBUTTONDOWN: {
+        webrogue_event_encode_mouse_down(event_buf, event.button.x, event.button.y, event.button.button);
+        RETURN
+      } break;
       case SDL_MOUSEBUTTONUP: {
-        webrogue_event_encode_mouse(event_buf, 0, 0);
+        webrogue_event_encode_mouse_up(event_buf, event.button.x, event.button.y, event.button.button);
+        RETURN
+      } break;
+      case SDL_MOUSEMOTION: {
+        webrogue_event_encode_mouse_motion(event_buf, event.button.x, event.button.y);
         RETURN
       } break;
     }
