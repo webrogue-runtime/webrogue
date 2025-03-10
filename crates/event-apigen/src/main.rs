@@ -96,9 +96,9 @@ fn main() -> anyhow::Result<()> {
         write!("enum webrogue_event_type {{");
         writer.inc_indent();
         {
-            write!("webrogue_event_type_invalid = 0,");
+            write!("WEBROGUE_EVENT_TYPE_INVALID = 0,");
             for event in events::all() {
-                write!("webrogue_event_type_{} = {},", event.name, event.id);
+                write!("WEBROGUE_EVENT_TYPE_{} = {},", event.name.to_uppercase(), event.id);
             }
         }
         writer.dec_indent();
@@ -140,7 +140,7 @@ fn main() -> anyhow::Result<()> {
         writer.inc_indent();
         {
             write!("free(buffer_data);\\");
-            write!("result.type = webrogue_event_type_invalid;\\");
+            write!("result.type = WEBROGUE_EVENT_TYPE_INVALID;\\");
             write!("return result;\\");
         }
         writer.dec_indent();
@@ -161,7 +161,7 @@ fn main() -> anyhow::Result<()> {
             writer.inc_indent();
             {
                 for event in events::all() {
-                    write!("case webrogue_event_type_{}: {{", event.name);
+                    write!("case WEBROGUE_EVENT_TYPE_{}: {{", event.name.to_uppercase());
                     writer.inc_indent();
                     {
                         write!("BUF_SIZE({});", event.size);
@@ -181,7 +181,7 @@ fn main() -> anyhow::Result<()> {
                 write!("default: {{");
                 writer.inc_indent();
                 {
-                    write!("result.type = webrogue_event_type_invalid;");
+                    write!("result.type = WEBROGUE_EVENT_TYPE_INVALID;");
                     write!("RETURN;");
                 }
                 writer.dec_indent();

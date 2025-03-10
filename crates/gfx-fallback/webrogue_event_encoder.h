@@ -31,6 +31,10 @@ static inline void webrogue_event_encode_mouse_motion(webrogue_event_out_buf *ou
     SET(uint32_t, 4, x);
     SET(uint32_t, 8, y);
 }
+static inline void webrogue_event_encode_quit(webrogue_event_out_buf *out) {
+    BUF_SIZE(4);
+    SET(uint32_t, 0, 4);
+}
 
 #undef BUF_SIZE
 #undef SET

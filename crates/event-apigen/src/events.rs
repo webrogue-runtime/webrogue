@@ -74,7 +74,9 @@ pub fn all() -> Vec<Event> {
     field!("x", FieldType::U32);
     field!("y", FieldType::U32);
     event!("mouse_motion", 3);
-    
+
+    event!("quit", 4);
+
     let _ = offset; // to silence a warning
     events
 }

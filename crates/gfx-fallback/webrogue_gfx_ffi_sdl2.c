@@ -100,6 +100,10 @@ void webrogue_gfx_ffi_poll(void *raw_system_ptr, void** out_buf, uint32_t* out_l
         webrogue_event_encode_mouse_motion(event_buf, event.button.x, event.button.y);
         RETURN
       } break;
+      case SDL_QUIT: {
+        webrogue_event_encode_quit(event_buf);
+        RETURN
+      } break;
     }
   }
   RETURN;
