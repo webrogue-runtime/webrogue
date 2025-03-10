@@ -1,4 +1,4 @@
-use std::sync::{Arc};
+use std::sync::Arc;
 // pub use webrogue_wrapp as wrapp;
 
 mod stdout;

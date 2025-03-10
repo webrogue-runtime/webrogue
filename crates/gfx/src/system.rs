@@ -11,6 +11,8 @@ impl Drop for GFXSystem {
 }
 impl GFXSystem {
     pub fn new() -> Self {
+        #[cfg(feature = "fallback")]
+        webrogue_gfx_fallback::load();
         Self {
             handle: crate::ffi::NativeHandle {
                 0: unsafe { crate::ffi::webrogue_gfx_ffi_create_system() },

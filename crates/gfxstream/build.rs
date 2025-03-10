@@ -31,6 +31,7 @@ fn main() {
         let aemu_src_dir = external_dir.join("aemu");
         cc::Build::new()
             .cpp(true)
+            .std("c++17")
             .file("webrogue_gfxstream.cpp")
             .file(gfx_host_src_dir.join("gl").join("glsnapshot").join("GLSnapshot.cpp"))
             .file(gfx_host_src_dir.join("gl").join("gles2_dec").join("GLESv2Decoder.cpp"))

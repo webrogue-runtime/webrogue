@@ -3,8 +3,8 @@ cd $(dirname $0)
 set -e
 # apple/runtime
 cd ../runtime
-cp ../../examples/gears/gears.webc macos/runner/aot.webc
-cp ../../examples/gears/gears.webc ios/runner/aot.webc
+cp ../../examples/raylib/raylib.webc macos/runner/aot.webc
+cp ../../examples/raylib/raylib.webc ios/runner/aot.webc
 
 sh setup.command
 

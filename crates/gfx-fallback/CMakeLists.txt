@@ -7,6 +7,7 @@ add_subdirectory(SDL)
 add_library(
     wrgfxfallback STATIC 
     webrogue_gfx_ffi_sdl2.c
+    webrogue_gfx_ffi_sdl2_events.c
 )
 
 target_include_directories(

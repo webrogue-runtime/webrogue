@@ -1,4 +1,5 @@
 #include "../../../../crates/gfx-fallback/webrogue_gfx_ffi.h"
+#include "../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl2_events.h"
 #include "SDL.h"
 #include "SDL_metal.h"
 #include "SDL_video.h"
@@ -8,6 +9,7 @@
 
 typedef struct System {
     AngleHelperSystem *angle_helper_system;
+    webrogue_event_out_buf event_buf;
 } System;
 typedef struct Window {
     AngleHelperWindow *angle_helper_window;
@@ -16,6 +18,9 @@ typedef struct Window {
 void *webrogue_gfx_ffi_create_system(void) {
     System *system_ptr = malloc(sizeof(System));
     system_ptr->angle_helper_system = [[AngleHelperSystem alloc] init];
+    system_ptr->event_buf.buf = malloc(1024);
+    system_ptr->event_buf.buf_size = 1024;
+    system_ptr->event_buf.used_size = 0;
 
     return system_ptr;
 }
@@ -68,4 +73,9 @@ void webrogue_gfx_ffi_gl_init(void *raw_window_ptr, void** out_func, void** out_
 }
 CAMetalLayer *wr_SDL_Metal_GetLayer(SDL_MetalView view) {
     return CFBridgingRelease(SDL_Metal_GetLayer(view));
+}
+void webrogue_gfx_ffi_poll(void *raw_system_ptr, void** out_buf, uint32_t* out_len) {
+  System *system_ptr = (System *)raw_system_ptr;
+  webrogue_event_out_buf *event_buf = &(system_ptr->event_buf);
+  webrogue_gfx_ffi_sdl2_poll(event_buf, out_buf, out_len);
 }

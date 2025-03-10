@@ -1,3 +1,4 @@
+#pragma once
 #include <stdint.h>
 
 void *webrogue_gfx_ffi_create_system(void);

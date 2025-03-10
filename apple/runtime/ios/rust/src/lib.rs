@@ -16,8 +16,6 @@ pub unsafe extern "C" fn webrogue_ios_rs_main(wrapp_path: *const i8) {
 
     match main(wrapp_path) {
         Ok(_) => {}
-        Err(e) => {
-            println!("{}", e)
-        }
+        Err(e) => println!("{}", e),
     }
 }

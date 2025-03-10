@@ -22,8 +22,8 @@ fn main() {
             std::env::var("CARGO_CFG_TARGET_ABI").unwrap().as_str(),
         ) {
             ("unix", "linux", "x86_64", "unknown", "gnu", "") => "x86_64-linux-gnu",
+            ("unix", "macos", "x86_64", "apple", "", "") => "x86_64-apple-darwin",
             // aarch64-linux-gnu
-            // x86_64-apple-darwin
             // arm64-apple-darwin
             // x86_64-windows-gnu
             (family, os, arch, vendor, env, abi) => {
@@ -34,7 +34,7 @@ fn main() {
             }
         };
 
-        webrogue_aot_compiler::compile_webc_file(wasm_path.into(), obj_path.clone(), target)
+        webrogue_aot_compiler::compile_webc_to_object(wasm_path.into(), obj_path.clone(), target)
             .expect("webrogue_aot_compiler failed");
 
         cc::Build::new().object(obj_path).compile("wr_aot");

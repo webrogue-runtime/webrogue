@@ -8,8 +8,6 @@ pub struct GFXInterface {
 
 impl GFXInterface {
     pub fn new(gfx: Arc<crate::system::GFXSystem>) -> Self {
-        #[cfg(feature = "fallback")]
-        webrogue_gfx_fallback::dummy();
         Self {
             gfx,
             window: None,

@@ -137,5 +137,8 @@ fn main() -> anyhow::Result<()> {
 
 #[no_mangle]
 pub unsafe extern "C" fn webrogue_main() {
-    main().unwrap();
+    match main() {
+        Ok(_) => {},
+        Err(e) => println!("{}", e),
+    };
 }

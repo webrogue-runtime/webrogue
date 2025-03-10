@@ -29,12 +29,27 @@ fn main() {
         );
         println!("cargo:rustc-link-lib=static=wrgfxfallback");
         println!("cargo:rustc-link-lib=static=SDL2");
+        #[cfg(target_os = "macos")]
+        {
+            println!("cargo:rustc-link-lib=framework=Quartz");
+            println!("cargo:rustc-link-lib=framework=Metal");
+            println!("cargo:rustc-link-lib=framework=IOKit");
+            println!("cargo:rustc-link-lib=framework=GameController");
+            println!("cargo:rustc-link-lib=framework=ForceFeedback");
+            println!("cargo:rustc-link-lib=framework=CoreVideo");
+            println!("cargo:rustc-link-lib=framework=CoreHaptics");
+            println!("cargo:rustc-link-lib=framework=CoreFoundation");
+            println!("cargo:rustc-link-lib=framework=CoreAudio");
+            println!("cargo:rustc-link-lib=framework=Cocoa");
+            println!("cargo:rustc-link-lib=framework=Carbon");
+            println!("cargo:rustc-link-lib=framework=AudioToolbox");
+        }
     }
     #[cfg(feature = "cc")]
     {
         cc::Build::new()
             .file("webrogue_gfx_ffi_sdl2.c")
-            .file("webrogue_event_ffi_sdl2.c")
+            .file("webrogue_gfx_ffi_sdl2_events.c")
             .include("SDL/include")
             .compile("wrgfxfallback");
     }
