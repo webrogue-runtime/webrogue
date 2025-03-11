@@ -33,8 +33,9 @@ public class WebrogueActivity extends SDLActivity {
         textView = new TextView(this);
         textView.setTextColor(Color.parseColor("#ff000000"));
         layoutParams.addRule(RelativeLayout.ALIGN_TOP);
-        mLayout.addView(textView, layoutParams);
+//        mLayout.addView(textView, layoutParams);
     }
+
     @Keep
     public String getContainerPath() {
         return wrappPath;
@@ -47,10 +48,12 @@ public class WebrogueActivity extends SDLActivity {
             textView.setText(consoleText);
         });
     }
+
     @Override
     protected String[] getLibraries() {
-        return new String[]{ "webrogue" };
+        return new String[]{"webrogue"};
     }
+
     @Override
     protected void onDestroy() {
         Process.killProcess(Process.myPid());
@@ -63,7 +66,7 @@ public class WebrogueActivity extends SDLActivity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if(event.getKeyCode() == KeyEvent.KEYCODE_BACK && exitOnBack()) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && exitOnBack()) {
 //            Process.killProcess(Process.myPid());
             this.finishAndRemoveTask();
             return true;
