@@ -12,11 +12,7 @@ doc = false
 
 [features]
 default = ["cranelift"]
-singlepass = ["webrogue-default-runtime/singlepass"]
 cranelift = ["webrogue-default-runtime/cranelift"]
-llvm = ["webrogue-default-runtime/llvm"]
-wamr = ["webrogue-default-runtime/wamr"]
-aot = ["webrogue-default-runtime/aot"]
 
 [dependencies]
 webrogue-default-runtime = { workspace = true }
@@ -30,10 +26,10 @@ edition = "2021"
 [workspace]
 resolver = '2'
 members = [
-  "crates/aot-compiler",
-  "crates/aot-data",
-  "crates/aot-lib",
-  "crates/aot-linker",
+  # "crates/aot-compiler",
+  # "crates/aot-data",
+  # "crates/aot-lib",
+  # "crates/aot-linker",
   "crates/default-runtime",
   "crates/event-apigen",
   "crates/gfx",
@@ -43,17 +39,17 @@ members = [
   "crates/wrapp",
   "crates/wrapp-cli",
 
-  "android/runtime/common/src/main/rust",
+  # "android/runtime/common/src/main/rust",
 
   # "web/crates/backend-web",
   # "web/crates/backend-web-macro",
   # "web/crates/main",
 
-  "apple/runtime/ios/rust",
-  "apple/runtime/macos/rust",
+  # "apple/runtime/ios/rust",
+  # "apple/runtime/macos/rust",
 ]
 exclude = [
-  "external/wasmer",
+  "external/wasmtime",
   "web/crates/web",
 ]
 
@@ -73,16 +69,10 @@ webrogue-wrapp = { path = "crates/wrapp" }
 # webrogue-backend-web = { path = "web/crates/backend-web" }
 # webrogue-backend-web-macro = { path = "web/crates/backend-web-macro" }
 
-# Wasmer crates
-wasmer = { path = "external/wasmer/lib/api", default-features = false }
-wasmer-wasix = { path = "external/wasmer/lib/wasix" }
-wasmer-compiler = { path = "external/wasmer/lib/compiler" }
-wasmer-compiler-cranelift = { path = "external/wasmer/lib/compiler-cranelift" }
-wasmer-compiler-llvm = { path = "external/wasmer/lib/compiler-llvm" }
-wasmer-package = { path = "external/wasmer/lib/package" }
-wasmer-types = { path = "external/wasmer/lib/types" }
-virtual-fs = { path = "external/wasmer/lib/virtual-fs" }
-webc = { version = "8.0.0" }
+# Wasmtime
+wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
+wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
+wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
 
 clap = { version = "4" }
 futures =  { version = "0.3" }

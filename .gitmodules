@@ -1,9 +1,6 @@
 [submodule "examples"]
 	path = examples
 	url = https://github.com/webrogue-runtime/webrogue-examples.git
-[submodule "external/wasmer"]
-	path = external/wasmer
-	url = https://github.com/webrogue-runtime/wasmer.git
 [submodule "external/llvm"]
 	path = external/llvm
 	url = https://github.com/llvm/llvm-project.git
@@ -13,3 +10,6 @@
 [submodule "external/aemu"]
 	path = external/aemu
 	url = https://github.com/webrogue-runtime/aemu.git
+[submodule "external/wasmtime"]
+	path = external/wasmtime
+	url = https://github.com/bytecodealliance/wasmtime.git

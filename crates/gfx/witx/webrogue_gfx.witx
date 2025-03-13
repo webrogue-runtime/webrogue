@@ -1,0 +1,34 @@
+(use "typenames.witx")
+
+(module $webrogue_gfx
+  (import "memory" (memory))
+  
+  (@interface func (export "make_window"))
+  (@interface func (export "present"))
+
+  (@interface func (export "get_window_size")
+    (param $out_width (@witx pointer $gfx_size))
+    (param $out_height (@witx pointer $gfx_size))
+  )
+
+  (@interface func (export "get_gl_size")
+    (param $out_width (@witx pointer $gfx_size))
+    (param $out_height (@witx pointer $gfx_size))
+  )
+
+  (@interface func (export "gl_init"))
+  (@interface func (export "commit_buffer")
+    (param $buf (@witx pointer u8))
+    (param $len $size)
+  )
+  (@interface func (export "ret_buffer_read")
+    (param $buf (@witx pointer u8))
+    (param $len $size)
+  )
+  (@interface func (export "poll")
+    (param $out_len (@witx pointer $size))
+  )
+  (@interface func (export "poll_read")
+    (param $buf (@witx pointer u8))
+  )
+)

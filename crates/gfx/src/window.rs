@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Window(crate::ffi::NativeHandle);
 
 impl Window {
