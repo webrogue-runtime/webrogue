@@ -15,11 +15,7 @@ impl FileReader {
     ) -> Self {
         let frame_and_relative_offset =
             handle.get_frame_and_relative_offset(file_position.absolute_offset);
-        let mut data = Vec::new();
-        data.resize(
-            handle.get_frame_decompressed_size(frame_and_relative_offset.0),
-            0,
-        );
+        let mut data = vec![0; handle.get_frame_decompressed_size(frame_and_relative_offset.0)];
         handle.decompress_frame(data.as_mut_slice(), frame_and_relative_offset.0);
         Self {
             handle,
@@ -71,7 +67,7 @@ impl std::io::Seek for FileReader {
             ));
         }
         self.cursor = target_offset;
-        return std::io::Result::Ok(target_offset as u64);
+        std::io::Result::Ok(target_offset as u64)
     }
 }
 
@@ -109,6 +105,6 @@ impl std::io::Read for FileReader {
             }
         }
 
-        return std::io::Result::Ok(result_size);
+        std::io::Result::Ok(result_size)
     }
 }

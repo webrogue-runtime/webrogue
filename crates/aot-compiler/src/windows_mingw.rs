@@ -1,27 +1,27 @@
 pub fn build_windows_mingw(
-    webc_file_path: std::path::PathBuf,
+    wrapp_file_path: std::path::PathBuf,
     output_file_path: std::path::PathBuf,
 ) -> anyhow::Result<()> {
     let object_file_path = output_file_path
         .parent()
         .ok_or(anyhow::anyhow!("Path error"))?
         .join("aot.o");
-    let copied_webc_path = output_file_path
+    let copied_wrapp_path = output_file_path
         .parent()
         .ok_or(anyhow::anyhow!("Path error"))?
-        .join("aot.webc");
-    let triple = "x86_64-windows-gnu";
+        .join("aot.wrapp");
 
-    crate::compile::compile_webc_to_object(
-        webc_file_path.clone(),
+    crate::compile::compile_wrapp_to_object(
+        wrapp_file_path.clone(),
         object_file_path.clone(),
-        triple,
+        crate::Target::x86_64WindowsGNU,
+        true, // TODO check
     )?;
 
     link_windows_mingw(object_file_path.clone(), output_file_path.clone())?;
 
     let _ = std::fs::remove_file(object_file_path.clone());
-    std::fs::copy(webc_file_path, copied_webc_path)?;
+    std::fs::copy(wrapp_file_path, copied_wrapp_path)?;
     std::fs::copy(
         "aot_artifacts/x86_64-windows-gnu/libEGL.dll",
         output_file_path

@@ -63,7 +63,7 @@ pub fn make_packed_data(
     }
     let mut packed_data = header;
     packed_data.append(&mut body);
-    return Ok(packed_data);
+    Ok(packed_data)
 }
 
 pub fn archive(
@@ -84,5 +84,5 @@ pub fn archive(
     output_file.write_all(b"\0")?;
     compress(make_packed_data(dir_path, config)?, &mut output_file)?;
 
-    return anyhow::Ok(());
+    anyhow::Ok(())
 }

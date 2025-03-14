@@ -9,7 +9,24 @@ pub struct State {
     pub gfx: Option<webrogue_gfx::GFXInterface>,
 }
 
-unsafe impl Send for State {}
+// unsafe impl Send for State {}
+
+#[cfg(feature = "aot")]
+struct StaticCodeMemory {}
+#[cfg(feature = "aot")]
+impl wasmtime::CustomCodeMemory for StaticCodeMemory {
+    fn required_alignment(&self) -> usize {
+        1
+    }
+
+    fn publish_executable(&self, _ptr: *const u8, _len: usize) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    fn unpublish_executable(&self, _ptr: *const u8, _len: usize) -> anyhow::Result<()> {
+        Ok(())
+    }
+}
 
 pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
@@ -17,8 +34,11 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     // config.async_support(true);
     // config.debug_info(true);
     // config.cranelift_opt_level(wasmtime::OptLevel::None);
+    // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
     config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
     config.epoch_interruption(true);
+    #[cfg(feature = "aot")]
+    config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
     let engine = wasmtime::Engine::new(&config)?;
     let mut file = wrapp
         .open_file("main.wasm")
@@ -26,8 +46,15 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     let mut wasm_binary = Vec::new();
     file.read_to_end(&mut wasm_binary)?;
     drop(file);
-    let module = wasmtime::Module::from_binary(&engine, &wasm_binary)?;
+    #[cfg(feature = "aot")]
+    let module = unsafe {
+        wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
+    };
 
+    #[cfg(feature = "cranelift")]
+    let module = wasmtime::Module::from_binary(&engine, &wasm_binary)?;
+    #[cfg(all(feature = "aot", feature = "cranelift"))]
+    compile_error!("webrogue runtime cant include both aot and cranelift features");
     let mut linker: wasmtime::Linker<State> = wasmtime::Linker::new(&engine);
     let state = State {
         preview1_ctx: None,

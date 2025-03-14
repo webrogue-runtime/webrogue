@@ -6,6 +6,7 @@ edition.workspace = true
 
 [features]
 cranelift = ["webrogue-runtime/cranelift"]
+aot = ["webrogue-runtime/aot", "dep:webrogue-aot-data"]
 
 [dependencies]
 webrogue-runtime = { workspace = true }
@@ -14,7 +15,7 @@ clap = { workspace = true, features = ["derive"] }
 webrogue-wrapp = { workspace = true }
 
 
-# webrogue-aot-data = { workspace = true, features = ["compiling"], optional = true }
+webrogue-aot-data = { workspace = true, features = ["compiling"], optional = true }
 webrogue-gfx = { workspace = true, features = ["fallback"] }
 webrogue-gfx-fallback = { workspace = true, features = ["sdl2", "cmake"] }
 webrogue-gfxstream = { workspace = true, features = ["cc"] }

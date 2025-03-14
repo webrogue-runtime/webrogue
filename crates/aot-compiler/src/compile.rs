@@ -1,113 +1,123 @@
-use std::{io::Write as _, str::FromStr as _};
-use wasmer_compiler::types::target::{CpuFeature, Target};
-use wasmer_compiler::CompilerConfig as _;
+use std::collections::BTreeMap;
+use wasmtime_environ::obj::LibCall;
 
-use target_lexicon::{Architecture, Environment, OperatingSystem, Triple};
-
-fn target_triple_to_target(target_triple: &Triple, cpu_features: &[CpuFeature]) -> Target {
-    let mut features = cpu_features.iter().fold(CpuFeature::set(), |a, b| a | *b);
-    // Cranelift requires SSE2, so we have this "hack" for now to facilitate
-    // usage
-    if target_triple.architecture == Architecture::X86_64 {
-        features |= CpuFeature::SSE2;
-    }
-    Target::new(target_triple.clone(), features)
-}
-
-pub fn compile_webc_to_object(
-    webc_file_path: std::path::PathBuf,
+pub fn compile_wrapp_to_object(
+    wrapp_file_path: std::path::PathBuf,
     object_file_path: std::path::PathBuf,
-    triple_str: &str,
+    target: crate::Target,
+    is_pic: bool,
 ) -> anyhow::Result<()> {
-    let triple = Triple::from_str(triple_str).map_err(|e| anyhow::anyhow!(e))?;
-    let mut cranelift = wasmer_compiler_cranelift::Cranelift::new();
-    cranelift.opt_level(wasmer_compiler_cranelift::CraneliftOptLevel::SpeedAndSize);
-    // currently not works
-    // #[cfg(feature = "llvm")]
-    // let mut llvm = wasmer_compiler_llvm::LLVM::new();
-    // llvm.enable_pic();
-    let engine_builder = match triple.architecture {
-        // #[cfg(feature = "llvm")]
-        // wasmer_types::Architecture::X86_64 => wasmer_compiler::EngineBuilder::new(llvm),
-        _ => wasmer_compiler::EngineBuilder::new(cranelift),
-    };
+    let mut config = wasmtime::Config::new();
+    config.target(target.name())?;
+    config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+    config.epoch_interruption(true);
+    unsafe {
+        if is_pic {
+            config.cranelift_flag_enable("is_pic");
+        } else {
+            config.cranelift_flag_enable("use_colocated_libcalls");
+        }
+    }
+    let engine = wasmtime::Engine::new(&config)?;
 
-    let target = target_triple_to_target(&triple, &[]);
+    let wrapp_handle = webrogue_wrapp::WrappHandle::from_file_path(wrapp_file_path)?;
 
-    let container = wasmer_package::utils::from_disk(webc_file_path)?;
+    let mut file = wrapp_handle
+        .open_file("main.wasm")
+        .ok_or(anyhow::anyhow!("main.wasm not found"))?;
+    let mut wasm_binary = Vec::new();
+    std::io::Read::read_to_end(&mut file, &mut wasm_binary)?;
+    drop(file);
 
-    let atom = container
-        .get_atom(
-            &container
-                .manifest()
-                .entrypoint
-                .clone()
-                .ok_or(anyhow::anyhow!("webc has no entrypoint"))?,
-        )
-        .ok_or(anyhow::anyhow!("webc atom retrieval failed"))?;
+    let cwasm = engine.precompile_module(&wasm_binary)?;
 
-    let prefix = "wr_aot";
-    let engine = engine_builder
-        .set_features(Some(wasmer_types::Features::new()))
-        .set_target(Some(target.clone()))
-        .engine();
-    let engine_inner = engine.inner();
-    let compiler = engine_inner.compiler()?;
-    let features = engine_inner.features();
-    let tunables = engine.tunables();
-    let (_, obj, _, _) = wasmer_compiler::Artifact::generate_object(
-        compiler,
-        &atom,
-        Some(prefix),
-        &target,
-        tunables,
-        features,
-    )?;
-    // Write object file with functions
+    let cwasm_info = crate::cwasm_analizer::parse_cwasm(&cwasm, target, is_pic)?;
+
+    let mut libcall_relocs: BTreeMap<String, Vec<u64>> = BTreeMap::new();
+
+    for (offset, libcall) in cwasm_info.relocations.iter() {
+        let offset = (cwasm_info.text.start + (*offset)) as u64;
+
+        let libcall_name = match libcall {
+            LibCall::FloorF32 => "floorf32",
+            LibCall::FloorF64 => "floorf64",
+            LibCall::NearestF32 => "nearestf32",
+            LibCall::NearestF64 => "nearestf64",
+            LibCall::CeilF32 => "ceilf32",
+            LibCall::CeilF64 => "ceilf64",
+            LibCall::TruncF32 => "truncf32",
+            LibCall::TruncF64 => "truncf64",
+            LibCall::FmaF32 => "fmaf32",
+            LibCall::FmaF64 => "fmaf64",
+            LibCall::X86Pshufb => "x86_pshufb",
+        };
+        let libcall_name = format!("wasmtime_libcall_{}", libcall_name);
+
+        if let Some(value) = libcall_relocs.get_mut(&libcall_name) {
+            value.push(offset as u64);
+        } else {
+            libcall_relocs.insert(libcall_name, vec![offset as u64]);
+        };
+    }
+
+    let mut obj = object::write::Object::new(target.format(), target.arch(), target.endianness());
+
+    obj.add_file_symbol(b"main.wasm".into());
+    let mut main_data = Vec::new();
+    main_data.extend_from_slice(&(cwasm.len() as u64).to_le_bytes());
+    main_data.extend_from_slice(&(cwasm_info.max_alignment).to_le_bytes());
+    main_data.extend_from_slice(&vec![0u8].repeat(cwasm_info.max_alignment as usize - 16));
+    main_data.extend_from_slice(&cwasm);
+
+    let main_symbol = obj.add_symbol(object::write::Symbol {
+        name: b"WEBROGUE_AOT".into(),
+        value: 0,
+        size: 0,
+        kind: object::SymbolKind::Text,
+        scope: object::SymbolScope::Linkage,
+        weak: false,
+        section: object::write::SymbolSection::Undefined,
+        flags: object::SymbolFlags::None,
+    });
+    // Add the main function in its own subsection (equivalent to -ffunction-sections).
+    let main_section = obj.add_subsection(object::write::StandardSection::Text, b"main");
+    let _main_offset = obj.add_symbol_data(
+        main_symbol,
+        main_section,
+        &main_data,
+        cwasm_info.max_alignment,
+    );
+
+    for (libcall_name, offsets) in libcall_relocs.iter() {
+        // External symbol for puts.
+        let libcall_symbol = obj.add_symbol(object::write::Symbol {
+            name: libcall_name.as_bytes().into(),
+            value: 0,
+            size: 0,
+            kind: object::SymbolKind::Text,
+            scope: object::SymbolScope::Dynamic,
+            weak: false,
+            section: object::write::SymbolSection::Undefined,
+            flags: object::SymbolFlags::None,
+        });
+
+        for offset in offsets.iter() {
+            obj.add_relocation(
+                main_section,
+                object::write::Relocation {
+                    offset: *offset + cwasm_info.max_alignment,
+                    symbol: libcall_symbol,
+                    addend: target.reloc_append(is_pic),
+                    flags: target.reloc_flags(is_pic),
+                },
+            )?;
+        }
+    }
+
     let mut writer = std::io::BufWriter::new(std::fs::File::create(&object_file_path)?);
     obj.write_stream(&mut writer)
         .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    writer.flush()?;
+    std::io::Write::flush(&mut writer)?;
 
     Ok(())
 }
-
-// pub fn compile_webc_file(
-//     webc_file_path: std::path::PathBuf,
-//     output_file_path: std::path::PathBuf,
-//     target: &str,
-// ) -> anyhow::Result<()> {
-//     let object_file_path = output_file_path
-//         .parent()
-//         .ok_or(anyhow::anyhow!("Path error"))?
-//         .join("aot.o");
-//     let copied_webc_path = output_file_path
-//         .parent()
-//         .ok_or(anyhow::anyhow!("Path error"))?
-//         .join("aot.webc");
-
-//     let triple = match target {
-//         "linux" => "x86_64-linux-gnu",
-//         "windows-msvc" => "x86_64-windows-msvc",
-//         "windows-mingw" => "x86_64-windows-gnu",
-//         _ => anyhow::bail!("Unsupported compilation target: {}", target),
-//     };
-
-//     compile_webc_to_object(webc_file_path.clone(), object_file_path.clone(), triple)?;
-
-//     match target {
-//         "linux" => webrogue_aot_linker::link_linux(object_file_path.clone(), output_file_path),
-//         "windows-msvc" => {
-//             webrogue_aot_linker::link_windows(object_file_path.clone(), output_file_path)
-//         }
-//         "windows-mingw" => {
-//             webrogue_aot_linker::link_windows_mingw(object_file_path.clone(), output_file_path)
-//         }
-//         _ => anyhow::bail!("Unsupported compilation target: {}", target),
-//     };
-
-//     let _ = std::fs::remove_file(object_file_path.clone());
-//     std::fs::copy(webc_file_path, copied_webc_path)?;
-
-//     Ok(())
-// }

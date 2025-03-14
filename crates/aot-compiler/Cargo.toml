@@ -6,19 +6,13 @@ edition.workspace = true
 
 [features]
 default = []
-llvm = ["dep:wasmer-compiler-llvm", "dep:webrogue-aot-linker", "dep:llvm-sys", "webrogue-aot-linker/build-llvm"]
+llvm = ["dep:webrogue-aot-linker", "webrogue-aot-linker/build-llvm"]
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
-# wasmer = { workspace = true, default-features = false }
-wasmer-compiler = { workspace = true, features = ["static-artifact-create"] }
-wasmer-compiler-cranelift = { workspace = true }
-wasmer-compiler-llvm = { workspace = true, optional = true }
-wasmer-types = { workspace = true }
-webc = { workspace = true }
-wasmer-package = { workspace = true }
 webrogue-aot-linker = { workspace = true, optional = true }
-# needed not to let wasmer-compiler-llvm link to other llvm version
-llvm-sys = { version = "*", default-features = false, features=["no-llvm-linking"], optional = true }
-target-lexicon = { workspace = true }
+wasmtime = { workspace = true, default-features = false, features = ["cranelift", "all-arch", "threads", "parallel-compilation"] }
+webrogue-wrapp = { workspace = true }
+object = { workspace = true, default-features = false, features = ['read_core', 'write_core', 'elf'] }
+wasmtime-environ = { workspace = true, default-features = false }

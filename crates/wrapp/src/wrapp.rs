@@ -24,9 +24,7 @@ impl WrappHandle {
             config: preamble.config,
             file_index,
         };
-        anyhow::Ok(WrappHandle {
-            0: Arc::new(Mutex::new(wrapp)),
-        })
+        anyhow::Ok(WrappHandle(Arc::new(Mutex::new(wrapp))))
     }
     pub fn from_file_path(path: std::path::PathBuf) -> anyhow::Result<Self> {
         Self::make_wrapp_handle(std::fs::File::open(path)?)
@@ -74,12 +72,8 @@ impl WrappHandle {
 
     pub fn open_file(&self, path: &str) -> Option<crate::FileReader> {
         let wrapp = self.0.lock().unwrap();
-        let position = wrapp
-            .file_index
-            .file_positions
-            .get(path)
-            .and_then(|f| Some(*f));
+        let position = wrapp.file_index.file_positions.get(path).copied();
         drop(wrapp);
-        position.and_then(|position| Some(crate::FileReader::new(self.clone(), position)))
+        position.map(|position| crate::FileReader::new(self.clone(), position))
     }
 }

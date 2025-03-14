@@ -55,7 +55,7 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
         builder.spawn(move || {
             let result: Result<anyhow::Result<()>, Box<dyn std::any::Any + Send>> =
                 std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    let mut store = wasmtime::Store::new(&instance_pre.module().engine(), host);
+                    let mut store = wasmtime::Store::new(instance_pre.module().engine(), host);
                     store.epoch_deadline_trap();
                     store.set_epoch_deadline(1);
                     let instance = instance_pre.instantiate(&mut store)?;
@@ -106,6 +106,12 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
             Ok(v) => Some(v + 1),
             Err(_) => None,
         }
+    }
+}
+
+impl<T: Clone + Send + 'static> Default for WasiThreadsCtx<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -174,6 +180,7 @@ fn has_entry_point(module: &wasmtime::Module) -> bool {
     module.get_export(WASI_ENTRY_POINT).is_some()
 }
 
+#[allow(clippy::iter_nth_zero)]
 fn has_correct_signature(module: &wasmtime::Module) -> bool {
     match module.get_export(WASI_ENTRY_POINT) {
         Some(wasmtime::ExternType::Func(ty)) => {

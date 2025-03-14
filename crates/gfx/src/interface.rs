@@ -13,6 +13,12 @@ pub struct GFXInterface {
     gfxstream_thread: Option<webrogue_gfxstream::Thread>,
 }
 
+// gfx can be shared
+// window can't TODO
+// gfxstream_thread is not cloned/copied across threads
+// TODO make wasi-threads not to force Send implementation
+unsafe impl Send for GFXInterface {}
+
 impl GFXInterface {
     pub fn new(gfx: Arc<crate::system::GFXSystem>) -> Self {
         Self {
@@ -34,11 +40,11 @@ impl Clone for GFXInterface {
 }
 
 impl webrogue_gfx::WebrogueGfx for GFXInterface {
-    fn make_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>) -> () {
+    fn make_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
         self.window = Some(self.gfx.make_window());
     }
 
-    fn present(&mut self, _mem: &mut wiggle::GuestMemory<'_>) -> () {
+    fn present(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
         self.window.as_mut().inspect(|window| {
             window.present();
         });
@@ -49,11 +55,11 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         mem: &mut wiggle::GuestMemory<'_>,
         out_width: wiggle::GuestPtr<GfxSize>,
         out_height: wiggle::GuestPtr<GfxSize>,
-    ) -> () {
+    ) {
         let size = self
             .window
             .as_ref()
-            .and_then(|window| Some(window.get_size()))
+            .map(|window| window.get_size())
             .unwrap_or_default();
         let _ = mem.write(out_width, size.0);
         let _ = mem.write(out_height, size.1);
@@ -64,17 +70,17 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         mem: &mut wiggle::GuestMemory<'_>,
         out_width: wiggle::GuestPtr<GfxSize>,
         out_height: wiggle::GuestPtr<GfxSize>,
-    ) -> () {
+    ) {
         let size = self
             .window
             .as_ref()
-            .and_then(|window| Some(window.get_gl_size()))
+            .map(|window| window.get_gl_size())
             .unwrap_or_default();
         let _ = mem.write(out_width, size.0);
         let _ = mem.write(out_height, size.1);
     }
 
-    fn gl_init(&mut self, _mem: &mut wiggle::GuestMemory<'_>) -> () {
+    fn gl_init(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
         if let Some(window) = &self.window {
             let ret = window.gl_init();
             self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(ret.0, ret.1))
@@ -86,7 +92,7 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         mem: &mut wiggle::GuestMemory<'_>,
         buf: wiggle::GuestPtr<u8>,
         len: Size,
-    ) -> () {
+    ) {
         if let Some(gfxstream_thread) = &self.gfxstream_thread {
             if let Ok(b) = mem.as_cow(buf.as_array(len)) {
                 gfxstream_thread.commit(&b);
@@ -99,7 +105,7 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         mem: &mut wiggle::GuestMemory<'_>,
         buf: wiggle::GuestPtr<u8>,
         len: Size,
-    ) -> () {
+    ) {
         let mut buffer = vec![0u8; len as usize];
         if let Some(gfxstream_thread) = &self.gfxstream_thread {
             gfxstream_thread.read(&mut buffer)
@@ -107,12 +113,12 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         let _ = mem.copy_from_slice(&buffer, buf.as_array(len));
     }
 
-    fn poll(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_len: wiggle::GuestPtr<Size>) -> () {
+    fn poll(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_len: wiggle::GuestPtr<Size>) {
         let result = self.gfx.poll();
         let _ = mem.write(out_len, result);
     }
 
-    fn poll_read(&mut self, mem: &mut wiggle::GuestMemory<'_>, buf: wiggle::GuestPtr<u8>) -> () {
+    fn poll_read(&mut self, mem: &mut wiggle::GuestMemory<'_>, buf: wiggle::GuestPtr<u8>) {
         let result = self.gfx.poll_read();
         if let Some(result) = result {
             let _ = mem.copy_from_slice(result, buf.as_array(result.len() as u32));

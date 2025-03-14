@@ -13,6 +13,7 @@ doc = false
 [features]
 default = ["cranelift"]
 cranelift = ["webrogue-default-runtime/cranelift"]
+aot = ["webrogue-default-runtime/aot"]
 
 [dependencies]
 webrogue-default-runtime = { workspace = true }
@@ -26,9 +27,9 @@ edition = "2021"
 [workspace]
 resolver = '2'
 members = [
-  # "crates/aot-compiler",
-  # "crates/aot-data",
-  # "crates/aot-lib",
+  "crates/aot-compiler",
+  "crates/aot-data",
+  "crates/aot-lib",
   # "crates/aot-linker",
   "crates/default-runtime",
   "crates/event-apigen",
@@ -73,7 +74,9 @@ webrogue-wrapp = { path = "crates/wrapp" }
 wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
 wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
 wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
+wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
 
+object = { version = "0.36.5", default-features = false }
 clap = { version = "4" }
 futures =  { version = "0.3" }
 wasmparser = { version = ">=0.215" }

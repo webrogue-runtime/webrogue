@@ -29,10 +29,11 @@ pub fn build_android_gradle(
     //     std::fs::remove_dir_all(build_dir.clone())?;
     // };
     crate::utils::copy_dir(&template_dir, &build_dir)?;
-    crate::compile::compile_webc_to_object(
+    crate::compile::compile_wrapp_to_object(
         container_path.clone(),
         object_path.clone(),
-        "aarch64-linux-android",
+        crate::Target::ARM64LinuxAndroid,
+        true,
     )?;
     let webrogue_libs_path = template_dir
         .parent()
@@ -117,11 +118,7 @@ pub fn build_android_gradle(
                 .as_os_str()
                 .to_str()
                 .unwrap(),
-            lib_path
-                .join("libc++abi.a")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
+            lib_path.join("libc++abi.a").as_os_str().to_str().unwrap(),
             "-landroid",
             "-llog",
             output_path
@@ -170,7 +167,7 @@ pub fn build_android_gradle(
     if !std::fs::exists(assets_path.clone())? {
         std::fs::create_dir(assets_path.clone())?;
     };
-    std::fs::copy(container_path, assets_path.join("aot.webc"))?;
+    std::fs::copy(container_path, assets_path.join("aot.wrapp"))?;
     return anyhow::Ok(());
 }
 
