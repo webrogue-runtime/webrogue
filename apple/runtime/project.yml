@@ -121,7 +121,7 @@ targets:
     - sdk: AudioToolbox.framework
     - sdk: libc++.tbd
     - sdk: libc++abi.tbd
-  wrios:
+  wrios: # I ran out of imagination while naming this
     type: library.static
     platform: iOS
     sources:

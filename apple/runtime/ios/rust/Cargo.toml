@@ -5,7 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-launcher = ["webrogue-runtime/singlepass"] # jit issue
+launcher = ["webrogue-runtime/cranelift"] # jit issue
 runner = ["webrogue-runtime/aot"]
 
 [lib]
@@ -15,4 +15,4 @@ crate-type = ["staticlib"]
 [dependencies]
 anyhow = { workspace = true }
 webrogue-runtime = { workspace = true }
-wasmer-package = { workspace = true }
+webrogue-wrapp = { workspace = true }

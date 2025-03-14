@@ -7,6 +7,7 @@ edition.workspace = true
 [features]
 cranelift = ["wasmtime/cranelift"]
 aot = ["dep:webrogue-aot-data"]
+cache = ["wasmtime/cache"]
 
 [dependencies]
 webrogue-gfx = { workspace = true }

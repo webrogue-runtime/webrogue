@@ -11,7 +11,7 @@ path = "crates/default-runtime/src/main_workspace.rs"
 doc = false
 
 [features]
-default = ["cranelift"]
+default = ["aot"]
 cranelift = ["webrogue-default-runtime/cranelift"]
 aot = ["webrogue-default-runtime/aot"]
 
@@ -46,8 +46,8 @@ members = [
   # "web/crates/backend-web-macro",
   # "web/crates/main",
 
-  # "apple/runtime/ios/rust",
-  # "apple/runtime/macos/rust",
+  "apple/runtime/ios/rust",
+  "apple/runtime/macos/rust",
 ]
 exclude = [
   "external/wasmtime",

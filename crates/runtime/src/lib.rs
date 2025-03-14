@@ -30,7 +30,8 @@ impl wasmtime::CustomCodeMemory for StaticCodeMemory {
 
 pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
-    // config.cache_config_load_default()?;
+    #[cfg(feature = "cache")]
+    config.cache_config_load_default()?;
     // config.async_support(true);
     // config.debug_info(true);
     // config.cranelift_opt_level(wasmtime::OptLevel::None);
@@ -53,8 +54,10 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
 
     #[cfg(feature = "cranelift")]
     let module = wasmtime::Module::from_binary(&engine, &wasm_binary)?;
+    #[cfg(not(any(feature = "aot", feature = "cranelift")))]
+    compile_error!("Either AOT or Cranelift features must be enabled");
     #[cfg(all(feature = "aot", feature = "cranelift"))]
-    compile_error!("webrogue runtime cant include both aot and cranelift features");
+    compile_error!("Can't include both AOT and Cranelift features");
     let mut linker: wasmtime::Linker<State> = wasmtime::Linker::new(&engine);
     let state = State {
         preview1_ctx: None,

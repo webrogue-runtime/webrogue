@@ -42,7 +42,8 @@ enum Commands {
         wrapp_path: std::path::PathBuf,
         out_path: std::path::PathBuf,
         target: String,
-        is_pic: bool,
+        #[arg(short, long)]
+        pic: bool,
     },
     /// Apple-related commands
     Apple {
@@ -91,13 +92,13 @@ fn main() -> anyhow::Result<()> {
             wrapp_path,
             out_path,
             target,
-            is_pic,
+            pic,
         } => {
             compile::compile_wrapp_to_object(
                 wrapp_path,
                 out_path,
                 Target::from_name(&target)?,
-                is_pic,
+                pic,
             )?;
         }
         Commands::Linux {

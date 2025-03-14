@@ -24,11 +24,11 @@ int main(int argc, const char * argv[]) {
             [NSException raise:@"libNotFound" format:@"libGLESv2.dylib not found"];
         }
         setenv("SDL_VIDEO_GL_DRIVER", [gles_path UTF8String], 0);
-        NSString* webc_path = [exec_path stringByAppendingPathComponent: @"aot.webc"];
-        if(![[NSFileManager defaultManager] fileExistsAtPath: webc_path]) {
-            [NSException raise:@"libNotFound" format:@"aot.webc not found"];
+        NSString* wrapp_path = [exec_path stringByAppendingPathComponent: @"aot.wrapp"];
+        if(![[NSFileManager defaultManager] fileExistsAtPath: wrapp_path]) {
+            [NSException raise:@"libNotFound" format:@"aot.wrapp not found"];
         }
-        webrogue_macos_main([webc_path UTF8String]);
+        webrogue_macos_main([wrapp_path UTF8String]);
     }
     return 0;
 }

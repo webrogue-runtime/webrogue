@@ -7,9 +7,9 @@ fn main() {
 
         let out_dir = std::path::PathBuf::from_str(&std::env::var("OUT_DIR").unwrap()).unwrap();
 
-        let wasm_path = std::env::var("WEBROGUE_AOT_PATH").expect("WEBROGUE_AOT_PATH");
+        let wrapp_path = std::env::var("WEBROGUE_AOT_PATH").expect("WEBROGUE_AOT_PATH");
         println!("cargo::rerun-if-env-changed=WEBROGUE_AOT_PATH");
-        println!("cargo::rerun-if-changed={}", wasm_path);
+        println!("cargo::rerun-if-changed={}", wrapp_path);
 
         let obj_path = out_dir.join("wr_aot.o");
 
@@ -22,10 +22,10 @@ fn main() {
             std::env::var("CARGO_CFG_TARGET_ABI").unwrap().as_str(),
         ) {
             ("unix", "linux", "x86_64", "unknown", "gnu", "") => {
-                (webrogue_aot_compiler::Target::X86_64LinuxGNU, false) // TODO check true
+                (webrogue_aot_compiler::Target::X86_64LinuxGNU, false) // TODO check is_pic
             }
             ("unix", "macos", "x86_64", "apple", "", "") => {
-                (webrogue_aot_compiler::Target::x86_64AppleDarwin, true) // TODO check true
+                (webrogue_aot_compiler::Target::x86_64AppleDarwin, false) // TODO check is_pic
             }
             (family, os, arch, vendor, env, abi) => {
                 panic!(
@@ -35,8 +35,8 @@ fn main() {
             }
         };
 
-        webrogue_aot_compiler::compile_webc_to_object(
-            wasm_path.into(),
+        webrogue_aot_compiler::compile_wrapp_to_object(
+            wrapp_path.into(),
             obj_path.clone(),
             target,
             is_pic,
@@ -45,6 +45,5 @@ fn main() {
 
         cc::Build::new().object(obj_path).compile("wr_aot");
         println!("cargo:rustc-link-lib=static=wr_aot");
-        // panic!("");
     }
 }

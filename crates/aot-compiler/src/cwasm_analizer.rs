@@ -52,9 +52,34 @@ pub fn parse_cwasm(cwasm: &[u8], target: crate::Target, is_pic: bool) -> anyhow:
             ".text" => {
                 text = range;
                 for (offset, reloc) in section.relocations() {
-                    assert_eq!(reloc.kind(), target.reloc_kind(is_pic));
-                    assert_eq!(reloc.encoding(), target.reloc_encoding(is_pic));
-                    assert_eq!(reloc.size(), target.reloc_size(is_pic));
+                    if reloc.kind() != target.reloc_kind(is_pic) {
+                        anyhow::bail!(
+                            "Expected reloc_kind: {:?}, but cwasm contains: {:?}",
+                            target.reloc_kind(is_pic),
+                            reloc.kind()
+                        )
+                    }
+                    if reloc.encoding() != target.reloc_encoding(is_pic) {
+                        anyhow::bail!(
+                            "Expected reloc_encoding: {:?}, but cwasm contains: {:?}",
+                            target.reloc_encoding(is_pic),
+                            reloc.encoding()
+                        )
+                    }
+                    if reloc.size() != target.reloc_size(is_pic) {
+                        anyhow::bail!(
+                            "Expected reloc_size: {:?}, but cwasm contains {:?}",
+                            target.reloc_size(is_pic),
+                            reloc.size()
+                        )
+                    }
+                    if reloc.addend() != target.reloc_append(is_pic) {
+                        anyhow::bail!(
+                            "Expected reloc_append: {:?}, but cwasm contains {:?}",
+                            target.reloc_append(is_pic),
+                            reloc.addend()
+                        )
+                    }
                     assert_eq!(reloc.addend(), target.reloc_append(is_pic));
                     let sym = match reloc.target() {
                         object::RelocationTarget::Symbol(id) => id,
