@@ -3,12 +3,12 @@ pub fn build_android_gradle(
     container_path: std::path::PathBuf,
     build_dir: std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    if !android_sdk_dir.exists() {
-        anyhow::bail!(
-            "Android SDK path '{}' is not valid",
-            android_sdk_dir.display()
-        );
-    }
+    println!("Detecting Android SDK...");
+    anyhow::ensure!(
+        android_sdk_dir.exists(),
+        "Android SDK path '{}' is not valid",
+        android_sdk_dir.display()
+    );
     let template_dir = std::path::PathBuf::from("aot_artifacts/android_gradle/template");
 
     let ndk_version = "27.2.12479018";
@@ -23,18 +23,23 @@ pub fn build_android_gradle(
         .join("prebuilt");
     let toolchain_dir = toolchains_dir.join(find_ndk_toolchain(toolchains_dir.clone())?);
 
-    let object_path = build_dir.join("aot.o");
+    let object_file = crate::utils::TemporalFile::for_tmp_object(build_dir.join("aarch64"))?;
 
     // if std::fs::exists(build_dir.clone())? {
     //     std::fs::remove_dir_all(build_dir.clone())?;
     // };
+    println!("Setting up Android Gradle project...");
     crate::utils::copy_dir(&template_dir, &build_dir)?;
+
+    println!("Compiling AOT object...");
     crate::compile::compile_wrapp_to_object(
-        container_path.clone(),
-        object_path.clone(),
+        &container_path,
+        object_file.path(),
         crate::Target::ARM64LinuxAndroid,
         true,
     )?;
+
+    println!("Linking native shared library...");
     let webrogue_libs_path = template_dir
         .parent()
         .ok_or(anyhow::anyhow!("Path error"))?
@@ -57,108 +62,17 @@ pub fn build_android_gradle(
         .join(find_clang_lib_version(clang_libs_path.clone())?)
         .join("lib")
         .join("linux");
-
-    crate::utils::run_lld(
-        vec![
-            "ld.lld",
-            "-EL",
-            "--fix-cortex-a53-843419",
-            "-z",
-            "now",
-            "-z",
-            "relro",
-            "-z",
-            "max-page-size=4096",
-            "--hash-style=gnu",
-            "--eh-frame-hdr",
-            "-m",
-            "aarch64linux",
-            "-shared",
-            "-o",
-            output_path.clone().as_os_str().to_str().unwrap(),
-            &format!("-L{}", lib_path.clone().as_os_str().to_str().unwrap()),
-            &format!(
-                "-L{}",
-                versioned_lib_path.clone().as_os_str().to_str().unwrap()
-            ),
-            &format!("-L{}", clang_lib_path.clone().as_os_str().to_str().unwrap()),
-            &format!(
-                "-L{}",
-                clang_lib_path
-                    .join("aarch64")
-                    .clone()
-                    .as_os_str()
-                    .to_str()
-                    .unwrap()
-            ),
-            versioned_lib_path
-                .join("crtbegin_so.o")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-            "--build-id=sha1",
-            "--no-rosegment",
-            "--no-undefined-version",
-            "--fatal-warnings",
-            "--no-undefined",
-            "-soname",
-            "libwebrogue.so",
-            webrogue_libs_path
-                .join("webrogue_runtime.c.o")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-            webrogue_libs_path
-                .join("libwebrogue_android.a")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-            lib_path
-                .join("libc++_static.a")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-            lib_path.join("libc++abi.a").as_os_str().to_str().unwrap(),
-            "-landroid",
-            "-llog",
-            output_path
-                .parent()
-                .ok_or(anyhow::anyhow!("Path error"))?
-                .join("libSDL2.so")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-            object_path.clone().as_os_str().to_str().unwrap(),
-            "-latomic",
-            versioned_lib_path
-                .join("libm.so")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-            versioned_lib_path
-                .join("libc.so")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-            "-lclang_rt.builtins-aarch64-android",
-            "-lunwind",
-            versioned_lib_path
-                .join("libdl.so")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-            versioned_lib_path
-                .join("crtend_so.o")
-                .as_os_str()
-                .to_str()
-                .unwrap(),
-        ]
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<_>>(),
+    link_android(
+        &object_file,
+        webrogue_libs_path,
+        output_path,
+        lib_path,
+        versioned_lib_path,
+        clang_lib_path,
     )?;
-    std::fs::remove_file(object_path)?;
+    drop(object_file);
 
+    println!("Copying WRAPP file...");
     let assets_path = build_dir
         .join("app")
         .join("src")
@@ -167,8 +81,93 @@ pub fn build_android_gradle(
     if !std::fs::exists(assets_path.clone())? {
         std::fs::create_dir(assets_path.clone())?;
     };
+
+    println!("Building Android project...");
     std::fs::copy(container_path, assets_path.join("aot.wrapp"))?;
-    return anyhow::Ok(());
+    #[cfg(target_os = "windows")]
+    let (gradle_shell, gradle_script) = ("cmd", "gradlew.bat");
+    #[cfg(not(target_os = "windows"))]
+    let (gradle_shell, gradle_script) = ("sh", "gradlew");
+    let gradle_output = std::process::Command::new(gradle_shell)
+        .arg(gradle_script)
+        .arg("assembleRelease")
+        .current_dir(build_dir)
+        .env("ANDROID_HOME", android_sdk_dir)
+        .output()?;
+    anyhow::ensure!(
+        gradle_output.status.success(),
+        "Gradle failed with exit code {}.\n\nStdout: {}\n\nStderr: {}",
+        gradle_output
+            .status
+            .code()
+            .map(|code| format!("{}", code))
+            .unwrap_or_else(|| "unknown".to_owned()),
+        std::str::from_utf8(&gradle_output.stdout)?,
+        std::str::from_utf8(&gradle_output.stderr)?
+    );
+    anyhow::Ok(())
+}
+
+fn link_android(
+    object_file: &crate::utils::TemporalFile,
+    webrogue_libs_path: std::path::PathBuf,
+    output_path: std::path::PathBuf,
+    lib_path: std::path::PathBuf,
+    versioned_lib_path: std::path::PathBuf,
+    clang_lib_path: std::path::PathBuf,
+) -> Result<(), anyhow::Error> {
+    use crate::utils::path_to_arg;
+
+    crate::utils::lld!(
+        "ld.lld",
+        "-EL",
+        "--fix-cortex-a53-843419",
+        "-z",
+        "now",
+        "-z",
+        "relro",
+        "-z",
+        "max-page-size=4096",
+        "--hash-style=gnu",
+        "--eh-frame-hdr",
+        "-m",
+        "aarch64linux",
+        "-shared",
+        "-o",
+        path_to_arg(&output_path)?,
+        format!("-L{}", path_to_arg(&lib_path)?),
+        format!("-L{}", path_to_arg(&versioned_lib_path)?),
+        format!("-L{}", path_to_arg(&clang_lib_path)?),
+        format!("-L{}", path_to_arg(&clang_lib_path.join("aarch64"))?),
+        path_to_arg(&versioned_lib_path.join("crtbegin_so.o"))?,
+        "--build-id=sha1",
+        "--no-rosegment",
+        "--no-undefined-version",
+        "--fatal-warnings",
+        "--no-undefined",
+        "-soname",
+        "libwebrogue.so",
+        path_to_arg(&webrogue_libs_path.join("webrogue_runtime.c.o"))?,
+        path_to_arg(&webrogue_libs_path.join("libwebrogue_android.a"))?,
+        path_to_arg(&lib_path.join("libc++_static.a"))?,
+        path_to_arg(&lib_path.join("libc++abi.a"))?,
+        "-landroid",
+        "-llog",
+        path_to_arg(
+            &output_path
+                .parent()
+                .ok_or(anyhow::anyhow!("Path error"))?
+                .join("libSDL2.so")
+        )?,
+        object_file,
+        "-latomic",
+        path_to_arg(&versioned_lib_path.join("libm.so"))?,
+        path_to_arg(&versioned_lib_path.join("libc.so"))?,
+        "-lclang_rt.builtins-aarch64-android",
+        "-lunwind",
+        path_to_arg(&versioned_lib_path.join("libdl.so"))?,
+        path_to_arg(&versioned_lib_path.join("crtend_so.o"))?,
+    )
 }
 
 fn find_ndk_toolchain(android_toolchains_dir: std::path::PathBuf) -> Result<String, anyhow::Error> {

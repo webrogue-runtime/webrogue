@@ -4,8 +4,8 @@ set -ex
 OUT_DIR="../../aot_artifacts/x86_64-windows-gnu"
 rm -rf "$OUT_DIR"
 
-MINGW_RELEASE=20250305
-LLVM_MAJOR_VERSION=20
+MINGW_RELEASE=20241119 #20250305
+LLVM_MAJOR_VERSION=19
 
 MINGW_DIR_NAME=llvm-mingw-$MINGW_RELEASE-ucrt-ubuntu-20.04-x86_64
 test -f $MINGW_DIR_NAME.tar.xz || wget https://github.com/mstorsjo/llvm-mingw/releases/download/$MINGW_RELEASE/$MINGW_DIR_NAME.tar.xz
@@ -18,14 +18,13 @@ cargo build \
     --manifest-path=../../crates/aot-lib/Cargo.toml \
     --target-dir=./target \
     --target=x86_64-pc-windows-gnullvm \
-    --profile release-lto \
     --features=gfx-fallback-cc
 
 # rm -rf sdl_build
-cmake -S ../../crates/gfx-fallback/SDL -B sdl_build -DCMAKE_BUILD_TYPE=Release --toolchain=$(pwd)/mingw_llvm_toolchain.cmake
+cmake -S ../../crates/gfx-fallback/SDL -B sdl_build -DCMAKE_BUILD_TYPE=Debug -DSDL_CMAKE_DEBUG_POSTFIX= --toolchain=$(pwd)/mingw_llvm_toolchain.cmake
 cmake --build sdl_build --target SDL2-static
 
-./$MINGW_DIR_NAME/bin/x86_64-w64-mingw32-clang main.c -c -o main.o
+./$MINGW_DIR_NAME/bin/x86_64-w64-mingw32-clang -g -Og main.c -c -o main.o
 
 rm -f main.exe
 rm -f process_dump*
@@ -49,7 +48,7 @@ rm -f process_dump*
 #     -o main.exe
 
 mkdir -p "$OUT_DIR"
-cp target/x86_64-pc-windows-gnullvm/release-lto/libwebrogue_aot_lib.a "$OUT_DIR"
+cp target/x86_64-pc-windows-gnullvm/debug/libwebrogue_aot_lib.a "$OUT_DIR"
 
 llvm-ar qLs \
     "$OUT_DIR/libwebrogue_aot_lib.a" \

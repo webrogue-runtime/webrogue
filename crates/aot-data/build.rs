@@ -36,8 +36,8 @@ fn main() {
         };
 
         webrogue_aot_compiler::compile_wrapp_to_object(
-            wrapp_path.into(),
-            obj_path.clone(),
+            &std::path::PathBuf::from(wrapp_path),
+            &obj_path,
             target,
             is_pic,
         )

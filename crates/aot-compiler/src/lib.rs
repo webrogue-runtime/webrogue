@@ -1,5 +1,5 @@
 mod compile;
-pub(crate) mod cwasm_analizer;
+pub(crate) mod cwasm_analyzer;
 mod target;
 pub use target::Target;
 

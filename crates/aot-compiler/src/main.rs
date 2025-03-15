@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 mod android_gradle;
 mod apple_xcode;
 mod compile;
-mod cwasm_analizer;
+mod cwasm_analyzer;
 mod linux;
 mod target;
 mod utils;
@@ -95,8 +95,8 @@ fn main() -> anyhow::Result<()> {
             pic,
         } => {
             compile::compile_wrapp_to_object(
-                wrapp_path,
-                out_path,
+                &wrapp_path,
+                &out_path,
                 Target::from_name(&target)?,
                 pic,
             )?;

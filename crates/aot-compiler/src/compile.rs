@@ -2,14 +2,14 @@ use std::collections::BTreeMap;
 use wasmtime_environ::obj::LibCall;
 
 pub fn compile_wrapp_to_object(
-    wrapp_file_path: std::path::PathBuf,
-    object_file_path: std::path::PathBuf,
+    wrapp_file_path: &std::path::PathBuf,
+    object_file_path: &std::path::PathBuf,
     target: crate::Target,
     is_pic: bool,
 ) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
     config.target(target.name())?;
-    config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+    // config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
     config.epoch_interruption(true);
     unsafe {
         if is_pic {
@@ -20,7 +20,7 @@ pub fn compile_wrapp_to_object(
     }
     let engine = wasmtime::Engine::new(&config)?;
 
-    let wrapp_handle = webrogue_wrapp::WrappHandle::from_file_path(wrapp_file_path)?;
+    let wrapp_handle = webrogue_wrapp::WrappHandle::from_file_path(wrapp_file_path.clone())?;
 
     let mut file = wrapp_handle
         .open_file("main.wasm")
@@ -31,7 +31,7 @@ pub fn compile_wrapp_to_object(
 
     let cwasm = engine.precompile_module(&wasm_binary)?;
 
-    let cwasm_info = crate::cwasm_analizer::parse_cwasm(&cwasm, target, is_pic)?;
+    let cwasm_info = crate::cwasm_analyzer::analyze_cwasm(&cwasm, target, is_pic)?;
 
     let mut libcall_relocs: BTreeMap<String, Vec<u64>> = BTreeMap::new();
 

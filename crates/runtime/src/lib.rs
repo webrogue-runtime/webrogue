@@ -38,7 +38,7 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     // config.debug_info(true);
     // config.cranelift_opt_level(wasmtime::OptLevel::None);
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
-    config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+    // config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
     config.epoch_interruption(true);
     #[cfg(feature = "aot")]
     config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));

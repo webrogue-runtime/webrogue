@@ -2,25 +2,22 @@ pub fn build_windows_mingw(
     wrapp_file_path: std::path::PathBuf,
     output_file_path: std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    let object_file_path = output_file_path
-        .parent()
-        .ok_or(anyhow::anyhow!("Path error"))?
-        .join("aot.o");
+    let object_file = crate::utils::TemporalFile::for_tmp_object(&output_file_path)?;
     let copied_wrapp_path = output_file_path
         .parent()
         .ok_or(anyhow::anyhow!("Path error"))?
         .join("aot.wrapp");
 
     crate::compile::compile_wrapp_to_object(
-        wrapp_file_path.clone(),
-        object_file_path.clone(),
+        &wrapp_file_path,
+        object_file.path(),
         crate::Target::x86_64WindowsGNU,
         false, // TODO check
     )?;
 
-    link_windows_mingw(object_file_path.clone(), output_file_path.clone())?;
+    link_windows_mingw(&object_file, &output_file_path)?;
+    drop(object_file);
 
-    let _ = std::fs::remove_file(object_file_path.clone());
     std::fs::copy(wrapp_file_path, copied_wrapp_path)?;
     std::fs::copy(
         "aot_artifacts/x86_64-windows-gnu/libEGL.dll",
@@ -41,28 +38,24 @@ pub fn build_windows_mingw(
 }
 
 fn link_windows_mingw(
-    object_file_path: std::path::PathBuf,
-    output_file_path: std::path::PathBuf,
+    object_file_path: &crate::utils::TemporalFile,
+    output_file_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    crate::utils::run_lld(
-        vec![
-            "ld.lld",
-            "-m",
-            "i386pep",
-            "-Bdynamic",
-            "-o",
-            output_file_path.clone().as_os_str().to_str().unwrap(),
-            // "--stack=16777216",
-            "aot_artifacts/x86_64-windows-gnu/crt2.o",
-            "aot_artifacts/x86_64-windows-gnu/crtbegin.o",
-            "aot_artifacts/x86_64-windows-gnu/main.o",
-            "aot_artifacts/x86_64-windows-gnu/libwebrogue_aot_lib.a",
-            object_file_path.clone().as_os_str().to_str().unwrap(),
-            "aot_artifacts/x86_64-windows-gnu/crtend.o",
-        ]
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<_>>(),
+    use crate::utils::path_to_arg;
+
+    crate::utils::lld!(
+        "ld.lld",
+        "-m",
+        "i386pep",
+        "-Bdynamic",
+        "-o",
+        path_to_arg(&output_file_path)?,
+        // "--stack=16777216",
+        "aot_artifacts/x86_64-windows-gnu/crt2.o",
+        "aot_artifacts/x86_64-windows-gnu/crtbegin.o",
+        "aot_artifacts/x86_64-windows-gnu/main.o",
+        "aot_artifacts/x86_64-windows-gnu/libwebrogue_aot_lib.a",
+        object_file_path,
+        "aot_artifacts/x86_64-windows-gnu/crtend.o",
     )
-    // TODO copy libGLESv2.dll & libEGL.dll
 }
