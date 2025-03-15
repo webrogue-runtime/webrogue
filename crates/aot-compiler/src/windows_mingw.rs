@@ -15,7 +15,7 @@ pub fn build_windows_mingw(
         wrapp_file_path.clone(),
         object_file_path.clone(),
         crate::Target::x86_64WindowsGNU,
-        true, // TODO check
+        false, // TODO check
     )?;
 
     link_windows_mingw(object_file_path.clone(), output_file_path.clone())?;
@@ -52,6 +52,7 @@ fn link_windows_mingw(
             "-Bdynamic",
             "-o",
             output_file_path.clone().as_os_str().to_str().unwrap(),
+            // "--stack=16777216",
             "aot_artifacts/x86_64-windows-gnu/crt2.o",
             "aot_artifacts/x86_64-windows-gnu/crtbegin.o",
             "aot_artifacts/x86_64-windows-gnu/main.o",

@@ -127,6 +127,7 @@ fn stop_all_threads(
     }
 }
 
+// TODO use remove Send constraint from T and exchange between tyhreads using intermediate sendable object
 pub fn add_to_linker_sync<T: Clone + Send + 'static>(
     linker: &mut wasmtime::Linker<T>,
     store: &mut wasmtime::Store<T>,

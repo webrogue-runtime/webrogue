@@ -6,8 +6,8 @@ plugins {
 def cargoProfile = "release-lto"
 
 task copyKeyStores(type: Copy) {
-    from(project.file('../../examples/gears/gears.webc')) {
-        rename '.*', 'aot.webc'
+    from(project.file('../../examples/raylib/raylib.wrapp')) {
+        rename '.*', 'aot.wrapp'
     }
     into file('src/main/assets/')
 }

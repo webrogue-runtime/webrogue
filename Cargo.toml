@@ -30,7 +30,7 @@ members = [
   "crates/aot-compiler",
   "crates/aot-data",
   "crates/aot-lib",
-  # "crates/aot-linker",
+  "crates/aot-linker",
   "crates/default-runtime",
   "crates/event-apigen",
   "crates/gfx",
@@ -40,7 +40,7 @@ members = [
   "crates/wrapp",
   "crates/wrapp-cli",
 
-  # "android/runtime/common/src/main/rust",
+  "android/runtime/common/src/main/rust",
 
   # "web/crates/backend-web",
   # "web/crates/backend-web-macro",

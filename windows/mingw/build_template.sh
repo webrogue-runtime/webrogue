@@ -4,25 +4,26 @@ set -ex
 OUT_DIR="../../aot_artifacts/x86_64-windows-gnu"
 rm -rf "$OUT_DIR"
 
-MINGW_DIR_NAME=llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64
+MINGW_RELEASE=20250305
+LLVM_MAJOR_VERSION=20
 
-test -f $MINGW_DIR_NAME.tar.xz || wget https://github.com/mstorsjo/llvm-mingw/releases/download/20241119/$MINGW_DIR_NAME.tar.xz
+MINGW_DIR_NAME=llvm-mingw-$MINGW_RELEASE-ucrt-ubuntu-20.04-x86_64
+test -f $MINGW_DIR_NAME.tar.xz || wget https://github.com/mstorsjo/llvm-mingw/releases/download/$MINGW_RELEASE/$MINGW_DIR_NAME.tar.xz
 test -d $MINGW_DIR_NAME || tar xf $MINGW_DIR_NAME.tar.xz
 
 export PATH="$(pwd)/$MINGW_DIR_NAME/bin:$PATH"
 
 export CXXFLAGS_x86_64_pc_windows_gnullvm="-I$(pwd)/$MINGW_DIR_NAME/x86_64-w64-mingw32/include/c++/v1"
 cargo build \
-    -vv \
     --manifest-path=../../crates/aot-lib/Cargo.toml \
     --target-dir=./target \
     --target=x86_64-pc-windows-gnullvm \
     --profile release-lto \
     --features=gfx-fallback-cc
 
-# rm -rf mingw_sdl_build
-cmake -S ../../crates/gfx-fallback/SDL -B mingw_sdl_build -DCMAKE_BUILD_TYPE=Release --toolchain=$(pwd)/mingw_llvm_toolchain.cmake
-cmake --build mingw_sdl_build --target SDL2-static
+# rm -rf sdl_build
+cmake -S ../../crates/gfx-fallback/SDL -B sdl_build -DCMAKE_BUILD_TYPE=Release --toolchain=$(pwd)/mingw_llvm_toolchain.cmake
+cmake --build sdl_build --target SDL2-static
 
 ./$MINGW_DIR_NAME/bin/x86_64-w64-mingw32-clang main.c -c -o main.o
 
@@ -32,7 +33,7 @@ rm -f process_dump*
 #     main.obj \
 #     target/x86_64-pc-windows-gnullvm/release-lto/libwebrogue_aot_lib.a \
 #     wr_aot.obj \
-#     mingw_sdl_build/libSDL2.a \
+#     sdl_build/libSDL2.a \
 #     -lbcrypt \
 #     -lws2_32 \
 #     -lntoskrnl \
@@ -73,10 +74,11 @@ llvm-ar qLs \
     $MINGW_DIR_NAME/x86_64-w64-mingw32/lib/libmingwex.a \
     $MINGW_DIR_NAME/x86_64-w64-mingw32/lib/libmsvcrt.a \
     $MINGW_DIR_NAME/x86_64-w64-mingw32/lib/libkernel32.a \
-    $MINGW_DIR_NAME/lib/clang/19/lib/windows/libclang_rt.builtins-x86_64.a \
+    $MINGW_DIR_NAME/x86_64-w64-mingw32/lib/libuserenv.a \
+    $MINGW_DIR_NAME/lib/clang/$LLVM_MAJOR_VERSION/lib/windows/libclang_rt.builtins-x86_64.a \
     $MINGW_DIR_NAME/x86_64-w64-mingw32/lib/libc++.a \
     $MINGW_DIR_NAME/x86_64-w64-mingw32/lib/libc++abi.a \
-    mingw_sdl_build/libSDL2.a
+    sdl_build/libSDL2.a
 
 mv main.o "$OUT_DIR"
 cp \

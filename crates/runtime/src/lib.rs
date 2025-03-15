@@ -32,6 +32,8 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
     #[cfg(feature = "cache")]
     config.cache_config_load_default()?;
+    #[cfg(all(feature = "cache", feature = "aot"))]
+    compile_error!("Cache feature can't be combined with AOT");
     // config.async_support(true);
     // config.debug_info(true);
     // config.cranelift_opt_level(wasmtime::OptLevel::None);

@@ -66,12 +66,14 @@ impl Target {
         use Target::*;
         match self {
             X86_64LinuxGNU => (Elf, X86_64, Little),
+            ARM64LinuxAndroid => (Elf, Aarch64, Little),
+            x86_64WindowsGNU => (Coff, X86_64, Little),
             x86_64AppleDarwin => (MachO, X86_64, Little),
             ARM64AppleDarwin => (MachO, Aarch64, Little),
             X86_64AppleIOSSIM => (MachO, X86_64, Little),
             ARM64AppleIOSSIM => (MachO, Aarch64, Little),
             ARM64AppleIOS => (MachO, Aarch64, Little),
-            _ => unimplemented!("{}", self.name()),
+            // _ => unimplemented!("{}", self.name()),
         }
     }
 
@@ -97,10 +99,12 @@ impl Target {
         use object::RelocationKind::*;
         use Target::*;
         match (self, is_pic) {
-            (X86_64LinuxGNU | x86_64AppleDarwin, false) => (-4, Relative, Generic, 32),
+            (X86_64LinuxGNU | x86_64AppleDarwin | x86_64WindowsGNU, false) => {
+                (-4, Relative, Generic, 32)
+            }
             (
                 X86_64LinuxGNU | x86_64AppleDarwin | X86_64AppleIOSSIM | ARM64AppleDarwin
-                | ARM64AppleIOSSIM | ARM64AppleIOS,
+                | ARM64AppleIOSSIM | ARM64AppleIOS | x86_64WindowsGNU | ARM64LinuxAndroid,
                 true,
             ) => (-4, GotRelative, Generic, 32),
             _ => unimplemented!("target: {}, is_pic: {}", self.name(), is_pic),
