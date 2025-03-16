@@ -10,7 +10,7 @@ pub use wrapp::WrappHandleBuilder;
 mod file_reader;
 pub use file_reader::FileReader;
 
-mod config;
+pub mod config;
 mod file_index;
 mod offsetted_reader;
 mod preamble;

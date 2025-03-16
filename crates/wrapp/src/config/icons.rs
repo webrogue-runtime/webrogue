@@ -1,4 +1,4 @@
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct Icons {
     pub normal: NormalIcon,
 }
@@ -11,7 +11,7 @@ impl Icons {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct NormalIcon {
     pub path: Option<String>,
     pub inset: f32,
@@ -27,7 +27,7 @@ impl NormalIcon {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct Background {
     pub red: f32,
     pub green: f32,

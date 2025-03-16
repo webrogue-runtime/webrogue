@@ -8,6 +8,7 @@ android {
 
     defaultConfig {
         applicationId WEBROGUE_APPLICATION_ID
+        resValue "string", "app_name", WEBROGUE_APPLICATION_NAME
         minSdk 24
         targetSdk 35
         versionCode WEBROGUE_VERSION_CODE.toInteger()

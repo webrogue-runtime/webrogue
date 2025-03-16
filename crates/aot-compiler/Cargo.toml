@@ -17,3 +17,5 @@ webrogue-wrapp = { workspace = true }
 object = { workspace = true, default-features = false, features = ['read_core', 'write_core', 'elf'] }
 wasmtime-environ = { workspace = true, default-features = false }
 image = { workspace = true, default-features = false, features = ["png", "rayon", "webp"] }
+postcard = { workspace = true, default-features = false, features = ['alloc'] }
+serde = { workspace = true, default-features = false, features = ['derive'] }
