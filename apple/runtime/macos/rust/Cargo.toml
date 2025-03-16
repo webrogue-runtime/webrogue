@@ -5,7 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-runtime = ["webrogue-runtime/cranelift"]
+runtime = ["webrogue-runtime/cranelift", "dep:wasmtime", "webrogue-runtime/cache"]
 runner = ["webrogue-runtime/aot"]
 
 [lib]
@@ -15,7 +15,8 @@ crate-type = ["staticlib"]
 [dependencies]
 anyhow = { workspace = true }
 webrogue-runtime = { workspace = true }
-wasmer-package = { workspace = true }
+webrogue-wrapp = { workspace = true }
+wasmtime = { workspace = true, optional = true }
 
 [build-dependencies]
 cc = { workspace = true }

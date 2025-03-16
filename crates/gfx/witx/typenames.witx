@@ -1,0 +1,2 @@
+(typename $size u32)
+(typename $gfx_size u32)

@@ -1,4 +1,4 @@
-FROM rust:1.82-bullseye
+FROM rust:1.85-bullseye
 
 RUN apt update
 RUN apt-get -y install cmake llvm-16 strace clang-16 lld-16 libc++abi-16-dev libc++-16-dev

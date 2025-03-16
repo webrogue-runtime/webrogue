@@ -1,8 +1,9 @@
+#[derive(Clone)]
 pub struct Window(crate::ffi::NativeHandle);
 
 impl Window {
     pub fn new(handle: crate::ffi::NativeHandle) -> Self {
-        Self { 0: handle }
+        Self(handle)
     }
 
     pub fn get_size(&self) -> (u32, u32) {

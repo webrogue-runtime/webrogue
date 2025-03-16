@@ -1,16 +1,16 @@
 #[no_mangle]
 extern "C" fn webrogue_aot_main() {
     webrogue_runtime::run(
-        wasmer_package::utils::from_disk(
+        webrogue_wrapp::WrappHandleBuilder::from_file_path(
             std::env::current_exe()
                 .unwrap()
                 .parent()
                 .unwrap()
-                .join("aot.webc"),
+                .join("aot.wrapp"),
         )
+        .unwrap()
+        .build()
         .unwrap(),
-        None,
-        None,
     )
     .unwrap();
 }

@@ -10,38 +10,6 @@ pub struct Wrapp {
 pub struct WrappHandle(Arc<Mutex<Wrapp>>);
 
 impl WrappHandle {
-    fn make_wrapp_handle(
-        mut overall_reader: impl std::io::Read + std::io::Seek + 'static,
-    ) -> anyhow::Result<Self> {
-        let preamble = crate::preamble_reader::parse_preamble(&mut overall_reader)?;
-        let mut seekable =
-            crate::seekable_provider::ZSTDSeekableProvider::new(overall_reader, preamble.offset)?;
-
-        let file_index = crate::file_index::FileIndex::new(&mut seekable);
-
-        let wrapp = Wrapp {
-            seekable: Box::new(seekable),
-            config: preamble.config,
-            file_index,
-        };
-        anyhow::Ok(WrappHandle {
-            0: Arc::new(Mutex::new(wrapp)),
-        })
-    }
-    pub fn from_file_path(path: std::path::PathBuf) -> anyhow::Result<Self> {
-        Self::make_wrapp_handle(std::fs::File::open(path)?)
-    }
-
-    pub fn from_vec(bytes: Vec<u8>) -> anyhow::Result<Self> {
-        Self::make_wrapp_handle(std::io::Cursor::new(bytes))
-    }
-
-    pub fn from_static_slice(bytes: &'static [u8]) -> anyhow::Result<Self> {
-        Self::make_wrapp_handle(std::io::Cursor::new(bytes))
-    }
-}
-
-impl WrappHandle {
     pub(crate) fn get_frame_decompressed_size(&self, frame_index: usize) -> usize {
         let wrapp = self.0.lock().unwrap();
         wrapp.seekable.get_frame_decompressed_size(frame_index)
@@ -74,12 +42,76 @@ impl WrappHandle {
 
     pub fn open_file(&self, path: &str) -> Option<crate::FileReader> {
         let wrapp = self.0.lock().unwrap();
-        let position = wrapp
-            .file_index
-            .file_positions
-            .get(path)
-            .and_then(|f| Some(*f));
+        let position = wrapp.file_index.file_positions.get(path).copied();
         drop(wrapp);
-        position.and_then(|position| Some(crate::FileReader::new(self.clone(), position)))
+        position.map(|position| crate::FileReader::new(self.clone(), position))
+    }
+}
+
+pub struct WrappHandleBuilder<Reader: std::io::Read + std::io::Seek + 'static> {
+    reader: Reader,
+    preamble: Option<crate::preamble::Preamble>,
+}
+
+impl WrappHandleBuilder<std::fs::File> {
+    pub fn from_file_path<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Self> {
+        Ok(Self::new(std::fs::File::open(path)?))
+    }
+}
+
+impl WrappHandleBuilder<std::io::Cursor<Vec<u8>>> {
+    pub fn from_vec(bytes: Vec<u8>) -> anyhow::Result<Self> {
+        Ok(Self::new(std::io::Cursor::new(bytes)))
+    }
+}
+
+impl WrappHandleBuilder<std::io::Cursor<&'static [u8]>> {
+    pub fn from_static_slice(bytes: &'static [u8]) -> anyhow::Result<Self> {
+        Ok(Self::new(std::io::Cursor::new(bytes)))
+    }
+}
+
+impl<Reader: std::io::Read + std::io::Seek + 'static> WrappHandleBuilder<Reader> {
+    fn new(reader: Reader) -> Self {
+        Self {
+            reader,
+            preamble: None,
+        }
+    }
+
+    fn preamble(&mut self) -> anyhow::Result<&crate::preamble::Preamble> {
+        if self.preamble.is_none() {
+            self.preamble = Some(crate::preamble::Preamble::new(&mut self.reader)?);
+        }
+        Ok(self.preamble.as_ref().unwrap())
+    }
+
+    pub fn config(&mut self) -> anyhow::Result<&crate::config::Config> {
+        Ok(&self.preamble()?.config)
+    }
+
+    pub fn get_uncompressed(&mut self, name: &str) -> anyhow::Result<Option<Vec<u8>>> {
+        let _ = self.preamble()?;
+        Ok(self
+            .preamble
+            .as_mut()
+            .unwrap()
+            .get_uncompressed(name, &mut self.reader)?)
+    }
+
+    pub fn build(mut self) -> anyhow::Result<WrappHandle> {
+        let offset = self.preamble()?.offset;
+        let config = self.preamble()?.config.clone();
+        let mut seekable =
+            crate::seekable_provider::ZSTDSeekableProvider::new(self.reader, offset)?;
+
+        let file_index = crate::file_index::FileIndex::new(&mut seekable);
+
+        let wrapp = Wrapp {
+            seekable: Box::new(seekable),
+            config,
+            file_index,
+        };
+        anyhow::Ok(WrappHandle(Arc::new(Mutex::new(wrapp))))
     }
 }

@@ -17,7 +17,7 @@
 			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>io.github.webrogue-runtime.webc</string>
+				<string>io.github.webrogue-runtime.wrapp</string>
 			</array>
 			<key>NSDocumentClass</key>
 			<string>NSDocument</string>
@@ -31,21 +31,21 @@
 				<string>public.data</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>WebContainer</string>
+			<string>Webrogue Application</string>
 			<key>UTTypeIcons</key>
 			<dict>
 				<key>UTTypeIconBadgeName</key>
 				<string>DocumentIcon</string>
 				<key>UTTypeIconText</key>
-				<string>webc</string>
+				<string>wrapp</string>
 			</dict>
 			<key>UTTypeIdentifier</key>
-			<string>io.github.webrogue-runtime.webc</string>
+			<string>io.github.webrogue-runtime.wrapp</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
 				<array>
-					<string>webc</string>
+					<string>wrapp</string>
 				</array>
 			</dict>
 		</dict>

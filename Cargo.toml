@@ -12,10 +12,7 @@ doc = false
 
 [features]
 default = ["cranelift"]
-singlepass = ["webrogue-default-runtime/singlepass"]
 cranelift = ["webrogue-default-runtime/cranelift"]
-llvm = ["webrogue-default-runtime/llvm"]
-wamr = ["webrogue-default-runtime/wamr"]
 aot = ["webrogue-default-runtime/aot"]
 
 [dependencies]
@@ -53,7 +50,7 @@ members = [
   "apple/runtime/macos/rust",
 ]
 exclude = [
-  "external/wasmer",
+  "external/wasmtime",
   "web/crates/web",
 ]
 
@@ -73,17 +70,14 @@ webrogue-wrapp = { path = "crates/wrapp" }
 # webrogue-backend-web = { path = "web/crates/backend-web" }
 # webrogue-backend-web-macro = { path = "web/crates/backend-web-macro" }
 
-# Wasmer crates
-wasmer = { path = "external/wasmer/lib/api", default-features = false }
-wasmer-wasix = { path = "external/wasmer/lib/wasix" }
-wasmer-compiler = { path = "external/wasmer/lib/compiler" }
-wasmer-compiler-cranelift = { path = "external/wasmer/lib/compiler-cranelift" }
-wasmer-compiler-llvm = { path = "external/wasmer/lib/compiler-llvm" }
-wasmer-package = { path = "external/wasmer/lib/package" }
-wasmer-types = { path = "external/wasmer/lib/types" }
-virtual-fs = { path = "external/wasmer/lib/virtual-fs" }
-webc = { version = "8.0.0" }
+# Wasmtime
+wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
+wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
+wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
+wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
 
+image = { version = "0.25", default-features = false }
+object = { version = "0.36.5", default-features = false }
 clap = { version = "4" }
 futures =  { version = "0.3" }
 wasmparser = { version = ">=0.215" }
@@ -95,6 +89,7 @@ cc = { version = "1" }
 tokio = { version = "1" }
 cmake = { version = "0.1" }
 target-lexicon = { version = "^0.12", default-features = false }
+semver = { version = "1", default-features = false }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.2" }

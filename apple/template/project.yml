@@ -38,7 +38,7 @@ targets:
     platform: macOS
     sources:
     - macos/main.m
-    - aot/aot.webc
+    - aot/aot.wrapp
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: macos/runner.entitlements
@@ -105,7 +105,7 @@ targets:
     platform: iOS
     sources:
     - ios
-    - aot/aot.webc
+    - aot/aot.wrapp
     settings:
       base:
         INFOPLIST_FILE: ios/Info.plist

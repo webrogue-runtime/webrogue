@@ -1,5 +1,3 @@
-use std::usize;
-
 use crate::seekable_provider::SeekableProvider;
 
 #[derive(Clone, Copy)]
@@ -86,7 +84,7 @@ impl FileIndex {
                 filename,
                 FilePosition {
                     absolute_offset: offset,
-                    size: size,
+                    size,
                 },
             );
         }

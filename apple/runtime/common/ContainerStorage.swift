@@ -30,7 +30,7 @@ public final class ContainerStorage: ObservableObject {
         for fileName in fileNames {
             let filePath = storageDirectoryPath + "/" + fileName
             guard
-                filePath.hasSuffix(".webc"),
+                filePath.hasSuffix(".wrapp"),
                 let fileHandle = FileHandle(forReadingAtPath: filePath),
                 let metadata = ContainerMetadata(fileHandle: fileHandle)
             else { continue }
@@ -46,7 +46,7 @@ public final class ContainerStorage: ObservableObject {
         else {
             return nil
         }
-        let newPath = storageDirectoryPath + "/" + metadata.sha256 + ".webc"
+        let newPath = storageDirectoryPath + "/" + metadata.sha256 + ".wrapp"
         do {
             try fileManager.copyItem(atPath: url.relativePath, toPath: newPath)
         } catch {

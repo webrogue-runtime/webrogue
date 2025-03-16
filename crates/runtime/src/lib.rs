@@ -1,136 +1,101 @@
-use std::sync::Arc;
-// pub use webrogue_wrapp as wrapp;
+use std::{io::Read, sync::Arc};
 
-mod stdout;
+mod threads;
 
-#[derive(Debug)]
-struct AdditionalImportsBuilder {
-    gfx: Arc<webrogue_gfx::GFXSystem>,
+#[derive(Clone)]
+pub struct State {
+    pub preview1_ctx: Option<wasi_common::WasiCtx>,
+    pub wasi_threads_ctx: Option<Arc<crate::threads::WasiThreadsCtx<Self>>>,
+    pub gfx: Option<webrogue_gfx::GFXInterface>,
 }
 
-unsafe impl Sync for AdditionalImportsBuilder {}
-unsafe impl Send for AdditionalImportsBuilder {}
+// unsafe impl Send for State {}
 
-impl wasmer_wasix::AdditionalImportsBuilder for AdditionalImportsBuilder {
-    fn initialize(
-        &self,
-        store: &mut dyn wasmer::AsStoreMut,
-    ) -> (wasmer::Imports, wasmer_wasix::AdditionalImportsInitializer) {
-        let mut import_object = wasmer::Imports::new();
-        let gfx_callback = webrogue_gfx::GFXInterface::new(self.gfx.clone())
-            .add_to_imports(store, &mut import_object);
+#[cfg(feature = "aot")]
+struct StaticCodeMemory {}
+#[cfg(feature = "aot")]
+impl wasmtime::CustomCodeMemory for StaticCodeMemory {
+    fn required_alignment(&self) -> usize {
+        1
+    }
 
-        (
-            import_object,
-            Box::new(move |_instance, memory, _store| {
-                gfx_callback(memory.clone())?;
+    fn publish_executable(&self, _ptr: *const u8, _len: usize) -> anyhow::Result<()> {
+        Ok(())
+    }
 
-                Ok(())
-            }),
-        )
+    fn unpublish_executable(&self, _ptr: *const u8, _len: usize) -> anyhow::Result<()> {
+        Ok(())
     }
 }
 
-async fn run_task(
-    container: webc::Container,
-    stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
-    stderr: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
-    gfx: Arc<webrogue_gfx::GFXSystem>,
-) -> anyhow::Result<()> {
-    let store = wasmer::Store::default();
-
-    // let mut wasm_file = wrapp_handle.open_file("main.wasm").unwrap();
-    let entrypoint_name = container
-        .manifest()
-        .entrypoint
-        .clone()
-        .ok_or(anyhow::anyhow!("webc entrypoint is not specified"))?;
-    let _entrypoint_atom = container
-        .manifest()
-        .atoms
-        .get(&entrypoint_name)
-        .ok_or(anyhow::anyhow!("webc entrypoint is not found in commands"))?;
-
+pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
+    let mut config = wasmtime::Config::new();
+    #[cfg(feature = "cache")]
+    config.cache_config_load_default()?;
+    #[cfg(all(feature = "cache", feature = "aot"))]
+    compile_error!("Cache feature can't be combined with AOT");
+    // config.async_support(true);
+    // config.debug_info(true);
+    // config.cranelift_opt_level(wasmtime::OptLevel::None);
+    // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
+    // config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+    config.epoch_interruption(true);
     #[cfg(feature = "aot")]
-    let module = unsafe { wasmer::Module::deserialize(&store, webrogue_aot_data::aot_data())? };
-    #[cfg(not(feature = "aot"))]
-    let module = {
-        let bytecode = container
-            .get_atom(&entrypoint_name)
-            .ok_or(anyhow::anyhow!("webc entrypoint is not found in container"))?;
-        wasmer::Module::new(&store, &bytecode)?
+    config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
+    let engine = wasmtime::Engine::new(&config)?;
+    let mut file = wrapp
+        .open_file("main.wasm")
+        .ok_or(anyhow::anyhow!("main.wasm not found"))?;
+    let mut wasm_binary = Vec::new();
+    file.read_to_end(&mut wasm_binary)?;
+    drop(file);
+    #[cfg(feature = "aot")]
+    let module = unsafe {
+        wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
     };
 
-    let mut wasix_runtime = wasmer_wasix::runtime::PluggableRuntime::new(Arc::new(
-        wasmer_wasix::runtime::task_manager::tokio::TokioTaskManager::default(),
-    ));
-    wasix_runtime
-        .set_package_loader(wasmer_wasix::runtime::package_loader::BuiltinPackageLoader::new());
+    #[cfg(feature = "cranelift")]
+    let module = wasmtime::Module::from_binary(&engine, &wasm_binary)?;
+    #[cfg(not(any(feature = "aot", feature = "cranelift")))]
+    compile_error!("Either AOT or Cranelift features must be enabled");
+    #[cfg(all(feature = "aot", feature = "cranelift"))]
+    compile_error!("Can't include both AOT and Cranelift features");
+    let mut linker: wasmtime::Linker<State> = wasmtime::Linker::new(&engine);
+    let state = State {
+        preview1_ctx: None,
+        wasi_threads_ctx: None,
+        gfx: None,
+    };
+    let mut store = wasmtime::Store::new(&engine, state);
 
-    let wasix_runtime_arc = Arc::new(wasix_runtime);
+    store.data_mut().wasi_threads_ctx = Some(Arc::new(crate::threads::WasiThreadsCtx::new()));
 
-    let mut wasi_env_builder = wasmer_wasix::WasiEnv::builder(entrypoint_name)
-        .runtime(wasix_runtime_arc.clone())
-        .stdout(stdout.unwrap_or(Box::new(stdout::Stdout::new())))
-        .stderr(stderr.unwrap_or(Box::new(stdout::Stdout::new())))
-        .import_builder(Arc::new(AdditionalImportsBuilder {
-            gfx: gfx,
-        }));
-    wasi_env_builder.capabilities_mut().threading.enable_blocking_sleep = true;
+    wasi_common::sync::add_to_linker(&mut linker, |state| state.preview1_ctx.as_mut().unwrap())?;
+    webrogue_gfx::add_to_linker(&mut linker, |state| state.gfx.as_mut().unwrap())?;
+    crate::threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
+        host.wasi_threads_ctx.as_ref().unwrap()
+    })?;
+    let linker = Arc::new(linker);
+    store.data().wasi_threads_ctx.as_ref().unwrap().fill(
+        module.clone(),
+        linker.clone(),
+        engine.weak(),
+    )?;
 
-    // let root_fs = virtual_fs::RootFileSystemBuilder::new()
-    //     .with_tty(Box::new(virtual_fs::DeviceFile::new(0)))
-    //     .build();
+    let mut builder = wasi_common::sync::WasiCtxBuilder::new();
+    builder.inherit_stdio();
+    store.data_mut().preview1_ctx = Some(builder.build());
 
-    // let fs_backing: Arc<dyn virtual_fs::FileSystem + Send + Sync> = Arc::new(
-    //     virtual_fs::PassthruFileSystem::new(wasmer_wasix::default_fs_backing()),
-    // );
-    // root_fs.mount(
-    //     "/".into(),
-    //     &fs_backing,
-    //     "/".into(),
-    // )?;
+    store.data_mut().gfx = Some(webrogue_gfx::GFXInterface::new(Arc::new(
+        webrogue_gfx::GFXSystem::new(),
+    )));
 
-    
+    let pre = linker.instantiate_pre(&module)?;
 
-    wasi_env_builder = wasi_env_builder
-        // .sandbox_fs(root_fs)
-        .preopen_dir("/")?
-        // .map_dir(".", "/")?
-        ;
-
-    wasi_env_builder.add_webc(
-        wasmer_wasix::bin_factory::BinaryPackage::from_webc(&container, wasix_runtime_arc.as_ref())
-            .await?,
-    );
-
-    wasi_env_builder.run(module)?;
-
+    let instance = pre.instantiate(&mut store)?;
+    let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
+    let call_result = func.call(&mut store, ());
+    store.data().wasi_threads_ctx.as_ref().unwrap().stop();
+    call_result?;
     Ok(())
-}
-
-pub fn run(
-    container: webc::Container,
-    stdout: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
-    stderr: Option<Box<dyn wasmer_wasix::VirtualFile + Send + Sync + 'static>>,
-) -> anyhow::Result<()> {
-    let gfx = Arc::new(webrogue_gfx::GFXSystem::new());
-
-    let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    let tokio_guard = tokio_runtime.enter();
-
-    tokio_runtime.block_on(run_task(
-        container,
-        stdout,
-        stderr,
-        gfx.clone(),
-    ))?;
-
-    drop(tokio_guard);
-    drop(gfx);
-
-    return Ok(());
 }

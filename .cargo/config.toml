@@ -1,4 +1,5 @@
 [target.x86_64-unknown-linux-gnu]
+# Linking static LLVM libraries with ld is pain
 rustflags = [
     "-C", "link-arg=-fuse-ld=lld",
 ]

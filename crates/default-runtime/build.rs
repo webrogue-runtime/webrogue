@@ -38,7 +38,7 @@ fn download_macos_fat(output_path: &std::path::Path) {
     .unwrap()
     .bytes()
     .unwrap();
-    zip_extract::extract(std::io::Cursor::new(archive_bytes), &output_path, true).unwrap();
+    zip_extract::extract(std::io::Cursor::new(archive_bytes), output_path, true).unwrap();
 }
 
 fn download_windows_x64(output_path: &std::path::Path) {
@@ -59,5 +59,5 @@ fn download_windows_x64(output_path: &std::path::Path) {
     .unwrap()
     .bytes()
     .unwrap();
-    zip_extract::extract(std::io::Cursor::new(archive_bytes), &output_path, true).unwrap();
+    zip_extract::extract(std::io::Cursor::new(archive_bytes), output_path, true).unwrap();
 }

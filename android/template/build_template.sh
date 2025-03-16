@@ -29,9 +29,12 @@ cargo run \
     --no-default-features \
     --package=webrogue-aot-compiler \
     object \
-    ../examples/gears/gears.webc \
+    ../examples/raylib/raylib.wrapp \
     runtime/runner/src/main/cpp/aot.o \
     aarch64-linux-android
+
+mkdir -p runtime/runner/src/main/assets
+cp ../examples/raylib/raylib.wrapp runtime/runner/src/main/assets/aot.wrapp
 
 ./runtime/gradlew --project-dir=runtime :runner:assembleRelease
 
@@ -46,6 +49,7 @@ for TARGET_FILE in $TARGET_FILES; do
     mkdir -p ../aot_artifacts/android_gradle/template/$TARGET_DIR
     cp ./template/$TARGET_FILE ../aot_artifacts/android_gradle/template/$TARGET_FILE
 done
+echo "*" > ../aot_artifacts/android_gradle/template/.gitignore
 
 mkdir -p ../aot_artifacts/android_gradle/template/app/src/main/java/org/libsdl/app/
 cp \

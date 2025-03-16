@@ -14,7 +14,7 @@ gfx-fallback-cc = ["webrogue-gfx/fallback", "dep:webrogue-gfx-fallback", "webrog
 
 [dependencies]
 webrogue-runtime = { workspace = true, features = ["aot"] }
-wasmer-package = { workspace = true }
+webrogue-wrapp = { workspace = true }
 webrogue-gfx = { workspace = true }
 webrogue-gfx-fallback = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, optional = true }

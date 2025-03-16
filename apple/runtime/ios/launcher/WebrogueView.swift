@@ -27,7 +27,7 @@ struct WebrogueView: View {
                 }
                 .fileImporter(
                     isPresented: $isFileImporterPresented,
-                    allowedContentTypes: [.webc],
+                    allowedContentTypes: [.wrapp],
                     allowsMultipleSelection: false
                 ) { result in
                     switch result {

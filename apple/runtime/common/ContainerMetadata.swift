@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 
 public struct ContainerMetadata {
-    private static let magic = "\0webc".data(using: .ascii)!
+    private static let magic = "WRAPP\0".data(using: .ascii)!
 
     public let sha256: String
 
@@ -15,18 +15,18 @@ public struct ContainerMetadata {
             else { return nil }
             var sha = SHA256()
             sha.update(data: ContainerMetadata.magic)
-//            var jsonData = Data()
-//            var jsonReadingFinished = false
+            var jsonData = Data()
+            var jsonReadingFinished = false
             while let data = try fileHandle.read(upToCount: 1024) {
                 sha.update(data: data)
-//                if !jsonReadingFinished {
-//                    if let endIndex = data.firstIndex(of: 0) {
-//                        jsonData.append(data.subdata(in: 0..<endIndex))
-//                        jsonReadingFinished = true
-//                    } else {
-//                        jsonData.append(data)
-//                    }
-//                }
+                if !jsonReadingFinished {
+                    if let endIndex = data.firstIndex(of: 0) {
+                        jsonData.append(data.subdata(in: 0..<endIndex))
+                        jsonReadingFinished = true
+                    } else {
+                        jsonData.append(data)
+                    }
+                }
             }
             self.sha256 = sha.finalize().map { i64 in
                 String(i64, radix: 16)

@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NativeHandle(pub *const ());
 
 unsafe impl Sync for NativeHandle {}

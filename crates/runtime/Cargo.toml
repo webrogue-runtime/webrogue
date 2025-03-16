@@ -5,21 +5,16 @@ authors.workspace = true
 edition.workspace = true
 
 [features]
-aot = ["wasmer/sys", "wasmer/static-artifact-load", "dep:webrogue-aot-data"]
-singlepass = ["wasmer/singlepass"]
-cranelift = ["wasmer/cranelift"]
-llvm = ["wasmer/llvm"]
-wamr = ["wasmer/wamr"]
+cranelift = ["wasmtime/cranelift"]
+aot = ["dep:webrogue-aot-data"]
+cache = ["wasmtime/cache"]
 
 [dependencies]
 webrogue-gfx = { workspace = true }
 
 anyhow = { workspace = true }
-# webrogue-wrapp = { workspace = true }
-wasmer = { workspace = true, default-features = false }
-wasmer-wasix = { workspace = true }
-virtual-fs = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread"] }
-webc = { workspace = true }
+webrogue-wrapp = { workspace = true }
+wasmtime = { workspace = true, default-features = false, features = ["runtime", "threads"] }
+wasi-common = { workspace = true, default-features = false, features = ["sync", "wasmtime"] }
 
 webrogue-aot-data = { workspace = true, optional = true }

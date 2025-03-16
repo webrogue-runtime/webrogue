@@ -30,15 +30,45 @@ fn main() {
         let gfx_host_src_dir = gfx_src_dir.join("host");
         let aemu_src_dir = external_dir.join("aemu");
         cc::Build::new()
+            .flag_if_supported("-Wno-unused-parameter")
+            .flag_if_supported("-Wno-attributes")
             .cpp(true)
             .std("c++17")
             .file("webrogue_gfxstream.cpp")
-            .file(gfx_host_src_dir.join("gl").join("glsnapshot").join("GLSnapshot.cpp"))
-            .file(gfx_host_src_dir.join("gl").join("gles2_dec").join("GLESv2Decoder.cpp"))
-            .file(gfx_host_src_dir.join("gl").join("gles2_dec").join("gles2_server_context.cpp"))
-            .file(gfx_host_src_dir.join("gl").join("gles2_dec").join("gles2_dec.cpp"))
-            .file(gfx_host_src_dir.join("apigen-codec-common").join("ChecksumCalculatorThreadInfo.cpp"))
-            .file(gfx_host_src_dir.join("apigen-codec-common").join("ChecksumCalculator.cpp"))
+            .file(
+                gfx_host_src_dir
+                    .join("gl")
+                    .join("glsnapshot")
+                    .join("GLSnapshot.cpp"),
+            )
+            .file(
+                gfx_host_src_dir
+                    .join("gl")
+                    .join("gles2_dec")
+                    .join("GLESv2Decoder.cpp"),
+            )
+            .file(
+                gfx_host_src_dir
+                    .join("gl")
+                    .join("gles2_dec")
+                    .join("gles2_server_context.cpp"),
+            )
+            .file(
+                gfx_host_src_dir
+                    .join("gl")
+                    .join("gles2_dec")
+                    .join("gles2_dec.cpp"),
+            )
+            .file(
+                gfx_host_src_dir
+                    .join("apigen-codec-common")
+                    .join("ChecksumCalculatorThreadInfo.cpp"),
+            )
+            .file(
+                gfx_host_src_dir
+                    .join("apigen-codec-common")
+                    .join("ChecksumCalculator.cpp"),
+            )
             .file(aemu_src_dir.join("host-common").join("vm_operations.cpp"))
             .file(aemu_src_dir.join("host-common").join("crash_reporter.cpp"))
             .file(aemu_src_dir.join("base").join("Tracing.cpp"))

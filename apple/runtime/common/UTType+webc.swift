@@ -1,7 +1,7 @@
 import UniformTypeIdentifiers
 
 public extension UTType {
-    static var webc: UTType {
-        UTType.init(importedAs: "io.github.webrogue-runtime.webc")
+    static var wrapp: UTType {
+        UTType.init(importedAs: "io.github.webrogue-runtime.wrapp")
     }
 }

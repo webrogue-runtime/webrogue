@@ -19,10 +19,10 @@ public class WebrogueRunnerActivity extends WebrogueActivity {
     @Keep
     public String getContainerPath() {
         Context context = getContext();
-        File outputFile = new File(context.getCacheDir(), "aot.webc");
+        File outputFile = new File(context.getCacheDir(), "aot.wrapp");
         try {
             FileOutputStream outputStream = new FileOutputStream(outputFile);
-            InputStream inputStream = context.getAssets().open("aot.webc");
+            InputStream inputStream = context.getAssets().open("aot.wrapp");
             byte[] buffer = new byte[1024];
             int len;
             while ((len = inputStream.read(buffer)) != -1) {

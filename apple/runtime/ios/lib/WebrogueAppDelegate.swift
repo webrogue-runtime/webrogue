@@ -31,7 +31,7 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
             webrogueWindow.rootViewController = viewController
             webrogueWindow.makeKeyAndVisible()
         } else {
-            run(path: Bundle.main.url(forResource: "aot", withExtension: "webc")!.relativePath)
+            run(path: Bundle.main.url(forResource: "aot", withExtension: "wrapp")!.relativePath)
         }
 
         return result

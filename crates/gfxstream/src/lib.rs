@@ -5,9 +5,12 @@ pub struct Thread {
 }
 
 impl Thread {
+    #[allow(clippy::not_unsafe_ptr_arg_deref)] // conflicts with "unnecessary `unsafe` block" warning, maybe clippy bug
     pub fn new(get_proc: *const (), userdata: *const ()) -> Self {
         Self {
-            raw_thread_ptr: unsafe { ffi::webrogue_gfxstream_ffi_create_thread(get_proc, userdata) },
+            raw_thread_ptr: unsafe {
+                ffi::webrogue_gfxstream_ffi_create_thread(get_proc, userdata)
+            },
         }
     }
 

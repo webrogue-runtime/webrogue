@@ -13,7 +13,7 @@ pub struct ZSTDSeekableProvider<'a, OverallReader: Read + Seek> {
 
 unsafe impl<OverallReader: Read + Seek> Send for ZSTDSeekableProvider<'_, OverallReader> {}
 
-impl<'a, OverallReader: Read + Seek> ZSTDSeekableProvider<'a, OverallReader> {
+impl<OverallReader: Read + Seek> ZSTDSeekableProvider<'_, OverallReader> {
     pub fn new(overall_reader: OverallReader, offset: u64) -> anyhow::Result<Self> {
         let offsetted_reader = Box::new(crate::offsetted_reader::OffsettedReader::new(
             overall_reader,

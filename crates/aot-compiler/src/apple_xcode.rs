@@ -10,34 +10,39 @@ pub fn build_apple_xcode(
     if !aot_dir.exists() {
         std::fs::create_dir(aot_dir.clone())?;
     }
-    std::fs::copy(container_path.clone(), aot_dir.join("aot.webc"))?;
+    std::fs::copy(container_path.clone(), aot_dir.join("aot.wrapp"))?;
 
     let aot_dir = build_dir.join("aot");
 
-    crate::compile::compile_webc_to_object(
-        container_path.clone(),
-        aot_dir.join("aot.x86_64.macosx.o"),
-        "x86_64-apple-darwin",
+    crate::compile::compile_wrapp_to_object(
+        &container_path,
+        &aot_dir.join("aot.x86_64.macosx.o"),
+        crate::Target::x86_64AppleDarwin,
+        true, // TODO check
     )?;
-    crate::compile::compile_webc_to_object(
-        container_path.clone(),
-        aot_dir.join("aot.arm64.macosx.o"),
-        "arm64-apple-darwin",
+    crate::compile::compile_wrapp_to_object(
+        &container_path,
+        &aot_dir.join("aot.arm64.macosx.o"),
+        crate::Target::ARM64AppleDarwin,
+        true, // TODO check
     )?;
-    crate::compile::compile_webc_to_object(
-        container_path.clone(),
-        aot_dir.join("aot.x86_64.iphonesimulator.o"),
-        "x86_64-apple-ios",
+    crate::compile::compile_wrapp_to_object(
+        &container_path,
+        &aot_dir.join("aot.x86_64.iphonesimulator.o"),
+        crate::Target::X86_64AppleIOSSIM,
+        true, // TODO check
     )?;
-    crate::compile::compile_webc_to_object(
-        container_path.clone(),
-        aot_dir.join("aot.arm64.iphonesimulator.o"),
-        "arm64-apple-ios-sim",
+    crate::compile::compile_wrapp_to_object(
+        &container_path,
+        &aot_dir.join("aot.arm64.iphonesimulator.o"),
+        crate::Target::ARM64AppleIOSSIM,
+        true, // TODO check
     )?;
-    crate::compile::compile_webc_to_object(
-        container_path.clone(),
-        aot_dir.join("aot.arm64.iphoneos.o"),
-        "arm64-apple-ios",
+    crate::compile::compile_wrapp_to_object(
+        &container_path,
+        &aot_dir.join("aot.arm64.iphoneos.o"),
+        crate::Target::ARM64AppleIOS,
+        true, // TODO check
     )?;
 
     return anyhow::Ok(());
