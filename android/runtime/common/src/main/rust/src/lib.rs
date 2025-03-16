@@ -126,7 +126,8 @@ fn main() -> anyhow::Result<()> {
             .to_owned()
     };
 
-    let wrapp_handle = webrogue_wrapp::WrappHandle::from_file_path(container_path.into())?;
+    let wrapp_handle =
+        webrogue_wrapp::WrappHandleBuilder::from_file_path(container_path)?.build()?;
     webrogue_runtime::run(wrapp_handle)?;
 
     Ok(())

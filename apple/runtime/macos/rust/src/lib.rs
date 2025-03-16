@@ -1,5 +1,5 @@
 fn main(wrapp_path: String) -> anyhow::Result<()> {
-    let wrapp_handle = webrogue_wrapp::WrappHandle::from_file_path(wrapp_path.into())?;
+    let wrapp_handle = webrogue_wrapp::WrappHandleBuilder::from_file_path(wrapp_path)?.build()?;
     webrogue_runtime::run(wrapp_handle)?;
     Ok(())
 }

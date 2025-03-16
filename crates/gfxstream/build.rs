@@ -31,6 +31,7 @@ fn main() {
         let aemu_src_dir = external_dir.join("aemu");
         cc::Build::new()
             .flag_if_supported("-Wno-unused-parameter")
+            .flag_if_supported("-Wno-attributes")
             .cpp(true)
             .std("c++17")
             .file("webrogue_gfxstream.cpp")

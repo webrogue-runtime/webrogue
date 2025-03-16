@@ -5,19 +5,13 @@ plugins {
 android {
     namespace 'io.github.webrogue_runtime'
     compileSdk 35
-    ndkVersion "27.2.12479018"
 
     defaultConfig {
-        applicationId "io.github.webrogue_runtime"
+        applicationId WEBROGUE_APPLICATION_ID
         minSdk 24
         targetSdk 35
-        versionCode 1
-        versionName "1.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary true
-        }
+        versionCode WEBROGUE_VERSION_CODE.toInteger()
+        versionName WEBROGUE_VERSION_NAME
     }
     buildTypes {
         release {

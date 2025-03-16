@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-mod android_gradle;
+mod android;
 mod apple_xcode;
 mod compile;
 mod cwasm_analyzer;
@@ -29,7 +29,7 @@ enum Commands {
     /// Android-related commands
     Android {
         #[command(subcommand)]
-        commands: AndroidCommands,
+        commands: android::Commands,
     },
     /// Windows-related commands
     Windows {
@@ -51,19 +51,7 @@ enum Commands {
         commands: AppleCommands,
     },
 }
-#[derive(Subcommand, Debug)]
-enum AndroidCommands {
-    /// Make Gradle Android project
-    Gradle {
-        /// Path to Android SDK. If not specified, ANDROID_HOME environment variable is used
-        #[arg(short, long, value_name = "PATH")]
-        sdk: Option<std::path::PathBuf>,
-        /// Path to WRAPP file
-        wrapp_path: std::path::PathBuf,
-        /// Path where resulting project will be placed
-        build_dir: std::path::PathBuf,
-    },
-}
+
 #[derive(Subcommand, Debug)]
 enum WindowsCommands {
     /// Build Windows executable using MinGW
@@ -107,24 +95,7 @@ fn main() -> anyhow::Result<()> {
         } => {
             linux::build_linux(wrapp_path, out_path)?;
         }
-        Commands::Android { commands } => match commands {
-            AndroidCommands::Gradle {
-                sdk,
-                wrapp_path,
-                build_dir,
-            } => {
-                let sdk = sdk
-                    .or_else(|| {
-                        std::env::var("ANDROID_HOME")
-                            .and_then(|e| Ok(std::path::PathBuf::from(e)))
-                            .ok()
-                    })
-                    .ok_or(anyhow::anyhow!(
-                        "--sdk argument or ANDROID_HOME environment variable must be provided"
-                    ))?;
-                android_gradle::build_android_gradle(sdk, wrapp_path, build_dir)?;
-            }
-        },
+        Commands::Android { commands } => commands.run()?,
         Commands::Windows { commands } => match commands {
             WindowsCommands::Mingw {
                 wrapp_path,

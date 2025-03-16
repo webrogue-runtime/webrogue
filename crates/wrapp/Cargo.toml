@@ -4,8 +4,13 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+write = ["dep:image"]
+
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 zstd-seekable = { workspace = true }
+image = { workspace = true, optional = true, default-features = false, features = ["png", "rayon"] }
+semver = { workspace = true, default-features = false, features = ["serde"]  }

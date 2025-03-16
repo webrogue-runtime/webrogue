@@ -1,7 +1,5 @@
 #[cfg(not(feature = "build-llvm"))]
-fn main() {
-    panic!("build-llvm is disabled");
-}
+fn main() {}
 
 #[cfg(feature = "build-llvm")]
 use std::str::FromStr as _;

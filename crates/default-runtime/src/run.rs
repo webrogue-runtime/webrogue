@@ -7,7 +7,7 @@ struct Cli {
 
 pub fn run() -> anyhow::Result<()> {
     let args = Cli::parse();
-    let wrapp_handle = webrogue_wrapp::WrappHandle::from_file_path(args.path)?;
+    let wrapp_handle = webrogue_wrapp::WrappHandleBuilder::from_file_path(args.path)?.build()?;
     webrogue_runtime::run(wrapp_handle)?;
     Ok(())
 }

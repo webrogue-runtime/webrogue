@@ -20,7 +20,8 @@ pub fn compile_wrapp_to_object(
     }
     let engine = wasmtime::Engine::new(&config)?;
 
-    let wrapp_handle = webrogue_wrapp::WrappHandle::from_file_path(wrapp_file_path.clone())?;
+    let wrapp_handle =
+        webrogue_wrapp::WrappHandleBuilder::from_file_path(wrapp_file_path)?.build()?;
 
     let mut file = wrapp_handle
         .open_file("main.wasm")

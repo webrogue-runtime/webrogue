@@ -41,7 +41,7 @@ pub fn main() -> anyhow::Result<()> {
 
     wasi_factory.add_actual_dir(&mut wasi, std::env::current_dir()?, "/");
 
-    let reader = webrogue_runtime::wrapp::WrappHandle::from_file_path("raylib.wrapp".into())?;
+    let reader = webrogue_wrapp::WrappHandleBuilder::from_file_path("raylib.wrapp")?.build()?;
 
     webrogue_std_stream_os::bind_streams(&mut wasi);
 

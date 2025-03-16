@@ -31,7 +31,12 @@ pub fn make_packed_data(
     filenames_to_archive.push("main.wasm".to_owned());
     if let Some(filesystem) = config.clone().filesystem {
         for resource in filesystem.resources {
-            filenames_to_archive.push(resource.real_path);
+            filenames_to_archive.push(resource.real_path.ok_or_else(|| {
+                anyhow::anyhow!(
+                    "real_path property not specified for mapped_path: {}",
+                    resource.mapped_path
+                )
+            })?);
         }
     }
 
@@ -77,12 +82,47 @@ pub fn archive(
     preamble_data.write_all(b"WRAPP\0")?;
     let file = std::fs::File::open(dir_path.join("webrogue.json"))?;
     let config: crate::config::Config = serde_json::from_reader(file)?;
-    let json_content = serde_json::to_vec(&config)?;
+    let json_content = serde_json::to_vec(&config.clone().strip())?;
     preamble_data.write_all(&json_content)?;
+    preamble_data.write_all(b"\0")?;
+    let mut uncompressed_data: Vec<u8> = Vec::new();
+
+    if let Some(icon_path) = config
+        .icons
+        .as_ref()
+        .and_then(|icons| icons.normal.path.clone())
+    {
+        let mut real_icon_path = dir_path.clone();
+        for part in icon_path.split('/') {
+            real_icon_path = real_icon_path.join(part);
+        }
+        let icon_image = image::ImageReader::open(real_icon_path)?
+            .with_guessed_format()?
+            .decode()?;
+        let max_dimension_size = std::cmp::max(icon_image.height(), icon_image.width());
+        let target_size = std::cmp::min(max_dimension_size, 1024);
+        let mut icon_bytes: Vec<u8> = Vec::new();
+        icon_image
+            .resize(
+                target_size,
+                target_size,
+                image::imageops::FilterType::Lanczos3,
+            )
+            .write_with_encoder(image::codecs::png::PngEncoder::new_with_quality(
+                &mut std::io::Cursor::new(&mut icon_bytes),
+                image::codecs::png::CompressionType::Best,
+                image::codecs::png::FilterType::Adaptive,
+            ))?;
+        uncompressed_data.write_all(b"normal_icon\0")?;
+        uncompressed_data.write_all(&(icon_bytes.len() as u64).to_le_bytes())?;
+        uncompressed_data.write_all(&icon_bytes)?;
+    }
+
+    preamble_data.write_all(&(uncompressed_data.len() as u64).to_le_bytes())?;
+    preamble_data.write_all(&uncompressed_data)?;
 
     output_file.write_all(&preamble_data)?;
-    output_file.write_all(b"\0")?;
     compress(make_packed_data(dir_path, config)?, &mut output_file)?;
 
-    anyhow::Ok(())
+    Ok(())
 }

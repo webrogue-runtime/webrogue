@@ -11,7 +11,7 @@ path = "crates/default-runtime/src/main_workspace.rs"
 doc = false
 
 [features]
-default = ["aot"]
+default = ["cranelift"]
 cranelift = ["webrogue-default-runtime/cranelift"]
 aot = ["webrogue-default-runtime/aot"]
 
@@ -76,6 +76,7 @@ wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
 wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
 wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
 
+image = { version = "0.25", default-features = false }
 object = { version = "0.36.5", default-features = false }
 clap = { version = "4" }
 futures =  { version = "0.3" }
@@ -88,6 +89,7 @@ cc = { version = "1" }
 tokio = { version = "1" }
 cmake = { version = "0.1" }
 target-lexicon = { version = "^0.12", default-features = false }
+semver = { version = "1", default-features = false }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.2" }

@@ -49,6 +49,7 @@ for TARGET_FILE in $TARGET_FILES; do
     mkdir -p ../aot_artifacts/android_gradle/template/$TARGET_DIR
     cp ./template/$TARGET_FILE ../aot_artifacts/android_gradle/template/$TARGET_FILE
 done
+echo "*" > ../aot_artifacts/android_gradle/template/.gitignore
 
 mkdir -p ../aot_artifacts/android_gradle/template/app/src/main/java/org/libsdl/app/
 cp \
