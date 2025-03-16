@@ -2,16 +2,25 @@ mod icons;
 mod link;
 mod stamp;
 
+#[derive(PartialEq)]
+pub enum Signing {
+    Unsigned,
+    Signed {
+        keystore_path: std::path::PathBuf,
+        store_password: String,
+        key_password: String,
+        key_alias: String,
+    },
+}
+
 pub fn build(
     android_sdk_dir: &std::path::PathBuf,
     container_path: &std::path::PathBuf,
     build_dir: &std::path::PathBuf,
+    signing: Signing,
+    debug: bool,
+    output: Option<std::path::PathBuf>,
 ) -> anyhow::Result<()> {
-    anyhow::ensure!(
-        android_sdk_dir.exists(),
-        "Android SDK path '{}' is not valid",
-        android_sdk_dir.display()
-    );
     let template_dir = std::path::PathBuf::from("aot_artifacts/android_gradle/template");
     let object_file = crate::utils::TemporalFile::for_tmp_object(build_dir.join("aarch64"))?;
     let old_stamp = read_stamp(&build_dir).ok();
@@ -58,10 +67,15 @@ pub fn build(
     let (gradle_shell, gradle_script) = ("cmd", "gradlew.bat");
     #[cfg(not(target_os = "windows"))]
     let (gradle_shell, gradle_script) = ("sh", "gradlew");
-    let gradle_output = std::process::Command::new(gradle_shell)
+    let mut command = std::process::Command::new(gradle_shell);
+    command
         .arg(gradle_script)
         .arg("--no-daemon")
-        .arg("assembleDebug")
+        .arg(if debug {
+            "assembleDebug"
+        } else {
+            "assembleRelease"
+        })
         .current_dir(build_dir)
         .env("ANDROID_HOME", android_sdk_dir)
         .env(
@@ -82,8 +96,38 @@ pub fn build(
         .env(
             "ORG_GRADLE_PROJECT_WEBROGUE_APPLICATION_NAME",
             wrapp_builder.config()?.name.clone(),
-        )
-        .output()?;
+        );
+    if let Signing::Signed {
+        keystore_path,
+        store_password,
+        key_password,
+        key_alias,
+    } = &signing
+    {
+        command
+            .env(
+                "ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_KEYSTORE",
+                std::path::absolute(keystore_path)?,
+            )
+            .env(
+                "ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_KEYSTORE",
+                std::path::absolute(keystore_path)?,
+            )
+            .env(
+                "ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_STORE_PASSWORD",
+                store_password,
+            )
+            .env(
+                "ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_KEY_PASSWORD",
+                key_password,
+            )
+            .env("ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_KEY_ALIAS", key_alias);
+    } else if !debug {
+        eprintln!(
+            "wraning: debug signing is in use. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signing",
+        );
+    }
+    let gradle_output = command.output()?;
     anyhow::ensure!(
         gradle_output.status.success(),
         "Gradle failed with exit code {}.\n\nStdout: {}\n\nStderr: {}",
@@ -96,8 +140,32 @@ pub fn build(
         std::str::from_utf8(&gradle_output.stderr)?
     );
 
-    let new_stamp = stamp::Stamp { icons: icons_stamp };
+    let gradle_apk_path = build_dir
+        .join("app")
+        .join("build")
+        .join("outputs")
+        .join("apk");
+    let gradle_apk_path = if debug {
+        gradle_apk_path.join("debug").join("app-debug.apk")
+    } else {
+        gradle_apk_path.join("release").join("app-release.apk")
+    };
 
+    let output_apk_filename = wrapp_builder.config()?.name.clone().replace(' ', "_") + ".apk";
+
+    let copied_apk_dir = if let Some(output) = output {
+        if output.is_dir() {
+            output.join(output_apk_filename)
+        } else {
+            output
+        }
+    } else {
+        build_dir.join(output_apk_filename)
+    };
+    std::fs::rename(gradle_apk_path, &copied_apk_dir)?;
+    println!("APK saved to {}", copied_apk_dir.display());
+
+    let new_stamp = stamp::Stamp { icons: icons_stamp };
     if old_stamp.as_ref() != Some(&new_stamp) {
         write_stamp(new_stamp, &build_dir)?;
     }

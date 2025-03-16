@@ -2,10 +2,23 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-android {
-    namespace 'io.github.webrogue_runtime'
-    compileSdk 35
+def isSigning = project.hasProperty("WEBROGUE_RELEASE_KEYSTORE") || project.hasProperty("WEBROGUE_RELEASE_STORE_PASSWORD") || project.hasProperty("WEBROGUE_RELEASE_KEY_PASSWORD") || project.hasProperty("WEBROGUE_RELEASE_KEY_ALIAS")
 
+android {
+    namespace WEBROGUE_APPLICATION_ID
+    compileSdk 35
+    ndkVersion "27.2.12479018"
+
+    if(isSigning) {
+        signingConfigs {
+            release {
+                storeFile file(WEBROGUE_RELEASE_KEYSTORE)
+                storePassword WEBROGUE_RELEASE_STORE_PASSWORD
+                keyAlias WEBROGUE_RELEASE_KEY_ALIAS
+                keyPassword WEBROGUE_RELEASE_KEY_PASSWORD
+            }
+        }
+    }
     defaultConfig {
         applicationId WEBROGUE_APPLICATION_ID
         resValue "string", "app_name", WEBROGUE_APPLICATION_NAME
@@ -13,8 +26,17 @@ android {
         targetSdk 35
         versionCode WEBROGUE_VERSION_CODE.toInteger()
         versionName WEBROGUE_VERSION_NAME
+        if(isSigning) {
+            signingConfig signingConfigs.release
+        } else {
+            signingConfig signingConfigs.debug
+        }
     }
     buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
