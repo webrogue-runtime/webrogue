@@ -9,6 +9,8 @@ pub fn compile_wrapp_to_object(
 ) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
     config.target(target.name())?;
+    config.cranelift_opt_level(wasmtime::OptLevel::SpeedAndSize);
+    config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking);
     // config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
     config.epoch_interruption(true);
     unsafe {

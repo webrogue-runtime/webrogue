@@ -4,16 +4,17 @@ mod gradle;
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Make Gradle Android project
+    /// Make Android app using Gradle project
     Gradle {
-        /// Path to Android SDK. If not specified, ANDROID_HOME environment variable is used
-        #[arg(long, value_name = "PATH")]
-        sdk: Option<std::path::PathBuf>,
         /// Path to WRAPP file
         wrapp_path: std::path::PathBuf,
         /// Path where resulting project will be placed
         build_dir: std::path::PathBuf,
+        /// Path to Android SDK. If not specified, ANDROID_HOME environment variable is used
+        #[arg(long, value_name = "PATH")]
+        sdk: Option<std::path::PathBuf>,
         /// Path to release signing keystore
+        ///
         /// Hint: keystore can be generated using following command:
         ///     keytool -genkeypair -keyalg RSA -keystore <PATH>.jks -alias <ALIAS> -validity 3650
         #[arg(long, value_name = "PATH")]
@@ -27,7 +28,7 @@ pub enum Commands {
         /// Release key password
         #[arg(long, value_name = "ALIAS")]
         key_alias: Option<String>,
-        /// Release build for release but without signing
+        /// Debug build. Applies only to Java code. Resulting APK will be slightly larger.
         #[arg(long)]
         debug: bool,
         /// Path to place resulting APK

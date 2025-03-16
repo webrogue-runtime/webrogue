@@ -70,33 +70,33 @@ pub fn build(
     let mut command = std::process::Command::new(gradle_shell);
     command
         .arg(gradle_script)
-        .arg("--no-daemon")
+        // .arg("--no-daemon")
         .arg(if debug {
             "assembleDebug"
         } else {
             "assembleRelease"
         })
         .current_dir(build_dir)
-        .env("ANDROID_HOME", android_sdk_dir)
-        .env(
-            "ORG_GRADLE_PROJECT_WEBROGUE_VERSION_NAME",
-            version.to_string(),
-        )
-        .env(
-            "ORG_GRADLE_PROJECT_WEBROGUE_VERSION_CODE",
-            format!(
-                "{}",
-                version.patch + version.minor * 1000 + version.major * 1000000
-            ),
-        )
-        .env(
-            "ORG_GRADLE_PROJECT_WEBROGUE_APPLICATION_ID",
-            wrapp_builder.config()?.id.clone(),
-        )
-        .env(
-            "ORG_GRADLE_PROJECT_WEBROGUE_APPLICATION_NAME",
-            wrapp_builder.config()?.name.clone(),
-        );
+        .env("ANDROID_HOME", android_sdk_dir);
+    set_gradle_property(&mut command, "webrogueVersionName", version.to_string());
+    set_gradle_property(
+        &mut command,
+        "webrogueVersionCode",
+        format!(
+            "{}",
+            version.patch + version.minor * 1000 + version.major * 1000000
+        ),
+    );
+    set_gradle_property(
+        &mut command,
+        "webrogueApplicationId",
+        wrapp_builder.config()?.id.clone(),
+    );
+    set_gradle_property(
+        &mut command,
+        "webrogueApplicationName",
+        wrapp_builder.config()?.name.clone(),
+    );
     if let Signing::Signed {
         keystore_path,
         store_password,
@@ -104,27 +104,17 @@ pub fn build(
         key_alias,
     } = &signing
     {
-        command
-            .env(
-                "ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_KEYSTORE",
-                std::path::absolute(keystore_path)?,
-            )
-            .env(
-                "ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_KEYSTORE",
-                std::path::absolute(keystore_path)?,
-            )
-            .env(
-                "ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_STORE_PASSWORD",
-                store_password,
-            )
-            .env(
-                "ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_KEY_PASSWORD",
-                key_password,
-            )
-            .env("ORG_GRADLE_PROJECT_WEBROGUE_RELEASE_KEY_ALIAS", key_alias);
+        set_gradle_property(
+            &mut command,
+            "webrogueKeystore",
+            std::path::absolute(keystore_path)?,
+        );
+        set_gradle_property(&mut command, "webrogueStorePassword", store_password);
+        set_gradle_property(&mut command, "webrogueKeyPassword", key_password);
+        set_gradle_property(&mut command, "webrogueKeyAlias", key_alias);
     } else if !debug {
         eprintln!(
-            "wraning: debug signing is in use. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signing",
+            "wraning: Debug signature used. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signature",
         );
     }
     let gradle_output = command.output()?;
@@ -183,4 +173,16 @@ fn write_stamp(stamp: stamp::Stamp, build_dir: &std::path::PathBuf) -> anyhow::R
     let file = std::fs::File::create(build_dir.join(".wrstamp"))?;
     postcard::to_io(&stamp, file)?;
     Ok(())
+}
+
+fn set_gradle_property<V: AsRef<std::ffi::OsStr>>(
+    command: &mut std::process::Command,
+    key: &str,
+    val: V,
+) {
+    command.arg(format!(
+        "-Dorg.gradle.project.{}={}",
+        key,
+        val.as_ref().to_str().unwrap()
+    ));
 }
