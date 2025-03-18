@@ -8,7 +8,7 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: 12.0
     IPHONEOS_DEPLOYMENT_TARGET: 14.0
     GENERATE_INFOPLIST_FILE: true
-    MARKETING_VERSION: 0.1
+    MARKETING_VERSION: $(WEBROGUE_APPLICATION_VERSION)
     CURRENT_PROJECT_VERSION: 1
     DEAD_CODE_STRIPPING: true
     ENABLE_USER_SCRIPT_SANDBOXING: true
@@ -38,15 +38,22 @@ targets:
     platform: macOS
     sources:
     - macos/main.m
+    - macos/Assets.xcassets
     - aot/aot.wrapp
+    - aot.xcconfig
+    configFiles:
+      Debug: aot.xcconfig
+      Release: aot.xcconfig
+      ReleaseLocal: aot.xcconfig
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: macos/runner.entitlements
         # INFOPLIST_FILE: macos/Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueRunner
-        PRODUCT_NAME: webrogue Runner
+        PRODUCT_BUNDLE_IDENTIFIER: $(WEBROGUE_APPLICATION_ID)
+        PRODUCT_NAME: $(WEBROGUE_APPLICATION_NAME)
         ENABLE_HARDENED_RUNTIME: true
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_CFBundleDisplayName: $(WEBROGUE_APPLICATION_NAME)
         OTHER_LDFLAGS:
           - "-lwebrogue_macos"
           - "-lSDL2"
@@ -104,14 +111,23 @@ targets:
     type: application
     platform: iOS
     sources:
-    - ios
+    - ios/Assets.xcassets
+    - ios/Bridging-Header.h
+    - ios/Info.plist
+    - ios/LaunchScreen.storyboard
+    - ios/main.swift
     - aot/aot.wrapp
+    - aot.xcconfig
+    configFiles:
+      Debug: aot.xcconfig
+      Release: aot.xcconfig
+      ReleaseLocal: aot.xcconfig
     settings:
       base:
         INFOPLIST_FILE: ios/Info.plist
         CODE_SIGN_ENTITLEMENTS: ios/ios.entitlements
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueRunner
-        PRODUCT_NAME: Webrogue Runner
+        PRODUCT_BUNDLE_IDENTIFIER: $(WEBROGUE_APPLICATION_ID)
+        PRODUCT_NAME: $(WEBROGUE_APPLICATION_NAME)
         OTHER_LDFLAGS:
         - "-lwebrogue_ios"
         - "-lwrios"

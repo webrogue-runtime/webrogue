@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 mod android;
-mod apple_xcode;
 mod compile;
 mod cwasm_analyzer;
 mod linux;
@@ -8,6 +7,7 @@ mod target;
 mod utils;
 mod windows_mingw;
 pub use target::Target;
+mod xcode;
 
 /// webrogue-aot-compiler builds native applications from WRAPP files
 #[derive(Parser, Debug)]
@@ -45,10 +45,14 @@ enum Commands {
         #[arg(short, long)]
         pic: bool,
     },
-    /// Apple-related commands
-    Apple {
+    /// Xcode-related commands
+    Xcode {
+        /// Path to WRAPP file
+        wrapp_path: std::path::PathBuf,
+        /// Path where resulting project will be placed
+        build_dir: std::path::PathBuf,
         #[command(subcommand)]
-        commands: AppleCommands,
+        commands: xcode::XcodeCommands,
     },
 }
 
@@ -60,16 +64,6 @@ enum WindowsCommands {
         wrapp_path: std::path::PathBuf,
         /// Path where resulting executable will be placed
         out_path: std::path::PathBuf,
-    },
-}
-#[derive(Subcommand, Debug)]
-enum AppleCommands {
-    /// Make Gradle Apple Xcode project
-    Xcode {
-        /// Path to WRAPP file
-        wrapp_path: std::path::PathBuf,
-        /// Path where resulting project will be placed
-        build_dir: std::path::PathBuf,
     },
 }
 
@@ -102,14 +96,17 @@ fn main() -> anyhow::Result<()> {
                 out_path,
             } => windows_mingw::build_windows_mingw(wrapp_path, out_path)?,
         },
-        Commands::Apple { commands } => match commands {
-            AppleCommands::Xcode {
+        Commands::Xcode {
+            wrapp_path,
+            build_dir,
+            commands,
+        } => xcode::run(
+            xcode::XcodeArgs {
                 wrapp_path,
                 build_dir,
-            } => {
-                apple_xcode::build_apple_xcode(wrapp_path, build_dir)?;
-            }
-        },
+            },
+            commands,
+        )?,
     }
 
     Ok(())

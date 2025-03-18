@@ -92,7 +92,6 @@ cp runtime/ios/runner/main.swift template/ios/main.swift
 cp runtime/ios/runner/Info.plist template/ios/Info.plist
 cp runtime/ios/runner/ios.entitlements template/ios/ios.entitlements
 cp runtime/ios/runner/Bridging-Header.h template/ios/Bridging-Header.h
-cp runtime/ios/runner/LaunchScreen.storyboard template/ios/LaunchScreen.storyboard
 cp -r runtime/external/libEGL.xcframework template/bin/libEGL.xcframework
 cp -r runtime/external/libGLESv2.xcframework template/bin/libGLESv2.xcframework
 # apple/template
@@ -110,3 +109,4 @@ for TARGET_FILE in $TARGET_FILES; do
     mkdir -p ../../aot_artifacts/apple_xcode/template/$TARGET_DIR
     cp ../../apple/template/$TARGET_FILE ../../aot_artifacts/apple_xcode/template/$TARGET_FILE
 done
+echo "*" > ../../aot_artifacts/apple_xcode/template/.gitignore

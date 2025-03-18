@@ -1,6 +1,6 @@
 mod icons;
 mod link;
-mod stamp;
+mod types;
 
 #[derive(PartialEq)]
 pub enum Signing {
@@ -155,21 +155,21 @@ pub fn build(
     std::fs::rename(gradle_apk_path, &copied_apk_dir)?;
     println!("APK saved to {}", copied_apk_dir.display());
 
-    let new_stamp = stamp::Stamp { icons: icons_stamp };
+    let new_stamp = types::Stamp { icons: icons_stamp };
     if old_stamp.as_ref() != Some(&new_stamp) {
         write_stamp(new_stamp, &build_dir)?;
     }
     Ok(())
 }
 
-fn read_stamp(build_dir: &std::path::PathBuf) -> anyhow::Result<stamp::Stamp> {
+fn read_stamp(build_dir: &std::path::PathBuf) -> anyhow::Result<types::Stamp> {
     let mut buff = [0u8; 128];
     let file = std::fs::File::open(build_dir.join(".wrstamp"))?;
     let (result, _) = postcard::from_io((file, &mut buff))?;
     Ok(result)
 }
 
-fn write_stamp(stamp: stamp::Stamp, build_dir: &std::path::PathBuf) -> anyhow::Result<()> {
+fn write_stamp(stamp: types::Stamp, build_dir: &std::path::PathBuf) -> anyhow::Result<()> {
     let file = std::fs::File::create(build_dir.join(".wrstamp"))?;
     postcard::to_io(&stamp, file)?;
     Ok(())

@@ -30,8 +30,13 @@ ios/Info.plist
 ios/LaunchScreen.storyboard
 ios/ios.entitlements
 ios/main.swift
+ios/Assets.xcassets/Contents.json
+ios/Assets.xcassets/AppIcon.appiconset/Contents.json
+ios/Assets.xcassets/SplashScreen.imageset/Contents.json
 macos/main.m
 macos/runner.entitlements
+macos/Assets.xcassets/Contents.json
+macos/Assets.xcassets/AppIcon.appiconset/Contents.json
 scripts/copy_bin.sh
 scripts/copy_bin_ios.sh
 scripts/lipo_object_combiner.sh

@@ -15,6 +15,8 @@ fn main() {
         .define("LLVM_ENABLE_ZLIB", "OFF")
         .define("LLVM_ENABLE_ZSTD", "OFF")
         .define("LLVM_ENABLE_TERMINFO", "OFF")
+        .define("LLVM_TARGETS_TO_BUILD", "X86;AArch64")
+        .profile("Release") // compiles and links faster
         .always_configure(false)
         .build();
     println!(

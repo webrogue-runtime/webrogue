@@ -1,4 +1,4 @@
-use crate::android::gradle::stamp::IconsStamp;
+use crate::android::gradle::types::IconsStamp;
 use image::GenericImage as _;
 use std::io::Write as _;
 
@@ -20,7 +20,7 @@ pub fn build(
     if old_stamp != Some(&new_stamp) {
         generate_icons(build_dir, &new_stamp)?;
     }
-    return Ok(new_stamp);
+     Ok(new_stamp)
 }
 
 fn generate_icons(build_dir: &std::path::PathBuf, new_stamp: &IconsStamp) -> anyhow::Result<()> {
