@@ -33,7 +33,7 @@ fn generate_icons(build_dir: &std::path::PathBuf, new_stamp: &IconsStamp) -> any
             .ok_or_else(|| anyhow::anyhow!("No icon file found in uncompressed WRAPP section"))?,
     ));
     reader.set_format(image::ImageFormat::Png);
-    let icon_image = reader.decode()?;
+    let icon_image = image::DynamicImage::ImageRgba8(reader.decode()?.to_rgba8());
     generate_macos_icons(build_dir, new_stamp, icon_image.clone())?;
     generate_ios_icons(build_dir, &new_stamp, icon_image)?;
     Ok(())

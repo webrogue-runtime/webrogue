@@ -1,3 +1,5 @@
+pub mod icons;
+
 pub fn copy_dir(source: &std::path::PathBuf, dest: &std::path::PathBuf) -> anyhow::Result<()> {
     let mut path_parts = vec![];
     copy_dir_impl(source, dest, &mut path_parts)

@@ -1,5 +1,4 @@
 use crate::android::gradle::types::IconsStamp;
-use image::GenericImage as _;
 use std::io::Write as _;
 
 pub fn build(
@@ -20,7 +19,7 @@ pub fn build(
     if old_stamp != Some(&new_stamp) {
         generate_icons(build_dir, &new_stamp)?;
     }
-     Ok(new_stamp)
+    Ok(new_stamp)
 }
 
 fn generate_icons(build_dir: &std::path::PathBuf, new_stamp: &IconsStamp) -> anyhow::Result<()> {
@@ -50,7 +49,7 @@ fn generate_icons(build_dir: &std::path::PathBuf, new_stamp: &IconsStamp) -> any
             .ok_or_else(|| anyhow::anyhow!("No icon file found in uncompressed WRAPP section"))?,
     ));
     reader.set_format(image::ImageFormat::Png);
-    let icon_image = reader.decode()?;
+    let icon_image = image::DynamicImage::ImageRgba8(reader.decode()?.to_rgba8());
     write_icon_image(
         &icon_image,
         1024,
@@ -58,37 +57,29 @@ fn generate_icons(build_dir: &std::path::PathBuf, new_stamp: &IconsStamp) -> any
         "drawable",
         "ic_launcher_foreground.webp",
     )?;
-    let mut background_image = image::DynamicImage::new(1, 1, image::ColorType::Rgb8);
-    let buffer = background_image.as_mut_rgb8().unwrap();
-    for (_, _, pixel) in buffer.enumerate_pixels_mut() {
-        pixel.0 = [
-            (new_stamp.config.normal.background.red * 255.0) as u8,
-            (new_stamp.config.normal.background.green * 255.0) as u8,
-            (new_stamp.config.normal.background.blue * 255.0) as u8,
-        ];
-    }
+
+    let mut old_image = crate::utils::icons::solid_color(
+        1024,
+        1024,
+        (new_stamp.config.normal.background.red * 255.0) as u8,
+        (new_stamp.config.normal.background.green * 255.0) as u8,
+        (new_stamp.config.normal.background.blue * 255.0) as u8,
+        255,
+    );
 
     write_icon_image(
-        &background_image,
+        &old_image,
         1024,
         build_dir,
         "drawable",
         "ic_launcher_background.webp",
     )?;
 
-    let mut old_image = background_image
-        .resize(1024, 1024, image::imageops::FilterType::Nearest)
-        .clone();
-    let inset = (1024.0 * new_stamp.config.normal.inset) as u32;
-    old_image.copy_from(
-        &icon_image.resize(
-            1024 - 2 * inset,
-            1024 - 2 * inset,
-            image::imageops::FilterType::Lanczos3,
-        ),
-        inset,
-        inset,
-    )?;
+    crate::utils::icons::blend(
+        icon_image,
+        &mut old_image,
+        (1024.0 * (1.0 - new_stamp.config.normal.inset)) as u32,
+    );
 
     for (dir, size) in [
         ("mipmap-hdpi", 72),
@@ -99,6 +90,15 @@ fn generate_icons(build_dir: &std::path::PathBuf, new_stamp: &IconsStamp) -> any
     ] {
         write_icon_image(&old_image, size, build_dir, dir, "ic_launcher.webp")?;
     }
+
+    let xml_inset = {
+        let absolute_inset = 174;
+
+        let target_size = 1024 - 2 * absolute_inset;
+        let target_size = ((target_size as f32) * (1.0 - new_stamp.config.normal.inset)) as u32;
+        (0.5 - (target_size as f32) / 2048.0) * 100.0
+    };
+
     let mut ic_launcher = std::fs::File::create(
         build_dir
             .join("app")
@@ -116,7 +116,7 @@ fn generate_icons(build_dir: &std::path::PathBuf, new_stamp: &IconsStamp) -> any
     </foreground>
     <background android:drawable="@drawable/ic_launcher_background"/>
 "#,
-        new_stamp.config.normal.inset * 100.0
+        xml_inset
     ))?;
     ic_launcher.write_all(
         br#"</adaptive-icon>
@@ -139,7 +139,7 @@ fn generate_icons(build_dir: &std::path::PathBuf, new_stamp: &IconsStamp) -> any
     </foreground>
     <background android:drawable="@drawable/ic_launcher_background"/>
 "#,
-        new_stamp.config.normal.inset * 100.0
+        xml_inset
     ))?;
     ic_launcher_round.write_all(
         br#"</adaptive-icon>

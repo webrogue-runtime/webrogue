@@ -1,3 +1,5 @@
+use std::io::Write;
+
 mod icons;
 mod link;
 mod types;
@@ -78,25 +80,31 @@ pub fn build(
         })
         .current_dir(build_dir)
         .env("ANDROID_HOME", android_sdk_dir);
-    set_gradle_property(&mut command, "webrogueVersionName", version.to_string());
+    let mut properties_file =
+        std::fs::File::create(build_dir.join("app").join("gradle.properties"))?;
     set_gradle_property(
-        &mut command,
+        &mut properties_file,
+        "webrogueVersionName",
+        version.to_string(),
+    )?;
+    set_gradle_property(
+        &mut properties_file,
         "webrogueVersionCode",
         format!(
             "{}",
             version.patch + version.minor * 1000 + version.major * 1000000
         ),
-    );
+    )?;
     set_gradle_property(
-        &mut command,
+        &mut properties_file,
         "webrogueApplicationId",
         wrapp_builder.config()?.id.clone(),
-    );
+    )?;
     set_gradle_property(
-        &mut command,
+        &mut properties_file,
         "webrogueApplicationName",
         wrapp_builder.config()?.name.clone(),
-    );
+    )?;
     if let Signing::Signed {
         keystore_path,
         store_password,
@@ -104,19 +112,25 @@ pub fn build(
         key_alias,
     } = &signing
     {
+        // TODO maybe it is a bit insecure to store passwords in gradle.properties
         set_gradle_property(
-            &mut command,
+            &mut properties_file,
             "webrogueKeystore",
             std::path::absolute(keystore_path)?,
-        );
-        set_gradle_property(&mut command, "webrogueStorePassword", store_password);
-        set_gradle_property(&mut command, "webrogueKeyPassword", key_password);
-        set_gradle_property(&mut command, "webrogueKeyAlias", key_alias);
+        )?;
+        set_gradle_property(
+            &mut properties_file,
+            "webrogueStorePassword",
+            store_password,
+        )?;
+        set_gradle_property(&mut properties_file, "webrogueKeyPassword", key_password)?;
+        set_gradle_property(&mut properties_file, "webrogueKeyAlias", key_alias)?;
     } else if !debug {
         eprintln!(
             "wraning: Debug signature used. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signature",
         );
     }
+    drop(properties_file);
     let gradle_output = command.output()?;
     anyhow::ensure!(
         gradle_output.status.success(),
@@ -176,13 +190,10 @@ fn write_stamp(stamp: types::Stamp, build_dir: &std::path::PathBuf) -> anyhow::R
 }
 
 fn set_gradle_property<V: AsRef<std::ffi::OsStr>>(
-    command: &mut std::process::Command,
+    file: &mut std::fs::File,
     key: &str,
     val: V,
-) {
-    command.arg(format!(
-        "-Dorg.gradle.project.{}={}",
-        key,
-        val.as_ref().to_str().unwrap()
-    ));
+) -> anyhow::Result<()> {
+    file.write_fmt(format_args!("{}={}\n", key, val.as_ref().to_str().unwrap()))?;
+    Ok(())
 }
