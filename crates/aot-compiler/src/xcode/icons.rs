@@ -1,4 +1,3 @@
-use image::GenericImage as _;
 use std::io::Write as _;
 
 use super::types::IconsStamp;
@@ -44,21 +43,20 @@ fn generate_macos_icons(
     new_stamp: &IconsStamp,
     icon_image: image::DynamicImage,
 ) -> Result<(), anyhow::Error> {
-    let mut background_image = image::DynamicImage::new(1, 1, image::ColorType::Rgba8);
-    let buffer = background_image.as_mut_rgba8().unwrap();
-    for (_, _, pixel) in buffer.enumerate_pixels_mut() {
-        pixel.0 = [0, 0, 0, 0];
-    }
     let background_color = image::Rgba([
         (new_stamp.config.normal.background.red * 255.0) as u8,
         (new_stamp.config.normal.background.green * 255.0) as u8,
         (new_stamp.config.normal.background.blue * 255.0) as u8,
         255,
     ]);
-    let mut combined_image = background_image
-        .resize(1024, 1024, image::imageops::FilterType::Nearest)
-        .clone();
-    let inset = ((1024.0 - 200.0) * new_stamp.config.normal.inset + 100.0) as u32;
+    let mut combined_image = crate::utils::icons::solid_color(1024, 1024, 0, 0, 0, 0);
+    let target_size = {
+        let absolute_inset = 100;
+
+        let target_size = 1024 - 2 * absolute_inset;
+        let target_size = ((target_size as f32) * (1.0 - new_stamp.config.normal.inset)) as u32;
+        target_size
+    };
     let size = 1024;
     let corner_radius = 184;
     let offset = 100;
@@ -105,15 +103,7 @@ fn generate_macos_icons(
         ),
         background_color,
     );
-    combined_image.copy_from(
-        &icon_image.resize(
-            1024 - 2 * inset,
-            1024 - 2 * inset,
-            image::imageops::FilterType::Lanczos3,
-        ),
-        inset,
-        inset,
-    )?;
+    crate::utils::icons::blend(icon_image, &mut combined_image, target_size);
     write_macos_icon(build_dir, &combined_image, 16, "16x16")?;
     write_macos_icon(build_dir, &combined_image, 32, "16x16@2x")?;
     write_macos_icon(build_dir, &combined_image, 32, "32x32")?;
@@ -151,31 +141,20 @@ fn generate_ios_icons(
     new_stamp: &IconsStamp,
     icon_image: image::DynamicImage,
 ) -> anyhow::Result<()> {
-    let mut background_image = image::DynamicImage::new(1, 1, image::ColorType::Rgb8);
-    for (_, _, pixel) in background_image
-        .as_mut_rgb8()
-        .unwrap()
-        .enumerate_pixels_mut()
-    {
-        pixel.0 = [
-            (new_stamp.config.normal.background.red * 255.0) as u8,
-            (new_stamp.config.normal.background.green * 255.0) as u8,
-            (new_stamp.config.normal.background.blue * 255.0) as u8,
-        ];
-    }
-    let mut combined_image = background_image
-        .resize(1024, 1024, image::imageops::FilterType::Nearest)
-        .clone();
-    let inset = (1024.0 * new_stamp.config.normal.inset) as u32;
-    combined_image.copy_from(
-        &icon_image.resize(
-            1024 - 2 * inset,
-            1024 - 2 * inset,
-            image::imageops::FilterType::Lanczos3,
-        ),
-        inset,
-        inset,
-    )?;
+    let mut combined_image = crate::utils::icons::solid_color(
+        1024,
+        1024,
+        (new_stamp.config.normal.background.red * 255.0) as u8,
+        (new_stamp.config.normal.background.green * 255.0) as u8,
+        (new_stamp.config.normal.background.blue * 255.0) as u8,
+        255,
+    );
+
+    crate::utils::icons::blend(
+        icon_image,
+        &mut combined_image,
+        (1024.0 * (1.0 - new_stamp.config.normal.inset)) as u32,
+    );
     combined_image.write_with_encoder(image::codecs::png::PngEncoder::new(
         std::fs::File::create(
             build_dir
