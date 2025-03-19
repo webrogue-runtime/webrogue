@@ -11,8 +11,9 @@ pub fn compile_wrapp_to_object(
     config.target(target.name())?;
     config.cranelift_opt_level(wasmtime::OptLevel::SpeedAndSize);
     config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking);
-    // config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
-    config.epoch_interruption(true);
+    config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Disable);
+    config.generate_address_map(false);
+    config.epoch_interruption(false);
     unsafe {
         if is_pic {
             config.cranelift_flag_enable("is_pic");

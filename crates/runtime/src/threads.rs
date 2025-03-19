@@ -8,18 +8,20 @@ pub struct WasiThreadsCtx<T> {
     tid: std::sync::atomic::AtomicI32,
     engine: Mutex<Option<wasmtime::EngineWeak>>,
     shared_memories: Arc<Mutex<Vec<wasmtime::SharedMemory>>>,
+    epoch_interruption: bool,
 }
 
 const WASI_ENTRY_POINT: &str = "wasi_thread_start";
 
 impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
-    pub fn new() -> Self {
+    pub fn new(epoch_interruption: bool) -> Self {
         let tid = std::sync::atomic::AtomicI32::new(0);
         Self {
             instance_pre: Mutex::new(None),
             tid,
             engine: Mutex::new(None),
             shared_memories: Arc::new(Mutex::new(Vec::new())),
+            epoch_interruption,
         }
     }
     pub fn fill(
@@ -52,12 +54,15 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
         let builder = std::thread::Builder::new().name(format!("wasi-thread-{wasi_thread_id}"));
         let engine = self.engine.lock().unwrap().as_ref().unwrap().clone();
         let shared_memories = self.shared_memories.clone();
+        let epoch_interruption = self.epoch_interruption;
         builder.spawn(move || {
             let result: Result<anyhow::Result<()>, Box<dyn std::any::Any + Send>> =
                 std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     let mut store = wasmtime::Store::new(instance_pre.module().engine(), host);
-                    store.epoch_deadline_trap();
-                    store.set_epoch_deadline(1);
+                    if epoch_interruption {
+                        store.epoch_deadline_trap();
+                        store.set_epoch_deadline(1);
+                    }
                     let instance = instance_pre.instantiate(&mut store)?;
                     let thread_entry_point = instance
                         .get_typed_func::<(i32, i32), ()>(&mut store, WASI_ENTRY_POINT)
@@ -73,12 +78,12 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
             match result {
                 Err(e) => {
                     eprintln!("wasi-thread-{wasi_thread_id} panicked: {e:?}");
-                    stop_all_threads(engine, shared_memories);
+                    stop_all_threads(engine, shared_memories, epoch_interruption);
                 }
                 Ok(result) => {
                     if let Err(e) = result {
                         eprintln!("wasi-thread-{wasi_thread_id} finished with error: {e:?}");
-                        stop_all_threads(engine, shared_memories)
+                        stop_all_threads(engine, shared_memories, epoch_interruption)
                     }
                 }
             }
@@ -91,6 +96,7 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
         stop_all_threads(
             self.engine.lock().unwrap().as_ref().unwrap().clone(),
             self.shared_memories.clone(),
+            self.epoch_interruption,
         )
     }
 
@@ -109,21 +115,20 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
     }
 }
 
-impl<T: Clone + Send + 'static> Default for WasiThreadsCtx<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 fn stop_all_threads(
     engine: wasmtime::EngineWeak,
     shared_memories: Arc<Mutex<Vec<wasmtime::SharedMemory>>>,
+    epoch_interruption: bool,
 ) {
-    if let Some(engine) = engine.upgrade() {
-        engine.increment_epoch();
-        for mem in shared_memories.lock().unwrap().iter() {
-            unsafe { mem.atomic_notify_all() };
+    if epoch_interruption {
+        if let Some(engine) = engine.upgrade() {
+            engine.increment_epoch();
+            for mem in shared_memories.lock().unwrap().iter() {
+                unsafe { mem.atomic_notify_all() };
+            }
         }
+    } else {
+        std::process::exit(1)
     }
 }
 
@@ -134,8 +139,10 @@ pub fn add_to_linker_sync<T: Clone + Send + 'static>(
     module: &wasmtime::Module,
     get_cx: impl Fn(&mut T) -> &WasiThreadsCtx<T> + Send + Sync + Copy + 'static,
 ) -> anyhow::Result<()> {
-    store.epoch_deadline_trap();
-    store.set_epoch_deadline(1);
+    if get_cx(store.data_mut()).epoch_interruption {
+        store.epoch_deadline_trap();
+        store.set_epoch_deadline(1);
+    }
     linker.func_wrap(
         "wasi",
         "thread-spawn",

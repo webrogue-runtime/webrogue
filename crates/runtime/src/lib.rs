@@ -39,7 +39,11 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     // config.cranelift_opt_level(wasmtime::OptLevel::None);
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
     // config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
-    config.epoch_interruption(true);
+    #[cfg(feature = "aot")]
+    let epoch_interruption = false;
+    #[cfg(feature = "cranelift")]
+    let epoch_interruption = true;
+    config.epoch_interruption(epoch_interruption);
     #[cfg(feature = "aot")]
     config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
     let engine = wasmtime::Engine::new(&config)?;
@@ -68,7 +72,9 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     };
     let mut store = wasmtime::Store::new(&engine, state);
 
-    store.data_mut().wasi_threads_ctx = Some(Arc::new(crate::threads::WasiThreadsCtx::new()));
+    store.data_mut().wasi_threads_ctx = Some(Arc::new(crate::threads::WasiThreadsCtx::new(
+        epoch_interruption,
+    )));
 
     wasi_common::sync::add_to_linker(&mut linker, |state| state.preview1_ctx.as_mut().unwrap())?;
     webrogue_gfx::add_to_linker(&mut linker, |state| state.gfx.as_mut().unwrap())?;
@@ -95,7 +101,9 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     let instance = pre.instantiate(&mut store)?;
     let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
     let call_result = func.call(&mut store, ());
-    store.data().wasi_threads_ctx.as_ref().unwrap().stop();
+    if epoch_interruption {
+        store.data().wasi_threads_ctx.as_ref().unwrap().stop();
+    }
     call_result?;
     Ok(())
 }
