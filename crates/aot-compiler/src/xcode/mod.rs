@@ -10,11 +10,16 @@ mod types;
 #[derive(Subcommand, Debug)]
 pub enum XcodeCommands {
     /// Build macOS app
-    Macos {},
+    Macos {
+        #[arg(long)]
+        config: Option<types::Configuration>,
+    },
     /// Build iOS app
     Ios {
-        #[arg(short, long)]
+        #[arg(long)]
         simulator: bool,
+        #[arg(long)]
+        config: Option<types::Configuration>,
     },
     /// Make Xcode project, but don't build it
     Project {},
@@ -30,7 +35,7 @@ pub fn run(args: XcodeArgs, command: XcodeCommands) -> anyhow::Result<()> {
     let mut wrapp_builder = webrogue_wrapp::WrappHandleBuilder::from_file_path(&args.wrapp_path)?;
     let template_dir = std::path::PathBuf::from("aot_artifacts/apple_xcode/template");
     crate::utils::copy_dir(&template_dir, &args.build_dir)?;
-    let config = wrapp_builder.config()?.clone();
+    let wrapp_config = wrapp_builder.config()?.clone();
 
     {
         std::fs::File::create(args.build_dir.join("aot.xcconfig"))?.write_fmt(format_args!(
@@ -38,9 +43,9 @@ pub fn run(args: XcodeArgs, command: XcodeCommands) -> anyhow::Result<()> {
 WEBROGUE_APPLICATION_ID = {}
 WEBROGUE_APPLICATION_VERSION = {}
 ",
-            config.name,
-            config.id,
-            config
+            wrapp_config.name,
+            wrapp_config.id,
+            wrapp_config
                 .version
                 .ok_or_else(|| anyhow::anyhow!("No 'version' found in WRAPP config"))?
         ))?;
@@ -58,19 +63,17 @@ WEBROGUE_APPLICATION_VERSION = {}
         old_stamp.as_ref().map(|stamp| &stamp.icons),
     )?;
 
-    let configuartion = types::Configuration::Debug;
-
     match command {
-        XcodeCommands::Macos {} => {
+        XcodeCommands::Macos { config } => {
             object::compile(types::Destination::MacOS, &args.wrapp_path, &args.build_dir)?;
             build::build(
                 &args.build_dir,
-                configuartion,
+                config.unwrap_or(types::Configuration::Debug),
                 types::Destination::MacOS,
                 &mut wrapp_builder,
             )?;
         }
-        XcodeCommands::Ios { simulator } => {
+        XcodeCommands::Ios { simulator, config } => {
             let destination = if simulator {
                 types::Destination::IOSSim
             } else {
@@ -79,7 +82,7 @@ WEBROGUE_APPLICATION_VERSION = {}
             object::compile(destination, &args.wrapp_path, &args.build_dir)?;
             build::build(
                 &args.build_dir,
-                configuartion,
+                config.unwrap_or(types::Configuration::Debug),
                 destination,
                 &mut wrapp_builder,
             )?;

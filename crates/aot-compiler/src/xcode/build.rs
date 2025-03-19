@@ -9,6 +9,8 @@ pub fn build(
 ) -> anyhow::Result<()> {
     let configuration_name = match configuration {
         Configuration::Debug => "Debug",
+        Configuration::Release => "Release",
+        Configuration::ReleaseLocal => "ReleaseLocal",
     };
     let scheme_destination_name = match destination {
         Destination::MacOS => "MacOS",
@@ -28,7 +30,7 @@ pub fn build(
                 scheme_destination_name, configuration_name
             ))
             .arg("-configuration")
-            .arg("Debug");
+            .arg(configuration_name);
         match destination {
             Destination::MacOS => {}
             Destination::IOS => {
