@@ -98,7 +98,7 @@ pub fn build(
     set_gradle_property(
         &mut properties_file,
         "webrogueApplicationId",
-        wrapp_builder.config()?.id.clone(),
+        wrapp_builder.config()?.id.clone(), // TODO convert to lowercalse
     )?;
     set_gradle_property(
         &mut properties_file,

@@ -44,7 +44,7 @@ WEBROGUE_APPLICATION_ID = {}
 WEBROGUE_APPLICATION_VERSION = {}
 ",
             wrapp_config.name,
-            wrapp_config.id,
+            wrapp_config.id, // TODO convert last part to PascalCase
             wrapp_config
                 .version
                 .ok_or_else(|| anyhow::anyhow!("No 'version' found in WRAPP config"))?
