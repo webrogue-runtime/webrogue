@@ -11,6 +11,6 @@ write = ["dep:image"]
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
-zstd-seekable = { workspace = true }
+zstd-safe = { workspace = true, features = ["seekable", "std"] }
 image = { workspace = true, optional = true, default-features = false, features = ["png", "rayon"] }
 semver = { workspace = true, default-features = false, features = ["serde"]  }

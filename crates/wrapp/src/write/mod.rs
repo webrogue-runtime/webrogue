@@ -1,23 +1,26 @@
-use std::io::Write;
+use std::io::Write as _;
 
-use anyhow::anyhow;
+fn compress(input: Vec<u8>, output: &mut impl std::io::Write) -> anyhow::Result<()> {
+    let mut zstd_input_buf = zstd_safe::InBuffer::around(&input);
+    let mut out_buffer = vec![0u8; 256 * 1024];
 
-fn compress(input: Vec<u8>, output: &mut impl Write) -> anyhow::Result<()> {
-    let mut out_buffer = [0; 10];
-    let mut written = 0;
+    let mut cstream = zstd_safe::seekable::SeekableCStream::create();
+    cstream.init(5, true, 256 * 1024).unwrap();
 
-    let mut cstream = zstd_seekable::SeekableCStream::new(5, 64 * 1024)?;
-
-    while written < input.len() {
-        let (out_pos, in_pos) = cstream.compress(&mut out_buffer, &input[written..input.len()])?;
-        output.write_all(&out_buffer[..out_pos])?;
-        written += in_pos;
+    while zstd_input_buf.pos() < zstd_input_buf.src.len() {
+        let mut zstd_output_buf = zstd_safe::OutBuffer::around(&mut out_buffer);
+        cstream
+            .compress_stream(&mut zstd_output_buf, &mut zstd_input_buf)
+            .unwrap();
+        output.write_all(&zstd_output_buf.as_slice())?;
     }
-    while let Ok(n) = cstream.end_stream(&mut out_buffer) {
-        if n == 0 {
+    loop {
+        let mut zstd_output_buf = zstd_safe::OutBuffer::around(&mut out_buffer);
+        let result = cstream.end_stream(&mut zstd_output_buf).unwrap();
+        output.write_all(&zstd_output_buf.as_slice())?;
+        if result == 0 {
             break;
         }
-        output.write_all(&out_buffer[..n])?;
     }
     Ok(())
 }
@@ -61,7 +64,7 @@ pub fn make_packed_data(
     for relocation in relocations {
         let data_to_relocate = header[relocation..(relocation + 8)]
             .first_chunk_mut::<8>()
-            .ok_or_else(|| anyhow!("wrapp relocation error"))?;
+            .ok_or_else(|| anyhow::anyhow!("wrapp relocation error"))?;
         let mut offset = u64::from_le_bytes(*data_to_relocate);
         offset += header_len as u64;
         data_to_relocate.copy_from_slice(&offset.to_le_bytes());

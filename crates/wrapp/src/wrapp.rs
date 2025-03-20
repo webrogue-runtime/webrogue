@@ -20,9 +20,9 @@ impl WrappHandle {
     //     wrapp.seekable.get_num_frames()
     // }
 
-    pub(crate) fn decompress_frame(&self, dest: &mut [u8], index: usize) -> usize {
+    pub(crate) fn decompress_frame(&self, dest: &mut [u8], index: usize) {
         let mut wrapp = self.0.lock().unwrap();
-        wrapp.seekable.decompress_frame(dest, index)
+        wrapp.seekable.decompress_frame(dest, index);
     }
 
     pub(crate) fn get_frame_and_relative_offset(

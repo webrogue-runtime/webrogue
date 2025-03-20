@@ -3,12 +3,15 @@ use std::io::{Read, Seek};
 pub trait SeekableProvider<'a>: Send {
     // fn get_num_frames(&self) -> usize;
     fn get_frame_decompressed_size(&self, frame_index: usize) -> usize;
-    fn decompress_frame(&mut self, dest: &mut [u8], index: usize) -> usize;
+    fn decompress_frame(&mut self, dest: &mut [u8], index: usize);
     fn get_frame_and_relative_offset(&mut self, absolute_offset: usize) -> (usize, usize);
 }
 
 pub struct ZSTDSeekableProvider<'a, OverallReader: Read + Seek> {
-    seekable: zstd_seekable::Seekable<'a, crate::offsetted_reader::OffsettedReader<OverallReader>>,
+    seekable: zstd_safe::seekable::AdvancedSeekable<
+        'a,
+        crate::offsetted_reader::OffsettedReader<OverallReader>,
+    >,
 }
 
 unsafe impl<OverallReader: Read + Seek> Send for ZSTDSeekableProvider<'_, OverallReader> {}
@@ -20,29 +23,36 @@ impl<OverallReader: Read + Seek> ZSTDSeekableProvider<'_, OverallReader> {
             offset,
         )?);
         Ok(Self {
-            seekable: zstd_seekable::Seekable::init(offsetted_reader)?,
+            seekable: zstd_safe::seekable::Seekable::create()
+                .init_advanced(offsetted_reader)
+                .map_err(|error_code| {
+                    anyhow::anyhow!("zstd_safe returned error: {}", error_code)
+                })?,
         })
     }
 }
 
 impl<OverallReader: Read + Seek> SeekableProvider<'_> for ZSTDSeekableProvider<'_, OverallReader> {
     // fn get_num_frames(&self) -> usize {
-    //     self.seekable.get_num_frames()
+    //     self.seekable.num_frames() as usize
     // }
 
     fn get_frame_decompressed_size(&self, frame_index: usize) -> usize {
-        self.seekable.get_frame_decompressed_size(frame_index)
+        self.seekable
+            .frame_decompressed_size(frame_index as u32)
+            .unwrap()
     }
 
-    fn decompress_frame(&mut self, dest: &mut [u8], index: usize) -> usize {
-        self.seekable.decompress_frame(dest, index)
+    fn decompress_frame(&mut self, dest: &mut [u8], index: usize) {
+        self.seekable.decompress_frame(dest, index as u32).unwrap();
     }
 
     fn get_frame_and_relative_offset(&mut self, absolute_offset: usize) -> (usize, usize) {
-        let frame = self
+        let frame = self.seekable.offset_to_frame_index(absolute_offset as u64) as usize;
+        let frame_offset = self
             .seekable
-            .seekable_offset_to_frame_index(absolute_offset as u64);
-        let frame_offset = self.seekable.get_frame_decompressed_offset(frame) as usize;
+            .frame_decompressed_offset(frame as u32)
+            .unwrap() as usize;
         (frame, absolute_offset - frame_offset)
     }
 }

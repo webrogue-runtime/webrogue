@@ -34,10 +34,8 @@ impl<'a> Reader<'a> {
         let index_to_write_to = self.buffer.len();
         self.buffer
             .extend(std::iter::repeat(0).take(new_chunk_size));
-        let read = self
-            .seekable
+        self.seekable
             .decompress_frame(&mut self.buffer[index_to_write_to..], self.current_frame);
-        assert_eq!(read, new_chunk_size);
         self.current_frame += 1;
     }
 
