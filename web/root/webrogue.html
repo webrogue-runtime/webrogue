@@ -99,12 +99,12 @@
   </script>
 
   <script src="coi-serviceworker.js"></script>
-  
+
   <div id="script_div" style="position: relative; height: 100vh; display: flex; flex-flow: column;">
     <div style="flex: 0 1 auto;">
       <div class="emscripten">
         <button id="toggleConsoleButton" style="visibility: hidden;"></button>
-        
+
         <label id="statusLabel"></label>
       </div>
     </div>
@@ -113,8 +113,10 @@
         <noscript>
           You need at least JavaScript enabled to run this. What did you expect?
         </noscript>
-        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" style="height: 100%; position: absolute; left: 0px; top: 0px; visibility: hidden;" tabindex=-1></canvas>
-        <code id="output" style="text-align: start;visibility: hidden; height: 100%; position: absolute; left: 0px; top: 0px;"></code>
+        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"
+          style="height: 100%; position: absolute; left: 0px; top: 0px; visibility: hidden;" tabindex=-1></canvas>
+        <code id="output"
+          style="text-align: start;visibility: hidden; height: 100%; position: absolute; left: 0px; top: 0px;"></code>
       </div>
     </div>
   </div>
@@ -175,12 +177,12 @@
       print: (function () {
         return (...args) => {
           var text = args.join(' ');
-            console.log(text);
-            if (output) {
-              output_text += text + "\n";
-              output.innerText = output_text;
-              // output.scrollTop = output.scrollHeight; // focus on bottom
-            }
+          console.log(text);
+          if (output) {
+            output_text += text + "\n";
+            output.innerText = output_text;
+            // output.scrollTop = output.scrollHeight; // focus on bottom
+          }
         };
       })(),
       canvas: (function () {

@@ -76,8 +76,11 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
         epoch_interruption,
     )));
 
-    wasi_common::sync::add_to_linker(&mut linker, |state| state.preview1_ctx.as_mut().unwrap())?;
-    webrogue_gfx::add_to_linker(&mut linker, |state| state.gfx.as_mut().unwrap())?;
+    add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
+        state.preview1_ctx.as_mut().unwrap()
+    })?;
+    // wasi_common::sync::add_to_linker(&mut linker, |state| state.preview1_ctx.as_mut().unwrap())?;
+    add_webrogue_gfx_to_linker(&mut linker, |state| state.gfx.as_mut().unwrap())?;
     crate::threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
         host.wasi_threads_ctx.as_ref().unwrap()
     })?;
@@ -105,5 +108,17 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
         store.data().wasi_threads_ctx.as_ref().unwrap().stop();
     }
     call_result?;
+
     Ok(())
 }
+
+wiggle::wasmtime_integration!({
+    target: webrogue_gfx,
+    witx: ["$CARGO_MANIFEST_DIR/../gfx/witx/webrogue_gfx.witx"],
+});
+
+wiggle::wasmtime_integration!({
+    target: wasi_common::snapshots::preview_1,
+    witx: ["$CARGO_MANIFEST_DIR/../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
+    block_on: *
+});

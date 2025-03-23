@@ -11,6 +11,3 @@ webrogue-web-main = { path = "../main" }
 
 # just to silence compile_error using "fallback" feature
 iana-time-zone = { version = ">=0.1.61", features = ["fallback"] }
-
-[patch.crates-io]
-zstd-seekable = { path = '../../external/zstd-seekable' }

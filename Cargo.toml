@@ -42,9 +42,8 @@ members = [
 
   "android/runtime/common/src/main/rust",
 
-  # "web/crates/backend-web",
-  # "web/crates/backend-web-macro",
-  # "web/crates/main",
+  "web/crates/web-macro",
+  "web/crates/main",
 
   "apple/runtime/ios/rust",
   "apple/runtime/macos/rust",
@@ -67,14 +66,14 @@ webrogue-gfxstream = { path = "crates/gfxstream" }
 webrogue-wrapp = { path = "crates/wrapp" }
 
 # Platform-specific crates
-# webrogue-backend-web = { path = "web/crates/backend-web" }
-# webrogue-backend-web-macro = { path = "web/crates/backend-web-macro" }
+webrogue-web-macro = { path = "web/crates/web-macro" }
 
 # Wasmtime
 wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
 wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
 wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
 wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
+wiggle-generate = { path = "external/wasmtime/crates/wiggle/generate", default-features = false }
 
 image = { version = "0.25", default-features = false }
 imageproc = { version = "0.25", default-features = false }
@@ -92,6 +91,10 @@ cmake = { version = "0.1" }
 target-lexicon = { version = "^0.12", default-features = false }
 semver = { version = "1", default-features = false }
 postcard = { version = "1", default-features = false }
+quote = { version = "1.0", default-features = false }
+syn = { version = "2.0.25", default-features = false }
+proc-macro2 = { version = "1.0", default-features = false }
+witx = { version = "0.9.1", default-features = false }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.2" }

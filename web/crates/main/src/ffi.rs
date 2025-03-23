@@ -11,4 +11,16 @@ extern "C" {
     pub fn wr_rs_em_js_setResultF32(result: f32);
     pub fn wr_rs_em_js_getArgF64(argNum: u32) -> f64;
     pub fn wr_rs_em_js_setResultF64(result: f64);
+
+    pub fn wr_rs_em_js_initWasmModule(
+        context: *mut std::ffi::c_void,
+        json_ptr: *const u8,
+        pointer: *const u8,
+        size: u32,
+    );
+    pub fn wr_rs_em_js_resetWasm();
+    pub fn wr_rs_em_js_execFunc(funcNamePtr: *const u8);
+    pub fn wr_rs_em_js_modErrorSize() -> u32;
+    pub fn wr_rs_em_js_getModError(error: *mut u8);
+    pub fn wr_rs_em_js_makeSharedMemory(inital_pages: u32, max_pages: u32);
 }

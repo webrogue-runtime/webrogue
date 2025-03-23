@@ -4,17 +4,12 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
-[features]
-default = ["gl"]
-gl = ["dep:webrogue-gl", "dep:webrogue-gfx", "dep:webrogue-gfx-ffi"]
-
 [dependencies]
-webrogue-runtime = { workspace = true }
-webrogue-wasi-sync = { workspace = true }
-webrogue-std-stream-os = { workspace = true }
-webrogue-backend-web = { workspace = true }
+webrogue-gfx = { workspace = true }
+wasi-common = { workspace = true, default-features = false, features = ["sync"] }
 anyhow = { workspace = true }
-webrogue-wasi = { workspace = true }
-webrogue-gl = { workspace = true, optional = true }
-webrogue-gfx = { workspace = true, optional = true }
-webrogue-gfx-ffi = { workspace = true, optional = true }
+# cap-std = "3.4.1"
+webrogue-wrapp = { workspace = true }
+wiggle = { workspace = true, default-features = false, features = [] }
+webrogue-web-macro = { workspace = true }
+wasmparser = { workspace = true, default-features = false }

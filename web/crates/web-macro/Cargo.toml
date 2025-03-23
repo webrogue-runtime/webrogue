@@ -1,0 +1,15 @@
+[package]
+name = "webrogue-web-macro"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+quote = { workspace = true }
+syn = { workspace = true, features = ["full"] }
+proc-macro2 = { workspace = true }
+wiggle-generate = { workspace = true }
+witx = { workspace = true }
+
+[lib]
+proc-macro = true

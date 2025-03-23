@@ -11,10 +11,9 @@ cache = ["wasmtime/cache"]
 
 [dependencies]
 webrogue-gfx = { workspace = true }
-
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
 wasmtime = { workspace = true, default-features = false, features = ["runtime", "threads"] }
-wasi-common = { workspace = true, default-features = false, features = ["sync", "wasmtime"] }
-
+wasi-common = { workspace = true, default-features = false, features = ["sync"] }
+wiggle = { workspace = true, default-features = false, features = ["wasmtime"] }
 webrogue-aot-data = { workspace = true, optional = true }

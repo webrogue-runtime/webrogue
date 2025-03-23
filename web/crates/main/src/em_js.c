@@ -1,7 +1,8 @@
 #include "emscripten.h"
+#include "emscripten/threading.h"
 #include <errno.h>
+#include <pthread.h>
 #include <stdint.h>
-#include "emscripten/threading_legacy.h"
 
 // clang-format off
 EM_ASYNC_JS(void, wr_em_js_execFunc, (const char *funcNamePtr), {
@@ -101,7 +102,7 @@ EM_JS(void, wr_em_js_writeDoubleResult, (double result), {
     Module.wasmResult = result;
 });
 EM_JS(uint32_t, wr_em_js_memorySize, (), {
-    return Module.getMemory().length;
+    return Module.getMemory().byteLength;
 });
 EM_JS(void, wr_em_js_makeSharedMemory, (uint32_t inital_pages, uint32_t max_pages), {
     const memory = new WebAssembly.Memory({
@@ -112,9 +113,30 @@ EM_JS(void, wr_em_js_makeSharedMemory, (uint32_t inital_pages, uint32_t max_page
     Module.sharedMemory = memory;
     Module.sharedMemoryBuffer = memory.buffer;
 });
+EM_JS(void, wr_em_js_threadStartListening, (), {
+  console.log("listening messages");
+  let old_onmessage = self.onmessage;
+  console.log(old_onmessage);
+  let new_onmessage = (e) => {
+    console.log("event:", e);
+    old_onmessage(e);
+  };
+  self.onmessage = new_onmessage;
+});
+EM_JS(void, wr_em_js_threadSendMessage, (uint64_t tid), {
+  // let t = PThread.pthreads[tid];
+  console.log("sending message");
+  postMessage("abobus");
+});
+
+EM_ASYNC_JS(void, wr_em_js_threadWait, (), {
+  await new Promise(r => setTimeout(r, 10000));
+});
+
 // clang-format on
 
-extern void wr_rs_em_js_initWasmModule(void* context, const char *jsonPtr, const uint8_t *pointer, uint32_t size) {
+extern void wr_rs_em_js_initWasmModule(void *context, const char *jsonPtr,
+                                       const uint8_t *pointer, uint32_t size) {
   wr_em_js_initWasmModule(context, jsonPtr, pointer, size);
 }
 extern void wr_rs_em_js_resetWasm() { wr_em_js_resetWasm(); }
@@ -171,9 +193,28 @@ extern void wr_rs_em_js_writeModMem(uint32_t modPtr, uint32_t size,
 }
 extern void wr_rs_sleep(uint32_t ms) { emscripten_sleep(ms); }
 extern uint32_t wr_rs_em_js_memorySize() { return wr_em_js_memorySize(); }
-extern void wr_rs_em_js_makeSharedMemory(uint32_t inital_pages, uint32_t max_pages) { 
-  wr_em_js_makeSharedMemory(inital_pages, max_pages); 
+extern void wr_rs_em_js_makeSharedMemory(uint32_t inital_pages,
+                                         uint32_t max_pages) {
+  wr_em_js_makeSharedMemory(inital_pages, max_pages);
 }
+
+extern uint64_t wr_rs_threadStartListening() {
+  wr_em_js_threadStartListening();
+  return (uint64_t)pthread_self();
+}
+// static void _wr_rs_threadSendMessage(uint64_t *tid) {
+//   wr_em_js_threadSendMessage(*tid);
+// }
+extern void wr_rs_threadSendMessage(uint64_t tid) {
+  MAIN_THREAD_EM_ASM(
+      {
+        let t = PThread.pthreads[$0];
+        console.log("sending message to ", t);
+        t.postMessage("abobus");
+      },
+      tid);
+}
+extern void wr_rs_threadWait() { wr_em_js_threadWait(); }
 
 void *errno_location() { return __errno_location(); }
 

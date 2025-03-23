@@ -1,12 +1,4 @@
-pub struct MemoryFactory {}
-
-impl webrogue_runtime::MemoryFactory for MemoryFactory {
-    fn make_memory(&self) -> webrogue_runtime::GuestMemory {
-        return webrogue_runtime::GuestMemory::Dynamic(Box::new(DynamicMemory {}));
-    }
-}
-
-struct DynamicMemory {}
+pub struct DynamicMemory {}
 
 extern "C" {
     fn wr_rs_em_js_readModMem(modPtr: u32, size: u32, hostPtr: *mut u8);
@@ -14,7 +6,7 @@ extern "C" {
     fn wr_rs_em_js_memorySize() -> u32;
 }
 
-impl webrogue_runtime::DynamicGuestMemory for DynamicMemory {
+impl wiggle::DynamicGuestMemory for DynamicMemory {
     fn size(&self) -> usize {
         unsafe { wr_rs_em_js_memorySize() as usize }
     }

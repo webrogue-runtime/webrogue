@@ -1,6 +1,6 @@
 wiggle::from_witx!({
     witx: ["$CARGO_MANIFEST_DIR/witx/webrogue_gfx.witx"],
-    wasmtime: true,
+    wasmtime: false,
 });
 
 use std::sync::Arc;

@@ -2,10 +2,11 @@ use std::io::Write as _;
 
 fn compress(input: Vec<u8>, output: &mut impl std::io::Write) -> anyhow::Result<()> {
     let mut zstd_input_buf = zstd_safe::InBuffer::around(&input);
-    let mut out_buffer = vec![0u8; 256 * 1024];
+    let max_frame_size = 256 * 1024;
+    let mut out_buffer = vec![0u8; max_frame_size];
 
     let mut cstream = zstd_safe::seekable::SeekableCStream::create();
-    cstream.init(5, true, 256 * 1024).unwrap();
+    cstream.init(5, true, max_frame_size as u32).unwrap();
 
     while zstd_input_buf.pos() < zstd_input_buf.src.len() {
         let mut zstd_output_buf = zstd_safe::OutBuffer::around(&mut out_buffer);
