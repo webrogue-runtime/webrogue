@@ -5,6 +5,7 @@ mod ffi;
 mod imports;
 mod memory;
 mod threads;
+use ffi::{ArgGetter, RetSetter};
 
 extern "C" {
     fn wr_rs_sleep(ms: u32);
@@ -24,78 +25,6 @@ extern "C" fn wr_rs_exported_async_fn(func_i: u32, context: *mut std::ffi::c_voi
     let context_ref = unsafe { (context as *mut crate::context::Context).as_mut().unwrap() };
     let func = &context_ref.imports.funcs[func_i as usize];
     func(context_ref.store.as_mut().unwrap());
-}
-
-struct ArgGetter<T> {
-    _phantom_data: std::marker::PhantomData<T>,
-}
-
-impl ArgGetter<u32> {
-    pub fn get(arg_num: u32) -> u32 {
-        unsafe { ffi::wr_rs_em_js_getArgU32(arg_num) }
-    }
-}
-impl ArgGetter<i32> {
-    pub fn get(arg_num: u32) -> i32 {
-        unsafe { ffi::wr_rs_em_js_getArgI32(arg_num) }
-    }
-}
-impl ArgGetter<f32> {
-    pub fn get(arg_num: u32) -> f32 {
-        unsafe { ffi::wr_rs_em_js_getArgF32(arg_num) }
-    }
-}
-impl ArgGetter<u64> {
-    pub fn get(arg_num: u32) -> u64 {
-        unsafe { ffi::wr_rs_em_js_getArgU64(arg_num) }
-    }
-}
-impl ArgGetter<i64> {
-    pub fn get(arg_num: u32) -> i64 {
-        unsafe { ffi::wr_rs_em_js_getArgI64(arg_num) }
-    }
-}
-impl ArgGetter<f64> {
-    pub fn get(arg_num: u32) -> f64 {
-        unsafe { ffi::wr_rs_em_js_getArgF64(arg_num) }
-    }
-}
-
-struct RetSetter<T> {
-    _phantom_data: std::marker::PhantomData<T>,
-}
-impl RetSetter<u32> {
-    pub fn set(val: u32) {
-        unsafe { ffi::wr_rs_em_js_setResultU32(val) }
-    }
-}
-impl RetSetter<i32> {
-    pub fn set(val: i32) {
-        unsafe { ffi::wr_rs_em_js_setResultI32(val) }
-    }
-}
-impl RetSetter<f32> {
-    pub fn set(val: f32) {
-        unsafe { ffi::wr_rs_em_js_setResultF32(val) }
-    }
-}
-impl RetSetter<u64> {
-    pub fn set(val: u64) {
-        unsafe { ffi::wr_rs_em_js_setResultU64(val) }
-    }
-}
-impl RetSetter<i64> {
-    pub fn set(val: i64) {
-        unsafe { ffi::wr_rs_em_js_setResultI64(val) }
-    }
-}
-impl RetSetter<f64> {
-    pub fn set(val: f64) {
-        unsafe { ffi::wr_rs_em_js_setResultF64(val) }
-    }
-}
-impl RetSetter<()> {
-    pub fn set(val: ()) {}
 }
 
 pub struct WrSyncSched {
@@ -128,7 +57,7 @@ fn exec_func(func_name: &str) {
     unsafe {
         let mut func_name = func_name.as_bytes().to_vec();
         func_name.push(0);
-        ffi::wr_rs_em_js_execFunc(func_name.as_ptr());
+        ffi::wr_exec_func(func_name.as_ptr());
     }
 }
 
@@ -204,9 +133,9 @@ pub fn main() -> anyhow::Result<()> {
     }
     unsafe {
         if let Some(limits) = limits {
-            ffi::wr_rs_em_js_makeSharedMemory(limits.0, limits.1);
+            ffi::wr_make_shared_memory(limits.0, limits.1);
         }
-        ffi::wr_rs_em_js_initWasmModule(
+        ffi::wr_init_wasm_module(
             ((&mut context) as *mut context::Context) as *mut std::ffi::c_void,
             jsonptr.as_ptr(),
             wasm_bytes.as_ptr(),

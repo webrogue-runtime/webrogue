@@ -27,7 +27,7 @@ ExternalProject_Add(
     BUILD_ALWAYS ON
 )
 
-set(WRAPP_PATH "${CMAKE_SOURCE_DIR}/../examples/simple/simple.wrapp")
+set(WRAPP_PATH "${CMAKE_SOURCE_DIR}/../examples/raylib/raylib.wrapp")
 
 add_link_options(
     # -sASYNCIFYJSPI
@@ -48,7 +48,7 @@ add_link_options(
     -sWASM_BIGINT
     -sSTACK_SIZE=4194304
     # "-sASYNCIFY_IMPORTS=[wr_em_js_initWasmModule]"
-    "-sJSPI_IMPORTS=[wr_em_js_initWasmModule, wr_em_js_execFunc, wr_em_js_threadWait]"
+    "-sJSPI_IMPORTS=[wr_em_js_execFunc, wr_em_js_threadWait]"
     "-sJSPI_EXPORTS=[wr_rs_exported_async_fn]"
     -sPROXY_TO_PTHREAD
     # ‑sUSE_PTHREADS=1

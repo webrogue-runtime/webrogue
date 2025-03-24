@@ -7,11 +7,18 @@ pub struct ThreadsContext {
 }
 
 extern "C" {
-    fn wr_rs_threadStartListening() -> u64;
-    fn wr_rs_threadSendMessage(tid: u64);
-    fn wr_rs_threadWait();
+    fn wr_thread_start_listening() -> u64;
+    fn wr_thread_send_message(tid: u64);
+    fn wr_rs_thread_wait(context: *mut std::ffi::c_void, json_ptr: *const u8);
 }
-const WASI_ENTRY_POINT: &str = "wasi_thread_start";
+
+fn exec_func(func_name: &str, arg0: i32, arg1: i32) {
+    unsafe {
+        let mut func_name = func_name.as_bytes().to_vec();
+        func_name.push(0);
+        crate::ffi::wr_exec_func_ii(func_name.as_ptr(), arg0, arg1);
+    }
+}
 
 impl ThreadsContext {
     pub fn new(imports: crate::imports::Imports) -> Self {
@@ -39,11 +46,18 @@ impl ThreadsContext {
         builder.spawn(move || {
             let mut context = crate::context::Context::new(imports);
             context.store = Some(store);
-            tx.send(unsafe { wr_rs_threadStartListening() }).unwrap();
-            println!("sleeping");
+            tx.send(unsafe { wr_thread_start_listening() }).unwrap();
+
+            let mut jsonptr = context.imports.to_json().as_bytes().to_vec();
+            jsonptr.push(0);
+
             unsafe {
-                wr_rs_threadWait();
+                wr_rs_thread_wait(
+                    ((&mut context) as *mut crate::context::Context) as *mut std::ffi::c_void,
+                    jsonptr.as_ptr(),
+                );
             }
+            exec_func("wasi_thread_start", wasi_thread_id, thread_start_arg);
             // std::thread::sleep(std::time::Duration::from_secs(1000));
             // if epoch_interruption {
             //     store.epoch_deadline_trap();
@@ -61,7 +75,7 @@ impl ThreadsContext {
             // }
         })?;
         let tid = rx.recv().unwrap();
-        unsafe { wr_rs_threadSendMessage(tid) };
+        unsafe { wr_thread_send_message(tid) };
 
         Ok(wasi_thread_id)
     }
