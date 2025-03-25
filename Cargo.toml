@@ -2,6 +2,7 @@
 name = "webrogue"
 version.workspace = true
 authors.workspace = true
+license.workspace = true
 edition.workspace = true
 default-run = "webrogue-default-runtime"
 
@@ -22,6 +23,7 @@ anyhow = { workspace = true }
 [workspace.package]
 version = "0.1.0"
 authors = ["Artem Borovik"]
+license = "Apache-2.0 WITH LLVM-exception"
 edition = "2021"
 
 [workspace]

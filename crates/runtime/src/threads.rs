@@ -1,4 +1,6 @@
-// This file is shamelessly copied from https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-threads
+// This file is a modified version of
+// https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-threads
+// Original code is under Apache-2.0 WITH LLVM-exception license
 use std::sync::{Arc, Mutex};
 
 use wasmtime::AsContextMut;
@@ -132,7 +134,7 @@ fn stop_all_threads(
     }
 }
 
-// TODO use remove Send constraint from T and exchange between tyhreads using intermediate sendable object
+// TODO use remove Send constraint from T and exchange between threads using intermediate sendable object
 pub fn add_to_linker_sync<T: Clone + Send + 'static>(
     linker: &mut wasmtime::Linker<T>,
     store: &mut wasmtime::Store<T>,

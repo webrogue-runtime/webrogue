@@ -1,4 +1,4 @@
-// This file is shamelessly copied from https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-threads
+// This file has been shamelessly copied from https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-threads
 use std::sync::{Arc, Mutex};
 
 pub struct ThreadsContext {
