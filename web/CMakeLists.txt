@@ -30,13 +30,12 @@ ExternalProject_Add(
 set(WRAPP_PATH "${CMAKE_SOURCE_DIR}/../examples/raylib/raylib.wrapp")
 
 add_link_options(
-    -sJSPI=1
+    -sASYNCIFY=1
     -sFORCE_FILESYSTEM 
     -fno-rtti
     -sWASMFS
     -lopfs.js
     -sOFFSCREEN_FRAMEBUFFER
-    # -sOFFSCREENCANVAS_SUPPORT=1
     -pthread
     -sMIN_WEBGL_VERSION=2
     --embed-file ${WRAPP_PATH}@main.wrapp
@@ -45,7 +44,7 @@ add_link_options(
     -sEXPORTED_FUNCTIONS=_main,_wr_rs_exported_fn,_wr_rs_exported_async_fn
     -sWASM_BIGINT
     -sSTACK_SIZE=2097152
-    "-sJSPI_EXPORTS=[wr_rs_exported_async_fn]"
+    # "-sASYNCIFY_EXPORTS=[wr_rs_exported_async_fn]"
     -sPROXY_TO_PTHREAD
     -sSUPPORT_LONGJMP=0
 )

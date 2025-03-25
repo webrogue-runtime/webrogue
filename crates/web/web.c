@@ -5,15 +5,17 @@
 #include <stdint.h>
 
 // clang-format off
-EM_ASYNC_JS(void, _wr_exec_func, (const char *funcNamePtr), {
-    await WebAssembly.promising(
-        Module.wrInstance.exports[UTF8ToString(funcNamePtr)]
-    )();
+EM_JS(void, _wr_exec_func, (const char *funcNamePtr), {
+    // await WebAssembly.promising(
+    //    Module.wrInstance.exports[UTF8ToString(funcNamePtr)]
+    // )();
+    Module.wrInstance.exports[UTF8ToString(funcNamePtr)]();
 });
-EM_ASYNC_JS(void, _wr_exec_func_ii, (const char *funcNamePtr, int32_t arg0, int32_t arg1), {
-  await WebAssembly.promising(
-      Module.wrInstance.exports[UTF8ToString(funcNamePtr)]
-  )(arg0, arg1);
+EM_JS(void, _wr_exec_func_ii, (const char *funcNamePtr, int32_t arg0, int32_t arg1), {
+  // await WebAssembly.promising(
+  //     Module.wrInstance.exports[UTF8ToString(funcNamePtr)]
+  // )(arg0, arg1);
+  Module.wrInstance.exports[UTF8ToString(funcNamePtr)](arg0, arg1);
 });
 EM_JS(void, _wr_init_wasm_module, (const uint8_t *pointer, int size), {
     let modsWasmData = HEAPU8.subarray(pointer, pointer + size);
@@ -31,7 +33,7 @@ EM_JS(void, _wr_init_wasm_instance, (void *context, const char *jsonPtr), {
             const retType = funcDetails.ret_type;
             const funcId = funcDetails.func_id;
             var func = undefined;
-            if(funcName == "present" || funcName == "poll_oneoff" ) {
+            if(false) { // JSPI
                 func = new WebAssembly.Suspending(async function (...args) {
                     Module.wrArgs = args;
                     await Module._wr_rs_exported_async_fn(funcId, context);
@@ -60,7 +62,7 @@ EM_JS(void, _wr_init_wasm_instance, (void *context, const char *jsonPtr), {
 });
 
 EM_ASYNC_JS(void, _wr_rs_thread_wait, (), {
-  // TODO remove this loop with something smart
+  // TODO replace this loop with something smart
   while(!Module.wrModule) {
     await new Promise(resolve => setTimeout(resolve, 10));
   }
@@ -130,7 +132,7 @@ extern void wr_write_memory(uint32_t modPtr, uint32_t size,
     (new Int8Array(Module.wrGetMemory())).set(new Int8Array(HEAP8.slice($2, $2 + $1)), $0);
   }, modPtr, size, hostPtr);
 }
-extern void wr_rs_sleep(uint32_t ms) { emscripten_sleep(ms); }
+// extern void wr_rs_sleep(uint32_t ms) { emscripten_sleep(ms); }
 
 EM_JS(uint32_t, _wr_memory_size, (), { 
   return Module.wrGetMemory().byteLength; 
