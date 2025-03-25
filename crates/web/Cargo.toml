@@ -1,8 +1,11 @@
 [package]
-name = "webrogue-web-main"
+name = "webrogue-web"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
+
+[lib]
+crate-type = ["staticlib"]
 
 [dependencies]
 webrogue-gfx = { workspace = true }
@@ -13,3 +16,6 @@ webrogue-wrapp = { workspace = true }
 wiggle = { workspace = true, default-features = false, features = [] }
 webrogue-web-macro = { workspace = true }
 wasmparser = { workspace = true, default-features = false }
+
+# just to silence compile_error using "fallback" feature
+iana-time-zone = { version = ">=0.1.61", features = ["fallback"] }

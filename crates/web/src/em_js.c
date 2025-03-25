@@ -198,3 +198,11 @@ extern void wr_rs_thread_wait(void *context, const char *jsonPtr) {
   _wr_rs_thread_wait();
   _wr_init_wasm_instance(context, jsonPtr);
 }
+
+
+EM_JS(void, wr_reset_timer, (), {
+  Module.wr_timer = new Date();
+});
+EM_JS(uint64_t, wr_get_timer, (), {
+  return BigInt(new Date() - Module.wr_timer);
+});

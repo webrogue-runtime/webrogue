@@ -20,8 +20,8 @@ ExternalProject_Add(
     webrogue_web
     DOWNLOAD_COMMAND ""
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND cargo +nightly build -Zbuild-std=std,panic_abort --target=wasm32-unknown-emscripten #--release
-    BINARY_DIR "${CMAKE_SOURCE_DIR}/crates/web"
+    BUILD_COMMAND cargo +nightly build --manifest-path=../crates/web/Cargo.toml "--target-dir=${CMAKE_SOURCE_DIR}/target" -Zbuild-std=std,panic_abort --target=wasm32-unknown-emscripten --release
+    BINARY_DIR "${CMAKE_SOURCE_DIR}"
     SOURCE_DIR
     INSTALL_COMMAND ""  
     BUILD_ALWAYS ON
@@ -30,8 +30,6 @@ ExternalProject_Add(
 set(WRAPP_PATH "${CMAKE_SOURCE_DIR}/../examples/raylib/raylib.wrapp")
 
 add_link_options(
-    # -sASYNCIFYJSPI
-    # -sASYNCIFY_STACK_SIZE=65535
     -sJSPI=1
     -sFORCE_FILESYSTEM 
     -fno-rtti
@@ -46,19 +44,16 @@ add_link_options(
     -sPTHREAD_POOL_SIZE=1
     -sEXPORTED_FUNCTIONS=_main,_wr_rs_exported_fn,_wr_rs_exported_async_fn
     -sWASM_BIGINT
-    -sSTACK_SIZE=4194304
-    # "-sASYNCIFY_IMPORTS=[wr_em_js_initWasmModule]"
-    "-sJSPI_IMPORTS=[wr_em_js_execFunc, wr_em_js_threadWait]"
+    -sSTACK_SIZE=2097152
     "-sJSPI_EXPORTS=[wr_rs_exported_async_fn]"
     -sPROXY_TO_PTHREAD
-    # ‑sUSE_PTHREADS=1
     -sSUPPORT_LONGJMP=0
 )
 
 add_executable(
     webrogue
     main.c
-    crates/main/src/em_js.c
+    ../crates/web/src/em_js.c
     ../crates/gfx-fallback/webrogue_gfx_ffi_sdl3.c
     ../crates/gfx-fallback/webrogue_gfx_ffi_sdl3_events.c
 )
@@ -68,7 +63,7 @@ add_custom_target(example_wrapp DEPENDS ${WRAPP_PATH})
 add_dependencies(webrogue webrogue_web example_wrapp)
 target_link_libraries(
     webrogue 
-    "${CMAKE_SOURCE_DIR}/crates/web/target/wasm32-unknown-emscripten/debug/libwebrogue_web.a"
+    "${CMAKE_SOURCE_DIR}/target/wasm32-unknown-emscripten/release/libwebrogue_web.a"
     SDL3-static
     webrogue_gfxstream
 )

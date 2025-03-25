@@ -37,20 +37,18 @@ members = [
   "crates/gfx-fallback",
   "crates/gfxstream",
   "crates/runtime",
+  "crates/web-macro",
+  "crates/web",
   "crates/wrapp",
   "crates/wrapp-cli",
 
   "android/runtime/common/src/main/rust",
-
-  "web/crates/web-macro",
-  "web/crates/main",
 
   "apple/runtime/ios/rust",
   "apple/runtime/macos/rust",
 ]
 exclude = [
   "external/wasmtime",
-  "web/crates/web",
 ]
 
 [workspace.dependencies]
@@ -66,7 +64,7 @@ webrogue-gfxstream = { path = "crates/gfxstream" }
 webrogue-wrapp = { path = "crates/wrapp" }
 
 # Platform-specific crates
-webrogue-web-macro = { path = "web/crates/web-macro" }
+webrogue-web-macro = { path = "crates/web-macro" }
 
 # Wasmtime
 wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }

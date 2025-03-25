@@ -150,24 +150,23 @@ pub fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-// webrogue_web_macro::wr_web_integration!({
-//     target: webrogue_gfx,
-//     witx: ["$CARGO_MANIFEST_DIR/../../../crates/gfx/witx/webrogue_gfx.witx"]
-// });
-
-// webrogue_web_macro::wr_web_integration!({
-//     target: wasi_common::snapshots::preview_1,
-//     witx: ["$CARGO_MANIFEST_DIR/../../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
-//     block_on: *
-// });
-
 webrogue_web_macro::wr_web_integration!({
     target: webrogue_gfx,
-    witx: ["$CARGO_MANIFEST_DIR/../../../crates/gfx/witx/webrogue_gfx.witx"]
+    witx: ["$CARGO_MANIFEST_DIR/../gfx/witx/webrogue_gfx.witx"]
 });
 
 webrogue_web_macro::wr_web_integration!({
     target: wasi_common::snapshots::preview_1,
-    witx: ["$CARGO_MANIFEST_DIR/../../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
+    witx: ["$CARGO_MANIFEST_DIR/../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
     block_on: *
 });
+
+#[no_mangle]
+extern "C" fn rust_main() {
+    match main() {
+        Err(e) => {
+            panic!("{}", e.to_string())
+        }
+        Ok(_) => {}
+    }
+}
