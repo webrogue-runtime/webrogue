@@ -60,8 +60,9 @@ EM_JS(void, _wr_init_wasm_instance, (void *context, const char *jsonPtr), {
 });
 
 EM_ASYNC_JS(void, _wr_rs_thread_wait, (), {
+  // TODO remove this loop with something smart
   while(!Module.wrModule) {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 10));
   }
 });
 

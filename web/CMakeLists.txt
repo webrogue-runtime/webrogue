@@ -53,7 +53,7 @@ add_link_options(
 add_executable(
     webrogue
     main.c
-    ../crates/web/src/em_js.c
+    ../crates/web/web.c
     ../crates/gfx-fallback/webrogue_gfx_ffi_sdl3.c
     ../crates/gfx-fallback/webrogue_gfx_ffi_sdl3_events.c
 )
