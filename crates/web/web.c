@@ -17,9 +17,9 @@ EM_JS(void, _wr_exec_func_ii, (const char *funcNamePtr, int32_t arg0, int32_t ar
   // )(arg0, arg1);
   Module.wrInstance.exports[UTF8ToString(funcNamePtr)](arg0, arg1);
 });
-EM_JS(void, _wr_init_wasm_module, (const uint8_t *pointer, int size), {
+EM_ASYNC_JS(void, _wr_init_wasm_module, (const uint8_t *pointer, int size), {
     let modsWasmData = HEAPU8.subarray(pointer, pointer + size);
-    Module.wrModule = new WebAssembly.Module(modsWasmData);
+    Module.wrModule = await WebAssembly.compile(modsWasmData);
 });
 
 EM_JS(void, _wr_init_wasm_instance, (void *context, const char *jsonPtr), {

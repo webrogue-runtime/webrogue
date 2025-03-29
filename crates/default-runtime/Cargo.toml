@@ -8,6 +8,7 @@ edition.workspace = true
 [features]
 cranelift = ["webrogue-runtime/cranelift"]
 aot = ["webrogue-runtime/aot", "dep:webrogue-aot-data"]
+cache = ["webrogue-runtime/cache"]
 
 [dependencies]
 webrogue-runtime = { workspace = true }

@@ -14,6 +14,7 @@ wasi-common = { workspace = true, default-features = false, features = ["sync"] 
 anyhow = { workspace = true }
 # cap-std = "3.4.1"
 webrogue-wrapp = { workspace = true }
+webrogue-wasip1 = { workspace = true }
 wiggle = { workspace = true, default-features = false, features = [] }
 webrogue-web-macro = { workspace = true }
 wasmparser = { workspace = true, default-features = false }

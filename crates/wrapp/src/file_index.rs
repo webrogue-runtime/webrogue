@@ -6,6 +6,7 @@ pub struct FilePosition {
     pub size: usize,
 }
 
+#[derive(Clone)]
 pub struct FileIndex {
     pub file_positions: std::collections::BTreeMap<String, FilePosition>,
 }

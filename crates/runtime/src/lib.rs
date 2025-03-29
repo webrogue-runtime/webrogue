@@ -35,10 +35,13 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     #[cfg(all(feature = "cache", feature = "aot"))]
     compile_error!("Cache feature can't be combined with AOT");
     // config.async_support(true);
-    // config.debug_info(true);
-    // config.cranelift_opt_level(wasmtime::OptLevel::None);
+    #[cfg(feature = "cranelift")]
+    {
+        config.debug_info(true);
+        config.cranelift_opt_level(wasmtime::OptLevel::None);
+        config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+    }
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
-    // config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
     #[cfg(feature = "aot")]
     let epoch_interruption = false;
     #[cfg(feature = "cranelift")]
@@ -48,8 +51,8 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
     config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
     let engine = wasmtime::Engine::new(&config)?;
     let mut file = wrapp
-        .open_file("main.wasm")
-        .ok_or(anyhow::anyhow!("main.wasm not found"))?;
+        .open_file("/app/main.wasm")
+        .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
     let mut wasm_binary = Vec::new();
     file.read_to_end(&mut wasm_binary)?;
     drop(file);
@@ -91,9 +94,7 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
         engine.weak(),
     )?;
 
-    let mut builder = wasi_common::sync::WasiCtxBuilder::new();
-    builder.inherit_stdio();
-    store.data_mut().preview1_ctx = Some(builder.build());
+    store.data_mut().preview1_ctx = Some(webrogue_wasip1::make_ctx(wrapp)?);
 
     store.data_mut().gfx = Some(webrogue_gfx::GFXInterface::new(Arc::new(
         webrogue_gfx::GFXSystem::new(),

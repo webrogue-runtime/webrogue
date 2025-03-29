@@ -41,6 +41,7 @@ impl Clone for GFXInterface {
 
 impl webrogue_gfx::WebrogueGfx for GFXInterface {
     fn make_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
+        if self.window.is_some() { return }
         self.window = Some(self.gfx.make_window());
     }
 

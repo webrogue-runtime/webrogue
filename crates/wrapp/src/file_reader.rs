@@ -58,8 +58,7 @@ impl std::io::Seek for FileReader {
         };
         let absolute_target_offset = self.file_position.absolute_offset + target_offset;
         if absolute_target_offset < self.file_position.absolute_offset
-            || absolute_target_offset
-                >= self.file_position.absolute_offset + self.file_position.size
+            || absolute_target_offset > self.file_position.absolute_offset + self.file_position.size
         {
             return std::io::Result::Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,

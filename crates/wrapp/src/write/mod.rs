@@ -30,17 +30,24 @@ pub fn make_packed_data(
     dir_path: std::path::PathBuf,
     config: crate::config::Config,
 ) -> anyhow::Result<Vec<u8>> {
-    let mut filenames_to_archive: Vec<String> = Vec::new();
+    let mut filenames_to_archive: Vec<(std::path::PathBuf, String)> = Vec::new();
 
-    filenames_to_archive.push("main.wasm".to_owned());
+    filenames_to_archive.push((dir_path.join("main.wasm"), "/app/main.wasm".to_owned()));
     if let Some(filesystem) = config.clone().filesystem {
         for resource in filesystem.resources {
-            filenames_to_archive.push(resource.real_path.ok_or_else(|| {
-                anyhow::anyhow!(
-                    "real_path property not specified for mapped_path: {}",
-                    resource.mapped_path
-                )
-            })?);
+            let mut real_path = dir_path.clone();
+            for part in resource.real_path.split("/") {
+                real_path.push(part);
+            }
+            if real_path.is_file() {
+                filenames_to_archive.push((real_path, resource.mapped_path));
+            } else if real_path.is_dir() {
+                visit_dir(
+                    &mut filenames_to_archive,
+                    resource.mapped_path.clone(),
+                    real_path,
+                )?;
+            }
         }
     }
 
@@ -49,14 +56,14 @@ pub fn make_packed_data(
     let mut relocations: Vec<usize> = Vec::new();
 
     header.write_all(&(filenames_to_archive.len() as u64).to_le_bytes())?;
-    for file_rel_path in filenames_to_archive {
-        let encoded_file_path = file_rel_path.as_bytes();
+    for (real_path, mapped_path) in filenames_to_archive {
+        let encoded_file_path = mapped_path.as_bytes();
         header.write_all(&(encoded_file_path.len() as u64).to_le_bytes())?;
         header.write_all(encoded_file_path)?;
         relocations.push(header.len());
         let offset = body.len();
         header.write_all(&(offset as u64).to_le_bytes())?;
-        let mut file = std::fs::File::open(dir_path.join(file_rel_path))?;
+        let mut file = std::fs::File::open(real_path)?;
         std::io::copy(&mut file, &mut body)?;
         let size = body.len() - offset;
         header.write_all(&(size as u64).to_le_bytes())?;
@@ -73,6 +80,26 @@ pub fn make_packed_data(
     let mut packed_data = header;
     packed_data.append(&mut body);
     Ok(packed_data)
+}
+
+fn visit_dir(
+    filenames_to_archive: &mut Vec<(std::path::PathBuf, String)>,
+    mapped_path: String,
+    real_path: std::path::PathBuf,
+) -> anyhow::Result<()> {
+    for entry in real_path.read_dir()? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        let name = entry.file_name().to_str().unwrap().to_owned();
+        let new_mapped_path = mapped_path.clone() + "/" + &name;
+        let new_real_path = real_path.join(&name);
+        if ty.is_file() {
+            filenames_to_archive.push((new_real_path, new_mapped_path));
+        } else if ty.is_dir() {
+            visit_dir(filenames_to_archive, new_mapped_path, new_real_path)?;
+        }
+    }
+    Ok(())
 }
 
 pub fn archive(

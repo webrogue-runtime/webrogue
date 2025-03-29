@@ -27,8 +27,8 @@ pub fn compile_wrapp_to_object(
         webrogue_wrapp::WrappHandleBuilder::from_file_path(wrapp_file_path)?.build()?;
 
     let mut file = wrapp_handle
-        .open_file("main.wasm")
-        .ok_or(anyhow::anyhow!("main.wasm not found"))?;
+        .open_file("/app/main.wasm")
+        .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
     let mut wasm_binary = Vec::new();
     std::io::Read::read_to_end(&mut file, &mut wasm_binary)?;
     drop(file);
@@ -66,7 +66,7 @@ pub fn compile_wrapp_to_object(
 
     let mut obj = object::write::Object::new(target.format(), target.arch(), target.endianness());
 
-    obj.add_file_symbol(b"main.wasm".into());
+    obj.add_file_symbol(b"/app/main.wasm".into());
     let mut main_data = Vec::new();
     main_data.extend_from_slice(&(cwasm.len() as u64).to_le_bytes());
     main_data.extend_from_slice(&(cwasm_info.max_alignment).to_le_bytes());

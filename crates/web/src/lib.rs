@@ -93,20 +93,17 @@ pub fn main() -> anyhow::Result<()> {
 
     let mut wasm_bytes = Vec::new();
     wrapp_handle
-        .open_file("main.wasm")
+        .open_file("/app/main.wasm")
         .unwrap()
         .read_to_end(&mut wasm_bytes)?;
 
     let mut jsonptr = imports.to_json().as_bytes().to_vec();
     jsonptr.push(0);
     let mut context = context::Context::new(imports);
-    let mut builder = wasi_common::sync::WasiCtxBuilder::new();
-    builder.inherit_stdio();
-    let wasi_ctx = builder.build();
     let threads = threads::ThreadsContext::new(context.imports.clone());
     context.store = Some(context::Store {
         gfx: webrogue_gfx::GFXInterface::new(Arc::new(webrogue_gfx::GFXSystem::new())),
-        preview1_ctx: wasi_ctx,
+        preview1_ctx: webrogue_wasip1::make_ctx(wrapp_handle)?,
         threads: Arc::new(threads),
     });
     let mut limits = None;

@@ -38,6 +38,23 @@
       background-color: black;
       width: 100%;
       height: 100%;
+      position: absolute;
+      left: 0px;
+      top: 0px;
+      visibility: hidden;
+    }
+
+    div.stdout_container {
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      left: 0px;
+      top: 0px;
+      overflow: auto;
+    }
+
+    code.stdout {
+      text-align: start;
     }
 
     #emscripten_logo {
@@ -113,10 +130,10 @@
         <noscript>
           You need at least JavaScript enabled to run this. What did you expect?
         </noscript>
-        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"
-          style="height: 100%; position: absolute; left: 0px; top: 0px; visibility: hidden;" tabindex=-1></canvas>
-        <code id="output"
-          style="text-align: start;visibility: hidden; height: 100%; position: absolute; left: 0px; top: 0px;"></code>
+        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+        <div class="stdout_container">
+          <code id="output" class="stdout"></code>
+        </div>
       </div>
     </div>
   </div>
@@ -146,10 +163,11 @@
 
     var canvas = document.getElementById('canvas');
     var output = document.getElementById('output');
+    var outputContainer = document.getElementById('output').parentElement;
 
     function updateConsoleVisibility() {
       canvas.style.visibility = consoleVisible ? "hidden" : "visible";
-      output.style.visibility = consoleVisible ? "visible" : "hidden";
+      outputContainer.style.visibility = consoleVisible ? "visible" : "hidden";
       toggleConsoleButton.innerText = consoleVisible ? "show canvas" : "show console";
     };
 

@@ -15,12 +15,23 @@ add_compile_options(
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/SDL" SDL3)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../crates/gfxstream" gfxstream)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CARGO_PROFILE_FLAG)
+    set(CARGO_PROFILE_DIR debug)
+    set(ASYNCIFY_FLAG -sJSPI=1)
+else()
+    set(CARGO_PROFILE_FLAG --release)
+    set(CARGO_PROFILE_DIR release)
+    set(ASYNCIFY_FLAG -sASYNCIFY=1)
+endif()
+
+
 include(ExternalProject)
 ExternalProject_Add(
     webrogue_web
     DOWNLOAD_COMMAND ""
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND cargo +nightly build --manifest-path=../crates/web/Cargo.toml "--target-dir=${CMAKE_SOURCE_DIR}/target" -Zbuild-std=std,panic_abort --target=wasm32-unknown-emscripten --release
+    BUILD_COMMAND cargo +nightly build --manifest-path=../crates/web/Cargo.toml "--target-dir=${CMAKE_SOURCE_DIR}/target" -Zbuild-std=std,panic_abort --target=wasm32-unknown-emscripten ${CARGO_PROFILE_FLAG}
     BINARY_DIR "${CMAKE_SOURCE_DIR}"
     SOURCE_DIR
     INSTALL_COMMAND ""  
@@ -30,7 +41,7 @@ ExternalProject_Add(
 set(WRAPP_PATH "${CMAKE_SOURCE_DIR}/../examples/raylib/raylib.wrapp")
 
 add_link_options(
-    -sASYNCIFY=1
+    ${ASYNCIFY_FLAG}
     -sFORCE_FILESYSTEM 
     -fno-rtti
     -sWASMFS
@@ -38,7 +49,11 @@ add_link_options(
     -sOFFSCREEN_FRAMEBUFFER
     -pthread
     -sMIN_WEBGL_VERSION=2
-    --embed-file ${WRAPP_PATH}@main.wrapp
+    # -sFULL_ES3
+    # -sGL_DEBUG
+    # -sGL_ASSERTIONS
+    # -sTRACE_WEBGL_CALLS
+    --preload-file ${WRAPP_PATH}@main.wrapp
     -sALLOW_MEMORY_GROWTH
     -sPTHREAD_POOL_SIZE=1
     -sEXPORTED_FUNCTIONS=_main,_wr_rs_exported_fn,_wr_rs_exported_async_fn
@@ -62,7 +77,7 @@ add_custom_target(example_wrapp DEPENDS ${WRAPP_PATH})
 add_dependencies(webrogue webrogue_web example_wrapp)
 target_link_libraries(
     webrogue 
-    "${CMAKE_SOURCE_DIR}/target/wasm32-unknown-emscripten/release/libwebrogue_web.a"
+    "${CMAKE_SOURCE_DIR}/target/wasm32-unknown-emscripten/${CARGO_PROFILE_DIR}/libwebrogue_web.a"
     SDL3-static
     webrogue_gfxstream
 )

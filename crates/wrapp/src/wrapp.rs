@@ -10,6 +10,10 @@ pub struct Wrapp {
 pub struct WrappHandle(Arc<Mutex<Wrapp>>);
 
 impl WrappHandle {
+    pub fn file_index(&self) -> crate::file_index::FileIndex {
+        self.0.lock().unwrap().file_index.clone()
+    }
+
     pub(crate) fn get_frame_decompressed_size(&self, frame_index: usize) -> usize {
         let wrapp = self.0.lock().unwrap();
         wrapp.seekable.get_frame_decompressed_size(frame_index)
@@ -45,6 +49,10 @@ impl WrappHandle {
         let position = wrapp.file_index.file_positions.get(path).copied();
         drop(wrapp);
         position.map(|position| crate::FileReader::new(self.clone(), position))
+    }
+
+    pub fn open_pos(&self, position: crate::file_index::FilePosition) -> crate::FileReader {
+        crate::FileReader::new(self.clone(), position)
     }
 }
 

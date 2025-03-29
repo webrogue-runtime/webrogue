@@ -1,8 +1,8 @@
 #include "SDL.h"
 #include "SDL_video.h"
 #include "webrogue_gfx_ffi.h"
-#include <stdlib.h>
 #include "webrogue_gfx_ffi_sdl2_events.h"
+#include <stdlib.h>
 
 typedef struct System {
   webrogue_event_out_buf event_buf;
@@ -17,7 +17,7 @@ void *webrogue_gfx_ffi_create_system(void) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
   return system_ptr;
@@ -35,9 +35,8 @@ void *webrogue_gfx_ffi_create_window(void *raw_system_ptr) {
   Window *window_ptr = malloc(sizeof(Window));
 
   window_ptr->sdl_window = SDL_CreateWindow(
-    "webrogue", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 450,
-    SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
-  );
+      "webrogue", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 450,
+      SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   return window_ptr;
 }
 void webrogue_gfx_ffi_destroy_window(void *raw_window_ptr) {
@@ -72,14 +71,16 @@ static void *get_proc_address(char *procname, void *userdata) {
   (void)userdata;
   return SDL_GL_GetProcAddress(procname);
 }
-void webrogue_gfx_ffi_gl_init(void *raw_window_ptr, void** out_func, void** out_userdata) {
+void webrogue_gfx_ffi_gl_init(void *raw_window_ptr, void **out_func,
+                              void **out_userdata) {
   Window *window_ptr = (Window *)raw_window_ptr;
   SDL_GL_CreateContext(window_ptr->sdl_window);
   *out_func = get_proc_address;
   *out_userdata = NULL;
 }
 
-void webrogue_gfx_ffi_poll(void *raw_system_ptr, void** out_buf, uint32_t* out_len) {
+void webrogue_gfx_ffi_poll(void *raw_system_ptr, void **out_buf,
+                           uint32_t *out_len) {
   System *system_ptr = (System *)raw_system_ptr;
   webrogue_event_out_buf *event_buf = &(system_ptr->event_buf);
   webrogue_gfx_ffi_sdl2_poll(event_buf, out_buf, out_len);
