@@ -61,7 +61,7 @@ fn exec_func(func_name: &str) {
     }
 }
 
-pub fn main() -> anyhow::Result<()> {
+pub fn main(wrapp_data: Option<&'static [u8]>) -> anyhow::Result<()> {
     std::env::set_var("RUST_BACKTRACE", "full");
 
     let mut imports = imports::Imports::new();
@@ -87,10 +87,19 @@ pub fn main() -> anyhow::Result<()> {
         );
     });
 
-    let mut builder =
-        webrogue_wrapp::WrappHandleBuilder::from_file_path(std::path::PathBuf::from("main.wrapp"))?;
-    let config = builder.config()?.clone();
-    let wrapp_handle = builder.build()?;
+    let (config, wrapp_handle) = if let Some(wrapp_data) = wrapp_data {
+        let mut builder =
+            webrogue_wrapp::WrappHandleBuilder::from_static_slice(wrapp_data)?;
+        let config = builder.config()?.clone();
+        let wrapp_handle = builder.build()?;
+        (config, wrapp_handle) 
+    } else {
+        let mut builder =
+            webrogue_wrapp::WrappHandleBuilder::from_file_path(std::path::PathBuf::from("main.wrapp"))?;
+        let config = builder.config()?.clone();
+        let wrapp_handle = builder.build()?;
+        (config, wrapp_handle) 
+    };
 
     let persistent_path = std::path::PathBuf::from("/data")
         .join(".webrogue")
@@ -166,7 +175,17 @@ webrogue_web_macro::wr_web_integration!({
 
 #[no_mangle]
 extern "C" fn rust_main() {
-    match main() {
+    match main(None) {
+        Err(e) => {
+            panic!("{}", e.to_string())
+        }
+        Ok(_) => {}
+    }
+}
+
+#[no_mangle]
+extern "C" fn rust_main_slice(size: u32, data: *const u8) {
+    match main(Some(unsafe {std::slice::from_raw_parts(data, size as usize) })) {
         Err(e) => {
             panic!("{}", e.to_string())
         }

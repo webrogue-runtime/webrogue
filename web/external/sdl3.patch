@@ -1,5 +1,5 @@
 diff --git a/src/video/emscripten/SDL_emscriptenopengles.c b/src/video/emscripten/SDL_emscriptenopengles.c
-index a5140b8c5..31f96eef2 100644
+index a5140b8c5..3d358eb51 100644
 --- a/src/video/emscripten/SDL_emscriptenopengles.c
 +++ b/src/video/emscripten/SDL_emscriptenopengles.c
 @@ -84,6 +84,8 @@ SDL_GLContext Emscripten_GLES_CreateContext(SDL_VideoDevice *_this, SDL_Window *
@@ -11,7 +11,7 @@ index a5140b8c5..31f96eef2 100644
  
      if (_this->gl_config.major_version == 3)
          attribs.majorVersion = 2; // WebGL 2.0 ~= GLES 3.0
-@@ -131,10 +133,8 @@ bool Emscripten_GLES_DestroyContext(SDL_VideoDevice *_this, SDL_GLContext contex
+@@ -131,10 +133,7 @@ bool Emscripten_GLES_DestroyContext(SDL_VideoDevice *_this, SDL_GLContext contex
  
  bool Emscripten_GLES_SwapWindow(SDL_VideoDevice *_this, SDL_Window *window)
  {
@@ -20,7 +20,6 @@ index a5140b8c5..31f96eef2 100644
 -        emscripten_sleep(0);
 -    }
 +    emscripten_webgl_commit_frame();
-+    emscripten_sleep(0);
      return true;
  }
  
