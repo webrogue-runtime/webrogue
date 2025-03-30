@@ -28,7 +28,11 @@ impl wasmtime::CustomCodeMemory for StaticCodeMemory {
     }
 }
 
-pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
+pub fn run(
+    wrapp: webrogue_wrapp::WrappHandle,
+    wrapp_config: &webrogue_wrapp::config::Config,
+    persistent_dir: &std::path::PathBuf,
+) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
     #[cfg(feature = "cache")]
     config.cache_config_load_default()?;
@@ -94,7 +98,11 @@ pub fn run(wrapp: webrogue_wrapp::WrappHandle) -> anyhow::Result<()> {
         engine.weak(),
     )?;
 
-    store.data_mut().preview1_ctx = Some(webrogue_wasip1::make_ctx(wrapp)?);
+    store.data_mut().preview1_ctx = Some(webrogue_wasip1::make_ctx(
+        wrapp,
+        wrapp_config,
+        persistent_dir,
+    )?);
 
     store.data_mut().gfx = Some(webrogue_gfx::GFXInterface::new(Arc::new(
         webrogue_gfx::GFXSystem::new(),

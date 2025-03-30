@@ -34,19 +34,21 @@ pub fn make_packed_data(
 
     filenames_to_archive.push((dir_path.join("main.wasm"), "/app/main.wasm".to_owned()));
     if let Some(filesystem) = config.clone().filesystem {
-        for resource in filesystem.resources {
-            let mut real_path = dir_path.clone();
-            for part in resource.real_path.split("/") {
-                real_path.push(part);
-            }
-            if real_path.is_file() {
-                filenames_to_archive.push((real_path, resource.mapped_path));
-            } else if real_path.is_dir() {
-                visit_dir(
-                    &mut filenames_to_archive,
-                    resource.mapped_path.clone(),
-                    real_path,
-                )?;
+        if let Some(resources) = filesystem.resources {
+            for resource in resources {
+                let mut real_path = dir_path.clone();
+                for part in resource.real_path.split("/") {
+                    real_path.push(part);
+                }
+                if real_path.is_file() {
+                    filenames_to_archive.push((real_path, resource.mapped_path));
+                } else if real_path.is_dir() {
+                    visit_dir(
+                        &mut filenames_to_archive,
+                        resource.mapped_path.clone(),
+                        real_path,
+                    )?;
+                }
             }
         }
     }

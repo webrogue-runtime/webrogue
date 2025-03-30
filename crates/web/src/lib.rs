@@ -87,9 +87,15 @@ pub fn main() -> anyhow::Result<()> {
         );
     });
 
-    let wrapp_handle =
-        webrogue_wrapp::WrappHandleBuilder::from_file_path(std::path::PathBuf::from("main.wrapp"))?
-            .build()?;
+    let mut builder =
+        webrogue_wrapp::WrappHandleBuilder::from_file_path(std::path::PathBuf::from("main.wrapp"))?;
+    let config = builder.config()?.clone();
+    let wrapp_handle = builder.build()?;
+
+    let persistent_path = std::path::PathBuf::from("/data")
+        .join(".webrogue")
+        .join(&config.id)
+        .join("persistent");
 
     let mut wasm_bytes = Vec::new();
     wrapp_handle
@@ -103,7 +109,7 @@ pub fn main() -> anyhow::Result<()> {
     let threads = threads::ThreadsContext::new(context.imports.clone());
     context.store = Some(context::Store {
         gfx: webrogue_gfx::GFXInterface::new(Arc::new(webrogue_gfx::GFXSystem::new())),
-        preview1_ctx: webrogue_wasip1::make_ctx(wrapp_handle)?,
+        preview1_ctx: webrogue_wasip1::make_ctx(wrapp_handle, &config, &persistent_path)?,
         threads: Arc::new(threads),
     });
     let mut limits = None;

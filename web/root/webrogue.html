@@ -168,7 +168,7 @@
     function updateConsoleVisibility() {
       canvas.style.visibility = consoleVisible ? "hidden" : "visible";
       outputContainer.style.visibility = consoleVisible ? "visible" : "hidden";
-      toggleConsoleButton.innerText = consoleVisible ? "show canvas" : "show console";
+      toggleConsoleButton.innerText = consoleVisible ? "Show canvas" : "Show console";
     };
 
     toggleConsoleButton.onclick = () => {
@@ -181,16 +181,7 @@
     var output_text = ""
 
     var Module = {
-      preRun: [
-        function () {
-          // FS.mkdir('/webrogue');
-          // FS.mount(IDBFS, { root: '/' }, '/webrogue');
-          // FS.chdir('/webrogue');
-          // FS.syncfs(true, function (err) {
-          //   // handle callback
-          // });
-        }
-      ],
+      preRun: [],
       postRun: [],
       print: (function () {
         return (...args) => {

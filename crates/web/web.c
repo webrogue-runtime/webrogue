@@ -1,5 +1,4 @@
 #include "emscripten.h"
-#include "emscripten/threading.h"
 #include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -137,7 +136,9 @@ extern void wr_write_memory(uint32_t modPtr, uint32_t size,
 EM_JS(uint32_t, _wr_memory_size, (), { 
   return Module.wrGetMemory().byteLength; 
 });
-extern uint32_t wr_memory_size() { return _wr_memory_size(); }
+extern uint32_t wr_memory_size() {
+  return wr_memory_size();
+}
 
 extern void wr_make_shared_memory(uint32_t inital_pages, uint32_t max_pages) {
   EM_ASM({
@@ -203,9 +204,12 @@ extern void wr_rs_thread_wait(void *context, const char *jsonPtr) {
 }
 
 
-EM_JS(void, wr_reset_timer, (), {
+EM_JS(void, _wr_reset_timer, (), {
   Module.wr_timer = new Date();
 });
+extern void wr_reset_timer() {
+  _wr_reset_timer();
+}
 EM_JS(uint64_t, wr_get_timer, (), {
   return BigInt(new Date() - Module.wr_timer);
 });

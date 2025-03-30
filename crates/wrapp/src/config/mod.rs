@@ -8,13 +8,12 @@ pub struct Config {
     pub icons: Option<icons::Icons>,
     pub version: Option<semver::Version>,
 }
-
 impl Config {
     pub fn strip(self) -> Self {
         Self {
             name: self.name,
             id: self.id,
-            filesystem: None,
+            filesystem: self.filesystem.map(|filesystem| filesystem.strip()),
             icons: self.icons.map(|icons| icons.strip()),
             version: self.version,
         }
@@ -23,10 +22,36 @@ impl Config {
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct FilesystemConfig {
-    pub resources: Vec<FilesystemResourceConfig>,
+    pub resources: Option<Vec<FilesystemResourceConfig>>,
+    pub persistent: Option<Vec<FilesystemPersistentConfig>>,
 }
+impl FilesystemConfig {
+    pub fn strip(self) -> Self {
+        Self {
+            resources: None,
+            persistent: self.persistent.map(|persistent| {
+                persistent
+                    .into_iter()
+                    .map(|persistent| persistent.strip())
+                    .collect()
+            }),
+        }
+    }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct FilesystemResourceConfig {
     pub real_path: String,
     pub mapped_path: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct FilesystemPersistentConfig {
+    pub name: String,
+    pub mapped_path: String,
+}
+impl FilesystemPersistentConfig {
+    pub fn strip(self) -> Self {
+        self
+    }
 }
