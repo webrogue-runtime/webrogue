@@ -1,4 +1,3 @@
-
 #[derive(Clone)]
 pub struct Event {
     pub name: &'static str,
@@ -14,69 +13,89 @@ pub struct Field {
     pub ty: FieldType,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum FieldType {
     U32,
 }
 impl FieldType {
     pub fn size(&self) -> usize {
         match self {
-            FieldType::U32 => 4
+            FieldType::U32 => 4,
         }
     }
 
     pub fn c_name(&self) -> &'static str {
         match self {
-            FieldType::U32 => "uint32_t"
+            FieldType::U32 => "uint32_t",
         }
     }
 }
 
+struct EventsBuilder {
+    events: Vec<Event>,
+}
+
+impl EventsBuilder {
+    fn new() -> Self {
+        Self { events: Vec::new() }
+    }
+
+    fn event(&mut self, name: &'static str, id: usize) -> EventBuilder {
+        self.events.push(Event {
+            name,
+            id,
+            fields: Vec::new(),
+            size: 4,
+        });
+        EventBuilder {
+            event: self.events.last_mut().unwrap(),
+        }
+    }
+
+    fn events(self) -> Vec<Event> {
+        self.events
+    }
+}
+
+struct EventBuilder<'a> {
+    event: &'a mut Event,
+}
+
+impl EventBuilder<'_> {
+    fn field(&mut self, name: &'static str, ty: FieldType) -> &mut Self {
+        self.event.fields.push(Field {
+            name,
+            offset: self.event.size,
+            ty,
+        });
+        self.event.size += ty.size();
+        self
+    }
+}
+
 pub fn all() -> Vec<Event> {
-    let mut events = Vec::new();
-    let mut current_fields = Vec::new();
+    use FieldType::*;
 
-    let mut offset = 4;
-    macro_rules! field {
-        ($name:expr, $ty:expr) => {
-            current_fields.push(Field {
-                name: $name,
-                offset: offset,
-                ty: $ty
-            });
-            offset += $ty.size();
-        };
-    }
+    let mut builder = EventsBuilder::new();
 
-    macro_rules! event {
-        ($name:expr, $id:expr) => {
-            events.push(Event {
-                name: $name,
-                id: $id,
-                fields: current_fields.clone(),
-                size: offset
-            });
-            current_fields.clear();
-            offset = 4;
-        };
-    }
-    
-    field!("x", FieldType::U32);
-    field!("y", FieldType::U32);
-    field!("button", FieldType::U32);
-    event!("mouse_down", 1);
+    builder
+        .event("mouse_down", 1)
+        .field("x", U32)
+        .field("y", U32)
+        .field("button", U32);
 
-    field!("x", FieldType::U32);
-    field!("y", FieldType::U32);
-    field!("button", FieldType::U32);
-    event!("mouse_up", 2);
+    builder
+        .event("mouse_up", 2)
+        .field("x", U32)
+        .field("y", U32)
+        .field("button", U32);
 
-    field!("x", FieldType::U32);
-    field!("y", FieldType::U32);
-    event!("mouse_motion", 3);
+    builder
+        .event("mouse_motion", 3)
+        .field("x", U32)
+        .field("y", U32);
 
-    event!("quit", 4);
+    builder.event("quit", 4);
 
-    let _ = offset; // to silence a warning
-    events
+    builder.events()
 }

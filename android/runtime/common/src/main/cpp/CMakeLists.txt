@@ -35,10 +35,12 @@ include(${WEBROGUE_GFXSTREAM_DIR}/paths.cmake)
 
 add_library(
     webrogue_static STATIC
-    ../../../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c
-    ../../../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl2_events.c
+    ../../../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl.c
+    ../../../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl_events.c
     ${WEBROGUE_GFXSTREAM_SOURCES}
 )
+
+target_compile_definitions(webrogue_static PRIVATE WEBROGUE_GFX_SDL_VERSION=2)
 
 add_library(
     webrogue SHARED

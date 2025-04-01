@@ -86,12 +86,12 @@ add_executable(
     webrogue
     main.c
     ../crates/web/web.c
-    ../crates/gfx-fallback/webrogue_gfx_ffi_sdl3.c
-    ../crates/gfx-fallback/webrogue_gfx_ffi_sdl3_events.c
+    ../crates/gfx-fallback/webrogue_gfx_ffi_sdl.c
+    ../crates/gfx-fallback/webrogue_gfx_ffi_sdl_events.c
 )
 add_dependencies(webrogue webrogue_web)
 
-target_compile_definitions(webrogue PRIVATE ${FS_FLAG})
+target_compile_definitions(webrogue PRIVATE ${FS_FLAG} WEBROGUE_GFX_SDL_VERSION=3)
 
 if(WEBROGUE_WEB_DYNAMIC)
     target_compile_definitions(webrogue PRIVATE WEBROGUE_DYNAMIC=1)

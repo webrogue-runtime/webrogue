@@ -48,8 +48,9 @@ fn main() {
     #[cfg(feature = "cc")]
     {
         cc::Build::new()
-            .file("webrogue_gfx_ffi_sdl2.c")
-            .file("webrogue_gfx_ffi_sdl2_events.c")
+            .file("webrogue_gfx_ffi_sdl.c")
+            .file("webrogue_gfx_ffi_sdl_events.c")
+            .define("WEBROGUE_GFX_SDL_VERSION", 2)
             .include("SDL/include")
             .compile("wrgfxfallback");
     }
