@@ -14,7 +14,6 @@ cache = ["webrogue-runtime/cache"]
 webrogue-runtime = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
-webrogue-wrapp = { workspace = true }
 
 
 webrogue-aot-data = { workspace = true, features = ["compiling"], optional = true }

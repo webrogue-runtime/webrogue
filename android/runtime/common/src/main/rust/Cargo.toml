@@ -16,4 +16,3 @@ crate-type = ["staticlib"]
 [dependencies]
 anyhow = { workspace = true }
 webrogue-runtime = { workspace = true }
-webrogue-wrapp = { workspace = true }

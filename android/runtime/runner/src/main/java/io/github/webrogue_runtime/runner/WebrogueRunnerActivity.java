@@ -1,6 +1,8 @@
 package io.github.webrogue_runtime.runner;
 
 import android.content.Context;
+import android.content.res.AssetFileDescriptor;
+import android.os.ParcelFileDescriptor;
 
 import androidx.annotation.Keep;
 
@@ -16,21 +18,17 @@ public class WebrogueRunnerActivity extends WebrogueActivity {
     public boolean exitOnBack() {
         return false;
     }
-    @Keep
-    public String getContainerPath() {
+
+    @Override
+    public void updateContainerFd() {
         Context context = getContext();
-        File outputFile = new File(context.getCacheDir(), "aot.wrapp");
         try {
-            FileOutputStream outputStream = new FileOutputStream(outputFile);
-            InputStream inputStream = context.getAssets().open("aot.wrapp");
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, len);
-            }
-            outputStream.close();
-            inputStream.close();
-            return outputFile.getPath();
+            AssetFileDescriptor afd = context.getAssets().openFd("aot.wrapp");
+            containerOffset = afd.getStartOffset();
+            containerSize = afd.getLength();
+            ParcelFileDescriptor pfd = afd.getParcelFileDescriptor();
+            containerFd = pfd.getFd();
+            pfd.detachFd();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -9,6 +9,7 @@ pub struct Preamble {
 impl Preamble {
     pub fn new(readable: &mut (impl std::io::Read + std::io::Seek)) -> anyhow::Result<Self> {
         let mut magic = [0u8; 6];
+        readable.seek(std::io::SeekFrom::Start(0))?;
         readable.read_exact(&mut magic)?;
         if magic != *b"WRAPP\0" {
             anyhow::bail!("Magic number mismatch while reading WRAPP archive");

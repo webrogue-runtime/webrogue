@@ -1,6 +1,11 @@
+use std::os::unix::io::FromRawFd;
+
 extern "C" {
     fn webrogue_android_print(str: *const std::ffi::c_char, len: usize);
-    fn webrogue_android_path() -> *const std::ffi::c_char;
+    fn webrogue_android_data_path() -> *const std::ffi::c_char;
+    fn webrogue_android_container_fd() -> i32;
+    fn webrogue_android_container_offset() -> i32;
+    fn webrogue_android_container_size() -> i32;
 }
 
 // #[derive(Debug)]
@@ -119,16 +124,24 @@ extern "C" {
 // }
 
 fn main() -> anyhow::Result<()> {
-    let container_path = unsafe {
-        std::ffi::CStr::from_ptr(webrogue_android_path())
+    let data_path = unsafe {
+        std::ffi::CStr::from_ptr(webrogue_android_data_path())
             .to_str()
             .unwrap()
             .to_owned()
     };
 
-    let wrapp_handle =
-        webrogue_wrapp::WrappHandleBuilder::from_file_path(container_path)?.build()?;
-    webrogue_runtime::run(wrapp_handle)?;
+    let file = unsafe { std::fs::File::from_raw_fd(webrogue_android_container_fd()) };
+    let offset = unsafe { webrogue_android_container_offset() } as u64;
+    let size = unsafe { webrogue_android_container_size() } as u64;
+
+    let mut builder = webrogue_runtime::WrappHandleBuilder::from_file_part(file, offset, size)?;
+
+    let persistent_path = std::path::PathBuf::from(data_path)
+        .join(".webrogue")
+        .join(&builder.config()?.id)
+        .join("persistent");
+    webrogue_runtime::Config::from_builder(builder, persistent_path)?.run()?;
 
     Ok(())
 }
@@ -137,6 +150,13 @@ fn main() -> anyhow::Result<()> {
 pub unsafe extern "C" fn webrogue_main() {
     match main() {
         Ok(_) => {}
-        Err(e) => println!("{}", e),
+        Err(e) => {
+            println!("{}", e);
+            let s = format!("{}", e);
+            let b = s.as_bytes();
+            unsafe {
+                webrogue_android_print(b.as_ptr() as *const std::ffi::c_char, b.len());
+            }
+        }
     };
 }

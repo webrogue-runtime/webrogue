@@ -17,7 +17,7 @@ webrogue-wrapp = { workspace = true }
 webrogue-wasip1 = { workspace = true }
 wiggle = { workspace = true, default-features = false, features = [] }
 webrogue-web-macro = { workspace = true }
-wasmparser = { workspace = true, default-features = false }
+wasmparser = { workspace = true }
 
 # just to silence compile_error using "fallback" feature
 iana-time-zone = { version = ">=0.1.61", features = ["fallback"] }

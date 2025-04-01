@@ -35,14 +35,14 @@ android {
 
     buildTypes {
         release {
-            resValue "string", "app_name", "webrogue"
+            resValue "string", "app_name", "Webrogue"
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             minifyEnabled false
         }
         debug {
             debuggable true
             applicationIdSuffix ".dev"
-            resValue "string", "app_name", "webrogue debug"
+            resValue "string", "app_name", "Webrogue debug"
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             minifyEnabled false
         }

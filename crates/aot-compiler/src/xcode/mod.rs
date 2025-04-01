@@ -82,7 +82,7 @@ WEBROGUE_APPLICATION_VERSION = {}
             object::compile(destination, &args.wrapp_path, &args.build_dir)?;
             build::build(
                 &args.build_dir,
-                config.unwrap_or(types::Configuration::Debug),
+                config.unwrap_or(types::Configuration::ReleaseLocal),
                 destination,
                 &mut wrapp_builder,
             )?;

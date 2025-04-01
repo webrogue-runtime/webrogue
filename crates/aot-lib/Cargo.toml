@@ -15,11 +15,9 @@ gfx-fallback-cc = ["webrogue-gfx/fallback", "dep:webrogue-gfx-fallback", "webrog
 
 [dependencies]
 webrogue-runtime = { workspace = true, features = ["aot"] }
-webrogue-wrapp = { workspace = true }
 webrogue-gfx = { workspace = true }
 webrogue-gfx-fallback = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, optional = true }
 
-# needed for cross-compiling
 [target.'cfg(target_env = "msvc")'.dependencies]
 blake3 = { version = "1", features = ["pure"] }

@@ -67,6 +67,11 @@ else()
     message(FATAL_ERROR "Unknown CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
+if(CARGO_PROFILE STREQUAL "dev")
+    set(CARGO_PROFILE "debug")
+endif()
+
+
 target_link_libraries(
     webrogue
 

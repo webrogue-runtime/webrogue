@@ -3,14 +3,7 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-def cargoProfile = "release-lto"
-
-task copyKeyStores(type: Copy) {
-    from(project.file('../../examples/raylib/raylib.wrapp')) {
-        rename '.*', 'aot.wrapp'
-    }
-    into file('src/main/assets/')
-}
+def cargoProfile = "release-lto" // dev, release, release-lto
 
 android {
     namespace 'io.github.webrogue_runtime.runner'
@@ -25,7 +18,9 @@ android {
             storePassword "testtestz"
         }
     }
-
+    aaptOptions {
+        noCompress "wrapp"
+    }
     defaultConfig {
         applicationId "io.github.webrogue_runtime.runner"
         minSdk 24
@@ -69,12 +64,6 @@ android {
         }
         if (task.name =~ "buildCMake.*") {
             task.dependsOn 'cargoBuild'
-        }
-        if ((task.name == 'generateReleaseLintVitalReportModel')) {
-            task.dependsOn 'copyKeyStores'
-        }
-        if ((task.name == 'lintVitalAnalyzeRelease')) {
-            task.dependsOn 'copyKeyStores'
         }
     }
 
@@ -124,11 +113,6 @@ android {
         }
         tasks.named("check${variant.name.capitalize()}DuplicateClasses").configure {
             dependsOn(nativeBuildTask)
-        }
-    }
-    applicationVariants.configureEach { variant ->
-        tasks.named("merge${variant.name.capitalize()}Assets").configure {
-            dependsOn(copyKeyStores)
         }
     }
 }

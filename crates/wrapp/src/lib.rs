@@ -14,4 +14,5 @@ pub mod config;
 pub mod file_index;
 mod offsetted_reader;
 mod preamble;
+mod range_reader;
 mod seekable_provider;

@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use crate::range_reader;
+
 pub struct Wrapp {
     seekable: Box<dyn crate::seekable_provider::SeekableProvider<'static>>,
     config: crate::config::Config,
@@ -64,6 +66,18 @@ pub struct WrappHandleBuilder<Reader: std::io::Read + std::io::Seek + 'static> {
 impl WrappHandleBuilder<std::fs::File> {
     pub fn from_file_path<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Self> {
         Ok(Self::new(std::fs::File::open(path)?))
+    }
+
+    pub fn from_file(file: std::fs::File) -> anyhow::Result<Self> {
+        Ok(Self::new(file))
+    }
+}
+
+impl WrappHandleBuilder<range_reader::RangeReader<std::fs::File>> {
+    pub fn from_file_part(file: std::fs::File, offset: u64, size: u64) -> anyhow::Result<Self> {
+        Ok(Self::new(range_reader::RangeReader::new(
+            file, offset, size,
+        )?))
     }
 }
 

@@ -2,7 +2,9 @@ package io.github.webrogue_runtime.common;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.os.Process;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -12,39 +14,76 @@ import androidx.annotation.Keep;
 
 import org.libsdl.app.SDLActivity;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
 
 public class WebrogueActivity extends SDLActivity {
     private TextView textView;
     private String consoleText = "";
-    private String wrappPath = null;
+    private String dataPath = null;
+
+    protected long containerFd;
+    protected long containerOffset;
+    protected long containerSize;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        wrappPath = getIntent().getStringExtra("wrapp_path");
         super.onCreate(savedInstanceState);
+        dataPath = getFilesDir().getAbsolutePath();
+        updateContainerFd();
         setWindowStyle(true);
 
-        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
+//        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(
+//                ViewGroup.LayoutParams.MATCH_PARENT,
+//                ViewGroup.LayoutParams.WRAP_CONTENT
+//        );
 
-        textView = new TextView(this);
-        textView.setTextColor(Color.parseColor("#ff000000"));
-        layoutParams.addRule(RelativeLayout.ALIGN_TOP);
+//        textView = new TextView(this);
+//        textView.setTextColor(Color.parseColor("#ff000000"));
+//        layoutParams.addRule(RelativeLayout.ALIGN_TOP);
 //        mLayout.addView(textView, layoutParams);
     }
 
+    public void updateContainerFd() {
+        String container_path = getIntent().getStringExtra("wrapp_path");
+        try {
+            ParcelFileDescriptor pfd = ParcelFileDescriptor.open(new File(container_path), ParcelFileDescriptor.MODE_READ_ONLY);
+            containerOffset = 0;
+            containerSize = pfd.getStatSize();
+            containerFd = pfd.getFd();
+            pfd.detachFd();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Keep
-    public String getContainerPath() {
-        return wrappPath;
+    public long getContainerFd() {
+        return containerFd;
+    }
+
+    @Keep
+    public long getContainerOffset() {
+        return containerOffset;
+    }
+
+    @Keep
+    public long getContainerSize() {
+        return containerSize;
+    }
+
+    @Keep
+    public String getDataPath() {
+        return dataPath;
     }
 
     @Keep
     public void printBytes(byte[] bytes) {
+        String string = new String(bytes, StandardCharsets.UTF_8);
         runOnUiThread(() -> {
-            consoleText += new String(bytes, StandardCharsets.UTF_8);
+            consoleText += string;
             textView.setText(consoleText);
         });
     }
