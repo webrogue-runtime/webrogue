@@ -8,7 +8,7 @@ pub fn make_ctx(
 ) -> anyhow::Result<wasi_common::WasiCtx> {
     let mut builder = wasi_common::sync::WasiCtxBuilder::new();
     builder.inherit_stdio();
-    let mut wasi_ctx = builder.build();
+    let wasi_ctx = builder.build();
     let app_dir = fs::Dir::root(wrapp);
     wasi_ctx.push_preopened_dir(Box::new(app_dir), "/")?;
 

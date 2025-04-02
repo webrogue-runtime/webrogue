@@ -1,5 +1,5 @@
 // This file has been shamelessly copied from https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-threads
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub struct ThreadsContext {
     tid: std::sync::atomic::AtomicI32,

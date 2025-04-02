@@ -6,7 +6,6 @@ use std::{
 use wasi_common::ErrorExt as _;
 
 pub struct DirInner {
-    wrapp: webrogue_wrapp::WrappHandle,
     dirs: std::collections::BTreeMap<String, Arc<DirInner>>,
     files: std::collections::BTreeMap<String, Arc<File>>,
     parent: Option<Weak<DirInner>>,
@@ -33,7 +32,6 @@ impl DirInner {
             files.insert(k, Arc::new(File::build(v)));
         }
         let result = Arc::new(DirInner {
-            wrapp: source.wrapp,
             dirs,
             files,
             parent: None,
@@ -116,12 +114,12 @@ impl wasi_common::WasiDir for Dir {
 
     async fn open_file(
         &self,
-        symlink_follow: bool,
+        _symlink_follow: bool,
         path: &str,
-        oflags: wasi_common::file::OFlags,
-        read: bool,
+        _oflags: wasi_common::file::OFlags,
+        _read: bool,
         write: bool,
-        fdflags: wasi_common::file::FdFlags,
+        _fdflags: wasi_common::file::FdFlags,
     ) -> Result<wasi_common::dir::OpenResult, wasi_common::Error> {
         if write {
             return Err(wasi_common::Error::not_supported());
@@ -139,8 +137,7 @@ impl wasi_common::WasiDir for Dir {
     }
 
     async fn create_dir(&self, _path: &str) -> Result<(), wasi_common::Error> {
-        todo!()
-        // Err(Error::not_supported())
+        Err(wasi_common::Error::not_supported())
     }
 
     async fn readdir(
@@ -180,22 +177,18 @@ impl wasi_common::WasiDir for Dir {
     }
 
     async fn symlink(&self, _old_path: &str, _new_path: &str) -> Result<(), wasi_common::Error> {
-        todo!()
-        // Err(Error::not_supported())
+        Err(wasi_common::Error::not_supported())
     }
 
     async fn remove_dir(&self, _path: &str) -> Result<(), wasi_common::Error> {
-        todo!()
-        // Err(Error::not_supported())
+        Err(wasi_common::Error::not_supported())
     }
 
     async fn unlink_file(&self, _path: &str) -> Result<(), wasi_common::Error> {
-        // todo!()
         Err(wasi_common::Error::not_supported())
     }
 
     async fn read_link(&self, _path: &str) -> Result<std::path::PathBuf, wasi_common::Error> {
-        // todo!()
         Err(wasi_common::Error::not_supported())
     }
 
@@ -243,8 +236,7 @@ impl wasi_common::WasiDir for Dir {
         _dest_dir: &dyn wasi_common::WasiDir,
         _dest_path: &str,
     ) -> Result<(), wasi_common::Error> {
-        todo!()
-        // Err(Error::not_supported())
+        Err(wasi_common::Error::not_supported())
     }
 
     async fn hard_link(
@@ -253,8 +245,7 @@ impl wasi_common::WasiDir for Dir {
         _target_dir: &dyn wasi_common::WasiDir,
         _target_path: &str,
     ) -> Result<(), wasi_common::Error> {
-        todo!()
-        // Err(Error::not_supported())
+        Err(wasi_common::Error::not_supported())
     }
 
     async fn set_times(
@@ -264,8 +255,7 @@ impl wasi_common::WasiDir for Dir {
         _mtime: Option<wasi_common::SystemTimeSpec>,
         _follow_symlinks: bool,
     ) -> Result<(), wasi_common::Error> {
-        todo!()
-        // Err(Error::not_supported())
+        Err(wasi_common::Error::not_supported())
     }
 }
 
@@ -284,7 +274,6 @@ impl File {
 }
 
 struct OpenFile {
-    source: Arc<File>,
     reader: Mutex<webrogue_wrapp::FileReader>,
 }
 
@@ -292,7 +281,6 @@ impl OpenFile {
     fn open(source: Arc<File>) -> Self {
         let reader = source.wrapp.open_pos(source.position);
         Self {
-            source,
             reader: Mutex::new(reader),
         }
     }
@@ -388,8 +376,7 @@ impl wasi_common::WasiFile for OpenFile {
         _len: u64,
         _advice: wasi_common::file::Advice,
     ) -> Result<(), wasi_common::Error> {
-        todo!();
-        // Err(wasi_common::Error::badf())
+        Ok(())
     }
 
     async fn set_times(
@@ -421,8 +408,7 @@ impl wasi_common::WasiFile for OpenFile {
         &self,
         _bufs: &[std::io::IoSlice<'a>],
     ) -> Result<u64, wasi_common::Error> {
-        todo!();
-        // Err(wasi_common::Error::badf())
+        Err(wasi_common::Error::badf())
     }
 
     async fn write_vectored_at<'a>(
@@ -430,31 +416,30 @@ impl wasi_common::WasiFile for OpenFile {
         _bufs: &[std::io::IoSlice<'a>],
         _offset: u64,
     ) -> Result<u64, wasi_common::Error> {
-        todo!();
-        // Err(wasi_common::Error::badf())
+        Err(wasi_common::Error::badf())
     }
 
     async fn seek(&self, pos: std::io::SeekFrom) -> Result<u64, wasi_common::Error> {
         Ok(self.reader.lock().unwrap().seek(pos)?)
     }
 
-    async fn peek(&self, _buf: &mut [u8]) -> Result<u64, wasi_common::Error> {
-        todo!();
-        // Err(wasi_common::Error::badf())
+    async fn peek(&self, buf: &mut [u8]) -> Result<u64, wasi_common::Error> {
+        let mut reader = self.reader.lock().unwrap();
+        let pos = reader.seek(std::io::SeekFrom::Current(0))?;
+        let result = reader.read(buf);
+        reader.seek(std::io::SeekFrom::Start(pos))?;
+        Ok(result? as u64)
     }
 
     fn num_ready_bytes(&self) -> Result<u64, wasi_common::Error> {
-        todo!();
-        // Ok(0)
+        Ok(0)
     }
 
     async fn readable(&self) -> Result<(), wasi_common::Error> {
-        todo!();
-        // Err(wasi_common::Error::badf())
+        Err(wasi_common::Error::badf())
     }
 
     async fn writable(&self) -> Result<(), wasi_common::Error> {
-        todo!();
-        // Err(wasi_common::Error::badf())
+        Err(wasi_common::Error::badf())
     }
 }

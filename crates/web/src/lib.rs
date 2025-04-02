@@ -10,7 +10,7 @@ use ffi::{ArgGetter, RetSetter};
 extern "C" {
     fn wr_rs_sleep(ms: u32);
     fn wr_reset_timer();
-    fn wr_get_timer() -> u64;
+    // fn wr_get_timer() -> u64;
 }
 
 #[no_mangle]
@@ -88,17 +88,17 @@ pub fn main(wrapp_data: Option<&'static [u8]>) -> anyhow::Result<()> {
     });
 
     let (config, wrapp_handle) = if let Some(wrapp_data) = wrapp_data {
-        let mut builder =
-            webrogue_wrapp::WrappHandleBuilder::from_static_slice(wrapp_data)?;
+        let mut builder = webrogue_wrapp::WrappHandleBuilder::from_static_slice(wrapp_data)?;
         let config = builder.config()?.clone();
         let wrapp_handle = builder.build()?;
-        (config, wrapp_handle) 
+        (config, wrapp_handle)
     } else {
-        let mut builder =
-            webrogue_wrapp::WrappHandleBuilder::from_file_path(std::path::PathBuf::from("main.wrapp"))?;
+        let mut builder = webrogue_wrapp::WrappHandleBuilder::from_file_path(
+            std::path::PathBuf::from("main.wrapp"),
+        )?;
         let config = builder.config()?.clone();
         let wrapp_handle = builder.build()?;
-        (config, wrapp_handle) 
+        (config, wrapp_handle)
     };
 
     let persistent_path = std::path::PathBuf::from("/data")
@@ -185,7 +185,9 @@ extern "C" fn rust_main() {
 
 #[no_mangle]
 extern "C" fn rust_main_slice(size: u32, data: *const u8) {
-    match main(Some(unsafe {std::slice::from_raw_parts(data, size as usize) })) {
+    match main(Some(unsafe {
+        std::slice::from_raw_parts(data, size as usize)
+    })) {
         Err(e) => {
             panic!("{}", e.to_string())
         }

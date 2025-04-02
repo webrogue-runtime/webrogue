@@ -5,12 +5,12 @@ extern "C" {
         pointer: *const u8,
         size: u32,
     );
-    pub fn wr_reset_wasm();
+    // pub fn wr_reset_wasm();
     pub fn wr_exec_func(funcNamePtr: *const u8);
     pub fn wr_exec_func_ii(funcNamePtr: *const u8, arg0: i32, arg1: i32);
-    pub fn wr_error_size() -> u32;
-    pub fn wr_error_data(error: *mut u8);
-    pub fn wr_make_shared_memory(inital_pages: u32, max_pages: u32);
+    // pub fn wr_error_size() -> u32;
+    // pub fn wr_error_data(error: *mut u8);
+    pub fn wr_make_shared_memory(initial_pages: u32, max_pages: u32);
 }
 
 pub struct ArgGetter<T> {

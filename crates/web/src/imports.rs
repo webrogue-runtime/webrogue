@@ -1,5 +1,3 @@
-use core::sync;
-
 pub struct Imports {
     pub initializers: Vec<fn(&mut Imports)>,
     pub funcs: Vec<Box<dyn Fn(&mut crate::context::Store)>>,

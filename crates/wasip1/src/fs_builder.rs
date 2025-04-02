@@ -1,12 +1,11 @@
 pub struct Dir {
-    pub wrapp: webrogue_wrapp::WrappHandle,
     pub dirs: std::collections::BTreeMap<String, Dir>,
     pub files: std::collections::BTreeMap<String, File>,
 }
 
 impl Dir {
     pub fn root(wrapp: webrogue_wrapp::WrappHandle) -> Self {
-        let mut result = Self::empty(wrapp.clone());
+        let mut result = Self::empty();
         for (path, position) in wrapp.file_index().file_positions {
             let path_parts = path
                 .split("/")
@@ -23,9 +22,8 @@ impl Dir {
         result
     }
 
-    fn empty(wrapp: webrogue_wrapp::WrappHandle) -> Self {
+    fn empty() -> Self {
         Self {
-            wrapp,
             dirs: std::collections::BTreeMap::new(),
             files: std::collections::BTreeMap::new(),
         }
@@ -44,8 +42,7 @@ impl Dir {
         } else {
             let part = parts.first().unwrap();
             if !self.dirs.contains_key(*part) {
-                self.dirs
-                    .insert(part.to_owned().to_owned(), Dir::empty(wrapp.clone()));
+                self.dirs.insert(part.to_owned().to_owned(), Dir::empty());
             }
             self.dirs.get_mut(*part).unwrap().insert_file_position(
                 filename,
