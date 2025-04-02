@@ -1,5 +1,5 @@
 [package]
-name = "webrogue-runtime"
+name = "webrogue-wasmtime"
 version.workspace = true
 authors.workspace = true
 license.workspace = true

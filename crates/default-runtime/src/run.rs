@@ -7,11 +7,11 @@ struct Cli {
 
 pub fn run() -> anyhow::Result<()> {
     let args = Cli::parse();
-    let mut builder = webrogue_runtime::WrappHandleBuilder::from_file_path(args.path)?;
+    let mut builder = webrogue_wasmtime::WrappHandleBuilder::from_file_path(args.path)?;
     let persistent_path = std::env::current_dir()?
         .join(".webrogue")
         .join(&builder.config()?.id)
         .join("persistent");
-    webrogue_runtime::Config::from_builder(builder, persistent_path)?.run()?;
+    webrogue_wasmtime::Config::from_builder(builder, persistent_path)?.run()?;
     Ok(())
 }

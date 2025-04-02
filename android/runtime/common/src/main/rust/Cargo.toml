@@ -6,8 +6,8 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-launcher = ["webrogue-runtime/cranelift"]
-runner = ["webrogue-runtime/aot"]
+launcher = ["webrogue-wasmtime/cranelift"]
+runner = ["webrogue-wasmtime/aot"]
 
 [lib]
 name = "webrogue_android"
@@ -15,4 +15,4 @@ crate-type = ["staticlib"]
 
 [dependencies]
 anyhow = { workspace = true }
-webrogue-runtime = { workspace = true }
+webrogue-wasmtime = { workspace = true }

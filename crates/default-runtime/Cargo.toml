@@ -6,12 +6,12 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-cranelift = ["webrogue-runtime/cranelift"]
-aot = ["webrogue-runtime/aot", "dep:webrogue-aot-data"]
-cache = ["webrogue-runtime/cache"]
+cranelift = ["webrogue-wasmtime/cranelift"]
+aot = ["webrogue-wasmtime/aot", "dep:webrogue-aot-data"]
+cache = ["webrogue-wasmtime/cache"]
 
 [dependencies]
-webrogue-runtime = { workspace = true }
+webrogue-wasmtime = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 

@@ -1,7 +1,10 @@
-fn main(wrapp_path: String) -> anyhow::Result<()> {
-    let wrapp_handle = webrogue_wrapp::WrappHandleBuilder::from_file_path(wrapp_path)?.build()?;
-    webrogue_runtime::run(wrapp_handle)?;
-    Ok(())
+fn main(_wrapp_path: String) -> anyhow::Result<()> {
+    // let mut builder = webrogue_wasmtime::WrappHandleBuilder::from_file_path(wrapp_path)?;
+
+    todo!(); // TODO asap
+
+    // webrogue_wasmtime::Config::from_builder(builder, persistent_path)?.run()?;
+    // Ok(())
 }
 
 #[no_mangle]

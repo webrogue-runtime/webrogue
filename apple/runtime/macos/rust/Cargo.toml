@@ -6,8 +6,8 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-runtime = ["webrogue-runtime/cranelift", "dep:wasmtime", "webrogue-runtime/cache"]
-runner = ["webrogue-runtime/aot"]
+runtime = ["webrogue-wasmtime/cranelift", "webrogue-wasmtime/cache"]
+runner = ["webrogue-wasmtime/aot"]
 
 [lib]
 name = "webrogue_macos"
@@ -15,9 +15,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 anyhow = { workspace = true }
-webrogue-runtime = { workspace = true }
-webrogue-wrapp = { workspace = true }
-wasmtime = { workspace = true, optional = true }
+webrogue-wasmtime = { workspace = true }
 
 [build-dependencies]
 cc = { workspace = true }

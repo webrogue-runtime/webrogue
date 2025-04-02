@@ -14,7 +14,7 @@ gfx-fallback-cmake = ["webrogue-gfx/fallback", "dep:webrogue-gfx-fallback", "web
 gfx-fallback-cc = ["webrogue-gfx/fallback", "dep:webrogue-gfx-fallback", "webrogue-gfx-fallback/sdl2", "webrogue-gfx-fallback/cc", "dep:webrogue-gfxstream", "webrogue-gfxstream/cc"]
 
 [dependencies]
-webrogue-runtime = { workspace = true, features = ["aot"] }
+webrogue-wasmtime = { workspace = true, features = ["aot"] }
 webrogue-gfx = { workspace = true }
 webrogue-gfx-fallback = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, optional = true }

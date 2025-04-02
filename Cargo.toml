@@ -12,7 +12,6 @@ path = "crates/default-runtime/src/main_workspace.rs"
 doc = false
 
 [features]
-default = ["cranelift"]
 cranelift = ["webrogue-default-runtime/cranelift"]
 aot = ["webrogue-default-runtime/aot"]
 cache = ["webrogue-default-runtime/cache"]
@@ -39,8 +38,8 @@ members = [
   "crates/gfx",
   "crates/gfx-fallback",
   "crates/gfxstream",
-  "crates/runtime",
   "crates/wasip1",
+  "crates/wasmtime",
   "crates/web-macro",
   "crates/web",
   "crates/wrapp",
@@ -61,7 +60,7 @@ webrogue-aot-compiler = { path = "crates/aot-compiler", default-features=false }
 webrogue-aot-data = { path = "crates/aot-data" }
 webrogue-aot-linker = { path = "crates/aot-linker" }
 webrogue-default-runtime = { path = "crates/default-runtime" }
-webrogue-runtime = { path = "crates/runtime" }
+webrogue-wasmtime = { path = "crates/wasmtime" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
 webrogue-gfxstream = { path = "crates/gfxstream" }
