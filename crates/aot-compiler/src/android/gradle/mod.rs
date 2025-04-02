@@ -61,7 +61,7 @@ pub fn build(
         true,
     )?;
 
-    link::link(&object_file, android_sdk_dir, &template_dir, build_dir)?;
+    link::link(&object_file, &template_dir, build_dir)?;
     drop(object_file);
 
     println!("Building Android project...");

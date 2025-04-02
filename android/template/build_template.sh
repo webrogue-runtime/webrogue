@@ -6,6 +6,7 @@ set -e
 cd ..
 CMDLINE_TOOLS_VERSION=linux-11076708_latest
 NDK_VERSION=27.2.12479018
+ANDROID_API_VERSION=24
 
 test -d sdk || mkdir sdk
 test -d sdk/cmdline-tools || {
@@ -75,11 +76,23 @@ mkdir -p ../aot_artifacts/android_gradle/libs
 cp \
     runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/webrogue_runtime.c.o \
     runtime/runner/src/main/cpp/../rust_target/aarch64-linux-android/release-lto/libwebrogue_android.a \
+    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libc.so \
+    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libdl.so \
+    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/crtbegin_so.o \
+    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/crtend_so.o \
     ../aot_artifacts/android_gradle/libs
 
 $ANDROID_NDK_PATH/toolchains/llvm/prebuilt/*/bin/llvm-ar qLs \
     ../aot_artifacts/android_gradle/libs/libwebrogue_android.a \
-    runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/libwebrogue_static.a
+    runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/libwebrogue_static.a \
+    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_static.a \
+    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++abi.a \
+    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/18/lib/linux/libclang_rt.builtins-aarch64-android.a \
+    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/18/lib/linux/aarch64/libunwind.a
+
+cp \
+    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/NOTICE \
+    ../aot_artifacts/android_gradle/libs/NOTICE
 
 cp \
     runtime/gradlew \
