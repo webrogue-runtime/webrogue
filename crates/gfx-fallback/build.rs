@@ -22,6 +22,8 @@ fn main() {
     {
         let dst = cmake::Config::new(crate_manifest_dir)
             .define("SDL_CMAKE_DEBUG_POSTFIX", "")
+            .define("SDL_OPENGL", "OFF")
+            .define("SDL_OPENGLES", "ON")
             .build();
         println!(
             "cargo:rustc-link-search=native={}",
@@ -50,7 +52,7 @@ fn main() {
         cc::Build::new()
             .file("webrogue_gfx_ffi_sdl.c")
             .file("webrogue_gfx_ffi_sdl_events.c")
-            .define("WEBROGUE_GFX_SDL_VERSION", 2)
+            .define("WEBROGUE_GFX_SDL_VERSION", "2")
             .include("SDL/include")
             .compile("wrgfxfallback");
     }
