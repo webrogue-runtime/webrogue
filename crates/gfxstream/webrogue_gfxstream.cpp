@@ -2,6 +2,10 @@
 #include "gl/gles2_dec/GLESv2Decoder.h"
 #include <cstring>
 
+#ifdef min
+#undef min
+#endif
+
 class WebrogueOutputStream : public gfxstream::IOStream {
   public:
     explicit WebrogueOutputStream(size_t bufsize ):
@@ -170,7 +174,7 @@ void webrogue_gfxstream_ffi_ret_buffer_read(void *raw_thread_ptr, void* buf, uin
   WebrogueOutputStream *stream = thread->webrogue_output_stream.get();
   size_t available = stream->m_ret_buf_used - stream->m_ret_buf_consumed;
   assert(len<=available);
-  size_t to_read = std::min((size_t)len, stream->m_ret_buf_used);
+  size_t to_read = std::min((size_t) len, stream->m_ret_buf_used);
   memcpy(buf, (char*)stream->m_ret_buffer + stream->m_ret_buf_consumed, to_read);
   if(to_read == available) {
     stream->m_ret_buf_used = 0;
