@@ -1,21 +1,21 @@
-pub fn build_windows_mingw(
-    wrapp_file_path: std::path::PathBuf,
-    output_file_path: std::path::PathBuf,
+pub fn build(
+    wrapp_file_path: &std::path::PathBuf,
+    output_file_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    let object_file = crate::utils::TemporalFile::for_tmp_object(&output_file_path)?;
+    let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
     let copied_wrapp_path = output_file_path
         .parent()
         .ok_or(anyhow::anyhow!("Path error"))?
         .join("aot.wrapp");
 
     crate::compile::compile_wrapp_to_object(
-        &wrapp_file_path,
+        wrapp_file_path,
         object_file.path(),
         crate::Target::x86_64WindowsGNU,
         false, // TODO check
     )?;
 
-    link_windows_mingw(&object_file, &output_file_path)?;
+    link(&object_file, output_file_path)?;
     drop(object_file);
 
     std::fs::copy(wrapp_file_path, copied_wrapp_path)?;
@@ -37,7 +37,7 @@ pub fn build_windows_mingw(
     anyhow::Ok(())
 }
 
-fn link_windows_mingw(
+fn link(
     object_file_path: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {

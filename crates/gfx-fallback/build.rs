@@ -20,7 +20,18 @@ fn main() {
 
     #[cfg(feature = "cmake")]
     {
-        let dst = cmake::Config::new(crate_manifest_dir)
+        let os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+
+        let mut cmake_cfg = cmake::Config::new(crate_manifest_dir);
+        if os == "windows" {
+            cmake_cfg
+                .static_crt(true)
+                .define("CMAKE_C_FLAGS_DEBUG", "/Zi /Ob0 /Od /RTC1")
+                .define("CMAKE_C_FLAGS_RELEASE", "/O2 /Ob2 /DNDEBUG")
+                .define("CMAKE_C_FLAGS_MINSIZEREL", "/O1 /Ob1 /DNDEBUG")
+                .define("CMAKE_C_FLAGS_RELWITHDEBINFO", "/Zi /O2 /Ob1 /DNDEBUG");
+        }
+        let dst = cmake_cfg
             .define("SDL_CMAKE_DEBUG_POSTFIX", "")
             .define("SDL_OPENGL", "OFF")
             .define("SDL_OPENGLES", "ON")
@@ -30,9 +41,12 @@ fn main() {
             dst.join("lib").display()
         );
         println!("cargo:rustc-link-lib=static=wrgfxfallback");
-        println!("cargo:rustc-link-lib=static=SDL2");
-        #[cfg(target_os = "macos")]
-        {
+        if os == "windows" {
+            println!("cargo:rustc-link-lib=static=SDL2-static");
+        } else {
+            println!("cargo:rustc-link-lib=static=SDL2");
+        }
+        if os == "macos" {
             println!("cargo:rustc-link-lib=framework=Quartz");
             println!("cargo:rustc-link-lib=framework=Metal");
             println!("cargo:rustc-link-lib=framework=IOKit");

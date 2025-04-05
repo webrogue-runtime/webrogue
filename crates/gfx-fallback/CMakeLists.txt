@@ -1,5 +1,6 @@
 project(WEBROGUE_GFX_FALLBACK C)
 
+set(BUILD_SHARED_LIBS FALSE)
 set(SDL_SHARED FALSE)
 set(SDL_STATIC TRUE)
 add_subdirectory(SDL)

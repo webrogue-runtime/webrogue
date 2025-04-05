@@ -6,7 +6,24 @@ fn main() {
 
     #[cfg(feature = "cmake")]
     {
-        let dst = cmake::Config::new(_crate_manifest_dir).build();
+        let mut cxx_cfg = cc::Build::new();
+        cxx_cfg
+            .flag_if_supported("-Wno-unused-parameter")
+            .flag_if_supported("-Wno-attributes")
+            .cpp(true)
+            .static_crt(true)
+            .std("c++17");
+        let mut cmake_cfg = cmake::Config::new(_crate_manifest_dir);
+
+        if std::env::var("CARGO_CFG_TARGET_OS").unwrap().as_str() == "windows" {
+            cmake_cfg
+                .static_crt(true)
+                .define("CMAKE_C_FLAGS_DEBUG", "/Zi /Ob0 /Od /RTC1")
+                .define("CMAKE_C_FLAGS_RELEASE", "/O2 /Ob2 /DNDEBUG")
+                .define("CMAKE_C_FLAGS_MINSIZEREL", "/O1 /Ob1 /DNDEBUG")
+                .define("CMAKE_C_FLAGS_RELWITHDEBINFO", "/Zi /O2 /Ob1 /DNDEBUG");
+        }
+        let dst = cmake_cfg.init_cxx_cfg(cxx_cfg).build();
         println!(
             "cargo:rustc-link-search=native={}",
             dst.join("lib").display()
@@ -33,6 +50,7 @@ fn main() {
             .flag_if_supported("-Wno-unused-parameter")
             .flag_if_supported("-Wno-attributes")
             .cpp(true)
+            .static_crt(true)
             .std("c++17")
             .file("webrogue_gfxstream.cpp")
             .file(

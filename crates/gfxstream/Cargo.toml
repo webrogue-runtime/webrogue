@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-cmake = ["dep:cmake"]
+cmake = ["dep:cmake", "dep:cc"]
 cc = ["dep:cc"]
 
 [build-dependencies]

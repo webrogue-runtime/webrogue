@@ -79,7 +79,7 @@ pub fn build(
             "assembleRelease"
         })
         .current_dir(build_dir)
-        .env("ANDROID_HOME", android_sdk_dir);
+        .env("ANDROID_HOME", std::path::absolute(android_sdk_dir)?);
     let mut properties_file =
         std::fs::File::create(build_dir.join("app").join("gradle.properties"))?;
     set_gradle_property(

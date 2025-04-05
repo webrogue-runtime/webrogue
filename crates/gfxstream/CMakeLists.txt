@@ -15,3 +15,5 @@ target_include_directories(
 )
 set(CMAKE_INSTALL_LIBDIR "")
 install(TARGETS webrogue_gfxstream)
+
+set_property(TARGET webrogue_gfxstream PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")

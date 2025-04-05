@@ -5,7 +5,7 @@ mod cwasm_analyzer;
 mod linux;
 mod target;
 mod utils;
-mod windows_mingw;
+mod windows;
 pub use target::Target;
 mod xcode;
 
@@ -34,7 +34,7 @@ enum Commands {
     /// Windows-related commands
     Windows {
         #[command(subcommand)]
-        commands: WindowsCommands,
+        commands: windows::Commands,
     },
     /// Compile object file.
     /// This commands is intended be invoked from other build systems
@@ -53,17 +53,6 @@ enum Commands {
         build_dir: std::path::PathBuf,
         #[command(subcommand)]
         commands: xcode::XcodeCommands,
-    },
-}
-
-#[derive(Subcommand, Debug)]
-enum WindowsCommands {
-    /// Build Windows executable using MinGW
-    Mingw {
-        /// Path to WRAPP file
-        wrapp_path: std::path::PathBuf,
-        /// Path where resulting executable will be placed
-        out_path: std::path::PathBuf,
     },
 }
 
@@ -90,12 +79,7 @@ fn main() -> anyhow::Result<()> {
             linux::build_linux(wrapp_path, out_path)?;
         }
         Commands::Android { commands } => commands.run()?,
-        Commands::Windows { commands } => match commands {
-            WindowsCommands::Mingw {
-                wrapp_path,
-                out_path,
-            } => windows_mingw::build_windows_mingw(wrapp_path, out_path)?,
-        },
+        Commands::Windows { commands } => commands.run()?,
         Commands::Xcode {
             wrapp_path,
             build_dir,
