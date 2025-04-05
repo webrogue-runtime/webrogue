@@ -92,9 +92,9 @@ void webrogue_gfx_ffi_present_window(void *raw_window_ptr) {
 static void *get_proc_address(char *procname, void *userdata) {
   (void)userdata;
   void * result = SDL_GL_GetProcAddress(procname);
-  if(!result) {
-    printf("SDL_GL_GetProcAddress(\"%s\") returned NULL\n", procname);
-  }
+  // if(!result) {
+  //   printf("SDL_GL_GetProcAddress(\"%s\") returned NULL\n", procname);
+  // }
   return result;
 }
 void webrogue_gfx_ffi_gl_init(void *raw_window_ptr, void **out_func,

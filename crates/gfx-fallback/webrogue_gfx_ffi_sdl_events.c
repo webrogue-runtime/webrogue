@@ -13,34 +13,26 @@ void webrogue_gfx_ffi_sdl_poll(webrogue_event_out_buf *event_buf,
                                void **out_buf, uint32_t *out_len) {
   event_buf->used_size = 0;
 
-#define RETURN                                                                 \
-  *out_buf = event_buf->buf;                                                   \
-  *out_len = event_buf->used_size;                                             \
-  return;
   SDL_Event event = {0};
   while (SDL_PollEvent(&event) != 0) {
     switch (event.type) {
-    case SDL_V(SDL_MOUSEBUTTONDOWN, SDL_EVENT_MOUSE_BUTTON_DOWN): {
+    case SDL_V(SDL_MOUSEBUTTONDOWN, SDL_EVENT_MOUSE_BUTTON_DOWN):
       webrogue_event_encode_mouse_down(event_buf, event.button.x,
                                        event.button.y, event.button.button);
-      RETURN
-    } break;
-    case SDL_V(SDL_MOUSEBUTTONUP, SDL_EVENT_MOUSE_BUTTON_UP): {
+      break;
+    case SDL_V(SDL_MOUSEBUTTONUP, SDL_EVENT_MOUSE_BUTTON_UP):
       webrogue_event_encode_mouse_up(event_buf, event.button.x, event.button.y,
                                      event.button.button);
-      RETURN
-    } break;
-    case SDL_V(SDL_MOUSEMOTION, SDL_EVENT_MOUSE_MOTION): {
+      break;
+    case SDL_V(SDL_MOUSEMOTION, SDL_EVENT_MOUSE_MOTION):
       webrogue_event_encode_mouse_motion(event_buf, event.button.x,
                                          event.button.y);
-      RETURN
-    } break;
-    case SDL_V(SDL_QUIT, SDL_EVENT_QUIT): {
+      break;
+    case SDL_V(SDL_QUIT, SDL_EVENT_QUIT):
       webrogue_event_encode_quit(event_buf);
-      RETURN
-    } break;
+      break;
     }
   }
-  RETURN;
-#undef RETURN
+  *out_buf = event_buf->buf;
+  *out_len = event_buf->used_size;
 }

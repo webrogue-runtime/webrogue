@@ -17,6 +17,7 @@ static webrogue_event_out_buf webrogue_event_out_buf_create() {
     result.buf = malloc(WEBROGUE_MAX_ENCODED_EVENT_SIZE);
     result.buf_size = WEBROGUE_MAX_ENCODED_EVENT_SIZE;
     result.used_size = 0;
+    return result;
 }
 
 static void webrogue_event_out_buf_delete(webrogue_event_out_buf buf) {
