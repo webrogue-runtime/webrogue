@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 #include <stdio.h>
 
-void webrogue_macos_main(const char*);
+void webrogue_macos_main(const char*, const char*);
 
 void suicide(int sig) {
     exit(1);
@@ -25,6 +25,6 @@ int main(int argc, const char * argv[]) {
         }
         setenv("SDL_VIDEO_GL_DRIVER", [gles_path UTF8String], 0);
     }
-    webrogue_macos_main(argv[1]);
+    webrogue_macos_main(argv[1], argv[2]);
     return 0;
 }

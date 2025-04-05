@@ -19,7 +19,8 @@ struct ContainerReferenceView: View {
                     } else {
                         "idle"
                     }
-                    Text("Path: \(ref.path)")
+                    Text("\(ref.metadata.name) v\(ref.metadata.version)")
+                    Text("Id: \(ref.metadata.id)")
                     Text("SHA256: \(ref.metadata.sha256)")
                         .lineLimit(1)
                     Text("Status: \(status)")
@@ -33,10 +34,14 @@ struct ContainerReferenceView: View {
                                 viewModel.isRunning = true
                                 await ref.launch(
                                     stdoutHandler: { data in
-                                        viewModel.append(data)
+                                        DispatchQueue.main.async {
+                                            viewModel.append(data)
+                                        }
                                     },
-                                    terminatorSetter: { @MainActor terminate in
-                                        viewModel.terminate = terminate
+                                    terminatorSetter: { terminate in
+                                        DispatchQueue.main.async {
+                                            viewModel.terminate = terminate
+                                        }
                                     }
                                 )
                                 viewModel.isRunning = false
@@ -51,9 +56,9 @@ struct ContainerReferenceView: View {
                         }
                         Text(label)
                     })
-                        .frame(alignment: .center)
+                    .frame(alignment: .center)
                 }
-                    .padding(.horizontal, 8)
+                .padding(.horizontal, 8)
 
                 GeometryReader { _ in
                     ScrollView {
@@ -64,7 +69,7 @@ struct ContainerReferenceView: View {
                             Color.clear
                         }
                     }
-                        .background { Color(nsColor: .controlBackgroundColor) }
+                    .background { Color(nsColor: .controlBackgroundColor) }
                 }
             }
         }

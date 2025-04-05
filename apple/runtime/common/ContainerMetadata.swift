@@ -5,6 +5,9 @@ public struct ContainerMetadata {
     private static let magic = "WRAPP\0".data(using: .ascii)!
 
     public let sha256: String
+    public let name: String
+    public let id: String
+    public let version: String
 
     public init?(fileHandle: FileHandle) {
         do {
@@ -31,6 +34,17 @@ public struct ContainerMetadata {
             self.sha256 = sha.finalize().map { i64 in
                 String(i64, radix: 16)
             }.joined()
+
+            let json = try JSONSerialization.jsonObject(with: jsonData, options: [])
+            guard
+                let json = json as? [String: Any],
+                let name = json["name"] as? String,
+                let id = json["id"] as? String,
+                let version = json["version"] as? String
+            else { return nil }
+            self.name = name
+            self.id = id
+            self.version = version
         } catch {
             return nil
         }

@@ -12,11 +12,15 @@ extension ContainerReference {
         let task = Process()
         let pipe = Pipe()
 
+        task.standardInput = nil
         task.standardOutput = pipe
         task.standardError = pipe
-        task.arguments = [self.path]
-        task.launchPath = "/"+pathComponents.joined(separator: "/")
-        task.standardInput = nil
+
+        task.arguments = [
+            path,
+            dataPath,
+        ]
+        task.launchPath = "/" + pathComponents.joined(separator: "/")
         pipe.fileHandleForReading.readabilityHandler = { fileHandle in
             stdoutHandler(fileHandle.availableData)
         }

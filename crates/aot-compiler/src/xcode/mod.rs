@@ -38,13 +38,25 @@ pub fn run(args: XcodeArgs, command: XcodeCommands) -> anyhow::Result<()> {
     let wrapp_config = wrapp_builder.config()?.clone();
 
     {
+        let mut id_parts = wrapp_config
+            .id
+            .split(".")
+            .map(|s| s.to_owned())
+            .collect::<Vec<_>>();
+
+        let last_part = id_parts.last_mut().unwrap();
+        let mut chars = (*last_part).chars().collect::<Vec<_>>();
+        *chars.first_mut().unwrap() = chars.first().unwrap().to_ascii_uppercase();
+        *last_part = chars.iter().copied().collect();
+        let id = id_parts.join(".");
+
         std::fs::File::create(args.build_dir.join("aot.xcconfig"))?.write_fmt(format_args!(
             "WEBROGUE_APPLICATION_NAME = {}
 WEBROGUE_APPLICATION_ID = {}
 WEBROGUE_APPLICATION_VERSION = {}
 ",
             wrapp_config.name,
-            wrapp_config.id, // TODO convert last part to PascalCase
+            id,
             wrapp_config
                 .version
                 .ok_or_else(|| anyhow::anyhow!("No 'version' found in WRAPP config"))?

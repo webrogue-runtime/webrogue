@@ -64,7 +64,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: macos/launcher/launcher.entitlements
         INFOPLIST_FILE: macos/launcher/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: io.github.webrogue-runtime.WebrogueLauncher
-        PRODUCT_NAME: webrogue Launcher
+        PRODUCT_NAME: Webrogue launcher
         ENABLE_HARDENED_RUNTIME: true
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         ENABLE_PREVIEWS: true
@@ -126,7 +126,7 @@ targets:
     platform: iOS
     sources:
     - ios/lib
-    - ../../crates/gfx-fallback/webrogue_gfx_ffi_sdl2_events.c
+    - ../../crates/gfx-fallback/webrogue_gfx_ffi_sdl_events.c
     settings:
       base:
         SWIFT_INSTALL_OBJC_HEADER: false
@@ -136,6 +136,7 @@ targets:
         SYSTEM_HEADER_SEARCH_PATHS:
         - "$(SRCROOT)/external/angle_ios_headers"
         SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/lib/Bridging-Header.h"
+        GCC_PREPROCESSOR_DEFINITIONS: "WEBROGUE_GFX_SDL_VERSION=2"
   Launcher_iOS:
     type: application
     platform: iOS

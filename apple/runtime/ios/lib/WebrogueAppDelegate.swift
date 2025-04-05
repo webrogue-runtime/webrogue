@@ -31,7 +31,19 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
             webrogueWindow.rootViewController = viewController
             webrogueWindow.makeKeyAndVisible()
         } else {
-            run(path: Bundle.main.url(forResource: "aot", withExtension: "wrapp")!.relativePath)
+            let fileManager = FileManager.default
+            let documentDirPath = fileManager.urls(
+                for: .documentDirectory,
+                in: .userDomainMask
+            ).first!.relativePath
+            let dataDirPath = documentDirPath + "/.webrogue"
+            if !fileManager.fileExists(atPath: dataDirPath) {
+                try! fileManager.createDirectory(atPath: dataDirPath, withIntermediateDirectories: true)
+            }
+            run(
+                path: Bundle.main.url(forResource: "aot", withExtension: "wrapp")!.relativePath,
+                dataPath: dataDirPath + "/data"
+            )
         }
 
         return result
@@ -39,15 +51,20 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
 
     @objc
     func runPathNotification(notification: Notification) {
-        guard let path = notification.object as? String else { return }
-        run(path: path)
+        guard let object = notification.object as? [String] else { return }
+        run(path: object[0], dataPath: object[1])
     }
 
-    func run(path: String, completion: ((Int) -> Void)? = nil) {
+    func run(path: String, dataPath: String, completion: ((Int) -> Void)? = nil) {
         DispatchQueue.global(qos: .userInteractive).async {
             self.isWebrogueWindowVisible = false
-            let ret_code = path.utf8CString.withUnsafeBufferPointer {
-                Int(webrogueObjCMain($0.baseAddress!))
+            let ret_code = path.utf8CString.withUnsafeBufferPointer { pathBuff in
+                dataPath.utf8CString.withUnsafeBufferPointer { dataPathBuff in
+                    Int(webrogueObjCMain(
+                        pathBuff.baseAddress!,
+                        dataPathBuff.baseAddress!
+                    ))
+                }
             }
             self.isWebrogueWindowVisible = true
             completion?(ret_code)

@@ -2,10 +2,10 @@
 #import <UIKit/UIKit.h>
 #import <wrios-Swift.h>
 
-void webrogue_ios_rs_main(const char* path);
+void webrogue_ios_rs_main(const char* path, const char* persistent_path);
 
-int webrogueObjCMain(const char* _Nonnull path) {
-    webrogue_ios_rs_main(path);
+int webrogueObjCMain(const char* _Nonnull path, const char* _Nonnull persistent_path) {
+    webrogue_ios_rs_main(path, persistent_path);
     return 0;
 }
 
