@@ -50,7 +50,6 @@ cp $XWIN_PATH/crt/lib/x86_64/oldnames.lib "$OUT_DIR/oldnames.lib"
 llvm-lib /out:webrogue_aot_lib.lib \
   /machine:x64 \
   target/x86_64-pc-windows-msvc/release-lto/webrogue_aot_lib.lib \
-  $XWIN_PATH/crt/lib/x86_64/libvcruntime.lib \
   $XWIN_PATH/crt/lib/x86_64/libcpmt.lib \
   $XWIN_PATH/sdk/lib/ucrt/x86_64/libucrt.lib \
   $XWIN_PATH/sdk/lib/um/x86_64/ws2_32.lib \
@@ -68,25 +67,54 @@ llvm-lib /out:webrogue_aot_lib.lib \
   $XWIN_PATH/sdk/lib/um/x86_64/setupapi.lib \
   $XWIN_PATH/sdk/lib/um/x86_64/winmm.lib \
   $XWIN_PATH/sdk/lib/um/x86_64/shell32.lib \
-  $XWIN_PATH/sdk/lib/um/x86_64/uuid.lib
+  $XWIN_PATH/sdk/lib/um/x86_64/uuid.lib \
+  $XWIN_PATH/crt/lib/x86_64/libvcruntime.lib
 
-mv webrogue_aot_lib.lib "$OUT_DIR/webrogue_aot_lib.lib"
+llvm-ar t webrogue_aot_lib.lib > lib_content.txt
 
 
 sh ../get_angle.sh
 cp ../libEGL.dll "$OUT_DIR/libEGL.dll"
 cp ../libGLESv2.dll "$OUT_DIR/libGLESv2.dll"
 
-cargo run --manifest-path=../../crates/aot-compiler/Cargo.toml --target-dir=../../target --release object ../../examples/raylib/raylib.wrapp aot.obj x86_64-windows-msvc
-lld-link \
-    "-out:aot.exe" \
-    "-nologo" \
-    "-machine:x64" \
-    "aot.obj" \
-    "../../aot_artifacts/x86_64-windows-msvc/console.obj" \
-    "../../aot_artifacts/x86_64-windows-msvc/webrogue_aot_lib.lib" \
-    "../../aot_artifacts/x86_64-windows-msvc/oldnames.lib" \
-    "../../aot_artifacts/x86_64-windows-msvc/libcmt.lib" \
-    /nodefaultlib \
-    /threads:1
+cargo run --no-default-features --features=compile --target-dir=../../target --release compile object ../../examples/raylib/raylib.wrapp aot.obj x86_64-windows-msvc
+
+for win_type in gui console; do
+  # Collect verbose information to preform tree-shaking of resulting static archives
+  lld-link \
+      "-out:aot.exe" \
+      "-nologo" \
+      "-machine:x64" \
+      "aot.obj" \
+      "../../aot_artifacts/x86_64-windows-msvc/$win_type.obj" \
+      "webrogue_aot_lib.lib" \
+      "../../aot_artifacts/x86_64-windows-msvc/oldnames.lib" \
+      "../../aot_artifacts/x86_64-windows-msvc/libcmt.lib" \
+      /nodefaultlib \
+      /threads:1 \
+      /verbose 2>lld_output_$win_type.txt
+done
+
+python3 filter.py > filtered.txt
+
+# tree-shaking: remove everything not mentioned in lld-link's verbose output
+llvm-ar d webrogue_aot_lib.lib $(cat filtered.txt)
+
+mv webrogue_aot_lib.lib "$OUT_DIR/webrogue_aot_lib.lib"
+
+for win_type in gui console; do
+  lld-link \
+      "-out:aot.exe" \
+      "-nologo" \
+      "-machine:x64" \
+      "aot.obj" \
+      "../../aot_artifacts/x86_64-windows-msvc/$win_type.obj" \
+      "../../aot_artifacts/x86_64-windows-msvc/webrogue_aot_lib.lib" \
+      "../../aot_artifacts/x86_64-windows-msvc/oldnames.lib" \
+      "../../aot_artifacts/x86_64-windows-msvc/libcmt.lib" \
+      /nodefaultlib \
+      /threads:1
+done
+
 rm aot.obj
+rm aot.exe

@@ -26,7 +26,11 @@ impl wasmtime::CustomCodeMemory for StaticCodeMemory {
     }
 }
 
-pub fn run(
+#[cfg(not(any(feature = "aot", feature = "cranelift")))]
+compile_error!("Either AOT or Cranelift features must be enabled");
+
+#[cfg(feature = "cranelift")]
+pub fn run_jit(
     wrapp: webrogue_wrapp::WrappHandle,
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
@@ -34,22 +38,45 @@ pub fn run(
     let mut config = wasmtime::Config::new();
     #[cfg(feature = "cache")]
     config.cache_config_load_default()?;
-    #[cfg(all(feature = "cache", feature = "aot"))]
-    compile_error!("Cache feature can't be combined with AOT");
     // config.async_support(true);
-    #[cfg(feature = "cranelift")]
-    {
-        config.debug_info(true);
-        config.cranelift_opt_level(wasmtime::OptLevel::None);
-        config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
-    }
+    config.debug_info(true);
+    config.cranelift_opt_level(wasmtime::OptLevel::None);
+    config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
-    #[cfg(feature = "aot")]
-    let epoch_interruption = false;
-    #[cfg(feature = "cranelift")]
+
     let epoch_interruption = true;
     config.epoch_interruption(epoch_interruption);
-    #[cfg(feature = "aot")]
+    let engine = wasmtime::Engine::new(&config)?;
+    let mut file = wrapp
+        .open_file("/app/main.wasm")
+        .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
+    let mut wasm_binary = Vec::new();
+    file.read_to_end(&mut wasm_binary)?;
+    drop(file);
+
+    let module = wasmtime::Module::from_binary(&engine, &wasm_binary)?;
+    run_module(
+        wrapp,
+        wrapp_config,
+        persistent_dir,
+        epoch_interruption,
+        engine,
+        module,
+    )
+}
+
+#[cfg(feature = "aot")]
+pub fn run_aot(
+    wrapp: webrogue_wrapp::WrappHandle,
+    wrapp_config: &webrogue_wrapp::config::Config,
+    persistent_dir: &std::path::PathBuf,
+) -> anyhow::Result<()> {
+    let mut config = wasmtime::Config::new();
+    // config.async_support(true);
+    // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
+    let epoch_interruption = false;
+    config.epoch_interruption(epoch_interruption);
     config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
     let engine = wasmtime::Engine::new(&config)?;
     let mut file = wrapp
@@ -58,17 +85,28 @@ pub fn run(
     let mut wasm_binary = Vec::new();
     file.read_to_end(&mut wasm_binary)?;
     drop(file);
-    #[cfg(feature = "aot")]
     let module = unsafe {
         wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
     };
 
-    #[cfg(feature = "cranelift")]
-    let module = wasmtime::Module::from_binary(&engine, &wasm_binary)?;
-    #[cfg(not(any(feature = "aot", feature = "cranelift")))]
-    compile_error!("Either AOT or Cranelift features must be enabled");
-    #[cfg(all(feature = "aot", feature = "cranelift"))]
-    compile_error!("Can't include both AOT and Cranelift features");
+    run_module(
+        wrapp,
+        wrapp_config,
+        persistent_dir,
+        epoch_interruption,
+        engine,
+        module,
+    )
+}
+
+fn run_module(
+    wrapp: webrogue_wrapp::WrappHandle,
+    wrapp_config: &webrogue_wrapp::config::Config,
+    persistent_dir: &std::path::PathBuf,
+    epoch_interruption: bool,
+    engine: wasmtime::Engine,
+    module: wasmtime::Module,
+) -> anyhow::Result<()> {
     let mut linker: wasmtime::Linker<State> = wasmtime::Linker::new(&engine);
     let state = State {
         preview1_ctx: None,

@@ -1,9 +1,3 @@
-set(LLVM_TARGETS_TO_BUILD "X86;AArch64;RISCV;LoongArch")
-set(LLVM_TARGETS_TO_BUILD "X86;AArch64;RISCV;LoongArch" CACHE STRING "Semicolon-separated list of targets to build, or \"all\".")
-
-set(LLVM_ENABLE_TERMINFO "OFF")
-set(LLVM_ENABLE_TERMINFO "OFF" CACHE STRING "Use terminfo database if available.")
-
 add_subdirectory(../../external/llvm/llvm llvm EXCLUDE_FROM_ALL)
 
 project(webrogue_linker CXX)

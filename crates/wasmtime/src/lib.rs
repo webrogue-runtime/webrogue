@@ -23,7 +23,13 @@ impl Config {
         })
     }
 
-    pub fn run(&self) -> anyhow::Result<()> {
-        crate::run::run(self.wrapp.clone(), &self.config, &self.persistent_dir)
+    #[cfg(feature = "cranelift")]
+    pub fn run_jit(&self) -> anyhow::Result<()> {
+        crate::run::run_jit(self.wrapp.clone(), &self.config, &self.persistent_dir)
+    }
+
+    #[cfg(feature = "aot")]
+    pub fn run_aot(&self) -> anyhow::Result<()> {
+        crate::run::run_aot(self.wrapp.clone(), &self.config, &self.persistent_dir)
     }
 }

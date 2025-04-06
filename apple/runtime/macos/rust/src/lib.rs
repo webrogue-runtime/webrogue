@@ -1,7 +1,15 @@
 fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
     let builder = webrogue_wasmtime::WrappHandleBuilder::from_file_path(wrapp_path)?;
-    webrogue_wasmtime::Config::from_builder(builder, persistent_path.into())?.run()?;
-    Ok(())
+    let config = webrogue_wasmtime::Config::from_builder(builder, persistent_path.into())?;
+    #[cfg(feature = "runtime")]
+    config.run_jit()?;
+    #[cfg(feature = "runner")]
+    config.run_aot();
+    #[cfg(not(any(feature = "runtime", feature = "runner")))]
+    {
+        let _ = config;
+        unreachable!("Either runtime or runner feature must be specified");
+    }
 }
 
 #[no_mangle]

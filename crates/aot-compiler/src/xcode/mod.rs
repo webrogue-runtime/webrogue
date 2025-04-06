@@ -7,7 +7,7 @@ mod icons;
 mod object;
 mod types;
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum XcodeCommands {
     /// Build macOS app
     Macos {
@@ -25,12 +25,12 @@ pub enum XcodeCommands {
     Project {},
 }
 
-pub struct XcodeArgs {
-    pub wrapp_path: std::path::PathBuf,
-    pub build_dir: std::path::PathBuf,
+pub struct XcodeArgs<'a> {
+    pub wrapp_path: &'a std::path::PathBuf,
+    pub build_dir: &'a std::path::PathBuf,
 }
 
-pub fn run(args: XcodeArgs, command: XcodeCommands) -> anyhow::Result<()> {
+pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
     println!("Setting up Xcode project...");
     let mut wrapp_builder = webrogue_wrapp::WrappHandleBuilder::from_file_path(&args.wrapp_path)?;
     let template_dir = std::path::PathBuf::from("aot_artifacts/apple_xcode/template");
@@ -86,7 +86,7 @@ WEBROGUE_APPLICATION_VERSION = {}
             )?;
         }
         XcodeCommands::Ios { simulator, config } => {
-            let destination = if simulator {
+            let destination = if *simulator {
                 types::Destination::IOSSim
             } else {
                 types::Destination::IOS

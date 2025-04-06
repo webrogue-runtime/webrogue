@@ -1,6 +1,6 @@
 pub fn build_linux(
-    wrapp_file_path: std::path::PathBuf,
-    output_file_path: std::path::PathBuf,
+    wrapp_file_path: &std::path::PathBuf,
+    output_file_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
     let copied_wrapp_path = output_file_path
         .parent()
@@ -8,16 +8,16 @@ pub fn build_linux(
         .join("aot.wrapp");
 
     println!("Compiling AOT object...");
-    let object_file = crate::utils::TemporalFile::for_tmp_object(&output_file_path)?;
+    let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
     crate::compile::compile_wrapp_to_object(
-        &wrapp_file_path,
+        wrapp_file_path,
         object_file.path(),
         crate::Target::X86_64LinuxGNU,
         true, // TODO check
     )?;
 
     println!("Linking native binary...");
-    link_linux(&object_file, &output_file_path)?;
+    link_linux(&object_file, output_file_path)?;
     drop(object_file);
 
     println!("Copying WRAPP file...");

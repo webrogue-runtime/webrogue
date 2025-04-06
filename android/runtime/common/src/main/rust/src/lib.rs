@@ -141,9 +141,18 @@ fn main() -> anyhow::Result<()> {
         .join(".webrogue")
         .join(&builder.config()?.id)
         .join("persistent");
-    webrogue_wasmtime::Config::from_builder(builder, persistent_path)?.run()?;
 
-    Ok(())
+    let config = webrogue_wasmtime::Config::from_builder(builder, persistent_path)?;
+
+    #[cfg(feature = "launcher")]
+    config.run_jit();
+    #[cfg(feature = "runner")]
+    config.run_aot();
+    #[cfg(not(any(feature = "launcher", feature = "runner")))]
+    {
+        let _ = config;
+        unreachable!("Either launcher or runner feature must be specified");
+    }
 }
 
 #[no_mangle]

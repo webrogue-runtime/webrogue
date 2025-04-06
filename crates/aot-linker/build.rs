@@ -2,9 +2,9 @@
 fn main() {}
 
 #[cfg(feature = "build-llvm")]
-use std::str::FromStr as _;
-#[cfg(feature = "build-llvm")]
 fn main() {
+    use std::str::FromStr as _;
+
     let crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
 
@@ -15,8 +15,8 @@ fn main() {
         .define("LLVM_ENABLE_ZLIB", "OFF")
         .define("LLVM_ENABLE_ZSTD", "OFF")
         .define("LLVM_ENABLE_TERMINFO", "OFF")
-        .define("LLVM_TARGETS_TO_BUILD", "X86;AArch64")
-        .profile("Release") // compiles and links faster
+        .define("LLVM_TARGETS_TO_BUILD", "")
+        .profile("Release")
         .always_configure(false)
         .build();
     println!(

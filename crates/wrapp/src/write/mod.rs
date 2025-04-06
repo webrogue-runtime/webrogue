@@ -27,7 +27,7 @@ fn compress(input: Vec<u8>, output: &mut impl std::io::Write) -> anyhow::Result<
 }
 
 pub fn make_packed_data(
-    dir_path: std::path::PathBuf,
+    dir_path: &std::path::PathBuf,
     config: crate::config::Config,
 ) -> anyhow::Result<Vec<u8>> {
     let mut filenames_to_archive: Vec<(std::path::PathBuf, String)> = Vec::new();
@@ -104,16 +104,17 @@ fn visit_dir(
     Ok(())
 }
 
-pub fn archive(
-    dir_path: std::path::PathBuf,
-    output_path: std::path::PathBuf,
+fn do_archive(
+    dir_path: &std::path::PathBuf,
+    config_path: &std::path::PathBuf,
+    output_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    let mut output_file = std::fs::File::create(output_path.clone())?;
+    let mut output_file = std::fs::File::create(output_path)?;
 
     let mut preamble_data: Vec<u8> = Vec::new();
 
     preamble_data.write_all(b"WRAPP\0")?;
-    let file = std::fs::File::open(dir_path.join("webrogue.json"))?;
+    let file = std::fs::File::open(config_path)?;
     let config: crate::config::Config = serde_json::from_reader(file)?;
     let json_content = serde_json::to_vec(&config.clone().strip())?;
     preamble_data.write_all(&json_content)?;
@@ -158,4 +159,16 @@ pub fn archive(
     compress(make_packed_data(dir_path, config)?, &mut output_file)?;
 
     Ok(())
+}
+
+pub fn archive(
+    dir_path: &std::path::PathBuf,
+    config_path: &std::path::PathBuf,
+    output_path: &std::path::PathBuf,
+) -> anyhow::Result<()> {
+    let result = do_archive(dir_path, config_path, output_path);
+    if result.is_err() {
+        let _ = std::fs::remove_file(output_path);
+    }
+    result
 }

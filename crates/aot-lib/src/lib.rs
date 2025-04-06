@@ -12,6 +12,6 @@ extern "C" fn webrogue_aot_main() {
 
     webrogue_wasmtime::Config::from_builder(builder, persistent_path)
         .unwrap()
-        .run()
+        .run_aot()
         .unwrap();
 }

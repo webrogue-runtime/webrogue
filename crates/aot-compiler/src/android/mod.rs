@@ -2,7 +2,7 @@ use clap::Subcommand;
 
 mod gradle;
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
     /// Make Android app using Gradle project
     Gradle {

@@ -1,0 +1,28 @@
+[package]
+name = "webrogue-cli"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[features]
+run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx", "dep:webrogue-gfx-fallback", "dep:webrogue-gfxstream"]
+compile = ["dep:webrogue-aot-compiler"]
+pack = ["dep:webrogue-wrapp"]
+llvm = ["dep:webrogue-aot-compiler", "webrogue-aot-compiler/llvm"]
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+
+# dependencies for "run" feature
+webrogue-wasmtime = { workspace = true, features = ["cranelift"], optional = true }
+webrogue-gfx = { workspace = true, features = ["fallback"], optional = true }
+webrogue-gfx-fallback = { workspace = true, features = ["sdl2", "cmake"], optional = true }
+webrogue-gfxstream = { workspace = true, features = ["cc"], optional = true }
+
+# dependencies for "compile" feature
+webrogue-aot-compiler = { workspace = true, optional = true }
+
+# dependencies for "pack" feature
+webrogue-wrapp = { workspace = true, features = ["write"], optional = true }

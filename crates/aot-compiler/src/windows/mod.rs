@@ -3,7 +3,7 @@ mod msvc;
 
 use clap::Subcommand;
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
     // TODO revive MinGW build
     // /// Build Windows executable using MinGW libraries

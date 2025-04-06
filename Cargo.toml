@@ -4,21 +4,27 @@ version.workspace = true
 authors.workspace = true
 license.workspace = true
 edition.workspace = true
-default-run = "webrogue-default-runtime"
+default-run = "webrogue"
 
 [[bin]]
-name = "webrogue-default-runtime"
-path = "crates/default-runtime/src/main_workspace.rs"
+name = "webrogue"
+path = "main.rs"
 doc = false
 
 [features]
-cranelift = ["webrogue-default-runtime/cranelift"]
-aot = ["webrogue-default-runtime/aot"]
-cache = ["webrogue-default-runtime/cache"]
+default = ["run", "compile", "pack"]
+
+run = ["webrogue-cli/run"]
+compile = ["webrogue-cli/compile"]
+pack = ["webrogue-cli/pack"]
+
+# llvm feature is disabled by default so rust-analyzer don't have to wait while LLVM compiles
+llvm = ["webrogue-cli/llvm"]
 
 [dependencies]
-webrogue-default-runtime = { workspace = true }
+webrogue-cli = { workspace = true }
 anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
 
 [workspace.package]
 version = "0.1.0"
@@ -33,7 +39,7 @@ members = [
   "crates/aot-data",
   "crates/aot-lib",
   "crates/aot-linker",
-  "crates/default-runtime",
+  "crates/cli",
   "crates/event-apigen",
   "crates/gfx",
   "crates/gfx-fallback",
@@ -43,7 +49,6 @@ members = [
   "crates/web-macro",
   "crates/web",
   "crates/wrapp",
-  "crates/wrapp-cli",
 
   "android/runtime/common/src/main/rust",
 
@@ -59,7 +64,7 @@ exclude = [
 webrogue-aot-compiler = { path = "crates/aot-compiler", default-features=false }
 webrogue-aot-data = { path = "crates/aot-data" }
 webrogue-aot-linker = { path = "crates/aot-linker" }
-webrogue-default-runtime = { path = "crates/default-runtime" }
+webrogue-cli = { path = "crates/cli" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
