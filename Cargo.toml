@@ -102,6 +102,7 @@ quote = { version = "1.0", default-features = false }
 syn = { version = "2.0.25", default-features = false }
 proc-macro2 = { version = "1.0", default-features = false }
 witx = { version = "0.9.1", default-features = false }
+dirs = { version = "6.0.0" }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.2" }

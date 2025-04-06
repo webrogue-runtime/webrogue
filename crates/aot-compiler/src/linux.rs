@@ -1,27 +1,33 @@
+use std::io::{Seek, Write};
+
 pub fn build_linux(
     wrapp_file_path: &std::path::PathBuf,
     output_file_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    let copied_wrapp_path = output_file_path
-        .parent()
-        .ok_or(anyhow::anyhow!("Path error"))?
-        .join("aot.wrapp");
-
     println!("Compiling AOT object...");
     let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
     crate::compile::compile_wrapp_to_object(
         wrapp_file_path,
         object_file.path(),
         crate::Target::X86_64LinuxGNU,
-        true, // TODO check
+        false, // TODO check
     )?;
 
     println!("Linking native binary...");
     link_linux(&object_file, output_file_path)?;
     drop(object_file);
 
-    println!("Copying WRAPP file...");
-    std::fs::copy(wrapp_file_path, copied_wrapp_path)?;
+    println!("Embedding WRAPP file...");
+    let mut output_file: std::fs::File = std::fs::OpenOptions::new()
+        .append(true)
+        .open(output_file_path)?;
+
+    let mut wrapp_file = std::fs::File::open(wrapp_file_path)?;
+
+    let wrapp_size = wrapp_file.seek(std::io::SeekFrom::End(0))? as u64;
+    wrapp_file.seek(std::io::SeekFrom::Start(0))?;
+    std::io::copy(&mut wrapp_file, &mut output_file)?;
+    output_file.write_all(&wrapp_size.to_le_bytes())?;
 
     anyhow::Ok(())
 }

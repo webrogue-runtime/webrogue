@@ -1,6 +1,6 @@
 #include "windows.h"
 
-void webrogue_aot_main();
+void webrogue_aot_windows();
 
 #if defined(WR_WIN_TYPE_gui)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -11,6 +11,6 @@ int main(int argc, char *argv[])
 #error unknown WR_WIN_TYPE_* value
 #endif
 {
-  webrogue_aot_main();
+  webrogue_aot_windows();
   return 0;
 }
