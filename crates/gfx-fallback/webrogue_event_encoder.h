@@ -24,8 +24,8 @@ static void webrogue_event_out_buf_delete(webrogue_event_out_buf buf) {
     free(buf.buf);
 }
 
-#define BUF_SIZE(LEN) if(out->buf_size < (out->used_size + LEN)) { out->buf_size *= 2; out->buf = realloc(out->buf, out->buf_size); } out->used_size += LEN
-#define SET(TYPE, OFFSET, VALUE) *((TYPE*)(((char*)out->buf) + OFFSET)) = VALUE
+#define BUF_SIZE(LEN) if(out->buf_size < (out->used_size + LEN)) { out->buf_size *= 2; out->buf = realloc(out->buf, out->buf_size); }; char* current_pointer = ((char*)out->buf) + out->used_size; out->used_size += LEN
+#define SET(TYPE, OFFSET, VALUE) *((TYPE*)(current_pointer + OFFSET)) = VALUE
 
 static inline void webrogue_event_encode_mouse_down(webrogue_event_out_buf *out, uint32_t x, uint32_t y, uint32_t button) {
     BUF_SIZE(16);

@@ -50,6 +50,7 @@ fn main() -> anyhow::Result<()> {
             write!("result.buf = malloc(WEBROGUE_MAX_ENCODED_EVENT_SIZE);");
             write!("result.buf_size = WEBROGUE_MAX_ENCODED_EVENT_SIZE;");
             write!("result.used_size = 0;");
+            write!("return result;");
         }
         writer.dec_indent();
         write!("}}");
@@ -62,8 +63,8 @@ fn main() -> anyhow::Result<()> {
         writer.dec_indent();
         write!("}}");
         write!("");
-        write!("#define BUF_SIZE(LEN) if(out->buf_size < (out->used_size + LEN)) {{ out->buf_size *= 2; out->buf = realloc(out->buf, out->buf_size); }} out->used_size += LEN");
-        write!("#define SET(TYPE, OFFSET, VALUE) *((TYPE*)(((char*)out->buf) + OFFSET)) = VALUE");
+        write!("#define BUF_SIZE(LEN) if(out->buf_size < (out->used_size + LEN)) {{ out->buf_size *= 2; out->buf = realloc(out->buf, out->buf_size); }}; char* current_pointer = ((char*)out->buf) + out->used_size; out->used_size += LEN");
+        write!("#define SET(TYPE, OFFSET, VALUE) *((TYPE*)(current_pointer + OFFSET)) = VALUE");
         write!("");
         for event in events::all() {
             let mut args = vec!["webrogue_event_out_buf *out".to_owned()];
@@ -182,7 +183,6 @@ fn main() -> anyhow::Result<()> {
         }
         writer.dec_indent();
         write!("}} buffer_consumed += LEN;");
-        write!("#define RETURN return result;");
         write!("#define GET(TYPE, OFFSET) *((TYPE*)(current_pointer + OFFSET));");
         write!("");
         write!("webrogue_event webrogue_gfx_poll() {{");
@@ -256,7 +256,7 @@ fn main() -> anyhow::Result<()> {
                                 field.offset
                             );
                         }
-                        write!("RETURN;");
+                        write!("return result;");
                     }
                     writer.dec_indent();
                     write!("}}");
@@ -269,8 +269,9 @@ fn main() -> anyhow::Result<()> {
                 write!("default: {{");
                 writer.inc_indent();
                 {
+                    write!("buffer_consumed = buffer_used_size;");
                     write!("result.type = WEBROGUE_EVENT_TYPE_INVALID;");
-                    write!("RETURN;");
+                    write!("return result;");
                 }
                 writer.dec_indent();
                 write!("}}");
