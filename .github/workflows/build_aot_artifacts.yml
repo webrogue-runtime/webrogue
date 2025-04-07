@@ -36,7 +36,7 @@ jobs:
     
     - name: Setup Rust
       run: |
-        rustup target add x86_64-windows-msvc
+        rustup target add x86_64-pc-windows-msvc
   
     - name: Build AOT artifacts
       run: |
@@ -68,6 +68,6 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: Artifacts-Windows
+        name: Artifacts-Android
         path: |
-          aot_artifacts/x86_64-windows-msvc
+          aot_artifacts/android_gradle

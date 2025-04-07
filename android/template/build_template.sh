@@ -24,19 +24,22 @@ test -d "$ANDROID_NDK_PATH" || ./sdk/cmdline-tools/bin/sdkmanager --sdk_root=sdk
 rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/home/someone/repos/webrogue/crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c.o
 rm -f runtime/runner/build/intermediates/cxx/RelWithDebInfo/*/obj/arm64-v8a/libSDL2.so 
 rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/webrogue_runtime.c.o
-cargo run \
-    --target-dir=../target \
-    --release \
-    --no-default-features \
-    --features=compile \
-    compile \
-    object \
-    ../examples/raylib/raylib.wrapp \
-    runtime/runner/src/main/cpp/aot.o \
-    aarch64-linux-android
 
-mkdir -p runtime/runner/src/main/assets
-cp ../examples/raylib/raylib.wrapp runtime/runner/src/main/assets/aot.swrapp # TODO strip
+test -f ../examples/empty/empty.wrapp && {
+    cargo run \
+        --target-dir=../target \
+        --release \
+        --no-default-features \
+        --features=compile \
+        compile \
+        object \
+        ../examples/empty/empty.wrapp \
+        runtime/runner/src/main/cpp/empty.o \
+        aarch64-linux-android
+
+    mkdir -p runtime/runner/src/main/assets
+    cp ../examples/empty/empty.wrapp runtime/runner/src/main/assets/aot.swrapp # TODO strip
+}
 
 ./runtime/gradlew --project-dir=runtime :runner:assembleRelease
 
