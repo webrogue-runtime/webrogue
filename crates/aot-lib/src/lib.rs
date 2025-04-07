@@ -6,7 +6,7 @@ extern "C" fn webrogue_aot_windows() {
             .unwrap()
             .parent()
             .unwrap()
-            .join("aot.wrapp"),
+            .join("aot.swrapp"),
     )
     .unwrap();
     let persistent_path = dirs::data_dir()

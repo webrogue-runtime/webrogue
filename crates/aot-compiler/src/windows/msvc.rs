@@ -4,11 +4,12 @@ pub fn build(
     is_console: bool,
 ) -> anyhow::Result<()> {
     let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
-    let copied_wrapp_path = output_file_path
+    let stripped_wrapp_path = output_file_path
         .parent()
         .ok_or(anyhow::anyhow!("Path error"))?
-        .join("aot.wrapp");
+        .join("aot.swrapp");
 
+    println!("Compiling AOT object...");
     crate::compile::compile_wrapp_to_object(
         wrapp_file_path,
         object_file.path(),
@@ -16,10 +17,13 @@ pub fn build(
         false, // TODO check
     )?;
 
-    link_windows_mingw(&object_file, output_file_path, is_console)?;
+    println!("Linking native binary...");
+    link_windows_msvc(&object_file, output_file_path, is_console)?;
     drop(object_file);
 
-    std::fs::copy(wrapp_file_path, copied_wrapp_path)?;
+    println!("Generating stripped WRAPP file...");
+    webrogue_wrapp::strip(wrapp_file_path, std::fs::File::create(stripped_wrapp_path)?)?;
+    println!("Copying ANGLE files...");
     std::fs::copy(
         "aot_artifacts/x86_64-windows-gnu/libEGL.dll",
         output_file_path
@@ -38,7 +42,7 @@ pub fn build(
     anyhow::Ok(())
 }
 
-fn link_windows_mingw(
+fn link_windows_msvc(
     object_file_path: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
     is_console: bool,

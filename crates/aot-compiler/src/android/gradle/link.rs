@@ -41,6 +41,8 @@ pub fn link(
         "--no-undefined-version",
         "--fatal-warnings",
         "--no-undefined",
+        "--strip-debug",
+        "--gc-sections",
         "-soname",
         "libwebrogue.so",
         path_to_arg(&webrogue_libs_path.join("webrogue_runtime.c.o"))?,

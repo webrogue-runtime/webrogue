@@ -145,9 +145,9 @@ fn main() -> anyhow::Result<()> {
     let config = webrogue_wasmtime::Config::from_builder(builder, persistent_path)?;
 
     #[cfg(feature = "launcher")]
-    config.run_jit();
+    return config.run_jit();
     #[cfg(feature = "runner")]
-    config.run_aot();
+    return config.run_aot();
     #[cfg(not(any(feature = "launcher", feature = "runner")))]
     {
         let _ = config;

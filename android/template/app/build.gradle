@@ -19,7 +19,7 @@ android {
         }
     }
     aaptOptions {
-        noCompress "wrapp"
+        noCompress "swrapp"
     }
     defaultConfig {
         applicationId webrogueApplicationId

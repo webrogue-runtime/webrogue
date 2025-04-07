@@ -28,14 +28,15 @@ cargo run \
     --target-dir=../target \
     --release \
     --no-default-features \
-    --package=webrogue-aot-compiler \
+    --features=compile \
+    compile \
     object \
     ../examples/raylib/raylib.wrapp \
     runtime/runner/src/main/cpp/aot.o \
     aarch64-linux-android
 
 mkdir -p runtime/runner/src/main/assets
-cp ../examples/raylib/raylib.wrapp runtime/runner/src/main/assets/aot.wrapp
+cp ../examples/raylib/raylib.wrapp runtime/runner/src/main/assets/aot.swrapp # TODO strip
 
 ./runtime/gradlew --project-dir=runtime :runner:assembleRelease
 

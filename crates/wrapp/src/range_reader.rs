@@ -18,7 +18,12 @@ impl<OverallReader: Read + Seek> RangeReader<OverallReader> {
 
 impl<OverallReader: Read + Seek> Read for RangeReader<OverallReader> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        self.overall_reader.read(buf)
+        let current_pos = self.seek(std::io::SeekFrom::Current(0))?;
+        let remaing = self.size - current_pos;
+        let to_read = std::cmp::min(remaing as usize, buf.len());
+        let trimmed_buf = &mut buf[..to_read];
+
+        self.overall_reader.read(trimmed_buf)
     }
 }
 

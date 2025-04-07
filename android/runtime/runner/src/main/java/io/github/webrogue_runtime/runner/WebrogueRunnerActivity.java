@@ -23,7 +23,7 @@ public class WebrogueRunnerActivity extends WebrogueActivity {
     public void updateContainerFd() {
         Context context = getContext();
         try {
-            AssetFileDescriptor afd = context.getAssets().openFd("aot.wrapp");
+            AssetFileDescriptor afd = context.getAssets().openFd("aot.swrapp");
             containerOffset = afd.getStartOffset();
             containerSize = afd.getLength();
             ParcelFileDescriptor pfd = afd.getParcelFileDescriptor();

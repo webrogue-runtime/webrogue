@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use anyhow::Context;
+
 use crate::range_reader;
 
 pub struct Wrapp {
@@ -65,7 +67,8 @@ pub struct WrappHandleBuilder<Reader: std::io::Read + std::io::Seek + 'static> {
 
 impl WrappHandleBuilder<std::fs::File> {
     pub fn from_file_path<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Self> {
-        Ok(Self::new(std::fs::File::open(path)?))
+        let context = format!("Couldn't open {}", path.as_ref().display().to_string());
+        Ok(Self::new(std::fs::File::open(path).context(context)?))
     }
 
     pub fn from_file(file: std::fs::File) -> anyhow::Result<Self> {
@@ -101,7 +104,7 @@ impl<Reader: std::io::Read + std::io::Seek + 'static> WrappHandleBuilder<Reader>
         }
     }
 
-    fn preamble(&mut self) -> anyhow::Result<&crate::preamble::Preamble> {
+    pub(crate) fn preamble(&mut self) -> anyhow::Result<&crate::preamble::Preamble> {
         if self.preamble.is_none() {
             self.preamble = Some(crate::preamble::Preamble::new(&mut self.reader)?);
         }

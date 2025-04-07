@@ -23,6 +23,10 @@ set(WEBROGUE_SDL_DIR "${CMAKE_CURRENT_LIST_DIR}/external/${WEBROGUE_SDL_DIR_NAME
 #     )
 # endif()
 
+if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    add_link_options(-Wl,--strip-debug -Wl,--gc-sections)
+endif()
+
 set(SDL_SHARED ON)
 set(SDL_STATIC OFF)
 add_subdirectory("${WEBROGUE_SDL_DIR}" SDL2)

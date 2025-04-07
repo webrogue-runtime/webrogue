@@ -79,12 +79,6 @@ pub fn run_aot(
     config.epoch_interruption(epoch_interruption);
     config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
     let engine = wasmtime::Engine::new(&config)?;
-    let mut file = wrapp
-        .open_file("/app/main.wasm")
-        .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
-    let mut wasm_binary = Vec::new();
-    file.read_to_end(&mut wasm_binary)?;
-    drop(file);
     let module = unsafe {
         wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
     };

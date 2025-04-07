@@ -1,7 +1,7 @@
 #[cfg(feature = "write")]
 mod write;
 #[cfg(feature = "write")]
-pub use write::archive;
+pub use write::{archive, strip};
 
 mod wrapp;
 pub use wrapp::WrappHandle;

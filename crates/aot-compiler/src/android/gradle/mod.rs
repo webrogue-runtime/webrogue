@@ -45,7 +45,11 @@ pub fn build(
     if !std::fs::exists(assets_path.clone())? {
         std::fs::create_dir(assets_path.clone())?;
     };
-    std::fs::copy(container_path, assets_path.join("aot.wrapp"))?;
+    println!("Generating stripped WRAPP file...");
+    webrogue_wrapp::strip(
+        container_path,
+        std::fs::File::create(assets_path.join("aot.swrapp"))?,
+    )?;
 
     let icons_stamp = icons::build(
         &build_dir,

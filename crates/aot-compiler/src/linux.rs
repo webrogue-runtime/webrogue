@@ -17,16 +17,17 @@ pub fn build_linux(
     link_linux(&object_file, output_file_path)?;
     drop(object_file);
 
-    println!("Embedding WRAPP file...");
+    println!("Embedding stripped WRAPP file...");
     let mut output_file: std::fs::File = std::fs::OpenOptions::new()
         .append(true)
+        .create(true)
         .open(output_file_path)?;
 
-    let mut wrapp_file = std::fs::File::open(wrapp_file_path)?;
+    let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
+    webrogue_wrapp::strip(wrapp_file_path, &mut output_file)?;
+    let new_size = output_file.seek(std::io::SeekFrom::End(0))?;
 
-    let wrapp_size = wrapp_file.seek(std::io::SeekFrom::End(0))? as u64;
-    wrapp_file.seek(std::io::SeekFrom::Start(0))?;
-    std::io::copy(&mut wrapp_file, &mut output_file)?;
+    let wrapp_size = new_size - original_size;
     output_file.write_all(&wrapp_size.to_le_bytes())?;
 
     anyhow::Ok(())
@@ -45,6 +46,8 @@ fn link_linux(
         "--eh-frame-hdr",
         "-m",
         "elf_x86_64",
+        "--strip-all",
+        "--gc-sections",
         "-dynamic-linker",
         "/lib64/ld-linux-x86-64.so.2",
         "-z",

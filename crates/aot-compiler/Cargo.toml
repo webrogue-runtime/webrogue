@@ -14,7 +14,7 @@ clap = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 webrogue-aot-linker = { workspace = true, optional = true }
 wasmtime = { workspace = true, default-features = false, features = ["cranelift", "all-arch", "threads", "parallel-compilation"] }
-webrogue-wrapp = { workspace = true }
+webrogue-wrapp = { workspace = true, features = ["write"] }
 object = { workspace = true, default-features = false, features = ['read_core', 'write_core', 'elf'] }
 wasmtime-environ = { workspace = true, default-features = false }
 image = { workspace = true, default-features = false, features = ["png", "rayon", "webp"] }
