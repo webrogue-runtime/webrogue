@@ -1,10 +1,8 @@
 cd $(dirname $0)
 set -ex
 
-
 OUT_DIR="../../aot_artifacts/x86_64-windows-msvc"
 rm -rf "$OUT_DIR"
-cargo install xwin --locked
 
 XWIN_PATH="$(pwd)/xwin"
 test -d "$XWIN_PATH" || xwin --accept-license splat --output "$XWIN_PATH"

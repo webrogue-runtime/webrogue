@@ -61,6 +61,8 @@ jobs:
     - name: Setup Rust
       run: |
         rustup target add aarch64-linux-android
+        cargo binstall xwin -y
+        cargo binstall cargo-xwin -y
   
     - name: Build AOT artifacts
       run: |

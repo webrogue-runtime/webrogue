@@ -1,5 +1,4 @@
-# android/template
-cd $(dirname $0)
+cd $(dirname $0) # android/template
 set -e
 
 # android
