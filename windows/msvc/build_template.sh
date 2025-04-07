@@ -10,7 +10,6 @@ test -d "$XWIN_PATH" || xwin --accept-license splat --output "$XWIN_PATH"
 cargo xwin build --manifest-path=../../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-pc-windows-msvc --features=gfx-fallback-cmake --profile release-lto
 
 mkdir -p "$OUT_DIR"
-cp target/x86_64-pc-windows-msvc/release-lto/webrogue_aot_lib.lib "$OUT_DIR"
 
 for win_type in gui console; do
   clang -target x86_64-pc-win32 -c main.c -o $win_type.obj \
@@ -68,18 +67,42 @@ llvm-lib /out:webrogue_aot_lib.lib \
   $XWIN_PATH/sdk/lib/um/x86_64/uuid.lib \
   $XWIN_PATH/crt/lib/x86_64/libvcruntime.lib
 
-llvm-ar t webrogue_aot_lib.lib > lib_content.txt
-
+mv webrogue_aot_lib.lib "$OUT_DIR/webrogue_aot_lib.lib"
 
 sh ../get_angle.sh
 cp ../libEGL.dll "$OUT_DIR/libEGL.dll"
 cp ../libGLESv2.dll "$OUT_DIR/libGLESv2.dll"
 
+# It is possible to preform tree-shaking only if lld-link tool is installed
+if lld-link --version
+then
+  echo "Using lld-link"
+  lld_link()
+  {
+    E=$@
+    sh -c "lld-link $E"
+  }
+else
+  which lld || exit
+  echo "Emulating lld-link using lld"
+  lld_link()
+  {
+    E=$@
+    bash -c "exec -a lld-link $(which lld) $E"
+  }
+  export PATH="$(pwd):$PATH"
+fi
+
+
+
+mv "$OUT_DIR/webrogue_aot_lib.lib" webrogue_aot_lib.lib 
+
+llvm-ar t webrogue_aot_lib.lib > lib_content.txt
 test -f ../../examples/empty/empty.wrapp && cargo run --no-default-features --features=compile --target-dir=../../target --release compile object ../../examples/empty/empty.wrapp empty.obj x86_64-windows-msvc
 
 for win_type in gui console; do
   # Collect verbose information to preform tree-shaking of resulting static archives
-  lld-link \
+  lld_link \
       "-out:aot.exe" \
       "-nologo" \
       "-machine:x64" \
@@ -90,7 +113,10 @@ for win_type in gui console; do
       "../../aot_artifacts/x86_64-windows-msvc/libcmt.lib" \
       /nodefaultlib \
       /threads:1 \
-      /verbose 2>lld_output_$win_type.txt
+      /verbose 2>lld_output_$win_type.txt || { 
+        cat lld_output_$win_type.txt
+        exit 1
+      }
 done
 
 python3 filter.py > filtered.txt
@@ -101,7 +127,7 @@ llvm-ar d webrogue_aot_lib.lib $(cat filtered.txt)
 mv webrogue_aot_lib.lib "$OUT_DIR/webrogue_aot_lib.lib"
 
 for win_type in gui console; do
-  lld-link \
+  lld_link \
       "-out:aot.exe" \
       "-nologo" \
       "-machine:x64" \

@@ -7,18 +7,20 @@ CMDLINE_TOOLS_VERSION=linux-11076708_latest
 NDK_VERSION=27.2.12479018
 ANDROID_API_VERSION=24
 
-test -d sdk || mkdir sdk
-test -d sdk/cmdline-tools || {
-    wget https://dl.google.com/android/repository/commandlinetools-$CMDLINE_TOOLS_VERSION.zip -O sdk/commandlinetools-$CMDLINE_TOOLS_VERSION.zip
-    unzip sdk/commandlinetools-$CMDLINE_TOOLS_VERSION.zip -d sdk
-    rm sdk/commandlinetools-$CMDLINE_TOOLS_VERSION.zip
+if test -z $ANDROID_SDK_ROOT
+then
+    export ANDROID_SDK_ROOT="$(pwd)/sdk"
+    test -d $ANDROID_SDK_ROOT || mkdir $ANDROID_SDK_ROOT
+fi
+test -d $ANDROID_SDK_ROOT/cmdline-tools || {
+    wget https://dl.google.com/android/repository/commandlinetools-$CMDLINE_TOOLS_VERSION.zip -O $ANDROID_SDK_ROOT/commandlinetools-$CMDLINE_TOOLS_VERSION.zip
+    unzip $ANDROID_SDK_ROOT/commandlinetools-$CMDLINE_TOOLS_VERSION.zip -d $ANDROID_SDK_ROOT
+    rm $ANDROID_SDK_ROOT/commandlinetools-$CMDLINE_TOOLS_VERSION.zip
 }
 
-
-export ANDROID_HOME="$(pwd)/sdk"
-export ANDROID_NDK_PATH="$ANDROID_HOME/ndk/$NDK_VERSION"
-test -d "$ANDROID_HOME/licenses" || yes | ./sdk/cmdline-tools/bin/sdkmanager --licenses --sdk_root=sdk
-test -d "$ANDROID_NDK_PATH" || ./sdk/cmdline-tools/bin/sdkmanager --sdk_root=sdk "ndk;$NDK_VERSION"
+export ANDROID_NDK_PATH="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
+test -d "$ANDROID_SDK_ROOT/licenses" || yes | $ANDROID_SDK_ROOT/cmdline-tools/bin/sdkmanager --licenses --sdk_root=$ANDROID_SDK_ROOT
+test -d "$ANDROID_NDK_PATH" || $ANDROID_SDK_ROOT/cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "ndk;$NDK_VERSION"
 
 rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/home/someone/repos/webrogue/crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c.o
 rm -f runtime/runner/build/intermediates/cxx/RelWithDebInfo/*/obj/arm64-v8a/libSDL2.so 
@@ -79,22 +81,22 @@ mkdir -p ../aot_artifacts/android_gradle/libs
 cp \
     runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/webrogue_runtime.c.o \
     runtime/runner/src/main/cpp/../rust_target/aarch64-linux-android/release-lto/libwebrogue_android.a \
-    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libc.so \
-    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libdl.so \
-    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/crtbegin_so.o \
-    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/crtend_so.o \
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libc.so \
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libdl.so \
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/crtbegin_so.o \
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/crtend_so.o \
     ../aot_artifacts/android_gradle/libs
 
 $ANDROID_NDK_PATH/toolchains/llvm/prebuilt/*/bin/llvm-ar qLs \
     ../aot_artifacts/android_gradle/libs/libwebrogue_android.a \
     runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/libwebrogue_static.a \
-    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_static.a \
-    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++abi.a \
-    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/18/lib/linux/libclang_rt.builtins-aarch64-android.a \
-    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/18/lib/linux/aarch64/libunwind.a
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_static.a \
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++abi.a \
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/18/lib/linux/libclang_rt.builtins-aarch64-android.a \
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/18/lib/linux/aarch64/libunwind.a
 
 cp \
-    sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/NOTICE \
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/NOTICE \
     ../aot_artifacts/android_gradle/libs/NOTICE
 
 cp \

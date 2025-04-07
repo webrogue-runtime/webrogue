@@ -33,10 +33,17 @@ jobs:
     - name: Submodules
       run: |
         git submodule update --init --single-branch external/wasmtime external/aemu external/gfxstream
-    
+
+    - name: Install LLVM
+      run: |
+        sudo apt-get install -y llvm lld
+
     - name: Setup Rust
       run: |
+        curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
         rustup target add x86_64-pc-windows-msvc
+        cargo binstall xwin -y
+        cargo binstall cargo-xwin -y
   
     - name: Build AOT artifacts
       run: |
@@ -61,12 +68,10 @@ jobs:
     - name: Setup Rust
       run: |
         rustup target add aarch64-linux-android
-        cargo binstall xwin -y
-        cargo binstall cargo-xwin -y
   
     - name: Build AOT artifacts
       run: |
-        android/template/build_template.sh
+        sh android/template/build_template.sh
 
     - uses: actions/upload-artifact@v4
       with:
