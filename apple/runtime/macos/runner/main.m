@@ -24,9 +24,9 @@ int main(int argc, const char * argv[]) {
             [NSException raise:@"libNotFound" format:@"libGLESv2.dylib not found"];
         }
         setenv("SDL_VIDEO_GL_DRIVER", [gles_path UTF8String], 0);
-        NSString* wrapp_path = [exec_path stringByAppendingPathComponent: @"aot.wrapp"];
+        NSString* wrapp_path = [exec_path stringByAppendingPathComponent: @"aot.swrapp"];
         if(![[NSFileManager defaultManager] fileExistsAtPath: wrapp_path]) {
-            [NSException raise:@"libNotFound" format:@"aot.wrapp not found"];
+            [NSException raise:@"libNotFound" format:@"aot.swrapp not found"];
         }
         NSURL* documentsURL = [
             [NSFileManager defaultManager]

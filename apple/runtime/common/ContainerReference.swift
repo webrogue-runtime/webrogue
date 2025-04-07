@@ -1,3 +1,5 @@
+import Foundation
+
 public struct ContainerReference {
     public let path: String
     public let metadata: ContainerMetadata

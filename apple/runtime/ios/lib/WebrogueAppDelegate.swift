@@ -41,7 +41,7 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
                 try! fileManager.createDirectory(atPath: dataDirPath, withIntermediateDirectories: true)
             }
             run(
-                path: Bundle.main.url(forResource: "aot", withExtension: "wrapp")!.relativePath,
+                path: Bundle.main.url(forResource: "aot", withExtension: "swrapp")!.relativePath,
                 dataPath: dataDirPath + "/data"
             )
         }

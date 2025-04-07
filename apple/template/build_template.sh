@@ -71,7 +71,7 @@ cp runtime/macos/runner/aot.x86_64.macosx.o template/aot/aot.x86_64.macosx.o
 cp runtime/ios/runner/aot.x86_64.iphonesimulator.o template/aot/aot.x86_64.iphonesimulator.o
 cp runtime/ios/runner/aot.arm64.iphonesimulator.o template/aot/aot.arm64.iphonesimulator.o
 cp runtime/ios/runner/aot.arm64.iphoneos.o template/aot/aot.arm64.iphoneos.o
-cp runtime/macos/runner/aot.wrapp template/aot/aot.wrapp
+cp runtime/macos/runner/aot.swrapp template/aot/aot.swrapp
 
 cp runtime/scripts/lipo_object_combiner.sh template/scripts/lipo_object_combiner.sh
 

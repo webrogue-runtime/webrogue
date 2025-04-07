@@ -63,16 +63,21 @@ WEBROGUE_APPLICATION_VERSION = {}
         ))?;
     }
 
-    let aot_dir = args.build_dir.join("aot");
-    if !aot_dir.exists() {
-        std::fs::create_dir(aot_dir.clone())?;
-    }
-    std::fs::copy(args.wrapp_path.clone(), aot_dir.join("aot.wrapp"))?;
     let old_stamp = read_stamp(&args.build_dir).ok();
     let icons_stamp = icons::build(
         &args.build_dir,
         &mut wrapp_builder,
         old_stamp.as_ref().map(|stamp| &stamp.icons),
+    )?;
+
+    println!("Generating stripped WRAPP file...");
+    let aot_dir = args.build_dir.join("aot");
+    if !aot_dir.exists() {
+        std::fs::create_dir(&aot_dir)?;
+    }
+    webrogue_wrapp::strip(
+        &args.wrapp_path,
+        std::fs::File::create(aot_dir.join("aot.swrapp"))?,
     )?;
 
     match command {

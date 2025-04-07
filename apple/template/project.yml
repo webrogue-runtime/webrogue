@@ -39,7 +39,7 @@ targets:
     sources:
     - macos/main.m
     - macos/Assets.xcassets
-    - aot/aot.wrapp
+    - aot/aot.swrapp
     - aot.xcconfig
     configFiles:
       Debug: aot.xcconfig
@@ -116,7 +116,7 @@ targets:
     - ios/Info.plist
     - ios/LaunchScreen.storyboard
     - ios/main.swift
-    - aot/aot.wrapp
+    - aot/aot.swrapp
     - aot.xcconfig
     configFiles:
       Debug: aot.xcconfig
