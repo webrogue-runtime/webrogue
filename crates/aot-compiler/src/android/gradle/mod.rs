@@ -23,7 +23,9 @@ pub fn build(
     debug: bool,
     output: Option<std::path::PathBuf>,
 ) -> anyhow::Result<()> {
-    let template_dir = std::path::PathBuf::from("aot_artifacts/android_gradle/template");
+    let template_dir = crate::utils::get_aot_artifacts_path()?
+        .join("android_gradle")
+        .join("template");
     let object_file = crate::utils::TemporalFile::for_tmp_object(build_dir.join("aarch64"))?;
     let old_stamp = read_stamp(&build_dir).ok();
 

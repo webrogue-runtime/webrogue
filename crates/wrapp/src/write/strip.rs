@@ -1,5 +1,3 @@
-use std::io::{Seek, Write as _};
-
 pub fn strip(
     wrapp_path: &std::path::PathBuf,
     mut writer: impl std::io::Write,
@@ -10,8 +8,8 @@ pub fn strip(
     let mut wrapp_file = std::fs::File::open(wrapp_path)?;
     let mut preamble_reader =
         crate::range_reader::RangeReader::new(&mut wrapp_file, 0, preamble_len)?;
-    let writen = std::io::copy(&mut preamble_reader, &mut writer)?;
-    assert_eq!(writen, preamble_len);
+    let written = std::io::copy(&mut preamble_reader, &mut writer)?;
+    assert_eq!(written, preamble_len);
 
     let mut filenames_to_archive: Vec<(crate::FileReader, String)> = Vec::new();
     let wrapp = builder.build()?;

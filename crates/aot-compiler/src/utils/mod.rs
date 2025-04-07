@@ -60,6 +60,7 @@ macro_rules! lld {
     );
 }
 
+use anyhow::Context;
 pub(crate) use lld;
 
 pub struct TemporalFile {
@@ -107,4 +108,10 @@ pub fn path_to_arg<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<String>
         .to_str()
         .ok_or_else(|| anyhow::anyhow!("Path error: {}", path.as_ref().display()))?
         .to_owned())
+}
+
+pub fn get_aot_artifacts_path() -> anyhow::Result<std::path::PathBuf> {
+    Ok(std::env::var("WEBROGUE_ARTIFACTS_PATH")
+        .context("Can't get WEBROGUE_ARTIFACTS_PATH environment variable")?
+        .into())
 }

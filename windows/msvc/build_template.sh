@@ -77,7 +77,7 @@ sh ../get_angle.sh
 cp ../libEGL.dll "$OUT_DIR/libEGL.dll"
 cp ../libGLESv2.dll "$OUT_DIR/libGLESv2.dll"
 
-cargo run --no-default-features --features=compile --target-dir=../../target --release compile object ../../examples/raylib/raylib.wrapp aot.obj x86_64-windows-msvc
+test -f ../../examples/empty/empty.wrapp && cargo run --no-default-features --features=compile --target-dir=../../target --release compile object ../../examples/empty/empty.wrapp empty.obj x86_64-windows-msvc
 
 for win_type in gui console; do
   # Collect verbose information to preform tree-shaking of resulting static archives
@@ -85,7 +85,7 @@ for win_type in gui console; do
       "-out:aot.exe" \
       "-nologo" \
       "-machine:x64" \
-      "aot.obj" \
+      "empty.obj" \
       "../../aot_artifacts/x86_64-windows-msvc/$win_type.obj" \
       "webrogue_aot_lib.lib" \
       "../../aot_artifacts/x86_64-windows-msvc/oldnames.lib" \
@@ -107,7 +107,7 @@ for win_type in gui console; do
       "-out:aot.exe" \
       "-nologo" \
       "-machine:x64" \
-      "aot.obj" \
+      "empty.obj" \
       "../../aot_artifacts/x86_64-windows-msvc/$win_type.obj" \
       "../../aot_artifacts/x86_64-windows-msvc/webrogue_aot_lib.lib" \
       "../../aot_artifacts/x86_64-windows-msvc/oldnames.lib" \
@@ -116,5 +116,4 @@ for win_type in gui console; do
       /threads:1
 done
 
-rm aot.obj
 rm aot.exe

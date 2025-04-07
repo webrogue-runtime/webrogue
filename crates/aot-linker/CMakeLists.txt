@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.12)
+
 add_subdirectory(../../external/llvm/llvm llvm EXCLUDE_FROM_ALL)
 
 project(webrogue_linker CXX)
