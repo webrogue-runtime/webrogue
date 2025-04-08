@@ -2,6 +2,7 @@
 #[derive(Clone, Copy)]
 pub enum Target {
     X86_64LinuxGNU,
+    X86_64LinuxMUSL,
     x86_64WindowsGNU,
     x86_64WindowsMSVC,
     x86_64AppleDarwin,
@@ -27,6 +28,7 @@ impl Target {
         use Target::*;
         [
             X86_64LinuxGNU,
+            X86_64LinuxMUSL,
             x86_64WindowsGNU,
             x86_64WindowsMSVC,
             x86_64AppleDarwin,
@@ -43,6 +45,7 @@ impl Target {
         use Target::*;
         match self {
             X86_64LinuxGNU => "x86_64-linux-gnu",
+            X86_64LinuxMUSL => "x86_64-linux-musl",
             x86_64WindowsGNU => "x86_64-windows-gnu",
             x86_64WindowsMSVC => "x86_64-windows-msvc",
             x86_64AppleDarwin => "x86_64-apple-darwin",
@@ -69,6 +72,7 @@ impl Target {
         use Target::*;
         match self {
             X86_64LinuxGNU => (Elf, X86_64, Little),
+            X86_64LinuxMUSL => (Elf, X86_64, Little),
             ARM64LinuxAndroid => (Elf, Aarch64, Little),
             x86_64WindowsGNU => (Coff, X86_64, Little),
             x86_64WindowsMSVC => (Coff, X86_64, Little),
@@ -103,12 +107,15 @@ impl Target {
         use object::RelocationKind::*;
         use Target::*;
         match (self, is_pic) {
-            (X86_64LinuxGNU | x86_64AppleDarwin | x86_64WindowsGNU | x86_64WindowsMSVC, false) => {
-                (-4, Relative, Generic, 32)
-            }
             (
-                X86_64LinuxGNU | x86_64AppleDarwin | X86_64AppleIOSSIM | ARM64AppleDarwin
-                | ARM64AppleIOSSIM | ARM64AppleIOS | x86_64WindowsGNU | x86_64WindowsMSVC | ARM64LinuxAndroid,
+                X86_64LinuxGNU | X86_64LinuxMUSL | x86_64AppleDarwin | x86_64WindowsGNU
+                | x86_64WindowsMSVC,
+                false,
+            ) => (-4, Relative, Generic, 32),
+            (
+                X86_64LinuxGNU | X86_64LinuxMUSL | x86_64AppleDarwin | X86_64AppleIOSSIM
+                | ARM64AppleDarwin | ARM64AppleIOSSIM | ARM64AppleIOS | x86_64WindowsGNU
+                | x86_64WindowsMSVC | ARM64LinuxAndroid,
                 true,
             ) => (-4, GotRelative, Generic, 32),
             _ => unimplemented!("target: {}, is_pic: {}", self.name(), is_pic),

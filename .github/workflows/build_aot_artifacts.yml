@@ -22,7 +22,7 @@ jobs:
       with:
         name: Artifacts-Linux
         retention-days: 1
-        path: aot_artifacts/x86_64-linux-gnu
+        path: aot_artifacts
 
   windows_artifacts:
     runs-on: windows-latest
@@ -37,7 +37,6 @@ jobs:
     - name: Setup Python
       run: |
         python3 -m pip install requests
-        python3 -m pip install tqdm
 
     - name: Build AOT artifacts
       shell: cmd 
@@ -49,7 +48,7 @@ jobs:
       with:
         name: Artifacts-Windows
         retention-days: 1
-        path: aot_artifacts/x86_64-windows-msvc
+        path: aot_artifacts
 
   android_artifacts:
     runs-on: ubuntu-latest
@@ -73,7 +72,7 @@ jobs:
       with:
         name: Artifacts-Android
         retention-days: 1
-        path: aot_artifacts/android_gradle
+        path: aot_artifacts
 
   apple_artifacts:
     runs-on: macos-latest
@@ -105,7 +104,7 @@ jobs:
       with:
         name: Artifacts-Apple
         retention-days: 1
-        path: aot_artifacts/apple_xcode
+        path: aot_artifacts
 
   combine:
     needs: [linux_artifacts, windows_artifacts, android_artifacts, apple_artifacts]
@@ -114,22 +113,22 @@ jobs:
     - uses: actions/download-artifact@v4
       with: 
         name: Artifacts-Linux
-        path: aot_artifacts/x86_64-linux-gnu
+        path: aot_artifacts
 
     - uses: actions/download-artifact@v4
       with: 
         name: Artifacts-Windows
-        path: aot_artifacts/x86_64-windows-msvc
+        path: aot_artifacts
 
     - uses: actions/download-artifact@v4
       with: 
         name: Artifacts-Android
-        path: aot_artifacts/android_gradle
+        path: aot_artifacts
 
     - uses: actions/download-artifact@v4
       with: 
         name: Artifacts-Apple
-        path: aot_artifacts/apple_xcode
+        path: aot_artifacts
 
     - uses: actions/upload-artifact@v4
       with:

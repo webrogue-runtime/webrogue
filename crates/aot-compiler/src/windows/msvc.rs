@@ -17,27 +17,25 @@ pub fn build(
         false, // TODO check
     )?;
 
+    let template_dir = crate::utils::get_aot_artifacts_path()?.join("x86_64-windows-msvc");
+
     println!("Linking native binary...");
-    link_windows_msvc(&object_file, output_file_path, is_console)?;
+    link_windows_msvc(&object_file, output_file_path, &template_dir, is_console)?;
     drop(object_file);
 
     println!("Generating stripped WRAPP file...");
     webrogue_wrapp::strip(wrapp_file_path, std::fs::File::create(stripped_wrapp_path)?)?;
+
     println!("Copying ANGLE files...");
-    std::fs::copy(
-        "aot_artifacts/x86_64-windows-gnu/libEGL.dll",
-        output_file_path
-            .parent()
-            .ok_or(anyhow::anyhow!("Path error"))?
-            .join("libEGL.dll"),
-    )?;
-    std::fs::copy(
-        "aot_artifacts/x86_64-windows-gnu/libGLESv2.dll",
-        output_file_path
-            .parent()
-            .ok_or(anyhow::anyhow!("Path error"))?
-            .join("libGLESv2.dll"),
-    )?;
+    for lib in ["libEGL.dll", "libGLESv2.dll"] {
+        std::fs::copy(
+            template_dir.join(lib),
+            output_file_path
+                .parent()
+                .ok_or(anyhow::anyhow!("Path error"))?
+                .join(lib),
+        )?;
+    }
 
     anyhow::Ok(())
 }
@@ -45,6 +43,7 @@ pub fn build(
 fn link_windows_msvc(
     object_file_path: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
+    template_dir: &std::path::PathBuf,
     is_console: bool,
 ) -> anyhow::Result<()> {
     use crate::utils::path_to_arg;
@@ -55,12 +54,8 @@ fn link_windows_msvc(
         "-nologo",
         "-machine:x64",
         object_file_path,
-        if is_console {
-            "aot_artifacts/x86_64-windows-msvc/console.obj"
-        } else {
-            "aot_artifacts/x86_64-windows-msvc/gui.obj"
-        },
-        "aot_artifacts/x86_64-windows-msvc/webrogue_aot_lib.lib",
+        path_to_arg(template_dir.join(if is_console { "console.obj" } else { "gui.obj" }))?,
+        path_to_arg(template_dir.join("webrogue_aot_lib.lib"))?,
         "/nodefaultlib",
     )
 }

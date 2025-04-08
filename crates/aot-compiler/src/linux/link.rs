@@ -1,39 +1,46 @@
-use std::io::{Seek, Write};
-
-pub fn build_linux(
-    wrapp_file_path: &std::path::PathBuf,
+pub fn link(
+    object_file: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
+    libc: super::LibC,
 ) -> anyhow::Result<()> {
-    println!("Compiling AOT object...");
-    let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
-    crate::compile::compile_wrapp_to_object(
-        wrapp_file_path,
-        object_file.path(),
-        crate::Target::X86_64LinuxGNU,
-        false, // TODO check
-    )?;
-
-    println!("Linking native binary...");
-    link_linux(&object_file, output_file_path)?;
-    drop(object_file);
-
-    println!("Embedding stripped WRAPP file...");
-    let mut output_file: std::fs::File = std::fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(output_file_path)?;
-
-    let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
-    webrogue_wrapp::strip(wrapp_file_path, &mut output_file)?;
-    let new_size = output_file.seek(std::io::SeekFrom::End(0))?;
-
-    let wrapp_size = new_size - original_size;
-    output_file.write_all(&wrapp_size.to_le_bytes())?;
-
-    anyhow::Ok(())
+    match libc {
+        super::LibC::GLibC => link_glibc(object_file, output_file_path),
+        super::LibC::MUSL => link_musl(object_file, output_file_path),
+    }
 }
 
-fn link_linux(
+fn link_musl(
+    object_file: &crate::utils::TemporalFile,
+    output_file_path: &std::path::PathBuf,
+) -> anyhow::Result<()> {
+    crate::utils::lld!(
+        "ld.lld",
+        "-z",
+        "now",
+        "-z",
+        "relro",
+        "--hash-style=gnu",
+        "--build-id",
+        "--eh-frame-hdr",
+        "-m",
+        "elf_x86_64",
+        "--strip-all",
+        "--gc-sections",
+        "-static",
+        "-o",
+        crate::utils::path_to_arg(output_file_path)?,
+        "aot_artifacts/x86_64-linux-musl/crt1.o",
+        "aot_artifacts/x86_64-linux-musl/crti.o",
+        "aot_artifacts/x86_64-linux-musl/crtbeginT.o",
+        "--as-needed",
+        "aot_artifacts/x86_64-linux-musl/libwebrogue_aot_lib.a",
+        object_file,
+        "aot_artifacts/x86_64-linux-musl/crtend.o",
+        "aot_artifacts/x86_64-linux-musl/crtn.o"
+    )
+}
+
+fn link_glibc(
     object_file: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {

@@ -8,6 +8,9 @@ pub enum Commands {
         wrapp_path: std::path::PathBuf,
         /// Path where resulting executable will be placed
         out_path: std::path::PathBuf,
+        /// LibC to compile for. Defaults to glibc
+        #[arg(long)]
+        libc: Option<crate::linux::LibC>,
     },
     /// Android-related commands
     Android {
@@ -58,8 +61,13 @@ impl Commands {
             Commands::Linux {
                 wrapp_path,
                 out_path,
+                libc,
             } => {
-                crate::linux::build_linux(wrapp_path, out_path)?;
+                crate::linux::build_linux(
+                    wrapp_path,
+                    out_path,
+                    libc.clone().unwrap_or(crate::linux::LibC::GLibC),
+                )?;
             }
             Commands::Android { commands } => commands.run()?,
             Commands::Windows { commands } => commands.run()?,

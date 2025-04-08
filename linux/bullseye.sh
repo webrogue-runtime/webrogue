@@ -20,7 +20,7 @@ rm -f process_dump*
 # strace -s 1000 -o process_dump -ff clang++ -static -lc++abi \
 #     main.o \
 #     ../aot_artifacts/x86_64-linux-gnu/libwebrogue_aot_lib.a \
-#     ../aot.o \
+#     empty.gnu.o \
 #     -lm \
 #     -lpthread \
 #     -ldl \
@@ -51,5 +51,7 @@ cp \
     /lib/x86_64-linux-gnu/libc.so.6 \
     "/usr/lib/x86_64-linux-gnu/crtn.o" \
     "$OUT_DIR"
+
+strip --strip-debug $OUT_DIR/*
 
 rm main.o
