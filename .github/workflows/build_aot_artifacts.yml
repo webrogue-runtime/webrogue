@@ -91,6 +91,10 @@ jobs:
     - name: Submodules
       run: |
         git submodule update --init --single-branch external/wasmtime external/aemu external/gfxstream
+
+    - name: Install Xcodegen
+      run: |
+        brew install xcodegen
     
     - name: Setup Rust
       run: |
