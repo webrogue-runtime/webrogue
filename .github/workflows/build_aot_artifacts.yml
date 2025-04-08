@@ -40,10 +40,9 @@ jobs:
         python3 -m pip install tqdm
 
     - name: Build AOT artifacts
+      shell: cmd 
       run: |
-        $env:WindowsSdkDir = 'C:\Program Files\Windows Kits\10\'
-        $env:WindowsSDKVersion = '10.0.22621.0'
-        $env:VCToolsInstallDir = 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.42.34438\'
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
         python3 windows/msvc/build_template.py
 
     - uses: actions/upload-artifact@v4

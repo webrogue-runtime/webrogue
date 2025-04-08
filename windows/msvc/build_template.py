@@ -2,12 +2,13 @@ import os
 import subprocess
 import requests
 import zipfile
-import tqdm
-import itertools
 
 template_dir = os.path.dirname(os.path.realpath(__file__))
 repo_dir = os.path.dirname(os.path.dirname(template_dir))
-print(repo_dir)
+
+sdk_dir = os.environ["WindowsSdkDir"]
+sdk_version = os.environ["WindowsSDKVersion"].removesuffix("\\")
+vc_tools_install_dir = os.environ["VCToolsInstallDir"]
 
 subprocess.run(
     [
@@ -26,11 +27,6 @@ subprocess.run(
 out_dir = os.path.join(repo_dir, "aot_artifacts", "x86_64-windows-msvc")
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
-
-sdk_dir = os.environ["WindowsSdkDir"]
-sdk_version = os.environ["WindowsSDKVersion"].removesuffix("\\")
-
-vc_tools_install_dir = os.environ["VCToolsInstallDir"]
 
 for win_type in ["gui", "console"]:
     subprocess.run(
@@ -184,7 +180,14 @@ for line in lib_content.splitlines():
         continue
     objects_to_remove.append(line)
 
-for object_batch_to_remove in itertools.batched(tqdm.tqdm(objects_to_remove), 128):
+
+def batched(iterable, n):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx : min(ndx + n, l)]
+
+
+for object_batch_to_remove in batched(objects_to_remove, 128):
     subprocess.run(
         ["llvm-ar", "d", webrogue_aot_lib_path] + list(object_batch_to_remove),
         cwd=str(template_dir),
