@@ -25,10 +25,7 @@ jobs:
         path: aot_artifacts/x86_64-linux-gnu
 
   windows_artifacts:
-    # Surprisingly
-    runs-on: ubuntu-latest
-    # It takes ~15 min to download MSVC-related things using XWIN, so
-    # TODO migrate to Windows
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -37,20 +34,17 @@ jobs:
       run: |
         git submodule update --init --single-branch external/wasmtime external/aemu external/gfxstream
 
-    - name: Install LLVM
+    - name: Setup Python
       run: |
-        sudo apt-get install -y llvm lld
+        python3 -m pip install requests
+        python3 -m pip install tqdm
 
-    - name: Setup Rust
-      run: |
-        curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-        rustup target add x86_64-pc-windows-msvc
-        cargo binstall xwin -y
-        cargo binstall cargo-xwin -y
-  
     - name: Build AOT artifacts
       run: |
-        sh windows/msvc/build_template.sh
+        $env:WindowsSdkDir = 'C:\Program Files\Windows Kits\10\'
+        $env:WindowsSDKVersion = '10.0.22621.0'
+        $env:VCToolsInstallDir = 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.42.34438\'
+        python3 windows/msvc/build_template.py
 
     - uses: actions/upload-artifact@v4
       with:
