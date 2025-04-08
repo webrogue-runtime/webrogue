@@ -1,4 +1,4 @@
-use std::{io::Read, sync::Arc};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct State {
@@ -35,6 +35,8 @@ pub fn run_jit(
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
+    use std::io::Read;
+
     let mut config = wasmtime::Config::new();
     #[cfg(feature = "cache")]
     config.cache_config_load_default()?;

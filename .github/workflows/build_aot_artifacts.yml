@@ -21,11 +21,14 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: Artifacts-Linux
-        path: |
-          aot_artifacts/x86_64-linux-gnu
+        retention-days: 1
+        path: aot_artifacts/x86_64-linux-gnu
 
   windows_artifacts:
-    runs-on: ubuntu-latest # Surprisingly
+    # Surprisingly
+    runs-on: ubuntu-latest
+    # It takes ~15 min to download MSVC-related things using XWIN, so
+    # TODO migrate to Windows
 
     steps:
     - uses: actions/checkout@v4
@@ -52,8 +55,8 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: Artifacts-Windows
-        path: |
-          aot_artifacts/x86_64-windows-msvc
+        retention-days: 1
+        path: aot_artifacts/x86_64-windows-msvc
 
   android_artifacts:
     runs-on: ubuntu-latest
@@ -76,5 +79,62 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: Artifacts-Android
-        path: |
-          aot_artifacts/android_gradle
+        retention-days: 1
+        path: aot_artifacts/android_gradle
+
+  apple_artifacts:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch external/wasmtime external/aemu external/gfxstream
+    
+    - name: Setup Rust
+      run: |
+        rustup target add x86_64-apple-darwin
+        rustup target add x86_64-apple-ios
+        rustup target add aarch64-apple-darwin
+        rustup target add aarch64-apple-ios
+        rustup target add aarch64-apple-ios-sim
+  
+    - name: Build AOT artifacts
+      run: |
+        sh apple/template/build_template.sh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Artifacts-Apple
+        retention-days: 1
+        path: aot_artifacts/apple_xcode
+
+  combine:
+    needs: [linux_artifacts, windows_artifacts, android_artifacts, apple_artifacts]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Linux
+        path: aot_artifacts/x86_64-linux-gnu
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Windows
+        path: aot_artifacts/x86_64-windows-msvc
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Android
+        path: aot_artifacts/android_gradle
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Apple
+        path: aot_artifacts/apple_xcode
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Artifacts
+        path: aot_artifacts
