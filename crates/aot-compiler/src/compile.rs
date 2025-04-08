@@ -10,7 +10,7 @@ pub fn compile_wrapp_to_object(
     let mut config = wasmtime::Config::new();
     config.target(target.name())?;
     config.cranelift_opt_level(wasmtime::OptLevel::SpeedAndSize);
-    config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking);
+    config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass);
     config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Disable);
     config.generate_address_map(false);
     config.epoch_interruption(false);

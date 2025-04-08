@@ -61,8 +61,6 @@ fn link_windows_msvc(
             "aot_artifacts/x86_64-windows-msvc/gui.obj"
         },
         "aot_artifacts/x86_64-windows-msvc/webrogue_aot_lib.lib",
-        "aot_artifacts/x86_64-windows-msvc/oldnames.lib",
-        "aot_artifacts/x86_64-windows-msvc/libcmt.lib",
         "/nodefaultlib",
     )
 }

@@ -41,12 +41,9 @@ for win_type in gui console; do
   mv $win_type.obj "$OUT_DIR/$win_type.obj"
 done
 
-cp $XWIN_PATH/crt/lib/x86_64/libcmt.lib "$OUT_DIR/libcmt.lib"
-cp $XWIN_PATH/crt/lib/x86_64/oldnames.lib "$OUT_DIR/oldnames.lib"
 
-llvm-lib /out:webrogue_aot_lib.lib \
-  /machine:x64 \
-  target/x86_64-pc-windows-msvc/release-lto/webrogue_aot_lib.lib \
+cp target/x86_64-pc-windows-msvc/release-lto/webrogue_aot_lib.lib webrogue_aot_lib.lib
+llvm-ar qLs webrogue_aot_lib.lib \
   $XWIN_PATH/crt/lib/x86_64/libcpmt.lib \
   $XWIN_PATH/sdk/lib/ucrt/x86_64/libucrt.lib \
   $XWIN_PATH/sdk/lib/um/x86_64/ws2_32.lib \
@@ -65,7 +62,9 @@ llvm-lib /out:webrogue_aot_lib.lib \
   $XWIN_PATH/sdk/lib/um/x86_64/winmm.lib \
   $XWIN_PATH/sdk/lib/um/x86_64/shell32.lib \
   $XWIN_PATH/sdk/lib/um/x86_64/uuid.lib \
-  $XWIN_PATH/crt/lib/x86_64/libvcruntime.lib
+  $XWIN_PATH/crt/lib/x86_64/libvcruntime.lib \
+  $XWIN_PATH/crt/lib/x86_64/oldnames.lib \
+  $XWIN_PATH/crt/lib/x86_64/libcmt.lib
 
 mv webrogue_aot_lib.lib "$OUT_DIR/webrogue_aot_lib.lib"
 
@@ -109,8 +108,6 @@ for win_type in gui console; do
       "empty.obj" \
       "../../aot_artifacts/x86_64-windows-msvc/$win_type.obj" \
       "webrogue_aot_lib.lib" \
-      "../../aot_artifacts/x86_64-windows-msvc/oldnames.lib" \
-      "../../aot_artifacts/x86_64-windows-msvc/libcmt.lib" \
       /nodefaultlib \
       /threads:1 \
       /verbose 2>lld_output_$win_type.txt || { 
@@ -134,8 +131,6 @@ for win_type in gui console; do
       "empty.obj" \
       "../../aot_artifacts/x86_64-windows-msvc/$win_type.obj" \
       "../../aot_artifacts/x86_64-windows-msvc/webrogue_aot_lib.lib" \
-      "../../aot_artifacts/x86_64-windows-msvc/oldnames.lib" \
-      "../../aot_artifacts/x86_64-windows-msvc/libcmt.lib" \
       /nodefaultlib \
       /threads:1
 done
