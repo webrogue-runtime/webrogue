@@ -8,7 +8,3 @@
 /external/macos_fat.zip
 /webrogue.xcodeproj
 *.xcbkptlist
-/macos/runner/aot.swrapp
-/macos/runner/aot.*.*.o
-/ios/runner/aot.swrapp
-/ios/runner/aot.*.*.o
