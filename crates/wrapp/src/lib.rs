@@ -13,6 +13,8 @@ pub use file_reader::FileReader;
 pub mod config;
 pub mod file_index;
 mod offsetted_reader;
+
 mod preamble;
 mod range_reader;
+pub use range_reader::RangeReader;
 mod seekable_provider;

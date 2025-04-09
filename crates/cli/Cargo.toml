@@ -9,7 +9,8 @@ edition.workspace = true
 run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx", "dep:webrogue-gfx-fallback", "dep:webrogue-gfxstream"]
 compile = ["dep:webrogue-aot-compiler"]
 pack = ["dep:webrogue-wrapp"]
-llvm = ["dep:webrogue-aot-compiler", "webrogue-aot-compiler/llvm"]
+llvm = ["webrogue-aot-compiler/llvm"]
+appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
 
 [dependencies]
 anyhow = { workspace = true }

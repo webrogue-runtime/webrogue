@@ -109,3 +109,5 @@ cp \
     runtime/gradle/wrapper/gradle-wrapper.jar \
     runtime/gradle/wrapper/gradle-wrapper.properties \
     ../aot_artifacts/android_gradle/template/gradle/wrapper
+
+cat /dev/urandom | head -c 32 > ../aot_artifacts/android_gradle/template_id

@@ -17,6 +17,7 @@ default = ["run", "compile", "pack"]
 run = ["webrogue-cli/run"]
 compile = ["webrogue-cli/compile"]
 pack = ["webrogue-cli/pack"]
+appended_artifacts = ["webrogue-cli/appended_artifacts"]
 
 # llvm feature is disabled by default so rust-analyzer don't have to wait while LLVM compiles
 llvm = ["webrogue-cli/llvm"]
@@ -104,6 +105,7 @@ syn = { version = "2.0.25", default-features = false }
 proc-macro2 = { version = "1.0", default-features = false }
 witx = { version = "0.9.1", default-features = false }
 dirs = { version = "6.0.0" }
+zip = { version = "2.6.1", default-features = false }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.2" }

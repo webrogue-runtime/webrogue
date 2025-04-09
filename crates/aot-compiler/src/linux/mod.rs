@@ -1,5 +1,7 @@
 mod link;
 
+use std::io::{Seek, Write};
+
 #[derive(Clone, Debug)]
 pub enum LibC {
     GLibC,
@@ -18,24 +20,39 @@ impl clap::ValueEnum for LibC {
     }
 }
 
-use std::io::{Seek, Write};
-
 pub fn build_linux(
     wrapp_file_path: &std::path::PathBuf,
     output_file_path: &std::path::PathBuf,
     libc: LibC,
 ) -> anyhow::Result<()> {
-    println!("Compiling AOT object...");
     let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
-    crate::compile::compile_wrapp_to_object(
-        wrapp_file_path,
-        object_file.path(),
-        crate::Target::X86_64LinuxGNU,
-        false, // TODO check
-    )?;
+    match libc {
+        LibC::GLibC => {
+            println!("Compiling AOT object...");
+            crate::compile::compile_wrapp_to_object(
+                wrapp_file_path,
+                object_file.path(),
+                crate::Target::X86_64LinuxGNU,
+                true,
+            )?;
 
-    println!("Linking native binary...");
-    link::link(&object_file, output_file_path, libc)?;
+            println!("Linking native binary...");
+            link::link_glibc(&object_file, output_file_path)?;
+        }
+        LibC::MUSL => {
+            println!("Compiling AOT object...");
+            crate::compile::compile_wrapp_to_object(
+                wrapp_file_path,
+                object_file.path(),
+                crate::Target::X86_64LinuxMUSL,
+                true,
+            )?;
+
+            println!("Linking native binary...");
+            link::link_musl(&object_file, output_file_path)?;
+        }
+    }
+
     drop(object_file);
 
     println!("Embedding stripped WRAPP file...");

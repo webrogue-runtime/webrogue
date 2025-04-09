@@ -23,21 +23,28 @@ pub fn build(
     debug: bool,
     output: Option<std::path::PathBuf>,
 ) -> anyhow::Result<()> {
-    let template_dir = crate::utils::get_aot_artifacts_path()?
-        .join("android_gradle")
-        .join("template");
-    let object_file = crate::utils::TemporalFile::for_tmp_object(build_dir.join("aarch64"))?;
-    let old_stamp = read_stamp(&build_dir).ok();
+    let mut artifacts = crate::utils::Artifacts::new()?;
+    let template_id = artifacts.get_data("android_gradle/template_id")?;
+    let mut old_stamp = read_stamp(&build_dir).ok();
 
-    println!("Setting up Android Gradle project...");
+    if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id) {
+        old_stamp = None;
+        println!("(Re)creating Android Gradle project...");
+        if build_dir.exists() {
+            anyhow::ensure!(build_dir.is_dir(), "build_dir can't be a file");
+            std::fs::remove_dir_all(build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
+        }
+        artifacts.extract_dir(build_dir, "android_gradle/template")?;
+    }
+
+    let object_file = crate::utils::TemporalFile::for_tmp_object(build_dir.join("aarch64"))?;
+
     let mut wrapp_builder = webrogue_wrapp::WrappHandleBuilder::from_file_path(&container_path)?;
     let version = wrapp_builder
         .config()?
         .version
         .clone()
         .ok_or_else(|| anyhow::anyhow!("No 'version' found in WRAPP config"))?;
-
-    crate::utils::copy_dir(&template_dir, &build_dir)?;
 
     let assets_path = build_dir
         .join("app")
@@ -67,7 +74,7 @@ pub fn build(
         true,
     )?;
 
-    link::link(&object_file, &template_dir, build_dir)?;
+    link::link(&object_file, &mut artifacts, build_dir)?;
     drop(object_file);
 
     println!("Building Android project...");
@@ -175,7 +182,10 @@ pub fn build(
     std::fs::rename(gradle_apk_path, &copied_apk_dir)?;
     println!("APK saved to {}", copied_apk_dir.display());
 
-    let new_stamp = types::Stamp { icons: icons_stamp };
+    let new_stamp = types::Stamp {
+        template_id,
+        icons: icons_stamp,
+    };
     if old_stamp.as_ref() != Some(&new_stamp) {
         write_stamp(new_stamp, &build_dir)?;
     }

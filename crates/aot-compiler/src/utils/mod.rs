@@ -1,4 +1,6 @@
+mod artifacts;
 pub mod icons;
+pub use artifacts::*;
 
 pub fn copy_dir(source: &std::path::PathBuf, dest: &std::path::PathBuf) -> anyhow::Result<()> {
     let mut path_parts = vec![];
@@ -86,8 +88,18 @@ impl TemporalFile {
         })
     }
 
+    pub fn for_tmp(dir_path: &std::path::Path, name: String) -> anyhow::Result<Self> {
+        Ok(Self {
+            path: dir_path.join(format!("{}.tmp", name,)),
+        })
+    }
+
     pub fn path(&self) -> &std::path::PathBuf {
         &self.path
+    }
+
+    pub fn as_arg(&self) -> anyhow::Result<String> {
+        crate::utils::path_to_arg(self.path.clone())
     }
 
     pub fn to_string(&self) -> String {
@@ -108,10 +120,4 @@ pub fn path_to_arg<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<String>
         .to_str()
         .ok_or_else(|| anyhow::anyhow!("Path error: {}", path.as_ref().display()))?
         .to_owned())
-}
-
-pub fn get_aot_artifacts_path() -> anyhow::Result<std::path::PathBuf> {
-    Ok(std::env::var("WEBROGUE_ARTIFACTS_PATH")
-        .context("Can't get WEBROGUE_ARTIFACTS_PATH environment variable")?
-        .into())
 }

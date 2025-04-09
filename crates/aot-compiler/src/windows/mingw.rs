@@ -1,3 +1,5 @@
+// No MinGW support, sorry
+
 pub fn build(
     wrapp_file_path: &std::path::PathBuf,
     output_file_path: &std::path::PathBuf,

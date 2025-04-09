@@ -1,18 +1,22 @@
-pub fn link(
+pub fn link_musl(
     object_file: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
-    libc: super::LibC,
 ) -> anyhow::Result<()> {
-    match libc {
-        super::LibC::GLibC => link_glibc(object_file, output_file_path),
-        super::LibC::MUSL => link_musl(object_file, output_file_path),
-    }
-}
+    let mut artifacts = crate::utils::Artifacts::new()?;
+    let build_dir = object_file
+        .path()
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("Path error"))?
+        .to_path_buf();
 
-fn link_musl(
-    object_file: &crate::utils::TemporalFile,
-    output_file_path: &std::path::PathBuf,
-) -> anyhow::Result<()> {
+    let crt1_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crt1.o")?;
+    let crti_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crti.o")?;
+    let crtbegin_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crtbeginT.o")?;
+    let libwebrogue_aot_lib_tmp =
+        artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/libwebrogue_aot_lib.a")?;
+    let crtend_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crtend.o")?;
+    let crtn_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crtn.o")?;
+
     crate::utils::lld!(
         "ld.lld",
         "-z",
@@ -29,21 +33,41 @@ fn link_musl(
         "-static",
         "-o",
         crate::utils::path_to_arg(output_file_path)?,
-        "aot_artifacts/x86_64-linux-musl/crt1.o",
-        "aot_artifacts/x86_64-linux-musl/crti.o",
-        "aot_artifacts/x86_64-linux-musl/crtbeginT.o",
+        crt1_tmp.as_arg()?,
+        crti_tmp.as_arg()?,
+        crtbegin_tmp.as_arg()?,
         "--as-needed",
-        "aot_artifacts/x86_64-linux-musl/libwebrogue_aot_lib.a",
+        libwebrogue_aot_lib_tmp.as_arg()?,
         object_file,
-        "aot_artifacts/x86_64-linux-musl/crtend.o",
-        "aot_artifacts/x86_64-linux-musl/crtn.o"
+        crtend_tmp.as_arg()?,
+        crtn_tmp.as_arg()?,
     )
 }
 
-fn link_glibc(
+pub fn link_glibc(
     object_file: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
+    let mut artifacts = crate::utils::Artifacts::new()?;
+    let build_dir = object_file
+        .path()
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("Path error"))?
+        .to_path_buf();
+
+    let scrt1_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/Scrt1.o")?;
+    let crti_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crti.o")?;
+    let crtbegins_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtbeginS.o")?;
+    let libwebrogue_aot_lib_tmp =
+        artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libwebrogue_aot_lib.a")?;
+    let libm_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libm.so.6")?;
+    let libc_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libc.so.6")?;
+    let libgcc_s_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libgcc_s.so.1")?;
+    let libdl_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libdl.so.2")?;
+    let libpthread_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libpthread.so.0")?;
+    let crtends_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtendS.o")?;
+    let crtn_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtn.o")?;
+
     crate::utils::lld!(
         "ld.lld",
         "-pie",
@@ -62,22 +86,22 @@ fn link_glibc(
         "-o",
         crate::utils::path_to_arg(output_file_path)?,
         "--no-as-needed",
-        "aot_artifacts/x86_64-linux-gnu/Scrt1.o",
+        scrt1_tmp.as_arg()?,
         "--no-as-needed",
-        "aot_artifacts/x86_64-linux-gnu/crti.o",
+        crti_tmp.as_arg()?,
         "--no-as-needed",
-        "aot_artifacts/x86_64-linux-gnu/crtbeginS.o",
-        "aot_artifacts/x86_64-linux-gnu/libwebrogue_aot_lib.a",
+        crtbegins_tmp.as_arg()?,
+        libwebrogue_aot_lib_tmp.as_arg()?,
         object_file,
-        "aot_artifacts/x86_64-linux-gnu/libm.so.6",
+        libm_tmp.as_arg()?,
         "--as-needed",
-        "aot_artifacts/x86_64-linux-gnu/libc.so.6",
-        "aot_artifacts/x86_64-linux-gnu/libgcc_s.so.1",
-        "aot_artifacts/x86_64-linux-gnu/libdl.so.2",
-        "aot_artifacts/x86_64-linux-gnu/libpthread.so.0",
+        libc_tmp.as_arg()?,
+        libgcc_s_tmp.as_arg()?,
+        libdl_tmp.as_arg()?,
+        libpthread_tmp.as_arg()?,
         "--no-as-needed",
-        "aot_artifacts/x86_64-linux-gnu/crtendS.o",
+        crtends_tmp.as_arg()?,
         "--no-as-needed",
-        "aot_artifacts/x86_64-linux-gnu/crtn.o",
+        crtn_tmp.as_arg()?,
     )
 }

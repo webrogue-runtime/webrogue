@@ -2,14 +2,10 @@ use crate::utils::path_to_arg;
 
 pub fn link(
     object_file: &crate::utils::TemporalFile,
-    template_dir: &std::path::PathBuf,
+    artifacts: &mut crate::utils::Artifacts,
     build_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
     println!("Linking native shared library...");
-    let webrogue_libs_path = template_dir
-        .parent()
-        .ok_or(anyhow::anyhow!("Path error"))?
-        .join("libs");
     let output_path = build_dir
         .join("app")
         .join("src")
@@ -17,6 +13,15 @@ pub fn link(
         .join("jniLibs")
         .join("arm64-v8a")
         .join("libwebrogue.so");
+
+    let crtbegin_tmp = artifacts.extract_tmp(&build_dir, "android_gradle/libs/crtbegin_so.o")?;
+    let webrogue_runtime_tmp =
+        artifacts.extract_tmp(&build_dir, "android_gradle/libs/webrogue_runtime.c.o")?;
+    let libwebrogue_android_tmp =
+        artifacts.extract_tmp(&build_dir, "android_gradle/libs/libwebrogue_android.a")?;
+    let libc_tmp = artifacts.extract_tmp(&build_dir, "android_gradle/libs/libc.so")?;
+    let libdl_tmp = artifacts.extract_tmp(&build_dir, "android_gradle/libs/libdl.so")?;
+    let crtend_tmp = artifacts.extract_tmp(&build_dir, "android_gradle/libs/crtend_so.o")?;
 
     crate::utils::lld!(
         "ld.lld",
@@ -35,7 +40,7 @@ pub fn link(
         "-shared",
         "-o",
         path_to_arg(&output_path)?,
-        path_to_arg(&webrogue_libs_path.join("crtbegin_so.o"))?,
+        crtbegin_tmp.as_arg()?,
         "--build-id=sha1",
         "--no-rosegment",
         "--no-undefined-version",
@@ -45,8 +50,8 @@ pub fn link(
         "--gc-sections",
         "-soname",
         "libwebrogue.so",
-        path_to_arg(&webrogue_libs_path.join("webrogue_runtime.c.o"))?,
-        path_to_arg(&webrogue_libs_path.join("libwebrogue_android.a"))?,
+        webrogue_runtime_tmp.as_arg()?,
+        libwebrogue_android_tmp.as_arg()?,
         path_to_arg(
             &output_path
                 .parent()
@@ -55,8 +60,8 @@ pub fn link(
         )?,
         object_file,
         // -landroid, -llog, -latomic libm.so
-        path_to_arg(&webrogue_libs_path.join("libc.so"))?,
-        path_to_arg(&webrogue_libs_path.join("libdl.so"))?,
-        path_to_arg(&webrogue_libs_path.join("crtend_so.o"))?,
+        libc_tmp.as_arg()?,
+        libdl_tmp.as_arg()?,
+        crtend_tmp.as_arg()?,
     )
 }
