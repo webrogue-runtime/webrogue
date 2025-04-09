@@ -35,16 +35,16 @@ llvm-ar q \
 llvm-ar qLs \
     "$OUT_DIR/libwebrogue_aot_lib.a" \
     /usr/lib/x86_64-linux-gnu/libc_nonshared.a \
-    /usr/lib/llvm-16/lib/libc++abi.a \
-    /usr/lib/gcc/x86_64-linux-gnu/10/libstdc++.a 
+    /usr/lib/llvm-$LLVM_VERSION/lib/libc++abi.a \
+    /usr/lib/gcc/x86_64-linux-gnu/$GCC_VERSION/libstdc++.a 
 
 cp \
-    "/usr/lib/gcc/x86_64-linux-gnu/10/crtbeginS.o" \
+    "/usr/lib/gcc/x86_64-linux-gnu/$GCC_VERSION/crtbeginS.o" \
     "/usr/lib/x86_64-linux-gnu/Scrt1.o" \
     "/usr/lib/x86_64-linux-gnu/crti.o" \
     /lib/x86_64-linux-gnu/libm.so.6 \
     /lib/x86_64-linux-gnu/libgcc_s.so.1 \
-    /usr/lib/gcc/x86_64-linux-gnu/10/crtendS.o \
+    /usr/lib/gcc/x86_64-linux-gnu/$GCC_VERSION/crtendS.o \
     /lib/x86_64-linux-gnu/libdl.so.2 \
     /lib/x86_64-linux-gnu/libpthread.so.0 \
     /lib/x86_64-linux-gnu/libc.so.6 \

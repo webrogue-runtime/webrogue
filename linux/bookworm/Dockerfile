@@ -6,3 +6,6 @@ RUN update-alternatives --install /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-19 1
 RUN update-alternatives --install /usr/bin/lld lld /usr/bin/lld-19 1
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 1
 RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 1
+
+ENV LLVM_VERSION=19
+ENV GCC_VERSION=12
