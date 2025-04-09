@@ -1,5 +1,4 @@
-# Intended to run in Bullseye. See ./docker/build_linux_aot_artifacts.sh
-cd $(dirname $0)
+cd $(dirname $(dirname $0))
 set -ex
 
 OUT_DIR="../aot_artifacts/x86_64-linux-musl"
