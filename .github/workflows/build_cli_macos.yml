@@ -20,7 +20,7 @@ jobs:
   
     - name: Build
       run: |
-        cargo build --profile=release-lto --target=aarch64-apple-darwin --features=appended_artifacts,llvm
+        cargo build --profile=release-lto --target=aarch64-apple-darwin --features=full
 
     - uses: actions/upload-artifact@v4
       with:
@@ -44,7 +44,7 @@ jobs:
   
     - name: Build
       run: |
-        cargo build --profile=release-lto --target=x86_64-apple-darwin --features=appended_artifacts,llvm
+        cargo build --profile=release-lto --target=x86_64-apple-darwin --features=full
 
     - uses: actions/upload-artifact@v4
       with:

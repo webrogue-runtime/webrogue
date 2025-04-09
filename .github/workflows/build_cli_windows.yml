@@ -1,0 +1,27 @@
+name: Build Webrogue CLI utility for Windows
+
+on:
+  workflow_dispatch
+
+jobs:
+  x86_64:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream external/llvm
+
+    - name: Build AOT artifacts
+      shell: cmd 
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+        cargo build --target=x86_64-pc-windows-msvc --features=full --profile release-lto
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-windows-x86_64-raw
+        retention-days: 1
+        path: target/x86_64-pc-windows-msvc/release-lto/webrogue

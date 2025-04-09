@@ -13,13 +13,18 @@ doc = false
 
 [features]
 default = ["run", "compile", "pack"]
+full = ["run", "compile", "pack", "appended_artifacts", "llvm"]
 
 run = ["webrogue-cli/run"]
 compile = ["webrogue-cli/compile"]
 pack = ["webrogue-cli/pack"]
+
+# to use this feature, you need to process resulting binary 
+# using append_artifacts.py script, so it is disabled by default
 appended_artifacts = ["webrogue-cli/appended_artifacts"]
 
-# llvm feature is disabled by default so rust-analyzer don't have to wait while LLVM compiles
+# llvm feature is disabled by default so rust-analyzer don't
+# have to wait while LLVM compiles
 llvm = ["webrogue-cli/llvm"]
 
 [dependencies]

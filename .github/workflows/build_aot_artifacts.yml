@@ -12,7 +12,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch external/wasmtime external/aemu external/gfxstream
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream
     
     - name: Build AOT artifacts
       run: |
@@ -32,7 +32,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch external/wasmtime external/aemu external/gfxstream
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream
 
     - name: Setup Python
       run: |
@@ -58,7 +58,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch external/wasmtime external/aemu external/gfxstream
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream
     
     - name: Setup Rust
       run: |
@@ -82,7 +82,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch external/wasmtime external/aemu external/gfxstream
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream
 
     - name: Install Xcodegen
       run: |
