@@ -8,7 +8,8 @@ fn main() {
     let crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
 
-    let dst = cmake::Config::new(crate_manifest_dir)
+    let mut cmake_cfg = cmake::Config::new(crate_manifest_dir);
+    cmake_cfg
         .define("LLVM_ENABLE_PROJECTS", "lld")
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("LLVM_ENABLE_LIBXML2", "OFF")
@@ -17,8 +18,21 @@ fn main() {
         .define("LLVM_ENABLE_TERMINFO", "OFF")
         .define("LLVM_TARGETS_TO_BUILD", "")
         .profile("Release")
-        .always_configure(false)
-        .build();
+        .always_configure(false);
+    if std::env::var("CARGO_CFG_TARGET_OS").unwrap().as_str() == "windows" {
+        cmake_cfg
+            .static_crt(true)
+            .define("CMAKE_C_FLAGS_DEBUG", "/Zi /Ob0 /Od /RTC1")
+            .define("CMAKE_C_FLAGS_RELEASE", "/O2 /Ob2 /DNDEBUG")
+            .define("CMAKE_C_FLAGS_MINSIZEREL", "/O1 /Ob1 /DNDEBUG")
+            .define("CMAKE_C_FLAGS_RELWITHDEBINFO", "/Zi /O2 /Ob1 /DNDEBUG")
+            .define("CMAKE_CXX_FLAGS_DEBUG", "/Zi /Ob0 /Od /RTC1")
+            .define("CMAKE_CXX_FLAGS_RELEASE", "/O2 /Ob2 /DNDEBUG")
+            .define("CMAKE_CXX_FLAGS_MINSIZEREL", "/O1 /Ob1 /DNDEBUG")
+            .define("CMAKE_CXX_FLAGS_RELWITHDEBINFO", "/Zi /O2 /Ob1 /DNDEBUG")
+            .define("LLVM_DISABLE_ASSEMBLY_FILES", "ON");
+    }
+    let dst = cmake_cfg.build();
     println!(
         "cargo:rustc-link-search=native={}",
         dst.join("lib").display()
