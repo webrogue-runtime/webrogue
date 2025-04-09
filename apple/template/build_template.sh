@@ -102,3 +102,5 @@ for TARGET_FILE in $TARGET_FILES; do
     cp ../../apple/template/$TARGET_FILE ../../aot_artifacts/apple_xcode/template/$TARGET_FILE
 done
 echo "*" > ../../aot_artifacts/apple_xcode/template/.gitignore
+
+cat /dev/urandom | head -c 32 > ../../aot_artifacts/apple_xcode/template_id

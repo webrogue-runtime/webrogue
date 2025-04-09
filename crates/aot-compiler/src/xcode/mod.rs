@@ -31,10 +31,22 @@ pub struct XcodeArgs<'a> {
 }
 
 pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
-    println!("Setting up Xcode project...");
+    let mut artifacts = crate::utils::Artifacts::new()?;
+    let template_id = artifacts.get_data("apple_xcode/template_id")?;
+
+    let mut old_stamp = read_stamp(&args.build_dir).ok();
+
+    if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id) {
+        old_stamp = None;
+        println!("(Re)creating Xcode project...");
+        if args.build_dir.exists() {
+            anyhow::ensure!(args.build_dir.is_dir(), "build_dir can't be a file");
+            std::fs::remove_dir_all(args.build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
+        }
+        artifacts.extract_dir(args.build_dir, "apple_xcode/template")?;
+    }
+
     let mut wrapp_builder = webrogue_wrapp::WrappHandleBuilder::from_file_path(&args.wrapp_path)?;
-    let template_dir = std::path::PathBuf::from("aot_artifacts/apple_xcode/template");
-    crate::utils::copy_dir(&template_dir, &args.build_dir)?;
     let wrapp_config = wrapp_builder.config()?.clone();
 
     {
@@ -63,7 +75,6 @@ WEBROGUE_APPLICATION_VERSION = {}
         ))?;
     }
 
-    let old_stamp = read_stamp(&args.build_dir).ok();
     let icons_stamp = icons::build(
         &args.build_dir,
         &mut wrapp_builder,
@@ -119,7 +130,10 @@ WEBROGUE_APPLICATION_VERSION = {}
         }
     }
 
-    let new_stamp: types::Stamp = types::Stamp { icons: icons_stamp };
+    let new_stamp: types::Stamp = types::Stamp {
+        template_id,
+        icons: icons_stamp,
+    };
     if old_stamp.as_ref() != Some(&new_stamp) {
         write_stamp(new_stamp, &args.build_dir)?;
     }
