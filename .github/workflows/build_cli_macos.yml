@@ -1,0 +1,79 @@
+name: Build Webrogue CLI utility for macOS
+
+on: 
+  workflow_dispatch
+
+jobs:
+  aarch64:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream external/llvm
+    
+    - name: Setup Rust
+      run: |
+        rustup target add aarch64-apple-darwin
+  
+    - name: Build
+      run: |
+        cargo build --profile=release-lto --target=aarch64-apple-darwin --features=appended_artifacts,llvm
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-macOS-aarch64
+        retention-days: 1
+        path: target/aarch64-apple-darwin/release-lto/webrogue
+
+  x86_64:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream external/llvm
+    
+    - name: Setup Rust
+      run: |
+        rustup target add x86_64-apple-darwin
+  
+    - name: Build
+      run: |
+        cargo build --profile=release-lto --target=x86_64-apple-darwin --features=appended_artifacts,llvm
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-macOS-x86_64
+        retention-days: 1
+        path: target/x86_64-apple-darwin/release-lto/webrogue
+
+  lipo:
+    needs: [aarch64, x86_64]
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: CLI-macOS-aarch64
+        path: webrogue-aarch64
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: CLI-macOS-x86_64
+        path: webrogue-x86_64
+  
+    - name: Lipo
+      run: |
+        lipo -create webrogue-x86_64 webrogue-aarch64 -output webrogue
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Artifacts
+        path: webrogue
