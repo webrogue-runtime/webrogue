@@ -53,3 +53,40 @@ cp \
 strip --strip-debug $OUT_DIR/*
 
 rm main.o
+
+ld.lld \
+    -pie \
+    --no-dependent-libraries \
+    --hash-style=gnu \
+    --build-id \
+    --eh-frame-hdr \
+    -m \
+    elf_x86_64 \
+    --strip-all \
+    --gc-sections \
+    -dynamic-linker \
+    /lib64/ld-linux-x86-64.so.2 \
+    -z \
+    relro \
+    -o \
+    aot \
+    --no-as-needed \
+    "$OUT_DIR/Scrt1.o" \
+    --no-as-needed \
+    "$OUT_DIR/crti.o" \
+    --no-as-needed \
+    "$OUT_DIR/crtbeginS.o" \
+    "$OUT_DIR/libwebrogue_aot_lib.a" \
+    empty.gnu.o \
+    "$OUT_DIR/libm.so.6" \
+    --as-needed \
+    "$OUT_DIR/libc.so.6" \
+    "$OUT_DIR/libgcc_s.so.1" \
+    "$OUT_DIR/libdl.so.2" \
+    "$OUT_DIR/libpthread.so.0" \
+    --no-as-needed \
+    "$OUT_DIR/crtendS.o" \
+    --no-as-needed \
+    "$OUT_DIR/crtn.o"
+
+rm aot

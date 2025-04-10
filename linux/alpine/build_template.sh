@@ -53,3 +53,29 @@ cp \
 strip --strip-debug $OUT_DIR/*
 
 rm main.o
+
+ld.lld \
+    -z \
+    now \
+    -z \
+    relro \
+    --hash-style=gnu \
+    --build-id \
+    --eh-frame-hdr \
+    -m \
+    elf_x86_64 \
+    --strip-all \
+    --gc-sections \
+    -static \
+    -o \
+    aot \
+    "$OUT_DIR/crt1.o" \
+    "$OUT_DIR/crti.o" \
+    "$OUT_DIR/crtbeginT.o" \
+    --as-needed \
+    "$OUT_DIR/libwebrogue_aot_lib.a" \
+    empty.musl.o \
+    "$OUT_DIR/crtend.o" \
+    "$OUT_DIR/crtn.o"
+
+rm aot
