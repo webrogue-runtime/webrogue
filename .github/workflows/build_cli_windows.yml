@@ -14,7 +14,7 @@ jobs:
       run: |
         git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream external/llvm
 
-    - name: Build AOT artifacts
+    - name: Build
       shell: cmd 
       run: |
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"

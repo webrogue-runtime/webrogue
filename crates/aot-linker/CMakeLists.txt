@@ -49,9 +49,9 @@ search_for_libs_to_link(lldELF LIBS_TO_LINK lldELF "${LIBS_TO_LINK}")
 search_for_libs_to_link(lldMachO LIBS_TO_LINK lldMachO "${LIBS_TO_LINK}")
 search_for_libs_to_link(lldMinGW LIBS_TO_LINK lldMinGW "${LIBS_TO_LINK}")
 search_for_libs_to_link(lldWasm LIBS_TO_LINK lldWasm "${LIBS_TO_LINK}")
-search_for_libs_to_link(LLVMExecutionEngine LIBS_TO_LINK LLVMExecutionEngine "${LIBS_TO_LINK}")
+# search_for_libs_to_link(LLVMExecutionEngine LIBS_TO_LINK LLVMExecutionEngine "${LIBS_TO_LINK}")
 
-list(APPEND LIBS_TO_LINK lldELF lldMachO lldMinGW lldWasm lldAsLib LLVMExecutionEngine)
+list(APPEND LIBS_TO_LINK lldELF lldMachO lldMinGW lldWasm lldAsLib)
 list(REVERSE LIBS_TO_LINK)
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/lldAsLib_deps.txt "${LIBS_TO_LINK}")

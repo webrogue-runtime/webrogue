@@ -19,7 +19,8 @@ fn main() {
         .define("LLVM_TARGETS_TO_BUILD", "")
         .profile("Release")
         .always_configure(false);
-    if std::env::var("CARGO_CFG_TARGET_OS").unwrap().as_str() == "windows" {
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    if target_os == "windows" {
         cmake_cfg
             .static_crt(true)
             .define("CMAKE_C_FLAGS_DEBUG", "/Zi /Ob0 /Od /RTC1")
@@ -30,6 +31,7 @@ fn main() {
             .define("CMAKE_CXX_FLAGS_RELEASE", "/O2 /Ob2 /DNDEBUG")
             .define("CMAKE_CXX_FLAGS_MINSIZEREL", "/O1 /Ob1 /DNDEBUG")
             .define("CMAKE_CXX_FLAGS_RELWITHDEBINFO", "/Zi /O2 /Ob1 /DNDEBUG")
+            .define("CMAKE_MSVC_RUNTIME_LIBRARY", "MultiThreaded")
             .define("LLVM_DISABLE_ASSEMBLY_FILES", "ON");
     }
     let dst = cmake_cfg.build();
@@ -44,8 +46,9 @@ fn main() {
     for dep in deps.split(';') {
         println!("cargo:rustc-link-lib=static={}", dep);
     }
-    #[cfg(target_os = "linux")]
-    println!("cargo:rustc-link-lib=dylib=stdc++");
-    #[cfg(target_os = "macos")]
-    println!("cargo:rustc-link-lib=dylib=c++");
+    if target_os == "linux" {
+        println!("cargo:rustc-link-lib=dylib=stdc++");
+    } else if target_os == "macos" {
+        println!("cargo:rustc-link-lib=dylib=c++");
+    }
 }
