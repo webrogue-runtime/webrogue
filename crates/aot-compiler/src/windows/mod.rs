@@ -1,3 +1,5 @@
+use std::io::{Seek as _, Write as _};
+
 pub fn build(
     wrapp_file_path: &std::path::PathBuf,
     output_file_path: &std::path::PathBuf,
@@ -33,8 +35,20 @@ pub fn build(
     )?;
     drop(object_file);
 
-    println!("Generating stripped WRAPP file...");
-    webrogue_wrapp::strip(wrapp_file_path, std::fs::File::create(stripped_wrapp_path)?)?;
+    println!("Embedding stripped WRAPP file...");
+    let mut output_file: std::fs::File = std::fs::OpenOptions::new()
+        .append(true)
+        .create(false)
+        .open(output_file_path)?;
+
+    let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
+    webrogue_wrapp::strip(wrapp_file_path, &mut output_file)?;
+    let new_size = output_file.seek(std::io::SeekFrom::End(0))?;
+
+    let wrapp_size = new_size - original_size;
+    output_file.write_all(&wrapp_size.to_le_bytes())?;
+    // println!("Generating stripped WRAPP file...");
+    // webrogue_wrapp::strip(wrapp_file_path, std::fs::File::create(stripped_wrapp_path)?)?;
 
     println!("Copying ANGLE files...");
     for lib in ["libEGL.dll", "libGLESv2.dll"] {

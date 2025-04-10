@@ -58,7 +58,7 @@ pub fn build_linux(
     println!("Embedding stripped WRAPP file...");
     let mut output_file: std::fs::File = std::fs::OpenOptions::new()
         .append(true)
-        .create(true)
+        .create(false)
         .open(output_file_path)?;
 
     let original_size = output_file.seek(std::io::SeekFrom::End(0))?;

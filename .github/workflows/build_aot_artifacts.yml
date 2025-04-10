@@ -1,7 +1,7 @@
 name: Build AOT artifacts
 
 on:
-  workflow_dispatch
+  workflow_call
 
 jobs:
   linux_artifacts:
@@ -22,6 +22,7 @@ jobs:
       with:
         name: Artifacts-Linux
         retention-days: 1
+        if-no-files-found: error
         path: aot_artifacts
 
   windows_artifacts:
@@ -48,6 +49,7 @@ jobs:
       with:
         name: Artifacts-Windows
         retention-days: 1
+        if-no-files-found: error
         path: aot_artifacts
 
   android_artifacts:
@@ -72,6 +74,7 @@ jobs:
       with:
         name: Artifacts-Android
         retention-days: 1
+        if-no-files-found: error
         path: aot_artifacts
 
   apple_artifacts:
@@ -104,6 +107,7 @@ jobs:
       with:
         name: Artifacts-Apple
         retention-days: 1
+        if-no-files-found: error
         path: aot_artifacts
 
   combine:
@@ -133,4 +137,5 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: Artifacts
+        if-no-files-found: error
         path: aot_artifacts

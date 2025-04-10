@@ -1,7 +1,7 @@
 name: Build Webrogue CLI utility for Windows
 
 on:
-  workflow_dispatch
+  workflow_call
 
 jobs:
   x86_64:
@@ -24,4 +24,5 @@ jobs:
       with:
         name: CLI-windows-x86_64-raw
         retention-days: 1
-        path: windows/msvc/target/x86_64-pc-windows-msvc/release-lto/webrogue.exe
+        if-no-files-found: error
+        path: target/x86_64-pc-windows-msvc/release-lto/webrogue.exe

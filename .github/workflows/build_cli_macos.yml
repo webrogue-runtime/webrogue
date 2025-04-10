@@ -1,7 +1,7 @@
 name: Build Webrogue CLI utility for macOS
 
 on: 
-  workflow_dispatch
+  workflow_call
 
 jobs:
   aarch64:
@@ -26,6 +26,7 @@ jobs:
       with:
         name: CLI-macOS-aarch64-raw
         retention-days: 1
+        if-no-files-found: error
         path: target/aarch64-apple-darwin/release-lto/webrogue
 
   x86_64:
@@ -50,6 +51,7 @@ jobs:
       with:
         name: CLI-macOS-x86_64-raw
         retention-days: 1
+        if-no-files-found: error
         path: target/x86_64-apple-darwin/release-lto/webrogue
 
   lipo:
@@ -76,4 +78,6 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: CLI-macOS-raw
+        retention-days: 1
+        if-no-files-found: error
         path: webrogue
