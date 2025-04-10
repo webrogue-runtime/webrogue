@@ -87,5 +87,6 @@ fn link_windows_msvc(
         obj_tmp.as_arg()?,
         webrogue_aot_lib_tmp.as_arg()?,
         "/nodefaultlib",
+        "/lldignoreenv"
     )
 }
