@@ -24,4 +24,4 @@ jobs:
       with:
         name: CLI-windows-x86_64-raw
         retention-days: 1
-        path: target/x86_64-pc-windows-msvc/release-lto/webrogue
+        path: windows/msvc/target/x86_64-pc-windows-msvc/release-lto/webrogue.exe
