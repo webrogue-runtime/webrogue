@@ -4,7 +4,7 @@ on:
   workflow_call
 
 jobs:
-  linux_artifacts:
+  linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +25,7 @@ jobs:
         if-no-files-found: error
         path: aot_artifacts
 
-  windows_artifacts:
+  windows:
     runs-on: windows-latest
 
     steps:
@@ -52,7 +52,7 @@ jobs:
         if-no-files-found: error
         path: aot_artifacts
 
-  android_artifacts:
+  android:
     runs-on: ubuntu-latest
 
     steps:
@@ -77,7 +77,7 @@ jobs:
         if-no-files-found: error
         path: aot_artifacts
 
-  apple_artifacts:
+  apple:
     runs-on: macos-latest
 
     steps:
@@ -111,7 +111,7 @@ jobs:
         path: aot_artifacts
 
   combine:
-    needs: [linux_artifacts, windows_artifacts, android_artifacts, apple_artifacts]
+    needs: [linux, windows, android, apple]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/download-artifact@v4

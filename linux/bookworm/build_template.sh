@@ -35,7 +35,6 @@ llvm-ar q \
 llvm-ar qLs \
     "$OUT_DIR/libwebrogue_aot_lib.a" \
     /usr/lib/x86_64-linux-gnu/libc_nonshared.a \
-    /usr/lib/llvm-$LLVM_VERSION/lib/libc++abi.a \
     /usr/lib/gcc/x86_64-linux-gnu/$GCC_VERSION/libstdc++.a 
 
 cp \
