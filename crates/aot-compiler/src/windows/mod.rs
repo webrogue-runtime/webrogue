@@ -6,10 +6,6 @@ pub fn build(
     is_console: bool,
 ) -> anyhow::Result<()> {
     let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
-    let stripped_wrapp_path = output_file_path
-        .parent()
-        .ok_or(anyhow::anyhow!("Path error"))?
-        .join("aot.swrapp");
 
     println!("Compiling AOT object...");
     crate::compile::compile_wrapp_to_object(
