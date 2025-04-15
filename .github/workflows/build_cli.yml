@@ -35,8 +35,13 @@ jobs:
 
     - uses: actions/download-artifact@v4
       with: 
-        name: CLI-macOS-raw
-        path: webrogue_macos_raw
+        name: CLI-macOS-arm64-raw
+        path: webrogue_macos_arm64_raw
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: CLI-macOS-x86_64-raw
+        path: webrogue_macos_x86_64_raw
 
     - uses: actions/download-artifact@v4
       with: 
@@ -48,9 +53,13 @@ jobs:
         cd aot_artifacts && zip -r ../aot_artifacts.zip * && cd ..
         python3 append_artifacts.py webrogue_linux_x86_64_glibc_raw/webrogue aot_artifacts.zip webrogue_linux_x86_64_glibc
         chmod +x webrogue_linux_x86_64_glibc
-        python3 append_artifacts.py webrogue_macos_raw/webrogue aot_artifacts.zip webrogue_macos
-        chmod +x webrogue_macos
+
         python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue_windows_x86_64.exe
+        
+        python3 append_artifacts.py webrogue_macos_arm64_raw/webrogue aot_artifacts.zip webrogue_macos_arm64
+        chmod +x webrogue_macos_arm64
+        python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts.zip webrogue_macos_x86_64
+        chmod +x webrogue_macos_x86_64
 
     - uses: actions/upload-artifact@v4
       with:
@@ -59,5 +68,6 @@ jobs:
         if-no-files-found: error
         path: |
           webrogue_linux_x86_64_glibc
-          webrogue_macos
           webrogue_windows_x86_64.exe
+          webrogue_macos_arm64
+          webrogue_macos_x86_64

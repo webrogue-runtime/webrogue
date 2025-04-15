@@ -52,16 +52,20 @@ jobs:
         run: |
           cp cli/webrogue_linux_x86_64_glibc sdk/webrogue-x86_64-linux/bin/webrogue
           chmod +x sdk/webrogue-x86_64-linux/bin/webrogue
+
           cp cli/webrogue_windows_x86_64.exe sdk/webrogue-x86_64-windows/bin/webrogue.exe
-          cp cli/webrogue_macos sdk/webrogue-x86_64-macos/bin/webrogue
+
+          cp cli/webrogue_macos_x86_64 sdk/webrogue-x86_64-macos/bin/webrogue
           chmod +x sdk/webrogue-x86_64-macos/bin/webrogue
-          cp cli/webrogue_macos sdk/webrogue-arm64-macos/bin/webrogue
+          cp cli/webrogue_macos_arm64 sdk/webrogue-arm64-macos/bin/webrogue
           chmod +x sdk/webrogue-arm64-macos/bin/webrogue
 
       - name: Archive SDK
         run: |
           tar czf webrogue-x86_64-linux.tar.gz -C sdk/ webrogue-x86_64-linux/
+
           cd sdk/ && zip -r ../webrogue-x86_64-windows.zip webrogue-x86_64-windows && cd ..
+          
           tar czf webrogue-x86_64-macos.tar.gz -C sdk/ webrogue-x86_64-macos/
           tar czf webrogue-arm64-macos.tar.gz -C sdk/ webrogue-arm64-macos/
 

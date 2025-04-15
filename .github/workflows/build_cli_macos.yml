@@ -4,7 +4,7 @@ on:
   workflow_call
 
 jobs:
-  aarch64:
+  arm64:
     runs-on: macos-latest
 
     steps:
@@ -24,7 +24,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: CLI-macOS-aarch64-raw
+        name: CLI-macOS-arm64-raw
         retention-days: 1
         if-no-files-found: error
         path: target/aarch64-apple-darwin/release-lto/webrogue
@@ -54,30 +54,30 @@ jobs:
         if-no-files-found: error
         path: target/x86_64-apple-darwin/release-lto/webrogue
 
-  lipo:
-    needs: [aarch64, x86_64]
-    runs-on: macos-latest
+  # lipo:
+  #   needs: [arm64, x86_64]
+  #   runs-on: macos-latest
 
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
 
-    - uses: actions/download-artifact@v4
-      with: 
-        name: CLI-macOS-aarch64-raw
-        path: webrogue-aarch64
+  #   - uses: actions/download-artifact@v4
+  #     with: 
+  #       name: CLI-macOS-arm64-raw
+  #       path: webrogue-arm64
 
-    - uses: actions/download-artifact@v4
-      with: 
-        name: CLI-macOS-x86_64-raw
-        path: webrogue-x86_64
+  #   - uses: actions/download-artifact@v4
+  #     with: 
+  #       name: CLI-macOS-x86_64-raw
+  #       path: webrogue-x86_64
   
-    - name: Lipo
-      run: |
-        lipo -create webrogue-x86_64/webrogue webrogue-aarch64/webrogue -output webrogue
+  #   - name: Lipo
+  #     run: |
+  #       lipo -create webrogue-x86_64/webrogue webrogue-arm64/webrogue -output webrogue
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: CLI-macOS-raw
-        retention-days: 1
-        if-no-files-found: error
-        path: webrogue
+  #   - uses: actions/upload-artifact@v4
+  #     with:
+  #       name: CLI-macOS-raw
+  #       retention-days: 1
+  #       if-no-files-found: error
+  #       path: webrogue
