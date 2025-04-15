@@ -1,4 +1,4 @@
-name:  Build Webrogue CLI utility
+name:  Build Webrogue SDK
 
 on:
   workflow_dispatch
@@ -16,6 +16,7 @@ jobs:
     - name: Submodules
       run: |
         git submodule update --init --single-branch --depth=1 webrogue-sdk external/aemu external/gfxstream
+        cd webrogue-sdk && git submodule update --init --single-branch --depth=1
 
     - name: Build
       run: |
