@@ -4,8 +4,8 @@ on:
   workflow_dispatch
 
 jobs:
-  # cli:
-  #   uses: ./.github/workflows/build_cli.yml
+  cli:
+    uses: ./.github/workflows/build_cli.yml
 
   sdk:
     runs-on: ubuntu-latest
@@ -24,10 +24,43 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: CLI
+        name: SDK-raw
+        retention-days: 1
         if-no-files-found: error
         path: |
           webrogue-sdk/package/webrogue-x86_64-linux
           webrogue-sdk/package/webrogue-x86_64-windows
           webrogue-sdk/package/webrogue-x86_64-macos
           webrogue-sdk/package/webrogue-arm64-macos
+  
+  combine:
+    needs: [cli, sdk]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with: 
+          name: SDK-raw
+          path: sdk
+
+      - uses: actions/download-artifact@v4
+        with: 
+          name: CLI
+          path: cli
+
+      - name: Add Webrogue CLI utility to SDK
+        run: |
+          cp cli/webrogue_linux_x86_64_glibc sdk/webrogue-x86_64-linux/bin/webrogue
+          cp cli/webrogue_windows_x86_64.exe sdk/webrogue-x86_64-windows/bin/webrogue.exe
+          cp cli/webrogue_macos sdk/webrogue-x86_64-macos/bin/webrogue
+          cp cli/webrogue_macos sdk/webrogue-arm64-macos/bin/webrogue
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SDK
+          if-no-files-found: error
+          path: |
+            sdk/webrogue-x86_64-linux
+            sdk/webrogue-x86_64-windows
+            sdk/webrogue-x86_64-macos
+            sdk/webrogue-arm64-macos

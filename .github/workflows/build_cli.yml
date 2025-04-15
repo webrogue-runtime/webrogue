@@ -55,6 +55,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: CLI
+        retention-days: 1
         if-no-files-found: error
         path: |
           webrogue_linux_x86_64_glibc
