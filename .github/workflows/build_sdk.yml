@@ -4,8 +4,314 @@ on:
   workflow_dispatch
 
 jobs:
+  linux_artifacts:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream
+    
+    - name: Build AOT artifacts
+      run: |
+        sh linux/build_template.sh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Artifacts-Linux
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts
+
+  windows_artifacts:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream
+
+    - name: Setup Python
+      run: |
+        python3 -m pip install requests
+
+    - name: Build AOT artifacts
+      shell: cmd 
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+        python3 windows/msvc/build_template.py
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Artifacts-Windows
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts
+
+  android_artifacts:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream
+    
+    - name: Setup Rust
+      run: |
+        rustup target add aarch64-linux-android
+  
+    - name: Build AOT artifacts
+      run: |
+        sh android/template/build_template.sh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Artifacts-Android
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts
+
+  apple_artifacts:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream
+
+    - name: Install Xcodegen
+      run: |
+        brew install xcodegen
+    
+    - name: Setup Rust
+      run: |
+        rustup target add x86_64-apple-darwin
+        rustup target add x86_64-apple-ios
+        rustup target add aarch64-apple-darwin
+        rustup target add aarch64-apple-ios
+        rustup target add aarch64-apple-ios-sim
+  
+    - name: Build AOT artifacts
+      run: |
+        sh apple/template/build_template.sh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Artifacts-Apple
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts
+
+  linux-x86_64-glibc-cli:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream external/llvm
+  
+    - name: Build
+      run: |
+        sh linux/build_cli.sh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-linux-x86_64-glibc-raw
+        retention-days: 1
+        if-no-files-found: error
+        path: linux/target/x86_64-unknown-linux-gnu/release-lto/webrogue
+
+  macos-arm64-cli:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream external/llvm
+    
+    - name: Setup Rust
+      run: |
+        rustup target add aarch64-apple-darwin
+  
+    - name: Build
+      run: |
+        cargo build --profile=release-lto --target=aarch64-apple-darwin --features=full
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-macOS-arm64-raw
+        retention-days: 1
+        if-no-files-found: error
+        path: target/aarch64-apple-darwin/release-lto/webrogue
+
+  macos-x86_64-cli:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream external/llvm
+    
+    - name: Setup Rust
+      run: |
+        rustup target add x86_64-apple-darwin
+  
+    - name: Build
+      run: |
+        cargo build --profile=release-lto --target=x86_64-apple-darwin --features=full
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-macOS-x86_64-raw
+        retention-days: 1
+        if-no-files-found: error
+        path: target/x86_64-apple-darwin/release-lto/webrogue
+
+  # macos-lipo-cli:
+  #   needs: [macos-arm64, macos-x86_64]
+  #   runs-on: macos-latest
+
+  #   steps:
+  #   - uses: actions/checkout@v4
+
+  #   - uses: actions/download-artifact@v4
+  #     with: 
+  #       name: CLI-macOS-arm64-raw
+  #       path: webrogue-arm64
+
+  #   - uses: actions/download-artifact@v4
+  #     with: 
+  #       name: CLI-macOS-x86_64-raw
+  #       path: webrogue-x86_64
+  
+  #   - name: Lipo
+  #     run: |
+  #       lipo -create webrogue-x86_64/webrogue webrogue-arm64/webrogue -output webrogue
+
+  #   - uses: actions/upload-artifact@v4
+  #     with:
+  #       name: CLI-macOS-raw
+  #       retention-days: 1
+  #       if-no-files-found: error
+  #       path: webrogue
+
+  windows-x86_64-cli:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/aemu external/gfxstream external/llvm
+
+    - name: Build
+      shell: cmd 
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+        cargo build --target=x86_64-pc-windows-msvc --features=full --profile release-lto
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-windows-x86_64-raw
+        retention-days: 1
+        if-no-files-found: error
+        path: target/x86_64-pc-windows-msvc/release-lto/webrogue.exe
+
+
   cli:
-    uses: ./.github/workflows/build_cli.yml
+    needs: [linux_artifacts, windows_artifacts, android_artifacts, apple_artifacts, linux-x86_64-glibc-cli, macos-arm64-cli, macos-x86_64-cli, windows-x86_64-cli]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Linux
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Windows
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Android
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Apple
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts
+        path: aot_artifacts
+
+    - name: Archive artifacts
+      run: |
+        cd aot_artifacts && zip -r aot_artifacts.zip android_gradle x86_64-linux-gnu x86_64-linux-musl x86_64-windows-msvc && cd ..
+        cd aot_artifacts && zip -r aot_artifacts_macos.zip apple_xcode android_gradle x86_64-linux-gnu x86_64-linux-musl x86_64-windows-msvc && cd ..
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: CLI-linux-x86_64-glibc-raw
+        path: webrogue_linux_x86_64_glibc_raw
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: CLI-macOS-arm64-raw
+        path: webrogue_macos_arm64_raw
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: CLI-macOS-x86_64-raw
+        path: webrogue_macos_x86_64_raw
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: CLI-windows-x86_64-raw
+        path: webrogue_windows_x86_64_raw
+  
+    - name: Append artifacts
+      run: |
+        python3 append_artifacts.py webrogue_linux_x86_64_glibc_raw/webrogue aot_artifacts.zip webrogue_linux_x86_64_glibc
+        chmod +x webrogue_linux_x86_64_glibc
+
+        python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue_windows_x86_64.exe
+
+        python3 append_artifacts.py webrogue_macos_arm64_raw/webrogue aot_artifacts_macos.zip webrogue_macos_arm64
+        chmod +x webrogue_macos_arm64
+        python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts_macos.zip webrogue_macos_x86_64
+        chmod +x webrogue_macos_x86_64
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          webrogue_linux_x86_64_glibc
+          webrogue_windows_x86_64.exe
+          webrogue_macos_arm64
+          webrogue_macos_x86_64
 
   sdk:
     runs-on: ubuntu-latest
@@ -70,7 +376,7 @@ jobs:
         run: |
           tar czf webrogue-x86_64-linux.tar.gz webrogue-x86_64-linux/
 
-          zip -r ../webrogue-x86_64-windows.zip webrogue-x86_64-windows
+          zip -r webrogue-x86_64-windows.zip webrogue-x86_64-windows
 
           tar czf webrogue-x86_64-macos.tar.gz webrogue-x86_64-macos/
           tar czf webrogue-arm64-macos.tar.gz webrogue-arm64-macos/
