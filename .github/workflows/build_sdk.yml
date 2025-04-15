@@ -260,11 +260,6 @@ jobs:
         name: Artifacts-Apple
         path: aot_artifacts
 
-    - uses: actions/download-artifact@v4
-      with: 
-        name: Artifacts
-        path: aot_artifacts
-
     - name: Archive artifacts
       run: |
         cd aot_artifacts && zip -r aot_artifacts.zip android_gradle x86_64-linux-gnu x86_64-linux-musl x86_64-windows-msvc && cd ..
