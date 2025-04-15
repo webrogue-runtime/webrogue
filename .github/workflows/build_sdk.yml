@@ -22,16 +22,18 @@ jobs:
       run: |
         sh webrogue-sdk/build.sh
 
+    - name: Archive SDK
+      run: |
+        tar czf sdk_raw.tar.gz -C webrogue-sdk/package/ webrogue-x86_64-linux webrogue-x86_64-windows webrogue-x86_64-macos webrogue-arm64-macos
+
     - uses: actions/upload-artifact@v4
       with:
         name: SDK-raw
+        compression-level: 0
         retention-days: 1
         if-no-files-found: error
         path: |
-          webrogue-sdk/package/webrogue-x86_64-linux
-          webrogue-sdk/package/webrogue-x86_64-windows
-          webrogue-sdk/package/webrogue-x86_64-macos
-          webrogue-sdk/package/webrogue-arm64-macos
+          sdk_raw.tar.gz
   
   combine:
     needs: [cli, sdk]
@@ -43,6 +45,10 @@ jobs:
           name: SDK-raw
           path: sdk
 
+      - name: Extract SDK-raw
+        run: |
+          tar xzf sdk/sdk_raw.tar.gz
+
       - uses: actions/download-artifact@v4
         with: 
           name: CLI
@@ -50,28 +56,29 @@ jobs:
 
       - name: Add Webrogue CLI utility to SDK
         run: |
-          cp cli/webrogue_linux_x86_64_glibc sdk/webrogue-x86_64-linux/bin/webrogue
-          chmod +x sdk/webrogue-x86_64-linux/bin/webrogue
+          cp cli/webrogue_linux_x86_64_glibc webrogue-x86_64-linux/bin/webrogue
+          chmod +x webrogue-x86_64-linux/bin/webrogue
 
-          cp cli/webrogue_windows_x86_64.exe sdk/webrogue-x86_64-windows/bin/webrogue.exe
+          cp cli/webrogue_windows_x86_64.exe webrogue-x86_64-windows/bin/webrogue.exe
 
-          cp cli/webrogue_macos_x86_64 sdk/webrogue-x86_64-macos/bin/webrogue
-          chmod +x sdk/webrogue-x86_64-macos/bin/webrogue
-          cp cli/webrogue_macos_arm64 sdk/webrogue-arm64-macos/bin/webrogue
-          chmod +x sdk/webrogue-arm64-macos/bin/webrogue
+          cp cli/webrogue_macos_x86_64 webrogue-x86_64-macos/bin/webrogue
+          chmod +x webrogue-x86_64-macos/bin/webrogue
+          cp cli/webrogue_macos_arm64 webrogue-arm64-macos/bin/webrogue
+          chmod +x webrogue-arm64-macos/bin/webrogue
 
       - name: Archive SDK
         run: |
-          tar czf webrogue-x86_64-linux.tar.gz -C sdk/ webrogue-x86_64-linux/
+          tar czf webrogue-x86_64-linux.tar.gz webrogue-x86_64-linux/
 
-          cd sdk/ && zip -r ../webrogue-x86_64-windows.zip webrogue-x86_64-windows && cd ..
-          
-          tar czf webrogue-x86_64-macos.tar.gz -C sdk/ webrogue-x86_64-macos/
-          tar czf webrogue-arm64-macos.tar.gz -C sdk/ webrogue-arm64-macos/
+          zip -r ../webrogue-x86_64-windows.zip webrogue-x86_64-windows
+
+          tar czf webrogue-x86_64-macos.tar.gz webrogue-x86_64-macos/
+          tar czf webrogue-arm64-macos.tar.gz webrogue-arm64-macos/
 
       - uses: actions/upload-artifact@v4
         with:
           name: SDK
+          compression-level: 0
           if-no-files-found: error
           path: |
             webrogue-x86_64-linux.tar.gz
