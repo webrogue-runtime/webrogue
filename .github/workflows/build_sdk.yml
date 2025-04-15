@@ -1,0 +1,32 @@
+name:  Build Webrogue CLI utility
+
+on:
+  workflow_dispatch
+
+jobs:
+  # cli:
+  #   uses: ./.github/workflows/build_cli.yml
+
+  sdk:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 webrogue-sdk external/aemu external/gfxstream
+
+    - name: Build
+      run: |
+        sh webrogue-sdk/build.sh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI
+        if-no-files-found: error
+        path: |
+          webrogue-sdk/package/webrogue-x86_64-linux
+          webrogue-sdk/package/webrogue-x86_64-windows
+          webrogue-sdk/package/webrogue-x86_64-macos
+          webrogue-sdk/package/webrogue-arm64-macos
