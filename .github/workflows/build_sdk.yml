@@ -397,6 +397,7 @@ jobs:
     - name: Update tag
       run: |
         git tag -f latest
+        git push --force origin latest
 
     - uses: ncipollo/release-action@v1
       with:
