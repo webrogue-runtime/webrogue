@@ -343,6 +343,8 @@ jobs:
       contents: write
 
     steps:
+    - uses: actions/checkout@v4
+
     - uses: actions/download-artifact@v4
       with: 
         name: SDK-raw
@@ -391,6 +393,10 @@ jobs:
     #       webrogue-x86_64-windows.zip
     #       webrogue-x86_64-macos.tar.gz
     #       webrogue-arm64-macos.tar.gz
+
+    - name: Update tag
+      run: |
+        git tag -f latest
 
     - uses: ncipollo/release-action@v1
       with:
