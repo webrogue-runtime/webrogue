@@ -363,6 +363,9 @@ jobs:
         chmod +x webrogue-x86_64-linux/bin/webrogue
 
         cp cli/webrogue_windows_x86_64.exe webrogue-x86_64-windows/bin/webrogue.exe
+        wget https://github.com/webrogue-runtime/angle-builder/releases/latest/download/windows_x64.zip -O angle_windows_x64.zip
+        unzip -j angle_windows_x64.zip x64/libEGL.dll && mv libEGL.dll webrogue-x86_64-windows/bin
+        unzip -j angle_windows_x64.zip x64/libGLESv2.dll && mv libGLESv2.dll webrogue-x86_64-windows/bin
 
         cp cli/webrogue_macos_x86_64 webrogue-x86_64-macos/bin/webrogue
         chmod +x webrogue-x86_64-macos/bin/webrogue
