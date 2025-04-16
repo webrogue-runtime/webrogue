@@ -169,7 +169,17 @@ pub fn archive(
 
     let mut filenames_to_archive: Vec<(std::path::PathBuf, String)> = Vec::new();
 
-    filenames_to_archive.push((dir_path.join("main.wasm"), "/app/main.wasm".to_owned()));
+    let mut main_path = dir_path.clone();
+    for part in config
+        .main
+        .as_ref()
+        .map_or("main.wasm", |s| s.as_str())
+        .split("/")
+    {
+        main_path.push(part);
+    }
+
+    filenames_to_archive.push((main_path, "/app/main.wasm".to_owned()));
     if let Some(filesystem) = config.clone().filesystem {
         if let Some(resources) = filesystem.resources {
             for resource in resources {

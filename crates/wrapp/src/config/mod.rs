@@ -4,6 +4,7 @@ pub mod icons;
 pub struct Config {
     pub name: String,
     pub id: String,
+    pub main: Option<String>,
     pub filesystem: Option<FilesystemConfig>,
     pub icons: Option<icons::Icons>,
     pub version: Option<semver::Version>,
@@ -13,6 +14,7 @@ impl Config {
         Self {
             name: self.name,
             id: self.id,
+            main: None,
             filesystem: self.filesystem.map(|filesystem| filesystem.strip()),
             icons: self.icons.map(|icons| icons.strip()),
             version: self.version,
