@@ -11,17 +11,21 @@ pub fn strip(
     let written = std::io::copy(&mut preamble_reader, &mut writer)?;
     assert_eq!(written, preamble_len);
 
-    let mut filenames_to_archive: Vec<(crate::FileReader, String)> = Vec::new();
+    let mut filenames_to_archive: Vec<(crate::file_index::FilePosition, String)> = Vec::new();
     let wrapp = builder.build()?;
-    for file_path in wrapp.file_index().file_positions.keys().cloned() {
+    for (file_path, pos) in wrapp.file_index().file_positions {
         if file_path == "/app/main.wasm" {
             continue;
         }
-        let file: crate::FileReader = wrapp.open_file(&file_path).unwrap();
-        filenames_to_archive.push((file, file_path));
+        // let file: crate::FileReader = wrapp.open_file(&file_path).unwrap();
+        filenames_to_archive.push((pos, file_path));
     }
 
-    super::compress::compress_files(filenames_to_archive, |file| Ok(file), &mut writer)?;
+    super::compress::compress_files(
+        filenames_to_archive,
+        |pos| Ok(wrapp.open_pos(pos)),
+        &mut writer,
+    )?;
 
     Ok(())
 }

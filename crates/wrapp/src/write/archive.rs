@@ -1,5 +1,7 @@
 use std::io::Write as _;
 
+use anyhow::Context;
+
 // fn make_packed_data(
 //     dir_path: &std::path::PathBuf,
 //     config: crate::config::Config,
@@ -139,7 +141,8 @@ pub fn archive(
         for part in icon_path.split('/') {
             real_icon_path = real_icon_path.join(part);
         }
-        let icon_image = image::ImageReader::open(real_icon_path)?
+        let icon_image = image::ImageReader::open(&real_icon_path)
+            .with_context(|| format!("Unable to open icon file {}", real_icon_path.display()))?
             .with_guessed_format()?
             .decode()?;
         let max_dimension_size = std::cmp::max(icon_image.height(), icon_image.width());
@@ -202,7 +205,10 @@ pub fn archive(
 
     super::compress::compress_files(
         filenames_to_archive,
-        |path| Ok(std::fs::File::open(path)?),
+        |path| {
+            Ok(std::fs::File::open(&path)
+                .with_context(|| format!("Unable to archive file {}", path.display()))?)
+        },
         &mut output_file,
     )?;
 

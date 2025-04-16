@@ -129,7 +129,7 @@ jobs:
         name: CLI-linux-x86_64-glibc-raw
         retention-days: 1
         if-no-files-found: error
-        path: linux/target/x86_64-unknown-linux-gnu/release-lto/webrogue
+        path: linux/target/x86_64-unknown-linux-gnu/cli/webrogue
 
   macos-arm64-cli:
     runs-on: macos-latest
@@ -147,14 +147,14 @@ jobs:
   
     - name: Build
       run: |
-        cargo build --profile=release-lto --target=aarch64-apple-darwin --features=full
+        cargo build --profile=cli --target=aarch64-apple-darwin --features=full
 
     - uses: actions/upload-artifact@v4
       with:
         name: CLI-macOS-arm64-raw
         retention-days: 1
         if-no-files-found: error
-        path: target/aarch64-apple-darwin/release-lto/webrogue
+        path: target/aarch64-apple-darwin/cli/webrogue
 
   macos-x86_64-cli:
     runs-on: macos-latest
@@ -172,14 +172,14 @@ jobs:
   
     - name: Build
       run: |
-        cargo build --profile=release-lto --target=x86_64-apple-darwin --features=full
+        cargo build --profile=cli --target=x86_64-apple-darwin --features=full
 
     - uses: actions/upload-artifact@v4
       with:
         name: CLI-macOS-x86_64-raw
         retention-days: 1
         if-no-files-found: error
-        path: target/x86_64-apple-darwin/release-lto/webrogue
+        path: target/x86_64-apple-darwin/cli/webrogue
 
   # macos-lipo-cli:
   #   needs: [macos-arm64, macos-x86_64]
@@ -223,14 +223,14 @@ jobs:
       shell: cmd 
       run: |
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
-        cargo build --target=x86_64-pc-windows-msvc --features=full --profile release-lto
+        cargo build --target=x86_64-pc-windows-msvc --features=full --profile cli
 
     - uses: actions/upload-artifact@v4
       with:
         name: CLI-windows-x86_64-raw
         retention-days: 1
         if-no-files-found: error
-        path: target/x86_64-pc-windows-msvc/release-lto/webrogue.exe
+        path: target/x86_64-pc-windows-msvc/cli/webrogue.exe
 
 
   cli:

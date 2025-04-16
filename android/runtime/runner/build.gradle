@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-def cargoProfile = "release-lto" // dev, release, release-lto
+def cargoProfile = "aot" // dev, release, aot
 
 android {
     namespace 'io.github.webrogue_runtime.runner'

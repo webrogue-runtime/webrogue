@@ -19,7 +19,7 @@ cargo build \
     --target-dir=./target \
     --target=x86_64-pc-windows-gnullvm \
     --features=gfx-fallback-cc \
-    --profile=release-lto
+    --profile=aot
 
 # rm -rf sdl_build
 cmake -S ../../crates/gfx-fallback/SDL -B sdl_build -DCMAKE_BUILD_TYPE=Release -DSDL_OPENGL=OFF -DSDL_OPENGLES=ON -DSDL_CMAKE_DEBUG_POSTFIX= --toolchain=$(pwd)/mingw_llvm_toolchain.cmake
@@ -31,7 +31,7 @@ rm -f main.exe
 rm -f process_dump*
 # strace -s 1000 -o process_dump -ff ./$MINGW_DIR_NAME/bin/x86_64-w64-mingw32-clang \
 #     main.obj \
-#     target/x86_64-pc-windows-gnullvm/release-lto/libwebrogue_aot_lib.a \
+#     target/x86_64-pc-windows-gnullvm/aot/libwebrogue_aot_lib.a \
 #     wr_aot.obj \
 #     sdl_build/libSDL2.a \
 #     -lbcrypt \
@@ -49,7 +49,7 @@ rm -f process_dump*
 #     -o main.exe
 
 mkdir -p "$OUT_DIR"
-cp target/x86_64-pc-windows-gnullvm/release-lto/libwebrogue_aot_lib.a "$OUT_DIR"
+cp target/x86_64-pc-windows-gnullvm/aot/libwebrogue_aot_lib.a "$OUT_DIR"
 
 llvm-ar qLs \
     "$OUT_DIR/libwebrogue_aot_lib.a" \

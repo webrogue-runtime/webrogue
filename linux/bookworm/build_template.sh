@@ -7,10 +7,10 @@ rm -rf "$OUT_DIR"
 export NUM_JOBS=$(nproc)
 
 # rustup target add x86_64-unknown-linux-gnu
-cargo build --manifest-path=../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-unknown-linux-gnu --features=gfx-fallback-cmake --profile release-lto
+cargo build --manifest-path=../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-unknown-linux-gnu --features=gfx-fallback-cmake --profile aot
 
 mkdir -p "$OUT_DIR"
-cp target/x86_64-unknown-linux-gnu/release-lto/libwebrogue_aot_lib.a "$OUT_DIR"
+cp target/x86_64-unknown-linux-gnu/aot/libwebrogue_aot_lib.a "$OUT_DIR"
 
 clang main.c -nostdlib -c -o main.o
 

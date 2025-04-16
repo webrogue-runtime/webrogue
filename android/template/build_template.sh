@@ -80,7 +80,7 @@ cp \
 mkdir -p ../aot_artifacts/android_gradle/libs
 cp \
     runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/webrogue_runtime.c.o \
-    runtime/runner/src/main/cpp/../rust_target/aarch64-linux-android/release-lto/libwebrogue_android.a \
+    runtime/runner/src/main/cpp/../rust_target/aarch64-linux-android/aot/libwebrogue_android.a \
     $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libc.so \
     $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libdl.so \
     $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/crtbegin_so.o \

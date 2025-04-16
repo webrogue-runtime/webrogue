@@ -7,7 +7,7 @@ rm -rf "$OUT_DIR"
 XWIN_PATH="$(pwd)/xwin"
 test -d "$XWIN_PATH" || xwin --accept-license splat --output "$XWIN_PATH"
 
-cargo xwin build --manifest-path=../../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-pc-windows-msvc --features=gfx-fallback-cmake --profile release-lto
+cargo xwin build --manifest-path=../../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-pc-windows-msvc --features=gfx-fallback-cmake --profile aot
 
 mkdir -p "$OUT_DIR"
 
@@ -42,7 +42,7 @@ for win_type in gui console; do
 done
 
 
-cp target/x86_64-pc-windows-msvc/release-lto/webrogue_aot_lib.lib webrogue_aot_lib.lib
+cp target/x86_64-pc-windows-msvc/aot/webrogue_aot_lib.lib webrogue_aot_lib.lib
 llvm-ar qLs webrogue_aot_lib.lib \
   $XWIN_PATH/crt/lib/x86_64/libcpmt.lib \
   $XWIN_PATH/sdk/lib/ucrt/x86_64/libucrt.lib \

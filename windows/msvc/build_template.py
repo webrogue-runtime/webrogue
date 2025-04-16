@@ -19,7 +19,7 @@ subprocess.run(
         "--target=x86_64-pc-windows-msvc",
         "--features=gfx-fallback-cmake",
         "--profile",
-        "release-lto",
+        "aot",
     ],
     cwd=str(template_dir),
 ).check_returncode()
@@ -84,7 +84,7 @@ os.rename(
         template_dir,
         "target",
         "x86_64-pc-windows-msvc",
-        "release-lto",
+        "aot",
         "webrogue_aot_lib.lib",
     ),
     webrogue_aot_lib_path,

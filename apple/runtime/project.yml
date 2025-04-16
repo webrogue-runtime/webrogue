@@ -25,12 +25,12 @@ settings:
       CODE_SIGN_STYLE: Manual
     Release:
       CODE_SIGN_IDENTITY: "Apple Development"
-      CARGO_PROFILE: release-lto
+      CARGO_PROFILE: aot
       CODE_SIGN_STYLE: Automatic
       DEVELOPMENT_TEAM: LC5F8UX2W7
     ReleaseLocal:
       CODE_SIGN_IDENTITY: "-"
-      CARGO_PROFILE: release-lto
+      CARGO_PROFILE: aot
       CODE_SIGN_STYLE: Manual
 options:
   createIntermediateGroups: true
