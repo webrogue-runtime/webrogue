@@ -51,5 +51,5 @@ extern "C" fn webrogue_aot_linux() {
         .join(builder.config().unwrap().id.clone().replace('.', "-"))
         .join("persistent");
 
-    webrogue_wasmtime::run_jit_builder(builder, &persistent_path).unwrap();
+    webrogue_wasmtime::run_aot_builder(builder, &persistent_path).unwrap();
 }
