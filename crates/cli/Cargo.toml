@@ -16,14 +16,9 @@ appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 
-# dependencies for "run" feature
 webrogue-wasmtime = { workspace = true, features = ["cranelift"], optional = true }
 webrogue-gfx = { workspace = true, features = ["fallback"], optional = true }
 webrogue-gfx-fallback = { workspace = true, features = ["sdl2", "cmake"], optional = true }
 webrogue-gfxstream = { workspace = true, features = ["cc"], optional = true }
-
-# dependencies for "compile" feature
 webrogue-aot-compiler = { workspace = true, optional = true }
-
-# dependencies for "pack" feature
 webrogue-wrapp = { workspace = true, features = ["write"], optional = true }

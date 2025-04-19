@@ -4,7 +4,7 @@ use super::types::IconsStamp;
 
 pub fn build(
     build_dir: &std::path::PathBuf,
-    wrapp_builder: &mut webrogue_wrapp::WrappHandleBuilder<std::fs::File>,
+    wrapp_builder: &mut webrogue_wrapp::WrappVFSBuilder,
     old_stamp: Option<&IconsStamp>,
 ) -> anyhow::Result<IconsStamp> {
     let icons_config = wrapp_builder

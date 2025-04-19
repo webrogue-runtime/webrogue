@@ -6,6 +6,7 @@ mod imports;
 mod memory;
 mod threads;
 use ffi::{ArgGetter, RetSetter};
+use webrogue_wrapp::IVFSHandle as _;
 
 extern "C" {
     fn wr_rs_sleep(ms: u32);
@@ -88,12 +89,12 @@ pub fn main(wrapp_data: Option<&'static [u8]>) -> anyhow::Result<()> {
     });
 
     let (config, wrapp_handle) = if let Some(wrapp_data) = wrapp_data {
-        let mut builder = webrogue_wrapp::WrappHandleBuilder::from_static_slice(wrapp_data)?;
+        let mut builder = webrogue_wrapp::WrappVFSBuilder::from_static_slice(wrapp_data)?;
         let config = builder.config()?.clone();
         let wrapp_handle = builder.build()?;
         (config, wrapp_handle)
     } else {
-        let mut builder = webrogue_wrapp::WrappHandleBuilder::from_file_path(
+        let mut builder = webrogue_wrapp::WrappVFSBuilder::from_file_path(
             std::path::PathBuf::from("main.wrapp"),
         )?;
         let config = builder.config()?.clone();

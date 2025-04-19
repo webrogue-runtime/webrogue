@@ -3,15 +3,13 @@ mod write;
 #[cfg(feature = "write")]
 pub use write::{archive, strip};
 
-mod wrapp;
-pub use wrapp::WrappHandle;
-pub use wrapp::WrappHandleBuilder;
-
-mod file_reader;
-pub use file_reader::FileReader;
+mod vfs;
+pub use vfs::real::RealVFSHandle;
+pub use vfs::wrapp::builder::WrappVFSBuilder;
+pub use vfs::wrapp::WrappVFSHandle;
+pub use vfs::{IFilePosition, IFileReader, IVFSHandle};
 
 pub mod config;
-pub mod file_index;
 mod offsetted_reader;
 
 mod preamble;

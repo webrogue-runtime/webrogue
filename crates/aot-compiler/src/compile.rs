@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use wasmtime_environ::obj::LibCall;
+use webrogue_wrapp::IVFSHandle as _;
 
 pub fn compile_wrapp_to_object(
     wrapp_file_path: &std::path::PathBuf,
@@ -23,8 +24,7 @@ pub fn compile_wrapp_to_object(
     }
     let engine = wasmtime::Engine::new(&config)?;
 
-    let wrapp_handle =
-        webrogue_wrapp::WrappHandleBuilder::from_file_path(wrapp_file_path)?.build()?;
+    let wrapp_handle = webrogue_wrapp::WrappVFSBuilder::from_file_path(wrapp_file_path)?.build()?;
 
     let mut file = wrapp_handle
         .open_file("/app/main.wasm")

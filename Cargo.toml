@@ -122,7 +122,7 @@ lto = true
 panic = "abort"
 codegen-units = 1
 opt-level = 3
-strip = "debuginfo"
+strip = true
 
 # Profile for release builds of CLI utility
 [profile.cli]

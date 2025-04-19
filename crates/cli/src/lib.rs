@@ -6,7 +6,13 @@ use clap::{command, Parser};
 enum Cli {
     /// Run a WRAPP file
     #[cfg(feature = "run")]
-    Run { path: std::path::PathBuf },
+    Run {
+        // Indicates that provided file is not a WRAPP but webrogue.json config
+        #[arg(long)]
+        config: bool,
+        // Path to WRAPP file or webrogue.json config
+        path: std::path::PathBuf,
+    },
     /// Builds native applications from WRAPP files
     #[cfg(feature = "compile")]
     Compile {
@@ -30,13 +36,26 @@ pub fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
     match args {
         #[cfg(feature = "run")]
-        Cli::Run { path } => {
-            let mut builder = webrogue_wasmtime::WrappHandleBuilder::from_file_path(path)?;
-            let persistent_path = std::env::current_dir()?
-                .join(".webrogue")
-                .join(&builder.config()?.id)
-                .join("persistent");
-            webrogue_wasmtime::Config::from_builder(builder, persistent_path)?.run_jit()?;
+        Cli::Run { config, path } => {
+            if config {
+                let handle = webrogue_wasmtime::RealVFSHandle::new(path)?;
+
+                let persistent_path = std::env::current_dir()?
+                    .join(".webrogue")
+                    .join(&handle.config().id)
+                    .join("persistent");
+
+                webrogue_wasmtime::run_jit(handle.clone(), handle.config(), &persistent_path)?;
+            } else {
+                let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(path)?;
+
+                let persistent_path = std::env::current_dir()?
+                    .join(".webrogue")
+                    .join(&builder.config()?.id)
+                    .join("persistent");
+
+                webrogue_wasmtime::run_jit_builder(builder, &persistent_path)?;
+            }
             Ok(())
         }
         #[cfg(feature = "compile")]

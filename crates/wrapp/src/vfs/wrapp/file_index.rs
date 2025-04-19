@@ -1,14 +1,20 @@
 use crate::seekable_provider::SeekableProvider;
 
 #[derive(Clone, Copy)]
-pub struct FilePosition {
+pub struct WrappFilePosition {
     pub absolute_offset: usize,
     pub size: usize,
 }
 
+impl crate::IFilePosition for WrappFilePosition {
+    fn get_size(&self) -> usize {
+        self.size
+    }
+}
+
 #[derive(Clone)]
-pub struct FileIndex {
-    pub file_positions: std::collections::BTreeMap<String, FilePosition>,
+pub struct WrappFileIndex {
+    pub file_positions: std::collections::HashMap<String, WrappFilePosition>,
 }
 
 struct Reader<'a> {
@@ -63,9 +69,9 @@ impl<'a> Reader<'a> {
     }
 }
 
-impl FileIndex {
+impl WrappFileIndex {
     pub fn new<'a>(seekable: &'a mut dyn SeekableProvider<'a>) -> Self {
-        let mut file_positions = std::collections::BTreeMap::new();
+        let mut file_positions = std::collections::HashMap::new();
 
         let mut reader = Reader::new(seekable);
         let num_files = reader.read_int();
@@ -81,7 +87,7 @@ impl FileIndex {
 
             file_positions.insert(
                 filename,
-                FilePosition {
+                WrappFilePosition {
                     absolute_offset: offset,
                     size,
                 },

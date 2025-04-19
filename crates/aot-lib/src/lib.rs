@@ -9,7 +9,7 @@ extern "C" fn webrogue_aot_windows() {
     current_file.seek(std::io::SeekFrom::End(-8)).unwrap();
     current_file.read_exact(&mut wrapp_size_bytes).unwrap();
     let wrapp_size = u64::from_le_bytes(wrapp_size_bytes);
-    let mut builder = webrogue_wasmtime::WrappHandleBuilder::from_file_part(
+    let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_part(
         current_file,
         file_size - wrapp_size - 8,
         wrapp_size,
@@ -40,7 +40,7 @@ extern "C" fn webrogue_aot_linux() {
         .unwrap();
     let wrapp_size = u64::from_le_bytes(wrapp_size_bytes);
 
-    let mut builder = webrogue_wasmtime::WrappHandleBuilder::from_file_part(
+    let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_part(
         current_file,
         file_size - wrapp_size - 8,
         wrapp_size,
@@ -51,8 +51,5 @@ extern "C" fn webrogue_aot_linux() {
         .join(builder.config().unwrap().id.clone().replace('.', "-"))
         .join("persistent");
 
-    webrogue_wasmtime::Config::from_builder(builder, persistent_path)
-        .unwrap()
-        .run_aot()
-        .unwrap();
+    webrogue_wasmtime::run_jit_builder(builder, &persistent_path).unwrap();
 }

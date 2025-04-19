@@ -1,28 +1,70 @@
-use std::{
-    io::{Read, Seek},
-    sync::{Arc, Mutex, Weak},
-};
+mod builder;
+
+use std::sync::{Arc, Mutex, Weak};
 
 use wasi_common::ErrorExt as _;
 
-pub struct DirInner {
-    dirs: std::collections::BTreeMap<String, Arc<DirInner>>,
-    files: std::collections::BTreeMap<String, Arc<File>>,
-    parent: Option<Weak<DirInner>>,
+pub struct DirInner<
+    FilePosition: webrogue_wrapp::IFilePosition,
+    FileReader: webrogue_wrapp::IFileReader,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+> {
+    dirs: std::collections::BTreeMap<String, Arc<DirInner<FilePosition, FileReader, VFSHandle>>>,
+    files: std::collections::BTreeMap<String, Arc<File<FilePosition, FileReader, VFSHandle>>>,
+    parent: Option<Weak<DirInner<FilePosition, FileReader, VFSHandle>>>,
 }
 
-#[derive(Clone)]
-pub struct Dir {
-    inner: Arc<DirInner>,
+impl<
+        FilePosition: webrogue_wrapp::IFilePosition,
+        FileReader: webrogue_wrapp::IFileReader,
+        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+    > Clone for DirInner<FilePosition, FileReader, VFSHandle>
+{
+    fn clone(&self) -> Self {
+        Self {
+            dirs: self.dirs.clone(),
+            files: self.files.clone(),
+            parent: self.parent.clone(),
+        }
+    }
 }
 
-enum SearchResult {
-    File(Arc<File>),
-    Dir(Dir),
+pub struct Dir<
+    FilePosition: webrogue_wrapp::IFilePosition,
+    FileReader: webrogue_wrapp::IFileReader,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+> {
+    inner: Arc<DirInner<FilePosition, FileReader, VFSHandle>>,
+}
+impl<
+        FilePosition: webrogue_wrapp::IFilePosition,
+        FileReader: webrogue_wrapp::IFileReader,
+        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+    > Clone for Dir<FilePosition, FileReader, VFSHandle>
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
 }
 
-impl DirInner {
-    fn build(source: crate::fs_builder::Dir) -> Arc<Self> {
+enum SearchResult<
+    FilePosition: webrogue_wrapp::IFilePosition,
+    FileReader: webrogue_wrapp::IFileReader,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+> {
+    File(Arc<File<FilePosition, FileReader, VFSHandle>>),
+    Dir(Dir<FilePosition, FileReader, VFSHandle>),
+}
+
+impl<
+        FilePosition: webrogue_wrapp::IFilePosition,
+        FileReader: webrogue_wrapp::IFileReader,
+        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+    > DirInner<FilePosition, FileReader, VFSHandle>
+{
+    fn build(source: builder::Dir<FilePosition, FileReader, VFSHandle>) -> Arc<Self> {
         let mut dirs = std::collections::BTreeMap::new();
         for (k, v) in source.dirs.into_iter() {
             dirs.insert(k, Self::build(v));
@@ -37,23 +79,29 @@ impl DirInner {
             parent: None,
         });
         for dir in result.dirs.values() {
-            let r = (dir.as_ref() as *const DirInner) as *mut DirInner;
+            let r = (dir.as_ref() as *const DirInner<FilePosition, FileReader, VFSHandle>)
+                as *mut DirInner<FilePosition, FileReader, VFSHandle>;
             unsafe { r.as_mut().unwrap() }.parent = Some(Arc::downgrade(&result))
         }
         return result;
     }
 }
 
-impl Dir {
-    pub fn root(wrapp: webrogue_wrapp::WrappHandle) -> Self {
-        Self::new(DirInner::build(crate::fs_builder::Dir::root(wrapp)))
+impl<
+        FilePosition: webrogue_wrapp::IFilePosition,
+        FileReader: webrogue_wrapp::IFileReader,
+        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+    > Dir<FilePosition, FileReader, VFSHandle>
+{
+    pub fn root(handle: VFSHandle) -> Self {
+        Self::new(DirInner::build(builder::Dir::root(handle)))
     }
 
-    fn new(inner: Arc<DirInner>) -> Self {
+    fn new(inner: Arc<DirInner<FilePosition, FileReader, VFSHandle>>) -> Self {
         Self { inner }
     }
 
-    fn search(&self, path: &str) -> Option<SearchResult> {
+    fn search(&self, path: &str) -> Option<SearchResult<FilePosition, FileReader, VFSHandle>> {
         let (name, rest) = if let Some(slash_pos) = path.find("/") {
             let (name, rest) = path.split_at(slash_pos);
             (name, Some(&rest[1..]))
@@ -66,7 +114,7 @@ impl Dir {
                 if let Some(rest) = rest {
                     return self.search(rest);
                 } else {
-                    return Some(SearchResult::Dir(self.clone()));
+                    return Some(SearchResult::Dir((*self).clone()));
                 }
             }
             ".." => {
@@ -107,7 +155,12 @@ impl Dir {
 }
 
 #[wiggle::async_trait]
-impl wasi_common::WasiDir for Dir {
+impl<
+        FilePosition: webrogue_wrapp::IFilePosition + 'static,
+        FileReader: webrogue_wrapp::IFileReader + 'static,
+        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
+    > wasi_common::WasiDir for Dir<FilePosition, FileReader, VFSHandle>
+{
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -209,7 +262,7 @@ impl wasi_common::WasiDir for Dir {
                     inode: 0,
                     filetype: wasi_common::file::FileType::RegularFile,
                     nlink: 0,
-                    size: file.position.size as u64,
+                    size: file.position.get_size() as u64,
                     atim: None,
                     mtim: None,
                     ctim: None,
@@ -259,27 +312,58 @@ impl wasi_common::WasiDir for Dir {
     }
 }
 
-struct File {
-    wrapp: webrogue_wrapp::WrappHandle,
-    position: webrogue_wrapp::file_index::FilePosition,
+struct File<
+    FilePosition: webrogue_wrapp::IFilePosition,
+    FileReader: webrogue_wrapp::IFileReader,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+> {
+    handle: VFSHandle,
+    position: FilePosition,
+    _file_reader: std::marker::PhantomData<FileReader>,
 }
 
-impl File {
-    fn build(source: crate::fs_builder::File) -> Self {
+impl<
+        FilePosition: webrogue_wrapp::IFilePosition,
+        FileReader: webrogue_wrapp::IFileReader,
+        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+    > Clone for File<FilePosition, FileReader, VFSHandle>
+{
+    fn clone(&self) -> Self {
         Self {
-            wrapp: source.wrapp,
-            position: source.position,
+            handle: self.handle.clone(),
+            position: self.position.clone(),
+            _file_reader: self._file_reader.clone(),
         }
     }
 }
 
-struct OpenFile {
-    reader: Mutex<webrogue_wrapp::FileReader>,
+impl<
+        FilePosition: webrogue_wrapp::IFilePosition,
+        FileReader: webrogue_wrapp::IFileReader,
+        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+    > File<FilePosition, FileReader, VFSHandle>
+{
+    fn build(source: builder::File<FilePosition, FileReader, VFSHandle>) -> Self {
+        Self {
+            handle: source.handle,
+            position: source.position,
+            _file_reader: std::marker::PhantomData,
+        }
+    }
 }
 
-impl OpenFile {
-    fn open(source: Arc<File>) -> Self {
-        let reader = source.wrapp.open_pos(source.position);
+struct OpenFile<FileReader: webrogue_wrapp::IFileReader> {
+    reader: Mutex<FileReader>,
+}
+
+impl<FileReader: webrogue_wrapp::IFileReader> OpenFile<FileReader> {
+    fn open<
+        FilePosition: webrogue_wrapp::IFilePosition,
+        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+    >(
+        source: Arc<File<FilePosition, FileReader, VFSHandle>>,
+    ) -> Self {
+        let reader = source.handle.open_pos(source.position.clone());
         Self {
             reader: Mutex::new(reader),
         }
@@ -287,7 +371,9 @@ impl OpenFile {
 }
 
 #[wiggle::async_trait]
-impl wasi_common::WasiFile for OpenFile {
+impl<FileReader: webrogue_wrapp::IFileReader + 'static> wasi_common::WasiFile
+    for OpenFile<FileReader>
+{
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }

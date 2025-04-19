@@ -135,14 +135,14 @@ fn main() -> anyhow::Result<()> {
     let offset = unsafe { webrogue_android_container_offset() } as u64;
     let size = unsafe { webrogue_android_container_size() } as u64;
 
-    let mut builder = webrogue_wasmtime::WrappHandleBuilder::from_file_part(file, offset, size)?;
+    let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_part(file, offset, size)?;
 
     let persistent_path = std::path::PathBuf::from(data_path)
         .join(".webrogue")
         .join(&builder.config()?.id)
         .join("persistent");
 
-    let config = webrogue_wasmtime::Config::from_builder(builder, persistent_path)?;
+    let config = webrogue_wasmtime::run_jit_builder(builder, &persistent_path)?;
 
     #[cfg(feature = "launcher")]
     return config.run_jit();

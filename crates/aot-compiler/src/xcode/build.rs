@@ -5,7 +5,7 @@ pub fn build(
     build_dir: &std::path::PathBuf,
     configuration: Configuration,
     destination: Destination,
-    wrapp_builder: &mut webrogue_wrapp::WrappHandleBuilder<std::fs::File>,
+    wrapp_builder: &mut webrogue_wrapp::WrappVFSBuilder,
 ) -> anyhow::Result<()> {
     let configuration_name = match configuration {
         Configuration::Debug => "Debug",

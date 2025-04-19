@@ -30,13 +30,24 @@ impl wasmtime::CustomCodeMemory for StaticCodeMemory {
 compile_error!("Either AOT or Cranelift features must be enabled");
 
 #[cfg(feature = "cranelift")]
-pub fn run_jit(
-    wrapp: webrogue_wrapp::WrappHandle,
+pub fn run_jit_builder(
+    mut wrapp_vfs_builder: webrogue_wrapp::WrappVFSBuilder,
+    persistent_dir: &std::path::PathBuf,
+) -> anyhow::Result<()> {
+    let config = wrapp_vfs_builder.config()?.clone();
+    let handle = wrapp_vfs_builder.build()?;
+    run_jit(handle, &config, persistent_dir)
+}
+#[cfg(feature = "cranelift")]
+pub fn run_jit<
+    FilePosition: webrogue_wrapp::IFilePosition + 'static,
+    FileReader: webrogue_wrapp::IFileReader + 'static,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
+>(
+    handle: VFSHandle,
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    use std::io::Read;
-
     let mut config = wasmtime::Config::new();
     #[cfg(feature = "cache")]
     config.cache_config_load_default()?;
@@ -50,16 +61,16 @@ pub fn run_jit(
     let epoch_interruption = true;
     config.epoch_interruption(epoch_interruption);
     let engine = wasmtime::Engine::new(&config)?;
-    let mut file = wrapp
+    let mut wasm_binary = Vec::new();
+    let mut file = handle
         .open_file("/app/main.wasm")
         .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
-    let mut wasm_binary = Vec::new();
     file.read_to_end(&mut wasm_binary)?;
     drop(file);
 
     let module = wasmtime::Module::from_binary(&engine, &wasm_binary)?;
     run_module(
-        wrapp,
+        handle,
         wrapp_config,
         persistent_dir,
         epoch_interruption,
@@ -69,8 +80,12 @@ pub fn run_jit(
 }
 
 #[cfg(feature = "aot")]
-pub fn run_aot(
-    wrapp: webrogue_wrapp::WrappHandle,
+pub fn run_aot<
+    FilePosition: webrogue_wrapp::IFilePosition + 'static,
+    FileReader: webrogue_wrapp::IFileReader + 'static,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
+>(
+    handle: VFSHandle,
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
@@ -86,7 +101,7 @@ pub fn run_aot(
     };
 
     run_module(
-        wrapp,
+        handle,
         wrapp_config,
         persistent_dir,
         epoch_interruption,
@@ -95,8 +110,12 @@ pub fn run_aot(
     )
 }
 
-fn run_module(
-    wrapp: webrogue_wrapp::WrappHandle,
+fn run_module<
+    FilePosition: webrogue_wrapp::IFilePosition + 'static,
+    FileReader: webrogue_wrapp::IFileReader + 'static,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
+>(
+    handle: VFSHandle,
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
     epoch_interruption: bool,
@@ -131,7 +150,7 @@ fn run_module(
     )?;
 
     store.data_mut().preview1_ctx = Some(webrogue_wasip1::make_ctx(
-        wrapp,
+        handle,
         wrapp_config,
         persistent_dir,
     )?);

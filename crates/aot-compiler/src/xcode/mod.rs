@@ -46,7 +46,7 @@ pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
         artifacts.extract_dir(args.build_dir, "apple_xcode/template")?;
     }
 
-    let mut wrapp_builder = webrogue_wrapp::WrappHandleBuilder::from_file_path(&args.wrapp_path)?;
+    let mut wrapp_builder = webrogue_wrapp::WrappVFSBuilder::from_file_path(&args.wrapp_path)?;
     let wrapp_config = wrapp_builder.config()?.clone();
 
     {

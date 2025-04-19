@@ -1,15 +1,19 @@
 mod fs;
-mod fs_builder;
 
-pub fn make_ctx(
-    wrapp: webrogue_wrapp::WrappHandle,
+pub fn make_ctx<
+    FilePosition: webrogue_wrapp::IFilePosition + 'static,
+    FileReader: webrogue_wrapp::IFileReader + 'static,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
+>(
+    handle: VFSHandle,
     config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<wasi_common::WasiCtx> {
     let mut builder = wasi_common::sync::WasiCtxBuilder::new();
     builder.inherit_stdio();
     let wasi_ctx = builder.build();
-    let app_dir = fs::Dir::root(wrapp);
+
+    let app_dir = fs::Dir::root(handle);
     wasi_ctx.push_preopened_dir(Box::new(app_dir), "/")?;
 
     if let Some(filesystem) = &config.filesystem {
@@ -21,7 +25,7 @@ pub fn make_ctx(
                         && !persistent.name.contains("\\")
                         && persistent.name != ".."
                         && persistent.name != ".",
-                    "Persisten directory name is invalid: {}",
+                    "Persistent directory name is invalid: {}",
                     persistent.name
                 );
                 let real_path = persistent_dir.join(&persistent.name);

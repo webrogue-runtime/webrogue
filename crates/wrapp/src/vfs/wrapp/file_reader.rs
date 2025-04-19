@@ -1,6 +1,6 @@
-pub struct FileReader {
-    handle: crate::WrappHandle,
-    file_position: crate::file_index::FilePosition,
+pub struct WrappVFSFileReader {
+    handle: super::WrappVFSHandle,
+    file_position: super::file_index::WrappFilePosition,
     // relative to file start
     cursor: usize,
     cursor_frame_index: usize,
@@ -8,10 +8,12 @@ pub struct FileReader {
     cursor_frame_absolute_offset: usize,
 }
 
-impl FileReader {
+impl crate::vfs::IFileReader for WrappVFSFileReader {}
+
+impl WrappVFSFileReader {
     pub(crate) fn new(
-        mut handle: crate::WrappHandle,
-        file_position: crate::file_index::FilePosition,
+        mut handle: super::WrappVFSHandle,
+        file_position: super::file_index::WrappFilePosition,
     ) -> Self {
         let frame_and_relative_offset =
             handle.get_frame_and_relative_offset(file_position.absolute_offset);
@@ -49,7 +51,7 @@ impl FileReader {
     }
 }
 
-impl std::io::Seek for FileReader {
+impl std::io::Seek for WrappVFSFileReader {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         let target_offset = match pos {
             std::io::SeekFrom::Current(d) => (self.cursor as i64 + d) as usize,
@@ -70,7 +72,7 @@ impl std::io::Seek for FileReader {
     }
 }
 
-impl std::io::Read for FileReader {
+impl std::io::Read for WrappVFSFileReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let mut result_size: usize = 0;
 

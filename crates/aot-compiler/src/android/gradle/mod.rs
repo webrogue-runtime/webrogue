@@ -39,7 +39,7 @@ pub fn build(
 
     let object_file = crate::utils::TemporalFile::for_tmp_object(build_dir.join("aarch64"))?;
 
-    let mut wrapp_builder = webrogue_wrapp::WrappHandleBuilder::from_file_path(&container_path)?;
+    let mut wrapp_builder = webrogue_wrapp::WrappVFSBuilder::from_file_path(&container_path)?;
     let version = wrapp_builder
         .config()?
         .version
