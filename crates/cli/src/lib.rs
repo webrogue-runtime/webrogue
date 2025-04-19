@@ -71,11 +71,11 @@ pub fn main() -> anyhow::Result<()> {
                 (config.join("webrogue.json"), config.clone())
             } else {
                 (
+                    config.clone(),
                     config
                         .parent()
                         .ok_or_else(|| anyhow::anyhow!("Path error"))?
                         .to_path_buf(),
-                    config.clone(),
                 )
             };
             let output = output.unwrap_or(cwd.clone());

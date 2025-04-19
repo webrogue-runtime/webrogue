@@ -2,16 +2,12 @@ mod threads;
 
 pub use webrogue_wrapp::{RealVFSHandle, WrappVFSBuilder, WrappVFSHandle};
 
-use std::sync::Arc;
-
 #[derive(Clone)]
-pub struct State {
+struct State {
     pub preview1_ctx: Option<wasi_common::WasiCtx>,
-    pub wasi_threads_ctx: Option<Arc<crate::threads::WasiThreadsCtx<Self>>>,
+    pub wasi_threads_ctx: Option<std::sync::Arc<crate::threads::WasiThreadsCtx<Self>>>,
     pub gfx: Option<webrogue_gfx::GFXInterface>,
 }
-
-// unsafe impl Send for State {}
 
 #[cfg(feature = "aot")]
 struct StaticCodeMemory {}
@@ -107,7 +103,7 @@ pub fn run_aot<
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
     let epoch_interruption = false;
     config.epoch_interruption(epoch_interruption);
-    config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
+    config.with_custom_code_memory(Some(std::sync::Arc::new(StaticCodeMemory {})));
     let engine = wasmtime::Engine::new(&config)?;
     let module = unsafe {
         wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
@@ -143,9 +139,9 @@ fn run_module<
     };
     let mut store = wasmtime::Store::new(&engine, state);
 
-    store.data_mut().wasi_threads_ctx = Some(Arc::new(crate::threads::WasiThreadsCtx::new(
-        epoch_interruption,
-    )));
+    store.data_mut().wasi_threads_ctx = Some(std::sync::Arc::new(
+        crate::threads::WasiThreadsCtx::new(epoch_interruption),
+    ));
 
     bindings::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
         state.preview1_ctx.as_mut().unwrap()
@@ -155,7 +151,7 @@ fn run_module<
     crate::threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
         host.wasi_threads_ctx.as_ref().unwrap()
     })?;
-    let linker = Arc::new(linker);
+    let linker = std::sync::Arc::new(linker);
     store.data().wasi_threads_ctx.as_ref().unwrap().fill(
         module.clone(),
         linker.clone(),
@@ -168,7 +164,7 @@ fn run_module<
         persistent_dir,
     )?);
 
-    store.data_mut().gfx = Some(webrogue_gfx::GFXInterface::new(Arc::new(
+    store.data_mut().gfx = Some(webrogue_gfx::GFXInterface::new(std::sync::Arc::new(
         webrogue_gfx::GFXSystem::new(),
     )));
 
