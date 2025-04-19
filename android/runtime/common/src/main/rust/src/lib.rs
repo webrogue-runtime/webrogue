@@ -148,7 +148,8 @@ fn main() -> anyhow::Result<()> {
     return webrogue_wasmtime::run_aot_builder(builder, &persistent_path);
     #[cfg(not(any(feature = "launcher", feature = "runner")))]
     {
-        let _ = config;
+        let _ = builder;
+        let _ = persistent_path;
         unreachable!("Either launcher or runner feature must be specified");
     }
 }

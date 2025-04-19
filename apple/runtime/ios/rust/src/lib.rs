@@ -6,7 +6,8 @@ fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
     return webrogue_wasmtime::run_aot_builder(builder, &persistent_path.into());
     #[cfg(not(any(feature = "launcher", feature = "runner")))]
     {
-        let _ = config;
+        let _ = builder;
+        let _ = persistent_path;
         unreachable!("Either launcher or runner feature must be specified");
     }
 }

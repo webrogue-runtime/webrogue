@@ -21,10 +21,7 @@ extern "C" fn webrogue_aot_windows() {
         .join(builder.config().unwrap().id.clone().replace('.', "-"))
         .join("persistent");
 
-    webrogue_wasmtime::Config::from_builder(builder, persistent_path)
-        .unwrap()
-        .run_aot()
-        .unwrap();
+    webrogue_wasmtime::run_aot_builder(builder, &persistent_path).unwrap();
 }
 
 #[cfg(target_os = "linux")]
