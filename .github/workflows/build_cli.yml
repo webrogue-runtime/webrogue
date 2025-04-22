@@ -191,16 +191,16 @@ jobs:
   #   - uses: actions/download-artifact@v4
   #     with: 
   #       name: CLI-macOS-arm64-raw
-  #       path: webrogue-arm64
+  #       path: webrogue-cli-arm64
 
   #   - uses: actions/download-artifact@v4
   #     with: 
   #       name: CLI-macOS-x86_64-raw
-  #       path: webrogue-x86_64
+  #       path: webrogue-cli-x86_64
   
   #   - name: Lipo
   #     run: |
-  #       lipo -create webrogue-x86_64/webrogue webrogue-arm64/webrogue -output webrogue
+  #       lipo -create webrogue-cli-x86_64/webrogue webrogue-cli-arm64/webrogue -output webrogue
 
   #   - uses: actions/upload-artifact@v4
   #     with:
@@ -289,15 +289,24 @@ jobs:
   
     - name: Append artifacts
       run: |
-        python3 append_artifacts.py webrogue_linux_x86_64_glibc_raw/webrogue aot_artifacts.zip webrogue_linux_x86_64_glibc
-        chmod +x webrogue_linux_x86_64_glibc
+        mkdir webrogue-cli-linux-x86_64
+        python3 append_artifacts.py webrogue_linux_x86_64_glibc_raw/webrogue aot_artifacts.zip webrogue-cli-linux-x86_64/webrogue
+        chmod +x webrogue-cli-linux-x86_64/webrogue
+        tar czf webrogue-cli-linux-x86_64.tar.gz webrogue-cli-linux-x86_64/
 
-        python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue_windows_x86_64.exe
+        mkdir webrogue-cli-windows-x86_64
+        python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-x86_64/webrogue.exe
+        zip -r webrogue-cli-x86_64-windows.zip webrogue-cli-x86_64-windows
 
-        python3 append_artifacts.py webrogue_macos_arm64_raw/webrogue aot_artifacts_macos.zip webrogue_macos_arm64
-        chmod +x webrogue_macos_arm64
-        python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts_macos.zip webrogue_macos_x86_64
-        chmod +x webrogue_macos_x86_64
+        mkdir webrogue-cli-macos-arm64
+        python3 append_artifacts.py webrogue_macos_arm64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-arm64/webrogue
+        chmod +x webrogue-cli-macos-arm64/webrogue
+        tar czf webrogue-cli-macos-arm64.tar.gz webrogue-cli-macos-arm64/
+
+        mkdir webrogue-cli-macos-x86_64
+        python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-arm64/webrogue
+        chmod +x webrogue-cli-macos-arm64/webrogue
+        tar czf webrogue-cli-macos-x86_64.tar.gz webrogue-cli-macos-x86_64/
 
     - name: Update tag
       run: |
@@ -307,10 +316,10 @@ jobs:
     - uses: ncipollo/release-action@v1
       with:
         artifacts: |
-          webrogue_linux_x86_64_glibc
-          webrogue_windows_x86_64.exe
-          webrogue_macos_arm64
-          webrogue_macos_x86_64
+          webrogue-cli-linux-x86_64.tar.gz
+          webrogue-cli-x86_64-windows.zip
+          webrogue-cli-macos-arm64.tar.gz
+          webrogue-cli-macos-x86_64.tar.gz
         name: Continuous build
         allowUpdates: true
         tag: latest
