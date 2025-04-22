@@ -23,8 +23,11 @@ impl crate::IVFSHandle<file_index::WrappFilePosition, file_reader::WrappVFSFileR
         &self.file_index.file_positions
     }
 
-    fn open_pos(&self, position: file_index::WrappFilePosition) -> file_reader::WrappVFSFileReader {
-        file_reader::WrappVFSFileReader::new(self.clone(), position)
+    fn open_pos(
+        &self,
+        position: file_index::WrappFilePosition,
+    ) -> anyhow::Result<file_reader::WrappVFSFileReader> {
+        Ok(file_reader::WrappVFSFileReader::new(self.clone(), position))
     }
 }
 

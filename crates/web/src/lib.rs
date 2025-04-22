@@ -5,6 +5,7 @@ mod ffi;
 mod imports;
 mod memory;
 mod threads;
+use anyhow::Context as _;
 use ffi::{ArgGetter, RetSetter};
 use webrogue_wrapp::IVFSHandle as _;
 
@@ -110,7 +111,10 @@ pub fn main(wrapp_data: Option<&'static [u8]>) -> anyhow::Result<()> {
     let mut wasm_bytes = Vec::new();
     wrapp_handle
         .open_file("/app/main.wasm")
-        .unwrap()
+        .with_context(|| {
+            anyhow::anyhow!("Unable to open file specified as \"main\" in webrogue.json")
+        })?
+        .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?
         .read_to_end(&mut wasm_bytes)?;
 
     let mut jsonptr = imports.to_json().as_bytes().to_vec();

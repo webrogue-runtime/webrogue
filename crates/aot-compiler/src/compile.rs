@@ -27,7 +27,7 @@ pub fn compile_wrapp_to_object(
     let wrapp_handle = webrogue_wrapp::WrappVFSBuilder::from_file_path(wrapp_file_path)?.build()?;
 
     let mut file = wrapp_handle
-        .open_file("/app/main.wasm")
+        .open_file("/app/main.wasm")?
         .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
     let mut wasm_binary = Vec::new();
     std::io::Read::read_to_end(&mut file, &mut wasm_binary)?;

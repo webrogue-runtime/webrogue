@@ -363,7 +363,9 @@ impl<FileReader: webrogue_wrapp::IFileReader> OpenFile<FileReader> {
     >(
         source: Arc<File<FilePosition, FileReader, VFSHandle>>,
     ) -> Self {
-        let reader = source.handle.open_pos(source.position.clone());
+        let Ok(reader) = source.handle.open_pos(source.position.clone()) else {
+            unreachable!("Unable to open file at \"position\" {}", &source.position);
+        };
         Self {
             reader: Mutex::new(reader),
         }

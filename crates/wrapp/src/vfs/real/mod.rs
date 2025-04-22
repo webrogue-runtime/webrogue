@@ -1,3 +1,7 @@
+use std::fmt::Debug;
+
+use anyhow::Context;
+
 #[derive(Clone)]
 pub struct RealFilePosition {
     pub path: std::path::PathBuf,
@@ -6,6 +10,12 @@ pub struct RealFilePosition {
 impl crate::IFilePosition for RealFilePosition {
     fn get_size(&self) -> usize {
         self.path.metadata().unwrap().len() as usize
+    }
+}
+
+impl std::fmt::Display for RealFilePosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.path.fmt(f)
     }
 }
 
@@ -41,10 +51,12 @@ impl crate::IVFSHandle<RealFilePosition, RealFileReader> for RealVFSHandle {
         &self.0.paths
     }
 
-    fn open_pos(&self, position: RealFilePosition) -> RealFileReader {
-        RealFileReader {
-            file: std::fs::File::open(position.path).unwrap(), // TODO no unwrap
-        }
+    fn open_pos(&self, position: RealFilePosition) -> anyhow::Result<RealFileReader> {
+        Ok(RealFileReader {
+            file: std::fs::File::open(&position.path).with_context(|| {
+                anyhow::anyhow!("Unable to open file {}", position.path.display())
+            })?,
+        })
     }
 }
 

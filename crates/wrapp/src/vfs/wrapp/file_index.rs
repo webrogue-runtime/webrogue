@@ -12,6 +12,12 @@ impl crate::IFilePosition for WrappFilePosition {
     }
 }
 
+impl std::fmt::Display for WrappFilePosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.absolute_offset.fmt(f)
+    }
+}
+
 #[derive(Clone)]
 pub struct WrappFileIndex {
     pub file_positions: std::collections::HashMap<String, WrappFilePosition>,

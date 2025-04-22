@@ -48,6 +48,8 @@ pub fn run_jit<
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
+    use anyhow::Context;
+
     let mut config = wasmtime::Config::new();
     #[cfg(feature = "cache")]
     config.cache_config_load_default()?;
@@ -64,7 +66,12 @@ pub fn run_jit<
     let mut wasm_binary = Vec::new();
     let mut file = handle
         .open_file("/app/main.wasm")
-        .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
+        .with_context(|| {
+            anyhow::anyhow!("Unable to open file specified as \"main\" in webrogue.json")
+        })?
+        .ok_or(anyhow::anyhow!(
+            "/app/main.wasm not found. Maybe you are trying to run a stripped WRAPP using JIT?"
+        ))?;
     file.read_to_end(&mut wasm_binary)?;
     drop(file);
 

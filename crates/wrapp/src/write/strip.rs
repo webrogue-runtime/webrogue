@@ -24,11 +24,7 @@ pub fn strip(
         filenames_to_archive.push((pos, file_path));
     }
 
-    super::compress::compress_files(
-        filenames_to_archive,
-        |pos| Ok(wrapp.open_pos(pos)),
-        &mut writer,
-    )?;
+    super::compress::compress_files(filenames_to_archive, |pos| wrapp.open_pos(pos), &mut writer)?;
 
     Ok(())
 }
