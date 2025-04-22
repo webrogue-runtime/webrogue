@@ -7,13 +7,13 @@ edition.workspace = true
 
 [features]
 default = []
-llvm = ["dep:webrogue-aot-linker", "webrogue-aot-linker/build-llvm"]
+llvm = ["dep:webrogue-lld", "webrogue-lld/build-llvm"]
 appended_artifacts = []
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
-webrogue-aot-linker = { workspace = true, optional = true }
+webrogue-lld = { workspace = true, optional = true }
 wasmtime = { workspace = true, default-features = false, features = ["cranelift", "all-arch", "threads", "parallel-compilation"] }
 webrogue-wrapp = { workspace = true, features = ["write"] }
 object = { workspace = true, default-features = false, features = ['read_core', 'write_core', 'elf'] }

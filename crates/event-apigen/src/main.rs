@@ -43,7 +43,7 @@ fn main() -> anyhow::Result<()> {
             events::all().iter().map(|event| event.size).max().unwrap()
         );
         write!("");
-        write!("static webrogue_event_out_buf webrogue_event_out_buf_create() {{");
+        write!("static webrogue_event_out_buf webrogue_event_out_buf_create(void) {{");
         writer.inc_indent();
         {
             write!("webrogue_event_out_buf result;");

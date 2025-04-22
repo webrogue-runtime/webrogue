@@ -44,12 +44,12 @@ members = [
   "crates/aot-compiler",
   "crates/aot-data",
   "crates/aot-lib",
-  "crates/aot-linker",
   "crates/cli",
   "crates/event-apigen",
   "crates/gfx",
   "crates/gfx-fallback",
   "crates/gfxstream",
+  "crates/lld",
   "crates/wasip1",
   "crates/wasmtime",
   "crates/web-macro",
@@ -69,12 +69,12 @@ exclude = [
 # Webrogue crates
 webrogue-aot-compiler = { path = "crates/aot-compiler", default-features=false }
 webrogue-aot-data = { path = "crates/aot-data" }
-webrogue-aot-linker = { path = "crates/aot-linker" }
 webrogue-cli = { path = "crates/cli" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
 webrogue-gfxstream = { path = "crates/gfxstream" }
+webrogue-lld = { path = "crates/lld" }
 webrogue-wasip1 = { path = "crates/wasip1" }
 webrogue-wrapp = { path = "crates/wrapp" }
 

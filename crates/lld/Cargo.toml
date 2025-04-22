@@ -1,5 +1,5 @@
 [package]
-name = "webrogue-aot-linker"
+name = "webrogue-lld"
 version.workspace = true
 authors.workspace = true
 license.workspace = true
