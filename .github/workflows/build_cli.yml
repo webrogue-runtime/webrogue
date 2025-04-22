@@ -1,4 +1,4 @@
-name:  Build Webrogue SDK
+name:  Build Webrogue CLI utility
 
 on:
   workflow_dispatch
@@ -233,9 +233,11 @@ jobs:
         path: target/x86_64-pc-windows-msvc/cli/webrogue.exe
 
 
-  cli:
+  combine:
     needs: [linux_artifacts, windows_artifacts, android_artifacts, apple_artifacts, linux-x86_64-glibc-cli, macos-arm64-cli, macos-x86_64-cli, windows-x86_64-cli]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - uses: actions/checkout@v4
@@ -297,103 +299,6 @@ jobs:
         python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts_macos.zip webrogue_macos_x86_64
         chmod +x webrogue_macos_x86_64
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: CLI
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue_linux_x86_64_glibc
-          webrogue_windows_x86_64.exe
-          webrogue_macos_arm64
-          webrogue_macos_x86_64
-
-  sdk:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Submodules
-      run: |
-        git submodule update --init --single-branch --depth=1 webrogue-sdk external/aemu external/gfxstream
-        cd webrogue-sdk && git submodule update --init --single-branch --depth=1
-
-    - name: Build
-      run: |
-        sh webrogue-sdk/build.sh
-
-    - name: Archive SDK
-      run: |
-        tar czf sdk_raw.tar.gz -C webrogue-sdk/package/ webrogue-x86_64-linux webrogue-x86_64-windows webrogue-x86_64-macos webrogue-arm64-macos
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: SDK-raw
-        compression-level: 0
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          sdk_raw.tar.gz
-  
-  combine:
-    needs: [cli, sdk]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: SDK-raw
-        path: sdk
-
-    - name: Extract SDK-raw
-      run: |
-        tar xzf sdk/sdk_raw.tar.gz
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: CLI
-        path: cli
-
-    - name: Add Webrogue CLI utility to SDK
-      run: |
-        cp cli/webrogue_linux_x86_64_glibc webrogue-x86_64-linux/bin/webrogue
-        chmod +x webrogue-x86_64-linux/bin/webrogue
-
-        cp cli/webrogue_windows_x86_64.exe webrogue-x86_64-windows/bin/webrogue.exe
-        wget https://github.com/webrogue-runtime/angle-builder/releases/latest/download/windows_x64.zip -O angle_windows_x64.zip
-        unzip -j angle_windows_x64.zip x64/libEGL.dll && mv libEGL.dll webrogue-x86_64-windows/bin
-        unzip -j angle_windows_x64.zip x64/libGLESv2.dll && mv libGLESv2.dll webrogue-x86_64-windows/bin
-
-        cp cli/webrogue_macos_x86_64 webrogue-x86_64-macos/bin/webrogue
-        chmod +x webrogue-x86_64-macos/bin/webrogue
-        cp cli/webrogue_macos_arm64 webrogue-arm64-macos/bin/webrogue
-        chmod +x webrogue-arm64-macos/bin/webrogue
-
-    - name: Archive SDK
-      run: |
-        tar czf webrogue-x86_64-linux.tar.gz webrogue-x86_64-linux/
-
-        zip -r webrogue-x86_64-windows.zip webrogue-x86_64-windows
-
-        tar czf webrogue-x86_64-macos.tar.gz webrogue-x86_64-macos/
-        tar czf webrogue-arm64-macos.tar.gz webrogue-arm64-macos/
-
-    # - uses: actions/upload-artifact@v4
-    #   with:
-    #     name: SDK
-    #     compression-level: 0
-    #     if-no-files-found: error
-    #     path: |
-    #       webrogue-x86_64-linux.tar.gz
-    #       webrogue-x86_64-windows.zip
-    #       webrogue-x86_64-macos.tar.gz
-    #       webrogue-arm64-macos.tar.gz
-
     - name: Update tag
       run: |
         git tag -f latest
@@ -402,10 +307,10 @@ jobs:
     - uses: ncipollo/release-action@v1
       with:
         artifacts: |
-          webrogue-x86_64-linux.tar.gz
-          webrogue-x86_64-windows.zip
-          webrogue-x86_64-macos.tar.gz
-          webrogue-arm64-macos.tar.gz
+          webrogue_linux_x86_64_glibc
+          webrogue_windows_x86_64.exe
+          webrogue_macos_arm64
+          webrogue_macos_x86_64
         name: Continuous build
         allowUpdates: true
         tag: latest
