@@ -4,7 +4,7 @@ pub use artifacts::*;
 
 pub(crate) fn _run_lld(_args: Vec<String>) -> anyhow::Result<()> {
     #[cfg(feature = "llvm")]
-    return webrogue_aot_linker::run_lld(_args);
+    return webrogue_lld::run_lld(_args);
     #[cfg(not(feature = "llvm"))]
     anyhow::bail!("LLVM feature is disabled at build time")
 }
