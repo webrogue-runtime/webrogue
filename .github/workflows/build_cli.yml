@@ -296,7 +296,7 @@ jobs:
 
         mkdir webrogue-cli-windows-x86_64
         python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-x86_64/webrogue.exe
-        zip -r webrogue-cli-x86_64-windows.zip webrogue-cli-x86_64-windows
+        zip -r webrogue-cli-windows-x86_64.zip webrogue-cli-windows-x86_64
 
         mkdir webrogue-cli-macos-arm64
         python3 append_artifacts.py webrogue_macos_arm64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-arm64/webrogue
@@ -317,7 +317,7 @@ jobs:
       with:
         artifacts: |
           webrogue-cli-linux-x86_64.tar.gz
-          webrogue-cli-x86_64-windows.zip
+          webrogue-cli-windows-x86_64.zip
           webrogue-cli-macos-arm64.tar.gz
           webrogue-cli-macos-x86_64.tar.gz
         name: Continuous build
