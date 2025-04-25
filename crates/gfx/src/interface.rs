@@ -1,5 +1,5 @@
 wiggle::from_witx!({
-    witx: ["$CARGO_MANIFEST_DIR/witx/webrogue_gfx.witx"],
+    witx: ["witx/webrogue_gfx.witx"],
     wasmtime: false,
 });
 
@@ -41,7 +41,9 @@ impl Clone for GFXInterface {
 
 impl webrogue_gfx::WebrogueGfx for GFXInterface {
     fn make_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
-        if self.window.is_some() { return }
+        if self.window.is_some() {
+            return;
+        }
         self.window = Some(self.gfx.make_window());
     }
 

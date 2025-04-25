@@ -1,7 +1,11 @@
+#[allow(unreachable_code)]
+#[allow(unused_variables)]
 pub fn link_musl(
     object_file: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
+    anyhow::bail!("musl libc is temporary disabled");
+
     let mut artifacts = crate::utils::Artifacts::new()?;
     let build_dir = object_file
         .path()

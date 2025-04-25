@@ -15,8 +15,6 @@ fn subslice_range(inner: &[u8], outer: &[u8]) -> std::ops::Range<usize> {
 
 pub struct CWasmInfo {
     pub max_alignment: u64,
-    pub relocations: Vec<(usize, wasmtime_environ::obj::LibCall)>,
-    pub text: std::ops::Range<usize>,
 }
 
 // Copied from wasmtime::CodeMemory::new, so it must be kept in sync with original code
@@ -30,8 +28,6 @@ pub fn analyze_cwasm(
         .map_err(wasmtime_environ::obj::ObjectCrateErrorWrapper)
         .with_context(|| "failed to parse internal compilation artifact")?;
 
-    let mut relocations = Vec::new();
-    let mut text = 0..0;
     for section in obj.sections() {
         let data = section
             .data()
@@ -51,58 +47,6 @@ pub fn analyze_cwasm(
                 );
             }
         }
-
-        match name {
-            ".text" => {
-                text = range;
-                for (offset, reloc) in section.relocations() {
-                    if reloc.kind() != target.reloc_kind(is_pic) {
-                        anyhow::bail!(
-                            "Expected reloc_kind: {:?}, but cwasm contains: {:?}",
-                            target.reloc_kind(is_pic),
-                            reloc.kind()
-                        )
-                    }
-                    if reloc.encoding() != target.reloc_encoding(is_pic) {
-                        anyhow::bail!(
-                            "Expected reloc_encoding: {:?}, but cwasm contains: {:?}",
-                            target.reloc_encoding(is_pic),
-                            reloc.encoding()
-                        )
-                    }
-                    if reloc.size() != target.reloc_size(is_pic) {
-                        anyhow::bail!(
-                            "Expected reloc_size: {:?}, but cwasm contains {:?}",
-                            target.reloc_size(is_pic),
-                            reloc.size()
-                        )
-                    }
-                    if reloc.addend() != target.reloc_append(is_pic) {
-                        anyhow::bail!(
-                            "Expected reloc_append: {:?}, but cwasm contains {:?}",
-                            target.reloc_append(is_pic),
-                            reloc.addend()
-                        )
-                    }
-                    assert_eq!(reloc.addend(), target.reloc_append(is_pic));
-                    let sym = match reloc.target() {
-                        object::RelocationTarget::Symbol(id) => id,
-                        other => panic!("unknown relocation target {other:?}"),
-                    };
-                    let sym = obj.symbol_by_index(sym).unwrap().name().unwrap();
-                    let libcall = wasmtime_environ::obj::LibCall::from_str(sym)
-                        .unwrap_or_else(|| panic!("unknown symbol relocation: {sym}"));
-
-                    let offset = usize::try_from(offset).unwrap();
-                    relocations.push((offset, libcall));
-                }
-            }
-            _ => {}
-        };
     }
-    Ok(CWasmInfo {
-        max_alignment,
-        relocations,
-        text,
-    })
+    Ok(CWasmInfo { max_alignment })
 }

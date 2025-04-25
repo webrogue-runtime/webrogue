@@ -1,12 +1,13 @@
 use std::str::FromStr as _;
 
-fn download_sdl_source(output_path: &std::path::Path) {
+fn download_sdl_source(output_path: &std::path::Path, version: &str) {
     if output_path.is_dir() {
         return;
     }
-    let archive_bytes = reqwest::blocking::get(
-        "https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.30.9.zip",
-    )
+    let archive_bytes = reqwest::blocking::get(format!(
+        "https://github.com/libsdl-org/SDL/archive/refs/tags/release-{}.zip",
+        version
+    ))
     .unwrap()
     .bytes()
     .unwrap();
@@ -16,7 +17,10 @@ fn download_sdl_source(output_path: &std::path::Path) {
 fn main() {
     let crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
-    download_sdl_source(&crate_manifest_dir.join("SDL"));
+    #[cfg(feature = "sdl2")]
+    download_sdl_source(&crate_manifest_dir.join("SDL2"), "2.30.9");
+    #[cfg(feature = "sdl3")]
+    download_sdl_source(&crate_manifest_dir.join("SDL3"), "3.2.10");
 
     #[cfg(feature = "cmake")]
     {
@@ -31,6 +35,12 @@ fn main() {
                 .define("CMAKE_C_FLAGS_MINSIZEREL", "/O1 /Ob1 /DNDEBUG")
                 .define("CMAKE_C_FLAGS_RELWITHDEBINFO", "/Zi /O2 /Ob1 /DNDEBUG");
         }
+
+        #[cfg(feature = "sdl2")]
+        cmake_cfg.define("WEBROGUE_GFX_SDL_VERSION", "2");
+        #[cfg(feature = "sdl3")]
+        cmake_cfg.define("WEBROGUE_GFX_SDL_VERSION", "3");
+
         let dst = cmake_cfg
             .define("SDL_CMAKE_DEBUG_POSTFIX", "")
             .define("SDL_OPENGL", "OFF")
@@ -42,9 +52,15 @@ fn main() {
         );
         println!("cargo:rustc-link-lib=static=wrgfxfallback");
         if os == "windows" {
+            #[cfg(feature = "sdl2")]
             println!("cargo:rustc-link-lib=static=SDL2-static");
+            #[cfg(feature = "sdl3")]
+            println!("cargo:rustc-link-lib=static=SDL3-static");
         } else {
+            #[cfg(feature = "sdl2")]
             println!("cargo:rustc-link-lib=static=SDL2");
+            #[cfg(feature = "sdl3")]
+            println!("cargo:rustc-link-lib=static=SDL3");
         }
         if os == "macos" {
             println!("cargo:rustc-link-lib=framework=Quartz");

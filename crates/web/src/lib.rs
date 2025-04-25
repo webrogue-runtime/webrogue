@@ -169,12 +169,12 @@ pub fn main(wrapp_data: Option<&'static [u8]>) -> anyhow::Result<()> {
 
 webrogue_web_macro::wr_web_integration!({
     target: webrogue_gfx,
-    witx: ["$CARGO_MANIFEST_DIR/../gfx/witx/webrogue_gfx.witx"]
+    witx: ["../gfx/witx/webrogue_gfx.witx"]
 });
 
 webrogue_web_macro::wr_web_integration!({
     target: wasi_common::snapshots::preview_1,
-    witx: ["$CARGO_MANIFEST_DIR/../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
+    witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
     block_on: *
 });
 

@@ -1,7 +1,7 @@
 #include "webrogue_gfx_ffi.h"
 #include "webrogue_gfx_ffi_sdl_events.h"
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #if WEBROGUE_GFX_SDL_VERSION == 2
 #include "SDL.h"
 #include "SDL_video.h"
@@ -85,13 +85,11 @@ void webrogue_gfx_ffi_get_gl_size(void *raw_window_ptr, uint32_t *out_width,
 void webrogue_gfx_ffi_present_window(void *raw_window_ptr) {
   Window *window = (Window *)raw_window_ptr;
   SDL_GL_SwapWindow(window->sdl_window);
-  SDL_Event event;
-  SDL_PollEvent(&event);
 }
 
 static void *get_proc_address(char *procname, void *userdata) {
   (void)userdata;
-  void * result = SDL_GL_GetProcAddress(procname);
+  void *result = SDL_GL_GetProcAddress(procname);
   // if(!result) {
   //   printf("SDL_GL_GetProcAddress(\"%s\") returned NULL\n", procname);
   // }

@@ -1,9 +1,11 @@
+cmake_minimum_required(VERSION 3.22)
+
 project(WEBROGUE_GFX_FALLBACK C)
 
 set(BUILD_SHARED_LIBS FALSE)
 set(SDL_SHARED FALSE)
 set(SDL_STATIC TRUE)
-add_subdirectory(SDL)
+add_subdirectory(SDL${WEBROGUE_GFX_SDL_VERSION})
 
 add_library(
     wrgfxfallback STATIC 
@@ -13,11 +15,11 @@ add_library(
 
 target_include_directories(
     wrgfxfallback PRIVATE 
-    SDL/include
+    SDL${WEBROGUE_GFX_SDL_VERSION}/include
 )
 target_compile_definitions(
     wrgfxfallback PRIVATE
-    WEBROGUE_GFX_SDL_VERSION=2
+    WEBROGUE_GFX_SDL_VERSION=${WEBROGUE_GFX_SDL_VERSION}
 )
 set(CMAKE_INSTALL_LIBDIR "")
-install(TARGETS wrgfxfallback SDL2-static)
+install(TARGETS wrgfxfallback SDL${WEBROGUE_GFX_SDL_VERSION}-static)
