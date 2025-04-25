@@ -63,18 +63,40 @@ fn main() {
             println!("cargo:rustc-link-lib=static=SDL3");
         }
         if os == "macos" {
-            println!("cargo:rustc-link-lib=framework=Quartz");
-            println!("cargo:rustc-link-lib=framework=Metal");
-            println!("cargo:rustc-link-lib=framework=IOKit");
-            println!("cargo:rustc-link-lib=framework=GameController");
-            println!("cargo:rustc-link-lib=framework=ForceFeedback");
-            println!("cargo:rustc-link-lib=framework=CoreVideo");
-            println!("cargo:rustc-link-lib=framework=CoreHaptics");
-            println!("cargo:rustc-link-lib=framework=CoreFoundation");
-            println!("cargo:rustc-link-lib=framework=CoreAudio");
-            println!("cargo:rustc-link-lib=framework=Cocoa");
-            println!("cargo:rustc-link-lib=framework=Carbon");
-            println!("cargo:rustc-link-lib=framework=AudioToolbox");
+            #[cfg(feature = "sdl2")]
+            {
+                println!("cargo:rustc-link-lib=framework=Quartz");
+                println!("cargo:rustc-link-lib=framework=Metal");
+                println!("cargo:rustc-link-lib=framework=IOKit");
+                println!("cargo:rustc-link-lib=framework=GameController");
+                println!("cargo:rustc-link-lib=framework=ForceFeedback");
+                println!("cargo:rustc-link-lib=framework=CoreVideo");
+                println!("cargo:rustc-link-lib=framework=CoreHaptics");
+                println!("cargo:rustc-link-lib=framework=CoreFoundation");
+                println!("cargo:rustc-link-lib=framework=CoreAudio");
+                println!("cargo:rustc-link-lib=framework=Cocoa");
+                println!("cargo:rustc-link-lib=framework=Carbon");
+                println!("cargo:rustc-link-lib=framework=AudioToolbox");
+            }
+            #[cfg(feature = "sdl3")]
+            {
+                println!("cargo:rustc-link-lib=framework=AudioToolbox");
+                println!("cargo:rustc-link-lib=framework=Carbon");
+                println!("cargo:rustc-link-lib=framework=Cocoa");
+                println!("cargo:rustc-link-lib=framework=CoreAudio");
+                println!("cargo:rustc-link-lib=framework=CoreFoundation");
+                println!("cargo:rustc-link-lib=framework=CoreHaptics");
+                println!("cargo:rustc-link-lib=framework=CoreVideo");
+                println!("cargo:rustc-link-lib=framework=ForceFeedback");
+                println!("cargo:rustc-link-lib=framework=GameController");
+                println!("cargo:rustc-link-lib=framework=IOKit");
+                println!("cargo:rustc-link-lib=framework=Metal");
+                println!("cargo:rustc-link-lib=framework=QuartzCore");
+                println!("cargo:rustc-link-lib=framework=UniformTypeIdentifiers");
+
+                println!("cargo:rustc-link-lib=framework=AVFoundation");
+                println!("cargo:rustc-link-lib=framework=CoreMedia");
+            }
         }
     }
     #[cfg(feature = "cc")]

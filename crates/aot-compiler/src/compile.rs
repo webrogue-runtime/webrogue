@@ -32,7 +32,7 @@ pub fn compile_wrapp_to_object(
 
     let cwasm = engine.precompile_module(&wasm_binary)?;
 
-    let cwasm_info = crate::cwasm_analyzer::analyze_cwasm(&cwasm, target, is_pic)?;
+    let cwasm_info = crate::cwasm_analyzer::analyze_cwasm(&cwasm)?;
 
     let mut obj = object::write::Object::new(target.format(), target.arch(), target.endianness());
 

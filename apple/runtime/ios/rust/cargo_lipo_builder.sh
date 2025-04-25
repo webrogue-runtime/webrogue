@@ -1,6 +1,7 @@
 set -ex
 
 VARIANT=$1
+test -f /opt/homebrew/bin/brew && eval "$(/opt/homebrew/bin/brew shellenv)"
 CARGO_PATH=$(dirname $(whereis -q cargo) | echo $HOME/.cargo/bin)
 
 XCODE_PATH="$CARGO_PATH:$PATH"
