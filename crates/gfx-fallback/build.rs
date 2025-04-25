@@ -40,12 +40,12 @@ fn main() {
         cmake_cfg.define("WEBROGUE_GFX_SDL_VERSION", "2");
         #[cfg(feature = "sdl3")]
         cmake_cfg.define("WEBROGUE_GFX_SDL_VERSION", "3");
-
-        let dst = cmake_cfg
+        cmake_cfg
             .define("SDL_CMAKE_DEBUG_POSTFIX", "")
             .define("SDL_OPENGL", "OFF")
-            .define("SDL_OPENGLES", "ON")
-            .build();
+            .define("SDL_OPENGLES", "ON");
+
+        let dst = cmake_cfg.build();
         println!(
             "cargo:rustc-link-search=native={}",
             dst.join("lib").display()

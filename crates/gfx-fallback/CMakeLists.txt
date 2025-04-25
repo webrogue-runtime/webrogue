@@ -23,3 +23,6 @@ target_compile_definitions(
 )
 set(CMAKE_INSTALL_LIBDIR "")
 install(TARGETS wrgfxfallback SDL${WEBROGUE_GFX_SDL_VERSION}-static)
+
+set_property(TARGET wrgfxfallback PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
+set_property(TARGET SDL${WEBROGUE_GFX_SDL_VERSION}-static PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
