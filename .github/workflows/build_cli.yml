@@ -26,7 +26,7 @@ jobs:
         path: aot_artifacts
 
   windows_artifacts:
-    runs-on: windows-latest
+    runs-on: windows-2025
 
     steps:
     - uses: actions/checkout@v4
@@ -210,7 +210,7 @@ jobs:
   #       path: webrogue
 
   windows-x86_64-cli:
-    runs-on: windows-latest
+    runs-on: windows-2025
 
     steps:
     - uses: actions/checkout@v4
