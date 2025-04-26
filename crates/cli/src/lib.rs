@@ -12,10 +12,16 @@ enum Cli {
         config: bool,
         // Path to WRAPP file or webrogue.json config
         path: std::path::PathBuf,
+        // Path to cache config. See https://docs.wasmtime.dev/cli-cache.html
+        #[arg(long)]
+        cache: Option<std::path::PathBuf>,
     },
     /// Builds native applications from WRAPP files
     #[cfg(feature = "compile")]
     Compile {
+        // Path to cache config. See https://docs.wasmtime.dev/cli-cache.html
+        #[arg(long)]
+        cache: Option<std::path::PathBuf>,
         #[command(subcommand)]
         command: webrogue_aot_compiler::Commands,
     },
@@ -36,7 +42,11 @@ pub fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
     match args {
         #[cfg(feature = "run")]
-        Cli::Run { config, path } => {
+        Cli::Run {
+            config,
+            path,
+            cache,
+        } => {
             if config {
                 let handle = webrogue_wasmtime::RealVFSHandle::new(path)?;
 
@@ -45,7 +55,12 @@ pub fn main() -> anyhow::Result<()> {
                     .join(&handle.config().id)
                     .join("persistent");
 
-                webrogue_wasmtime::run_jit(handle.clone(), handle.config(), &persistent_path)?;
+                webrogue_wasmtime::run_jit(
+                    handle.clone(),
+                    handle.config(),
+                    &persistent_path,
+                    cache.as_ref(),
+                )?;
             } else {
                 let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(path)?;
 
@@ -59,8 +74,8 @@ pub fn main() -> anyhow::Result<()> {
             Ok(())
         }
         #[cfg(feature = "compile")]
-        Cli::Compile { command } => {
-            command.run()?;
+        Cli::Compile { command, cache } => {
+            command.run(cache.as_ref())?;
             Ok(())
         }
         #[cfg(feature = "pack")]

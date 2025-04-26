@@ -4,6 +4,7 @@ pub fn compile_wrapp_to_object(
     wrapp_file_path: &std::path::PathBuf,
     object_file_path: &std::path::PathBuf,
     target: crate::Target,
+    cache: Option<&std::path::PathBuf>,
     is_pic: bool,
 ) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
@@ -13,6 +14,11 @@ pub fn compile_wrapp_to_object(
     config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Disable);
     config.generate_address_map(false);
     config.epoch_interruption(false);
+    if let Some(cache) = cache {
+        config.cache_config_load(cache)?;
+    } else {
+        config.cache_config_load_default()?;
+    }
     unsafe {
         if is_pic {
             config.cranelift_flag_enable("is_pic");

@@ -36,7 +36,7 @@ pub fn run_jit_builder(
 ) -> anyhow::Result<()> {
     let config = wrapp_vfs_builder.config()?.clone();
     let handle = wrapp_vfs_builder.build()?;
-    run_jit(handle, &config, persistent_dir)
+    run_jit(handle, &config, persistent_dir, None)
 }
 #[cfg(feature = "cranelift")]
 pub fn run_jit<
@@ -47,12 +47,17 @@ pub fn run_jit<
     handle: VFSHandle,
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
+    cache_config: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     use anyhow::Context;
 
     let mut config = wasmtime::Config::new();
     #[cfg(feature = "cache")]
-    config.cache_config_load_default()?;
+    if let Some(cache_config) = cache_config {
+        config.cache_config_load(cache_config)?;
+    } else {
+        config.cache_config_load_default()?;
+    }
     // config.async_support(true);
     config.debug_info(true);
     config.cranelift_opt_level(wasmtime::OptLevel::None);

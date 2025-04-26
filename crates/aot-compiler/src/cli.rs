@@ -75,7 +75,7 @@ pub enum Commands {
 }
 
 impl Commands {
-    pub fn run(&self) -> anyhow::Result<()> {
+    pub fn run(&self, cache: Option<&std::path::PathBuf>) -> anyhow::Result<()> {
         match self {
             Commands::Object {
                 wrapp_path,
@@ -87,6 +87,7 @@ impl Commands {
                     wrapp_path,
                     out_path,
                     crate::Target::from_name(target)?,
+                    cache,
                     *pic,
                 )?;
             }
@@ -99,6 +100,7 @@ impl Commands {
                     wrapp_path,
                     out_path,
                     libc.clone().unwrap_or(crate::linux::LibC::GLibC),
+                    cache,
                 )?;
             }
             Commands::Android {
@@ -121,12 +123,13 @@ impl Commands {
                 key_alias,
                 *debug,
                 output,
+                cache,
             )?,
             Commands::Windows {
                 wrapp_path,
                 out_path,
                 console,
-            } => crate::windows::build(wrapp_path, out_path, *console)?,
+            } => crate::windows::build(wrapp_path, out_path, *console, cache)?,
             Commands::Xcode {
                 wrapp_path,
                 build_dir,
@@ -135,6 +138,7 @@ impl Commands {
                 crate::xcode::XcodeArgs {
                     wrapp_path,
                     build_dir,
+                    cache,
                 },
                 commands,
             )?,

@@ -22,6 +22,7 @@ pub fn build(
     signing: Signing,
     debug: bool,
     output: Option<std::path::PathBuf>,
+    cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     let mut artifacts = crate::utils::Artifacts::new()?;
     let template_id = artifacts.get_data("android_gradle/template_id")?;
@@ -71,6 +72,7 @@ pub fn build(
         &container_path,
         object_file.path(),
         crate::Target::ARM64LinuxAndroid,
+        cache,
         true,
     )?;
 

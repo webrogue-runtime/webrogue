@@ -4,6 +4,7 @@ pub fn compile(
     destination: Destination,
     wrapp_path: &std::path::PathBuf,
     build_dir: &std::path::PathBuf,
+    cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     let aot_dir = build_dir.join("aot");
     match destination {
@@ -13,6 +14,7 @@ pub fn compile(
                 wrapp_path,
                 &aot_dir.join("aot.x86_64.macosx.o"),
                 crate::Target::x86_64AppleDarwin,
+                cache,
                 true, // TODO check
             )?;
             println!("Compiling AOT object for AArch64 macOS...");
@@ -20,6 +22,7 @@ pub fn compile(
                 wrapp_path,
                 &aot_dir.join("aot.arm64.macosx.o"),
                 crate::Target::ARM64AppleDarwin,
+                cache,
                 true, // TODO check
             )?;
         }
@@ -29,6 +32,7 @@ pub fn compile(
                 wrapp_path,
                 &aot_dir.join("aot.arm64.iphoneos.o"),
                 crate::Target::ARM64AppleIOS,
+                cache,
                 true, // TODO check
             )?;
         }
@@ -38,6 +42,7 @@ pub fn compile(
                 wrapp_path,
                 &aot_dir.join("aot.arm64.iphonesimulator.o"),
                 crate::Target::ARM64AppleIOSSIM,
+                cache,
                 true, // TODO check
             )?;
             println!("Compiling AOT object for x86_64 iOS simulator...");
@@ -45,6 +50,7 @@ pub fn compile(
                 wrapp_path,
                 &aot_dir.join("aot.x86_64.iphonesimulator.o"),
                 crate::Target::X86_64AppleIOSSIM,
+                cache,
                 true, // TODO check
             )?;
         }

@@ -28,6 +28,7 @@ pub enum XcodeCommands {
 pub struct XcodeArgs<'a> {
     pub wrapp_path: &'a std::path::PathBuf,
     pub build_dir: &'a std::path::PathBuf,
+    pub cache: Option<&'a std::path::PathBuf>,
 }
 
 pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
@@ -93,7 +94,12 @@ WEBROGUE_APPLICATION_VERSION = {}
 
     match command {
         XcodeCommands::Macos { config } => {
-            object::compile(types::Destination::MacOS, &args.wrapp_path, &args.build_dir)?;
+            object::compile(
+                types::Destination::MacOS,
+                &args.wrapp_path,
+                &args.build_dir,
+                args.cache,
+            )?;
             build::build(
                 &args.build_dir,
                 config.unwrap_or(types::Configuration::Debug),
@@ -107,7 +113,7 @@ WEBROGUE_APPLICATION_VERSION = {}
             } else {
                 types::Destination::IOS
             };
-            object::compile(destination, &args.wrapp_path, &args.build_dir)?;
+            object::compile(destination, &args.wrapp_path, &args.build_dir, args.cache)?;
             build::build(
                 &args.build_dir,
                 config.unwrap_or(types::Configuration::ReleaseLocal),
@@ -116,12 +122,23 @@ WEBROGUE_APPLICATION_VERSION = {}
             )?;
         }
         XcodeCommands::Project {} => {
-            object::compile(types::Destination::MacOS, &args.wrapp_path, &args.build_dir)?;
-            object::compile(types::Destination::IOS, &args.wrapp_path, &args.build_dir)?;
+            object::compile(
+                types::Destination::MacOS,
+                &args.wrapp_path,
+                &args.build_dir,
+                args.cache,
+            )?;
+            object::compile(
+                types::Destination::IOS,
+                &args.wrapp_path,
+                &args.build_dir,
+                args.cache,
+            )?;
             object::compile(
                 types::Destination::IOSSim,
                 &args.wrapp_path,
                 &args.build_dir,
+                args.cache,
             )?;
             println!(
                 "Xcode project saved to {}",

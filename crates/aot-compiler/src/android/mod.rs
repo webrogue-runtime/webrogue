@@ -10,6 +10,7 @@ pub fn build(
     key_alias: &Option<String>,
     debug: bool,
     output: &Option<std::path::PathBuf>,
+    cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     let sdk = sdk
         .as_ref()
@@ -43,6 +44,14 @@ pub fn build(
         gradle::Signing::Unsigned
     };
 
-    gradle::build(&sdk, wrapp_path, build_dir, signing, debug, output.clone())?;
+    gradle::build(
+        &sdk,
+        wrapp_path,
+        build_dir,
+        signing,
+        debug,
+        output.clone(),
+        cache,
+    )?;
     Ok(())
 }

@@ -4,6 +4,7 @@ pub fn build(
     wrapp_file_path: &std::path::PathBuf,
     output_file_path: &std::path::PathBuf,
     is_console: bool,
+    cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
 
@@ -12,6 +13,7 @@ pub fn build(
         wrapp_file_path,
         object_file.path(),
         crate::Target::x86_64WindowsMSVC,
+        cache,
         false, // TODO check
     )?;
 
