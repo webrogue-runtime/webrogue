@@ -88,7 +88,7 @@ WEBROGUE_APPLICATION_VERSION = {}
     }
     webrogue_wrapp::strip(
         &args.wrapp_path,
-        std::fs::File::create(aot_dir.join("aot.swrapp"))?,
+        std::fs::File::create(args.build_dir.join("aot.swrapp"))?,
     )?;
 
     match command {

@@ -5,6 +5,6 @@
       location = "group:webrogue.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:external/SDL2/Xcode/SDL/SDL.xcodeproj">
+      location = "group:external/SDL3/Xcode/SDL/SDL.xcodeproj">
    </FileRef>
 </Workspace>

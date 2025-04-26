@@ -146,6 +146,11 @@ targets:
         - "$(SRCROOT)/external/angle_ios_headers"
         SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/lib/Bridging-Header.h"
         GCC_PREPROCESSOR_DEFINITIONS: "WEBROGUE_GFX_SDL_VERSION=3"
+  _SDL: # Needed only to build SDL for aot template
+    type: library.static
+    platform: iOS
+    dependencies:
+    - target: SDL/SDL3
   Launcher_iOS:
     type: application
     platform: iOS

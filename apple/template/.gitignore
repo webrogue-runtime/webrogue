@@ -1,6 +1,7 @@
 /webrogue.xcodeproj
 /bin
 /aot
+/aot.swrapp
 /scripts/lipo_object_combiner.sh
 /macos/runner.entitlements
 /macos/main.m

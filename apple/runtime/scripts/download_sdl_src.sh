@@ -11,3 +11,8 @@ if [ ! -d "external/SDL3" ]; then
 fi
 
 sed -i '' 's/defaultConfigurationName = Debug/defaultConfigurationName = Release/g' external/SDL3/Xcode/SDL/SDL.xcodeproj/project.pbxproj
+
+# set MACH_O_TYPE = staticlib
+cat external/SDL3/Xcode/SDL/SDL.xcodeproj/project.pbxproj | tr '\n' '\f' > external/SDL3/Xcode/SDL/SDL.xcodeproj/project.pbxproj2
+cat external/SDL3/Xcode/SDL/SDL.xcodeproj/project.pbxproj2 | sed -e 's/\t\t\t\tCLANG_LINK_OBJC_RUNTIME = NO;\t\t\t\tOTHER_LDFLAGS = "-liconv";/\t\t\t\tCLANG_LINK_OBJC_RUNTIME = NO;\t\t\t\tMACH_O_TYPE = staticlib;\t\t\t\tOTHER_LDFLAGS = "-liconv";/g' | tr '\f' '\n' > external/SDL3/Xcode/SDL/SDL.xcodeproj/project.pbxproj
+rm -f external/SDL3/Xcode/SDL/SDL.xcodeproj/project.pbxproj2

@@ -39,7 +39,7 @@ targets:
     sources:
     - macos/main.m
     - macos/Assets.xcassets
-    - aot/aot.swrapp
+    - aot.swrapp
     - aot.xcconfig
     configFiles:
       Debug: aot.xcconfig
@@ -56,7 +56,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: $(WEBROGUE_APPLICATION_NAME)
         OTHER_LDFLAGS:
           - "-lwebrogue_macos"
-          - "-lSDL2"
+          - "-lSDL3"
           - "-lGFXStream"
           - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
@@ -87,15 +87,15 @@ targets:
         name: Copy libraries
         inputFiles:
           - ${SRCROOT}/scripts/copy_bin.sh
-          - ${SRCROOT}/bin/libEGL.macosx.dylib
-          - ${SRCROOT}/bin/libGLESv2.macosx.dylib
-          - ${SRCROOT}/bin/libwebrogue_macos.macosx.a
-          - ${SRCROOT}/bin/libSDL2.macosx.a
-          - ${SRCROOT}/bin/libGFXStream.macosx.a
+          - ${SRCROOT}/bin/macos/libEGL.dylib
+          - ${SRCROOT}/bin/macos/libGLESv2.dylib
+          - ${SRCROOT}/bin/macos/libwebrogue_macos.a
+          - ${SRCROOT}/bin/macos/libGFXStream.a
+          - ${SRCROOT}/bin/macos/libSDL3.a
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/libEGL.dylib
           - ${BUILT_PRODUCTS_DIR}/libGLESv2.dylib
-          - ${BUILT_PRODUCTS_DIR}/libSDL2.a
+          - ${BUILT_PRODUCTS_DIR}/libSDL3.a
           - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_macos.a
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
@@ -116,7 +116,7 @@ targets:
     - ios/Info.plist
     - ios/LaunchScreen.storyboard
     - ios/main.swift
-    - aot/aot.swrapp
+    - aot.swrapp
     - aot.xcconfig
     configFiles:
       Debug: aot.xcconfig
@@ -132,7 +132,7 @@ targets:
         - "-lwebrogue_ios"
         - "-lwrios"
         - "-lGFXStream"
-        - "-lSDL2"
+        - "-lSDL3"
         - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
         SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/Bridging-Header.h"
@@ -163,18 +163,18 @@ targets:
         name: Copy libraries
         inputFiles:
           - ${SRCROOT}/scripts/copy_bin_ios.sh
-          - ${SRCROOT}/bin/libwebrogue_ios.iphonesimulator.a
-          - ${SRCROOT}/bin/libwrios.iphonesimulator.a
-          - ${SRCROOT}/bin/libSDL2.iphonesimulator.a
-          - ${SRCROOT}/bin/libGFXStream.iphonesimulator.a
-          - ${SRCROOT}/bin/libwebrogue_ios.iphoneos.a
-          - ${SRCROOT}/bin/libwrios.iphoneos.a
-          - ${SRCROOT}/bin/libSDL2.iphoneos.a
-          - ${SRCROOT}/bin/libGFXStream.iphoneos.a
+          - ${SRCROOT}/bin/iphonesimulator/libwebrogue_ios.a
+          - ${SRCROOT}/bin/iphonesimulator/libwrios.a
+          - ${SRCROOT}/bin/iphonesimulator/libGFXStream.a
+          - ${SRCROOT}/bin/iphonesimulator/libSDL3.a
+          - ${SRCROOT}/bin/iphoneos/libwebrogue_ios.a
+          - ${SRCROOT}/bin/iphoneos/libwrios.a
+          - ${SRCROOT}/bin/iphoneos/libGFXStream.a
+          - ${SRCROOT}/bin/iphoneos/libSDL3.a
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_ios.a
           - ${BUILT_PRODUCTS_DIR}/libwrios.a
-          - ${BUILT_PRODUCTS_DIR}/libSDL2.a
+          - ${BUILT_PRODUCTS_DIR}/libSDL3.a
           - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         name: Combine object to lipo

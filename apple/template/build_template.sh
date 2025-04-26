@@ -12,11 +12,12 @@ xcodebuild $XC_FLAGS -parallelizeTargets -allowProvisioningUpdates
 
 rm -rf ../template/bin
 mkdir -p ../template/bin
-cp $XC_BUILD_DIR/rust_artifacts/runner/ReleaseLocal/macosx/libwebrogue_macos.a ../template/bin/libwebrogue_macos.macosx.a
-cp $XC_BUILD_DIR/Release/libSDL2.a ../template/bin/libSDL2.macosx.a
-cp $XC_BUILD_DIR/ReleaseLocal/libGFXStream.a ../template/bin/libGFXStream.macosx.a
-cp $XC_BUILD_DIR/ReleaseLocal/libEGL.dylib ../template/bin/libEGL.macosx.dylib
-cp $XC_BUILD_DIR/ReleaseLocal/libGLESv2.dylib ../template/bin/libGLESv2.macosx.dylib
+mkdir -p ../template/bin/macos
+cp $XC_BUILD_DIR/rust_artifacts/runner/ReleaseLocal/macosx/libwebrogue_macos.a ../template/bin/macos/libwebrogue_macos.a
+cat $XC_BUILD_DIR/Release/SDL3.framework/SDL3 > ../template/bin/macos/libSDL3.a
+cp $XC_BUILD_DIR/ReleaseLocal/libGFXStream.a ../template/bin/macos/libGFXStream.a
+cp $XC_BUILD_DIR/ReleaseLocal/libEGL.dylib ../template/bin/macos/libEGL.dylib
+cp $XC_BUILD_DIR/ReleaseLocal/libGLESv2.dylib ../template/bin/macos/libGLESv2.dylib
 
 # XC_FLAGS="-workspace webrogue.xcworkspace -scheme iOS_Runner_ReleaseLocal -configuration ReleaseLocal -destination"
 # XC_DESTINATION_FLAG="generic/platform=iOS Simulator"
@@ -30,6 +31,7 @@ cp $XC_BUILD_DIR/ReleaseLocal/libGLESv2.dylib ../template/bin/libGLESv2.macosx.d
 
 for IOS_ENV in iphoneos iphonesimulator
 do
+    mkdir -p ../template/bin/$IOS_ENV
     case "$IOS_ENV" in
         iphonesimulator)
             XC_DESTINATION_FLAG="generic/platform=iOS Simulator"
@@ -44,22 +46,22 @@ do
     XC_FLAGS="-workspace webrogue.xcworkspace -scheme Cargo_iOS_runner -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
-    cp $XC_BUILD_DIR/rust_artifacts/ios_runner/ReleaseLocal/$IOS_ENV/libwebrogue_ios.a ../template/bin/libwebrogue_ios.$IOS_ENV.a
+    cp $XC_BUILD_DIR/rust_artifacts/ios_runner/ReleaseLocal/$IOS_ENV/libwebrogue_ios.a ../template/bin/$IOS_ENV/libwebrogue_ios.a
 
     XC_FLAGS="-workspace webrogue.xcworkspace -scheme wrios -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
-    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libwrios.a ../template/bin/libwrios.$IOS_ENV.a
+    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libwrios.a ../template/bin/$IOS_ENV/libwrios.a
 
     XC_FLAGS="-workspace webrogue.xcworkspace -scheme GFXStream_iOS -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
-    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libGFXStream.a ../template/bin/libGFXStream.$IOS_ENV.a
+    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libGFXStream.a ../template/bin/$IOS_ENV/libGFXStream.a
 
     XC_FLAGS="-workspace webrogue.xcworkspace -configuration Release -destination"
-    XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -scheme "Static Library-iOS" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
-    xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -scheme "Static Library-iOS" -parallelizeTargets -allowProvisioningUpdates
-    cp $XC_BUILD_DIR/Release-$IOS_ENV/libSDL2.a ../template/bin/libSDL2.$IOS_ENV.a
+    XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -scheme "_SDL" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
+    xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -scheme "_SDL" -parallelizeTargets -allowProvisioningUpdates
+    cat $XC_BUILD_DIR/Release-$IOS_ENV/SDL3.framework/SDL3 > ../template/bin/$IOS_ENV/libSDL3.a
 done
 
 # apple
@@ -71,7 +73,7 @@ cp runtime/macos/runner/aot.x86_64.macosx.o template/aot/aot.x86_64.macosx.o
 cp runtime/ios/runner/aot.x86_64.iphonesimulator.o template/aot/aot.x86_64.iphonesimulator.o
 cp runtime/ios/runner/aot.arm64.iphonesimulator.o template/aot/aot.arm64.iphonesimulator.o
 cp runtime/ios/runner/aot.arm64.iphoneos.o template/aot/aot.arm64.iphoneos.o
-cp runtime/macos/runner/aot.swrapp template/aot/aot.swrapp
+cp runtime/macos/runner/aot.swrapp template/aot.swrapp
 
 cp runtime/scripts/lipo_object_combiner.sh template/scripts/lipo_object_combiner.sh
 
