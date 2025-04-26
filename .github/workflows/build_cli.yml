@@ -233,7 +233,7 @@ jobs:
         path: target/x86_64-pc-windows-msvc/cli/webrogue.exe
 
 
-  combine:
+  release:
     needs: [linux_artifacts, windows_artifacts, android_artifacts, apple_artifacts, linux-x86_64-glibc-cli, macos-arm64-cli, macos-x86_64-cli, windows-x86_64-cli]
     runs-on: ubuntu-latest
     permissions:
@@ -304,14 +304,9 @@ jobs:
         tar czf webrogue-cli-macos-arm64.tar.gz webrogue-cli-macos-arm64/
 
         mkdir webrogue-cli-macos-x86_64
-        python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-arm64/webrogue
-        chmod +x webrogue-cli-macos-arm64/webrogue
+        python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-x86_64/webrogue
+        chmod +x webrogue-cli-macos-x86_64/webrogue
         tar czf webrogue-cli-macos-x86_64.tar.gz webrogue-cli-macos-x86_64/
-
-    - name: Update tag
-      run: |
-        git tag -f latest
-        git push --force origin latest
 
     - uses: ncipollo/release-action@v1
       with:
@@ -325,3 +320,8 @@ jobs:
         tag: latest
         commit: ${{ github.ref }}
         makeLatest: true
+
+    - name: Update tag
+      run: |
+        git tag -f latest
+        git push --force origin latest
