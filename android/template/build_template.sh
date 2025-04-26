@@ -22,8 +22,8 @@ export ANDROID_NDK_PATH="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
 test -d "$ANDROID_SDK_ROOT/licenses" || yes | $ANDROID_SDK_ROOT/cmdline-tools/bin/sdkmanager --licenses --sdk_root=$ANDROID_SDK_ROOT
 test -d "$ANDROID_NDK_PATH" || $ANDROID_SDK_ROOT/cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "ndk;$NDK_VERSION"
 
-rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/home/someone/repos/webrogue/crates/gfx-fallback/webrogue_gfx_ffi_sdl2.c.o
-rm -f runtime/runner/build/intermediates/cxx/RelWithDebInfo/*/obj/arm64-v8a/libSDL2.so 
+rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/home/someone/repos/webrogue/crates/gfx-fallback/*
+rm -f runtime/runner/build/intermediates/cxx/RelWithDebInfo/*/obj/arm64-v8a/libSDL3.so 
 rm -f runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/webrogue_runtime.c.o
 
 test -f ../examples/empty/empty.wrapp && {
@@ -75,8 +75,8 @@ cp \
 
 mkdir -p ../aot_artifacts/android_gradle/template/app/src/main/jniLibs/arm64-v8a/
 cp \
-    runtime/runner/build/intermediates/cxx/RelWithDebInfo/*/obj/arm64-v8a/libSDL2.so \
-    ../aot_artifacts/android_gradle/template/app/src/main/jniLibs/arm64-v8a/libSDL2.so
+    runtime/runner/build/intermediates/cxx/RelWithDebInfo/*/obj/arm64-v8a/libSDL3.so \
+    ../aot_artifacts/android_gradle/template/app/src/main/jniLibs/arm64-v8a/libSDL3.so
 mkdir -p ../aot_artifacts/android_gradle/libs
 cp \
     runtime/runner/.cxx/RelWithDebInfo/*/arm64-v8a/webrogue_runner_common/CMakeFiles/webrogue.dir/webrogue_runtime.c.o \

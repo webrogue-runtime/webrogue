@@ -56,7 +56,7 @@ pub fn link(
             &output_path
                 .parent()
                 .ok_or(anyhow::anyhow!("Path error"))?
-                .join("libSDL2.so")
+                .join("libSDL3.so")
         )?,
         object_file,
         // -landroid, -llog, -latomic libm.so

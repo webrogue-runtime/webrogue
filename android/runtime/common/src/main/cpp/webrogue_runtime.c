@@ -1,4 +1,4 @@
-#include "SDL.h"
+#include "SDL3/SDL.h"
 #include "jni.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -11,8 +11,8 @@ int SDL_main(int argc, char *argv[]) {
 }
 
 void webrogue_android_print(char *str, size_t len) {
-  JNIEnv *jniEnv = (JNIEnv *)SDL_AndroidGetJNIEnv();
-  jobject webrogue_activity = (jobject)SDL_AndroidGetActivity();
+  JNIEnv *jniEnv = (JNIEnv *)SDL_GetAndroidJNIEnv();
+  jobject webrogue_activity = (jobject)SDL_GetAndroidActivity();
   jclass webrogue_activity_class =
       (*jniEnv)->GetObjectClass(jniEnv, webrogue_activity);
   jmethodID print_bytes_method_id = (*jniEnv)->GetMethodID(
@@ -27,8 +27,8 @@ void webrogue_android_print(char *str, size_t len) {
 }
 
 static const char *webrogue_android_string(const char *method_name) {
-  JNIEnv *jniEnv = (JNIEnv *)SDL_AndroidGetJNIEnv();
-  jobject webrogue_activity = (jobject)SDL_AndroidGetActivity();
+  JNIEnv *jniEnv = (JNIEnv *)SDL_GetAndroidJNIEnv();
+  jobject webrogue_activity = (jobject)SDL_GetAndroidActivity();
   jclass webrogue_activity_class =
       (*jniEnv)->GetObjectClass(jniEnv, webrogue_activity);
   jmethodID get_wrapp_path_method_id = (*jniEnv)->GetMethodID(
@@ -46,8 +46,8 @@ const char *webrogue_android_data_path() {
 
 static int64_t webrogue_android_int(const char *method_name) {
 
-  JNIEnv *jniEnv = (JNIEnv *)SDL_AndroidGetJNIEnv();
-  jobject webrogue_activity = (jobject)SDL_AndroidGetActivity();
+  JNIEnv *jniEnv = (JNIEnv *)SDL_GetAndroidJNIEnv();
+  jobject webrogue_activity = (jobject)SDL_GetAndroidActivity();
   jclass webrogue_activity_class =
       (*jniEnv)->GetObjectClass(jniEnv, webrogue_activity);
   jmethodID get_wrapp_path_method_id = (*jniEnv)->GetMethodID(
