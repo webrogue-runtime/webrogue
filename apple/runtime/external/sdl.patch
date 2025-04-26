@@ -1,4 +1,4 @@
-467c467
+473c473
 <     [self performSelector:@selector(postFinishLaunch) withObject:nil afterDelay:0.0];
 ---
 > //    [self performSelector:@selector(postFinishLaunch) withObject:nil afterDelay:0.0];

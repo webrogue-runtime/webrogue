@@ -3,7 +3,8 @@ fn main() {
     cc::Build::new()
         .file("../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl.c")
         .file("../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl_events.c")
-        .define("WEBROGUE_GFX_SDL_VERSION", "2")
-        .include("../../external/SDL2/include")
-        .compile("webrogue_gfx_ffi_sdl2");
+        .define("WEBROGUE_GFX_SDL_VERSION", "3")
+        .include("../../external/SDL3/include")
+        .include("../../external/SDL3/include/SDL3")
+        .compile("webrogue_gfx_ffi_sdl3");
 }

@@ -5,7 +5,7 @@ configs:
   ReleaseLocal: release
 projectReferences:
   SDL:
-    path: ./external/SDL2/Xcode/SDL/SDL.xcodeproj
+    path: ./external/SDL3/Xcode/SDL/SDL.xcodeproj
 settings:
   base:
     MACOSX_DEPLOYMENT_TARGET: 12.0
@@ -52,7 +52,13 @@ targets:
     - ../../external/aemu/base/Stream.cpp
     settings:
       base:
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/../../external/gfxstream/host $(SRCROOT)/../../external/gfxstream/include $(SRCROOT)/../../external/gfxstream/host/apigen-codec-common $(SRCROOT)/../../external/gfxstream/host/gl/glsnapshot $(SRCROOT)/../../external/aemu/base/include $(SRCROOT)/../../external/aemu/host-common/include"
+        HEADER_SEARCH_PATHS: 
+        - "$(SRCROOT)/../../external/gfxstream/host"
+        - "$(SRCROOT)/../../external/gfxstream/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/apigen-codec-common"
+        - "$(SRCROOT)/../../external/gfxstream/host/gl/glsnapshot"
+        - "$(SRCROOT)/../../external/aemu/base/include"
+        - "$(SRCROOT)/../../external/aemu/host-common/include"
   Launcher:
     type: application
     platform: macOS
@@ -101,11 +107,13 @@ targets:
         PRODUCT_NAME: webrogue_runtime
         OTHER_LDFLAGS: "-lwebrogue_macos"
         LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/runtime/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/external/SDL2/include"
+        HEADER_SEARCH_PATHS: 
+        - "$(SRCROOT)/external/SDL3/include"
+        - "$(SRCROOT)/external/SDL3/include/SDL3"
         ENABLE_HARDENED_RUNTIME: true
     dependencies:
     - target: Cargo_macos_runtime
-    - target: SDL/Static Library
+    - target: SDL/SDL3
     - target: GFXStream_macOS
     - sdk: Quartz.framework
     - sdk: Metal.framework
@@ -131,12 +139,13 @@ targets:
       base:
         SWIFT_INSTALL_OBJC_HEADER: false
         HEADER_SEARCH_PATHS:
-        - "$(SRCROOT)/external/SDL2/include"
+        - "$(SRCROOT)/external/SDL3/include"
+        - "$(SRCROOT)/external/SDL3/include/SDL3"
         PRODUCT_NAME: wrios
         SYSTEM_HEADER_SEARCH_PATHS:
         - "$(SRCROOT)/external/angle_ios_headers"
         SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/lib/Bridging-Header.h"
-        GCC_PREPROCESSOR_DEFINITIONS: "WEBROGUE_GFX_SDL_VERSION=2"
+        GCC_PREPROCESSOR_DEFINITIONS: "WEBROGUE_GFX_SDL_VERSION=3"
   Launcher_iOS:
     type: application
     platform: iOS
@@ -160,7 +169,7 @@ targets:
         INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen.storyboard
     dependencies:
     - target: Cargo_iOS_launcher
-    - target: SDL/Static Library-iOS
+    - target: SDL/SDL3
     - target: wrios
     - target: GFXStream_iOS
     - sdk: UIKit.framework
@@ -205,7 +214,7 @@ targets:
         INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen.storyboard
     dependencies:
     - target: Cargo_iOS_runner
-    - target: SDL/Static Library-iOS
+    - target: SDL/SDL3
     - target: wrios
     - target: GFXStream_iOS
     - sdk: UIKit.framework
@@ -240,28 +249,28 @@ targets:
     legacy:
       toolPath: /bin/sh
       arguments: ios/rust/cargo_lipo_builder.sh launcher
-      workingDirectory: $(SRCROOT)/
+      workingDirectory: "$(SRCROOT)/"
       passSettings: true
   Cargo_iOS_runner:
     platform: iOS
     legacy:
       toolPath: /bin/sh
       arguments: ios/rust/cargo_lipo_builder.sh runner
-      workingDirectory: $(SRCROOT)/
+      workingDirectory: "$(SRCROOT)/"
       passSettings: true
   Cargo_macos_runtime:
     platform: macOS
     legacy:
       toolPath: /bin/sh
       arguments: macos/rust/cargo_lipo_builder.sh runtime
-      workingDirectory: $(SRCROOT)/
+      workingDirectory: "$(SRCROOT)/"
       passSettings: true
   Cargo_macos_runner:
     platform: macOS
     legacy:
       toolPath: /bin/sh
       arguments: macos/rust/cargo_lipo_builder.sh runner
-      workingDirectory: $(SRCROOT)/
+      workingDirectory: "$(SRCROOT)/"
       passSettings: true
   Runner:
     type: application
@@ -280,11 +289,13 @@ targets:
         - "-lwebrogue_macos"
         - "$(BUILD_DIR)/rust_artifacts/runner/$(CONFIGURATION)/$(PLATFORM_NAME)/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/runner/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/external/SDL2/include"
+        HEADER_SEARCH_PATHS:
+        - "$(SRCROOT)/external/SDL3/include"
+        - "$(SRCROOT)/external/SDL3/include/SDL3"
         ENABLE_HARDENED_RUNTIME: true
     dependencies:
     - target: Cargo_macos_runner
-    - target: SDL/Static Library
+    - target: SDL/SDL3
     - target: GFXStream_macOS
     - sdk: Quartz.framework
     - sdk: Metal.framework
@@ -341,7 +352,7 @@ schemes:
     build:
       targets:
         Launcher: ReleaseLocal
-        SDL/Static Library: Release
+        SDL/SDL3: Release
     run:
       config: ReleaseLocal
   MacOS_Runner_Debug:

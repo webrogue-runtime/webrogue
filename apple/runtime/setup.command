@@ -12,11 +12,12 @@ then
     cp $WRAPP_PATH macos/runner/aot.swrapp
     cp $WRAPP_PATH ios/runner/aot.swrapp
 
-    cargo run --release --features=compile compile object $WRAPP_PATH macos/runner/aot.x86_64.macosx.o x86_64-apple-darwin --pic
-    cargo run --release --features=compile compile object $WRAPP_PATH macos/runner/aot.arm64.macosx.o arm64-apple-darwin --pic
-    cargo run --release --features=compile compile object $WRAPP_PATH ios/runner/aot.x86_64.iphonesimulator.o x86_64-apple-ios --pic
-    cargo run --release --features=compile compile object $WRAPP_PATH ios/runner/aot.arm64.iphonesimulator.o arm64-apple-ios-sim --pic
-    cargo run --release --features=compile compile object $WRAPP_PATH ios/runner/aot.arm64.iphoneos.o arm64-apple-ios --pic
+    COMPILE_COMMAND="cargo run --release --no-default-features --features=compile compile object"
+    $COMPILE_COMMAND $WRAPP_PATH macos/runner/aot.x86_64.macosx.o x86_64-apple-darwin --pic
+    $COMPILE_COMMAND $WRAPP_PATH macos/runner/aot.arm64.macosx.o arm64-apple-darwin --pic
+    $COMPILE_COMMAND $WRAPP_PATH ios/runner/aot.x86_64.iphonesimulator.o x86_64-apple-ios --pic
+    $COMPILE_COMMAND $WRAPP_PATH ios/runner/aot.arm64.iphonesimulator.o arm64-apple-ios-sim --pic
+    $COMPILE_COMMAND $WRAPP_PATH ios/runner/aot.arm64.iphoneos.o arm64-apple-ios --pic
 fi
 
 xcodegen -c

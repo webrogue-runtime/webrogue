@@ -10,9 +10,8 @@ class AngleHelperWindow: NSObject {
     override init() {
         self.sdl_window = SDL_CreateWindow(
             "webrogue",
-            WEBROGUE_SDL_WINDOWPOS_UNDEFINED, WEBROGUE_SDL_WINDOWPOS_UNDEFINED,
             800, 450,
-            SDL_WINDOW_METAL.rawValue | SDL_WINDOW_RESIZABLE.rawValue | SDL_WINDOW_ALLOW_HIGHDPI.rawValue
+            UInt64(WR_SDL_WINDOW_METAL | WR_SDL_WINDOW_RESIZABLE | WR_SDL_WINDOW_HIGH_PIXEL_DENSITY)
         )!
         self.sdl_metal_view = SDL_Metal_CreateView(self.sdl_window)
         self.metal_layer = wr_SDL_Metal_GetLayer(self.sdl_metal_view)

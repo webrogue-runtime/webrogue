@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use webrogue_wrapp::IVFSHandle as _;
 
 pub fn compile_wrapp_to_object(

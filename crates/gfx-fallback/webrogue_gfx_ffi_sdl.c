@@ -19,13 +19,15 @@ typedef struct System {
 void *webrogue_gfx_ffi_create_system(void) {
   System *system_ptr = malloc(sizeof(System));
   system_ptr->event_buf = webrogue_event_out_buf_create();
+  SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#if WEBROGUE_GFX_SDL_VERSION == 3
   SDL_SetHint(SDL_HINT_OPENGL_LIBRARY, getenv("SDL_VIDEO_GL_DRIVER"));
   SDL_SetHint(SDL_HINT_EGL_LIBRARY, getenv("SDL_VIDEO_EGL_DRIVER"));
-  SDL_Init(SDL_INIT_VIDEO);
+#endif
   SDL_GL_LoadLibrary(getenv("SDL_VIDEO_GL_DRIVER"));
 
   return system_ptr;
