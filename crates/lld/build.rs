@@ -39,6 +39,10 @@ fn main() {
         "cargo:rustc-link-search=native={}",
         dst.join("lib").display()
     );
+    println!(
+        "cargo:rustc-link-search=native={}",
+        dst.join("lib64").display()
+    );
 
     let deps_path = dst.join("build/lldAsLib_deps.txt");
     let deps = std::fs::read_to_string(deps_path).unwrap();

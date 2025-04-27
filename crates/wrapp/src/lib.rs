@@ -13,6 +13,7 @@ pub mod config;
 mod offsetted_reader;
 
 mod preamble;
+pub use preamble::is_a_wrapp;
 mod range_reader;
 pub use range_reader::RangeReader;
 mod seekable_provider;

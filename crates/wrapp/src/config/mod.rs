@@ -7,7 +7,7 @@ pub struct Config {
     pub main: Option<String>,
     pub filesystem: Option<FilesystemConfig>,
     pub icons: Option<icons::Icons>,
-    pub version: Option<semver::Version>,
+    pub version: semver::Version,
 }
 impl Config {
     pub fn strip(self) -> Self {

@@ -16,8 +16,6 @@ pub fn compile_wrapp_to_object(
     config.epoch_interruption(false);
     if let Some(cache) = cache {
         config.cache_config_load(cache)?;
-    } else {
-        config.cache_config_load_default()?;
     }
     unsafe {
         if is_pic {

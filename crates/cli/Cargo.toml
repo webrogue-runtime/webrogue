@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx", "dep:webrogue-gfx-fallback", "dep:webrogue-gfxstream"]
+run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx", "dep:webrogue-gfx-fallback", "dep:webrogue-gfxstream", "dep:webrogue-wrapp"]
 compile = ["dep:webrogue-aot-compiler"]
 pack = ["dep:webrogue-wrapp"]
 llvm = ["webrogue-aot-compiler/llvm"]

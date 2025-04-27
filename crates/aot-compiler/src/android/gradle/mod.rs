@@ -41,11 +41,7 @@ pub fn build(
     let object_file = crate::utils::TemporalFile::for_tmp_object(build_dir.join("aarch64"))?;
 
     let mut wrapp_builder = webrogue_wrapp::WrappVFSBuilder::from_file_path(&container_path)?;
-    let version = wrapp_builder
-        .config()?
-        .version
-        .clone()
-        .ok_or_else(|| anyhow::anyhow!("No 'version' found in WRAPP config"))?;
+    let version = wrapp_builder.config()?.version.clone();
 
     let assets_path = build_dir
         .join("app")
@@ -142,7 +138,7 @@ pub fn build(
         set_gradle_property(&mut properties_file, "webrogueKeyAlias", key_alias)?;
     } else if !debug {
         eprintln!(
-            "wraning: Debug signature used. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signature",
+            "warning: Debug signature used. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signature",
         );
     }
     drop(properties_file);

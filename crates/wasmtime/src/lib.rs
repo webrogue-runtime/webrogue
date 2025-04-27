@@ -55,8 +55,6 @@ pub fn run_jit<
     #[cfg(feature = "cache")]
     if let Some(cache_config) = cache_config {
         config.cache_config_load(cache_config)?;
-    } else {
-        config.cache_config_load_default()?;
     }
     // config.async_support(true);
     config.debug_info(true);

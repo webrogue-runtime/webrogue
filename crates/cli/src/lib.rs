@@ -7,9 +7,6 @@ enum Cli {
     /// Run a WRAPP file
     #[cfg(feature = "run")]
     Run {
-        // Indicates that provided file is not a WRAPP but webrogue.json config
-        #[arg(long)]
-        config: bool,
         // Path to WRAPP file or webrogue.json config
         path: std::path::PathBuf,
         // Path to cache config. See https://docs.wasmtime.dev/cli-cache.html
@@ -42,12 +39,27 @@ pub fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
     match args {
         #[cfg(feature = "run")]
-        Cli::Run {
-            config,
-            path,
-            cache,
-        } => {
-            if config {
+        Cli::Run { path, cache } => {
+            let mut file = std::fs::File::open(&path)?;
+            let is_a_wrapp = webrogue_wrapp::is_a_wrapp(&mut file)?;
+            drop(file);
+            if is_a_wrapp {
+                let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(path)?;
+                let config = builder.config()?.clone();
+
+                let persistent_path = std::env::current_dir()?
+                    .join(".webrogue")
+                    .join(&config.id)
+                    .join("persistent");
+                let handle = builder.build()?;
+
+                webrogue_wasmtime::run_jit(
+                    handle.clone(),
+                    &config,
+                    &persistent_path,
+                    cache.as_ref(),
+                )?;
+            } else {
                 let handle = webrogue_wasmtime::RealVFSHandle::new(path)?;
 
                 let persistent_path = std::env::current_dir()?
@@ -61,15 +73,6 @@ pub fn main() -> anyhow::Result<()> {
                     &persistent_path,
                     cache.as_ref(),
                 )?;
-            } else {
-                let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(path)?;
-
-                let persistent_path = std::env::current_dir()?
-                    .join(".webrogue")
-                    .join(&builder.config()?.id)
-                    .join("persistent");
-
-                webrogue_wasmtime::run_jit_builder(builder, &persistent_path)?;
             }
             Ok(())
         }

@@ -12,7 +12,7 @@ then
     cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.musl.o x86_64-linux-musl --pic
 fi
 
-cd "$REPO_ROOT/linux/bookworm"
+cd "$REPO_ROOT/linux/glibc"
 IMAGE_NAME=webrogue/webrogue-linux-gnu-builder
 docker build --tag $IMAGE_NAME .
 docker run \
@@ -21,7 +21,7 @@ docker run \
     -v "$REPO_ROOT":/usr/src/myapp \
     -w /usr/src/myapp \
     $IMAGE_NAME \
-    sh linux/bookworm/build_cli.sh
+    sh linux/glibc/build_cli.sh
 # || docker run \
 #     -it \
 #     --rm \

@@ -68,11 +68,7 @@ pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
 WEBROGUE_APPLICATION_ID = {}
 WEBROGUE_APPLICATION_VERSION = {}
 ",
-            wrapp_config.name,
-            id,
-            wrapp_config
-                .version
-                .ok_or_else(|| anyhow::anyhow!("No 'version' found in WRAPP config"))?
+            wrapp_config.name, id, wrapp_config.version
         ))?;
     }
 

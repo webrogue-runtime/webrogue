@@ -6,14 +6,24 @@ pub struct Preamble {
     uncompressed_map: Option<std::collections::HashMap<String, (u64, u64)>>,
 }
 
+pub fn is_a_wrapp(readable: &mut (impl std::io::Read + std::io::Seek)) -> anyhow::Result<bool> {
+    let mut magic = [0u8; 6];
+    readable.seek(std::io::SeekFrom::Start(0))?;
+    if readable.seek(std::io::SeekFrom::Start(6)).is_err() {
+        return Ok(false);
+    };
+    readable.seek(std::io::SeekFrom::Start(0))?;
+    readable.read_exact(&mut magic)?;
+    return Ok(magic == *b"WRAPP\0");
+}
+
 impl Preamble {
     pub fn new(readable: &mut (impl std::io::Read + std::io::Seek)) -> anyhow::Result<Self> {
-        let mut magic = [0u8; 6];
-        readable.seek(std::io::SeekFrom::Start(0))?;
-        readable.read_exact(&mut magic)?;
-        if magic != *b"WRAPP\0" {
-            anyhow::bail!("Magic number mismatch while reading WRAPP archive");
-        }
+        anyhow::ensure!(
+            is_a_wrapp(readable)?,
+            "Magic number mismatch while reading WRAPP archive"
+        );
+        readable.seek(std::io::SeekFrom::Start(6))?;
         let mut preamble_content: Vec<u8> = Vec::new();
         // without zero byte
         let mut read_total = 0;
