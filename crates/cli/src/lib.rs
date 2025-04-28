@@ -12,6 +12,8 @@ enum Cli {
         // Path to cache config. See https://docs.wasmtime.dev/cli-cache.html
         #[arg(long)]
         cache: Option<std::path::PathBuf>,
+        #[arg(long)]
+        optimized: bool,
     },
     /// Builds native applications from WRAPP files
     #[cfg(feature = "compile")]
@@ -39,7 +41,11 @@ pub fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
     match args {
         #[cfg(feature = "run")]
-        Cli::Run { path, cache } => {
+        Cli::Run {
+            path,
+            cache,
+            optimized,
+        } => {
             let mut file = std::fs::File::open(&path)?;
             let is_a_wrapp = webrogue_wrapp::is_a_wrapp(&mut file)?;
             drop(file);
@@ -58,6 +64,7 @@ pub fn main() -> anyhow::Result<()> {
                     &config,
                     &persistent_path,
                     cache.as_ref(),
+                    optimized,
                 )?;
             } else {
                 let handle = webrogue_wasmtime::RealVFSHandle::new(path)?;
@@ -72,6 +79,7 @@ pub fn main() -> anyhow::Result<()> {
                     handle.config(),
                     &persistent_path,
                     cache.as_ref(),
+                    optimized,
                 )?;
             }
             Ok(())

@@ -14,7 +14,7 @@ pub fn make_ctx<
     // builder.inherit_stdio();
     builder.stdout(Box::new(stdout::STDOutFile {}));
     builder.stderr(Box::new(stdout::STDOutFile {}));
-    let wasi_ctx = builder.build();
+    let mut wasi_ctx = builder.build();
 
     let app_dir = fs::Dir::root(handle);
     wasi_ctx.push_preopened_dir(Box::new(app_dir), "/")?;
@@ -46,8 +46,11 @@ pub fn make_ctx<
         }
     };
 
-    // wasi_ctx.push_env("SUPERTUXKART_DATADIR", "/app")?;
-    // wasi_ctx.push_env("HOME", "/home/someone/wr_home")?;
+    if let Some(env) = &config.env {
+        for (key, value) in env.iter() {
+            wasi_ctx.push_env(key, value)?;
+        }
+    }
 
     Ok(wasi_ctx)
 }

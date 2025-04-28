@@ -4,3 +4,4 @@ Cargo.lock
 .DS_Store
 /aot_artifacts*
 .webrogue
+/.cache

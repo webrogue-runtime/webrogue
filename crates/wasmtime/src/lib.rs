@@ -36,7 +36,7 @@ pub fn run_jit_builder(
 ) -> anyhow::Result<()> {
     let config = wrapp_vfs_builder.config()?.clone();
     let handle = wrapp_vfs_builder.build()?;
-    run_jit(handle, &config, persistent_dir, None)
+    run_jit(handle, &config, persistent_dir, None, true)
 }
 #[cfg(feature = "cranelift")]
 pub fn run_jit<
@@ -48,6 +48,7 @@ pub fn run_jit<
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
     cache_config: Option<&std::path::PathBuf>,
+    optimized: bool,
 ) -> anyhow::Result<()> {
     use anyhow::Context;
 
@@ -57,13 +58,19 @@ pub fn run_jit<
         config.cache_config_load(cache_config)?;
     }
     // config.async_support(true);
-    config.debug_info(true);
-    config.cranelift_opt_level(wasmtime::OptLevel::None);
-    config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+    if optimized {
+        config.debug_info(false);
+        config.cranelift_opt_level(wasmtime::OptLevel::Speed);
+        config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+    } else {
+        config.debug_info(true);
+        config.cranelift_opt_level(wasmtime::OptLevel::None);
+        config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+    }
 
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
 
-    let epoch_interruption = true;
+    let epoch_interruption = false;
     config.epoch_interruption(epoch_interruption);
     let engine = wasmtime::Engine::new(&config)?;
     let mut wasm_binary = Vec::new();

@@ -8,6 +8,7 @@ pub struct Config {
     pub filesystem: Option<FilesystemConfig>,
     pub icons: Option<icons::Icons>,
     pub version: semver::Version,
+    pub env: Option<std::collections::HashMap<String, String>>,
 }
 impl Config {
     pub fn strip(self) -> Self {
@@ -18,6 +19,7 @@ impl Config {
             filesystem: self.filesystem.map(|filesystem| filesystem.strip()),
             icons: self.icons.map(|icons| icons.strip()),
             version: self.version,
+            env: self.env,
         }
     }
 }
