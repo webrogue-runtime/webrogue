@@ -1,21 +1,23 @@
+import os
+
 public class WebrogueAppDelegate: SDLUIKitDelegate {
     static var shared: WebrogueAppDelegate!
     var webrogueWindow: UIWindow!
     var isWebrogueWindowVisible = true
-
+    
     override public var window: UIWindow! {
         get {
             isWebrogueWindowVisible ? webrogueWindow : super.window
         }
         set {}
     }
-
+    
     override public func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
         WebrogueAppDelegate.shared = self
-
+        
         let result = super.application(
             application,
             didFinishLaunchingWithOptions: launchOptions
@@ -43,34 +45,59 @@ public class WebrogueAppDelegate: SDLUIKitDelegate {
             run(
                 path: Bundle.main.url(forResource: "aot", withExtension: "swrapp")!.relativePath,
                 dataPath: dataDirPath + "/data"
-            )
+            ) { error in
+                let formattedError = "Webrogue error: \(error)";
+                // TODO Maybe it makes more sense to immediately crash to increase chance of sending crash report
+                if true {
+                    DispatchQueue.main.async {
+                        self.webrogueWindow = UIWindow(frame: UIScreen.main.bounds)
+                        self.webrogueWindow.rootViewController = UIViewController()
+                        self.webrogueWindow.makeKeyAndVisible()
+                        let alert = UIAlertController(
+                            title: "Application halted",
+                            message: formattedError,
+                            preferredStyle: .alert
+                        )
+                        if #available(iOS 16.0, *) {
+                            alert.severity = .critical
+                        }
+                        alert.addAction(UIAlertAction(title: "Quit", style: .destructive) { _ in
+                            fatalError(formattedError)
+                        })
+                        self.webrogueWindow.rootViewController!.present(alert, animated: true)
+                    }
+                } else {
+                    fatalError(formattedError)
+                }
+                
+            }
         }
-
+        
         return result
     }
-
+    
     @objc
     func runPathNotification(notification: Notification) {
         guard let object = notification.object as? [String] else { return }
         run(path: object[0], dataPath: object[1])
     }
-
-    func run(path: String, dataPath: String, completion: ((Int) -> Void)? = nil) {
+    
+    func run(path: String, dataPath: String, completion: ((String) -> Void)? = nil) {
         DispatchQueue.global(qos: .userInteractive).async {
             self.isWebrogueWindowVisible = false
-            let ret_code = path.utf8CString.withUnsafeBufferPointer { pathBuff in
+            let error = path.utf8CString.withUnsafeBufferPointer { pathBuff in
                 dataPath.utf8CString.withUnsafeBufferPointer { dataPathBuff in
-                    Int(webrogueObjCMain(
+                    String(webrogueObjCMain(
                         pathBuff.baseAddress!,
                         dataPathBuff.baseAddress!
                     ))
                 }
             }
             self.isWebrogueWindowVisible = true
-            completion?(ret_code)
+            completion?(error)
         }
     }
-
+    
     public override func application(
         _ app: UIApplication,
         open url: URL,

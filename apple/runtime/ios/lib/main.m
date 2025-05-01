@@ -12,11 +12,11 @@ static void dispatch_on_main_thread(DISPATCHABLE_FUNC func, DISPATCHABLE_USERDAT
     });
 }
 
-void webrogue_ios_rs_main(const char* path, const char* persistent_path, DISPATCHER_FUNC dispatcher);
+char* webrogue_ios_rs_main(const char* path, const char* persistent_path, DISPATCHER_FUNC dispatcher);
 
-int webrogueObjCMain(const char* _Nonnull path, const char* _Nonnull persistent_path) {
-    webrogue_ios_rs_main(path, persistent_path, dispatch_on_main_thread);
-    return 0;
+NSString* _Nonnull webrogueObjCMain(const char* _Nonnull path, const char* _Nonnull persistent_path) {
+    char* error = webrogue_ios_rs_main(path, persistent_path, dispatch_on_main_thread);
+    return [[NSString alloc] initWithUTF8String: error];
 }
 
 UIViewController* _Nullable (^ _Nullable webrogueControllerBlock)(void) = NULL;
