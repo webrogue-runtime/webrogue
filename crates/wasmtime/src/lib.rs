@@ -1,5 +1,6 @@
 mod threads;
 
+pub use webrogue_gfx::DispatcherFunc;
 pub use webrogue_wrapp::{RealVFSHandle, WrappVFSBuilder, WrappVFSHandle};
 
 #[derive(Clone)]
@@ -33,10 +34,11 @@ compile_error!("Either AOT or Cranelift features must be enabled");
 pub fn run_jit_builder(
     mut wrapp_vfs_builder: webrogue_wrapp::WrappVFSBuilder,
     persistent_dir: &std::path::PathBuf,
+    dispatcher: Option<DispatcherFunc>,
 ) -> anyhow::Result<()> {
     let config = wrapp_vfs_builder.config()?.clone();
     let handle = wrapp_vfs_builder.build()?;
-    run_jit(handle, &config, persistent_dir, None, true)
+    run_jit(handle, &config, persistent_dir, None, true, dispatcher)
 }
 #[cfg(feature = "cranelift")]
 pub fn run_jit<
@@ -49,6 +51,7 @@ pub fn run_jit<
     persistent_dir: &std::path::PathBuf,
     cache_config: Option<&std::path::PathBuf>,
     optimized: bool,
+    dispatcher: Option<DispatcherFunc>,
 ) -> anyhow::Result<()> {
     use anyhow::Context;
 
@@ -93,6 +96,7 @@ pub fn run_jit<
         epoch_interruption,
         engine,
         module,
+        dispatcher,
     )
 }
 
@@ -100,10 +104,11 @@ pub fn run_jit<
 pub fn run_aot_builder(
     mut wrapp_vfs_builder: webrogue_wrapp::WrappVFSBuilder,
     persistent_dir: &std::path::PathBuf,
+    dispatcher: Option<DispatcherFunc>,
 ) -> anyhow::Result<()> {
     let config = wrapp_vfs_builder.config()?.clone();
     let handle = wrapp_vfs_builder.build()?;
-    run_aot(handle, &config, persistent_dir)
+    run_aot(handle, &config, persistent_dir, dispatcher)
 }
 #[cfg(feature = "aot")]
 pub fn run_aot<
@@ -114,6 +119,7 @@ pub fn run_aot<
     handle: VFSHandle,
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
+    dispatcher: Option<DispatcherFunc>,
 ) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
     // config.async_support(true);
@@ -133,6 +139,7 @@ pub fn run_aot<
         epoch_interruption,
         engine,
         module,
+        dispatcher,
     )
 }
 
@@ -147,6 +154,7 @@ fn run_module<
     epoch_interruption: bool,
     engine: wasmtime::Engine,
     module: wasmtime::Module,
+    dispatcher: Option<DispatcherFunc>,
 ) -> anyhow::Result<()> {
     let mut linker: wasmtime::Linker<State> = wasmtime::Linker::new(&engine);
     let state = State {
@@ -182,7 +190,7 @@ fn run_module<
     )?);
 
     store.data_mut().gfx = Some(webrogue_gfx::GFXInterface::new(std::sync::Arc::new(
-        webrogue_gfx::GFXSystem::new(),
+        webrogue_gfx::GFXSystem::new(dispatcher),
     )));
 
     let pre = linker.instantiate_pre(&module)?;

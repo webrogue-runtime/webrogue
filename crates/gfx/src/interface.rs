@@ -11,6 +11,7 @@ pub struct GFXInterface {
     gfx: Arc<crate::system::GFXSystem>,
     window: Option<crate::window::Window>,
     gfxstream_thread: Option<webrogue_gfxstream::Thread>,
+    dispatcher: Option<crate::DispatcherFunc>,
 }
 
 // gfx can be shared
@@ -21,10 +22,12 @@ unsafe impl Send for GFXInterface {}
 
 impl GFXInterface {
     pub fn new(gfx: Arc<crate::system::GFXSystem>) -> Self {
+        let dispatcher = gfx.dispatcher;
         Self {
             gfx,
             window: None,
             gfxstream_thread: None,
+            dispatcher,
         }
     }
 }
@@ -35,6 +38,7 @@ impl Clone for GFXInterface {
             gfx: self.gfx.clone(),
             window: self.window.clone(),
             gfxstream_thread: None,
+            dispatcher: self.dispatcher,
         }
     }
 }
@@ -44,13 +48,17 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         if self.window.is_some() {
             return;
         }
-        self.window = Some(self.gfx.make_window());
+
+        self.window = Some(crate::dispatch::dispatch(self.dispatcher, || {
+            self.gfx.make_window()
+        }));
     }
 
     fn present(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
-        self.window.as_mut().inspect(|window| {
-            window.present();
-        });
+        let Some(window) = self.window.as_mut() else {
+            return;
+        };
+        window.present();
     }
 
     fn get_window_size(
@@ -96,11 +104,13 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         buf: wiggle::GuestPtr<u8>,
         len: Size,
     ) {
-        if let Some(gfxstream_thread) = &self.gfxstream_thread {
-            if let Ok(b) = mem.as_cow(buf.as_array(len)) {
-                gfxstream_thread.commit(&b);
-            }
-        }
+        let Some(gfxstream_thread) = &self.gfxstream_thread else {
+            return;
+        };
+        let Ok(b) = mem.as_cow(buf.as_array(len)) else {
+            return;
+        };
+        gfxstream_thread.commit(&b);
     }
 
     fn ret_buffer_read(
@@ -109,10 +119,14 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         buf: wiggle::GuestPtr<u8>,
         len: Size,
     ) {
-        let mut buffer = vec![0u8; len as usize];
-        if let Some(gfxstream_thread) = &self.gfxstream_thread {
-            gfxstream_thread.read(&mut buffer)
-        }
+        let Some(gfxstream_thread) = &self.gfxstream_thread else {
+            return;
+        };
+        let buffer = {
+            let mut buffer = vec![0u8; len as usize];
+            gfxstream_thread.read(&mut buffer);
+            buffer
+        };
         let _ = mem.copy_from_slice(&buffer, buf.as_array(len));
     }
 

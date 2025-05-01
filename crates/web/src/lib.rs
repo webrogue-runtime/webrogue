@@ -122,7 +122,7 @@ pub fn main(wrapp_data: Option<&'static [u8]>) -> anyhow::Result<()> {
     let mut context = context::Context::new(imports);
     let threads = threads::ThreadsContext::new(context.imports.clone());
     context.store = Some(context::Store {
-        gfx: webrogue_gfx::GFXInterface::new(Arc::new(webrogue_gfx::GFXSystem::new())),
+        gfx: webrogue_gfx::GFXInterface::new(Arc::new(webrogue_gfx::GFXSystem::new(None))),
         preview1_ctx: webrogue_wasip1::make_ctx(wrapp_handle, &config, &persistent_path)?,
         threads: Arc::new(threads),
     });

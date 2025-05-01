@@ -134,6 +134,7 @@ targets:
     platform: iOS
     sources:
     - ios/lib
+    - ../../crates/gfx-fallback/webrogue_gfx_ffi_sdl.c
     - ../../crates/gfx-fallback/webrogue_gfx_ffi_sdl_events.c
     settings:
       base:
@@ -145,7 +146,8 @@ targets:
         SYSTEM_HEADER_SEARCH_PATHS:
         - "$(SRCROOT)/external/angle_ios_headers"
         SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/lib/Bridging-Header.h"
-        GCC_PREPROCESSOR_DEFINITIONS: "WEBROGUE_GFX_SDL_VERSION=3"
+        GCC_PREPROCESSOR_DEFINITIONS: 
+        - "WEBROGUE_GFX_IOS=1"
   _SDL: # Needed only to build SDL for aot template
     type: library.static
     platform: iOS

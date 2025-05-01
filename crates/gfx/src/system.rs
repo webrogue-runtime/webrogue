@@ -2,6 +2,7 @@
 pub struct GFXSystem {
     handle: crate::ffi::NativeHandle,
     event_buf: std::sync::Mutex<Option<&'static [u8]>>,
+    pub(crate) dispatcher: Option<crate::DispatcherFunc>,
 }
 
 impl Drop for GFXSystem {
@@ -9,21 +10,17 @@ impl Drop for GFXSystem {
         unsafe { crate::ffi::webrogue_gfx_ffi_destroy_system(self.handle.0) }
     }
 }
-impl Default for GFXSystem {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 impl GFXSystem {
-    pub fn new() -> Self {
+    pub fn new(dispatcher: Option<crate::DispatcherFunc>) -> Self {
         #[cfg(feature = "fallback")]
         webrogue_gfx_fallback::load();
-        Self {
+        crate::dispatch::dispatch(dispatcher, || Self {
             handle: crate::ffi::NativeHandle(unsafe {
                 crate::ffi::webrogue_gfx_ffi_create_system()
             }),
             event_buf: std::sync::Mutex::new(None),
-        }
+            dispatcher,
+        })
     }
 
     pub fn make_window(&self) -> crate::window::Window {

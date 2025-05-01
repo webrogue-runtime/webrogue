@@ -1,9 +1,9 @@
 fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
     let builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(wrapp_path)?;
     #[cfg(feature = "runtime")]
-    return webrogue_wasmtime::run_jit_builder(builder, &persistent_path.into());
+    return webrogue_wasmtime::run_jit_builder(builder, &persistent_path.into(), None);
     #[cfg(feature = "runner")]
-    return webrogue_wasmtime::run_aot_builder(builder, &persistent_path.into());
+    return webrogue_wasmtime::run_aot_builder(builder, &persistent_path.into(), None);
     #[cfg(not(any(feature = "runtime", feature = "runner")))]
     {
         let _ = builder;
