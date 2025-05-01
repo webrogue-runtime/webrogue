@@ -83,7 +83,7 @@ rpngconvert -size 512x512 xc:white ../../android/runtime/launcher/src/main/res/d
 # # For Web
 ofsize 61 | stroke_width 2.5 | to_ico ../../web/root/logo.ico "16,24,32,64"
 ofsize 62 | to_png_transparent 1024 ../../web/logo.png
-ofsize 51 | to_png_transparent 1024 vscode_extension_logo.png
+ofsize 62 | to_png_transparent 1024 vscode_extension_logo.png
 ofsize 51 | to_png_transparent 128 microsoft_marketplace_logo.png
 
 # # For Windows

@@ -11,9 +11,9 @@ pub fn make_ctx<
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<wasi_common::WasiCtx> {
     let mut builder = wasi_common::sync::WasiCtxBuilder::new();
-    // builder.inherit_stdio();
-    builder.stdout(Box::new(stdout::STDOutFile {}));
-    builder.stderr(Box::new(stdout::STDOutFile {}));
+    builder.inherit_stdio();
+    // builder.stdout(Box::new(stdout::STDOutFile {}));
+    // builder.stderr(Box::new(stdout::STDOutFile {}));
     let mut wasi_ctx = builder.build();
 
     let app_dir = fs::Dir::root(handle);

@@ -31,4 +31,7 @@
   (@interface func (export "poll_read")
     (param $buf (@witx pointer u8))
   )
+  (@interface func (export "get_gl_swap_interval")
+    (param $out_interval (@witx pointer u32))
+  )
 )

@@ -12,7 +12,7 @@ typedef struct webrogue_event_out_buf {
 
 #define WEBROGUE_MAX_ENCODED_EVENT_SIZE 16
 
-static webrogue_event_out_buf webrogue_event_out_buf_create() {
+static webrogue_event_out_buf webrogue_event_out_buf_create(void) {
     webrogue_event_out_buf result;
     result.buf = malloc(WEBROGUE_MAX_ENCODED_EVENT_SIZE);
     result.buf_size = WEBROGUE_MAX_ENCODED_EVENT_SIZE;

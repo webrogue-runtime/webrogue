@@ -3,8 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #if WEBROGUE_GFX_SDL_VERSION == 2
-#include "SDL.h"
-#include "SDL_video.h"
+#error SDL2 is not supported
 #elif WEBROGUE_GFX_SDL_VERSION == 3
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_video.h>
@@ -89,6 +88,7 @@ void webrogue_gfx_ffi_get_gl_size(void *raw_window_ptr, uint32_t *out_width,
 void webrogue_gfx_ffi_present_window(void *raw_window_ptr) {
   Window *window = (Window *)raw_window_ptr;
   SDL_GL_SwapWindow(window->sdl_window);
+  SDL_PumpEvents();
 }
 
 static void *get_proc_address(char *procname, void *userdata) {
@@ -112,4 +112,13 @@ void webrogue_gfx_ffi_poll(void *raw_system_ptr, void **out_buf,
   System *system_ptr = (System *)raw_system_ptr;
   webrogue_event_out_buf *event_buf = &(system_ptr->event_buf);
   webrogue_gfx_ffi_sdl_poll(event_buf, out_buf, out_len);
+}
+
+void webrogue_gfx_ffi_get_gl_swap_interval(void *raw_system_ptr, uint32_t* out_interval) {
+  (void)raw_system_ptr;
+  int interval;
+  if(!SDL_GL_GetSwapInterval(&interval)) {
+    fprintf(stderr, "SDL error: %s\n", SDL_GetError());
+  }
+  *out_interval = interval;
 }

@@ -1,3 +1,4 @@
+use anyhow::Context as _;
 use clap::{command, Parser};
 
 #[derive(Parser, Debug)]
@@ -37,6 +38,11 @@ enum Cli {
     },
 }
 
+fn is_a_wrapp(path: &std::path::PathBuf) -> anyhow::Result<bool> {
+    let mut file = std::fs::File::open(&path)?;
+    Ok(webrogue_wrapp::is_a_wrapp(&mut file)?)
+}
+
 pub fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
     match args {
@@ -46,10 +52,9 @@ pub fn main() -> anyhow::Result<()> {
             cache,
             optimized,
         } => {
-            let mut file = std::fs::File::open(&path)?;
-            let is_a_wrapp = webrogue_wrapp::is_a_wrapp(&mut file)?;
-            drop(file);
-            if is_a_wrapp {
+            if is_a_wrapp(&path)
+                .with_context(|| format!("Unable to determine file type for {}", path.display()))?
+            {
                 let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(path)?;
                 let config = builder.config()?.clone();
 

@@ -122,16 +122,19 @@ typedef void *(*get_proc_func_t)(const char *name, void *userData);
 
 class GFXStreamThread {
 public:
+  GLDecoderContextData decoderContextData;
   std::unique_ptr<gfxstream::gl::GLESv2Decoder> gles2dec;
   std::unique_ptr<ChecksumCalculator> checksum_calculator;
   std::unique_ptr<WebrogueOutputStream> webrogue_output_stream;
   
 
   GFXStreamThread(get_proc_func_t get_proc, void* userdata) {
+    decoderContextData = GLDecoderContextData();
     gles2dec = std::make_unique<gfxstream::gl::GLESv2Decoder>();
     checksum_calculator = std::make_unique<ChecksumCalculator>();
     webrogue_output_stream = std::make_unique<WebrogueOutputStream>(16);
     gles2dec->initGL(get_proc, userdata);
+    gles2dec->setContextData(&decoderContextData);
   }
 };
 

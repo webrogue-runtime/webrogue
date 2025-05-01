@@ -1,7 +1,6 @@
 #include "webrogue_gfx_ffi_sdl_events.h"
 #if WEBROGUE_GFX_SDL_VERSION == 2
-#include "SDL.h"
-#define SDL_V(v2, v3) v2
+#error SDL2 is not supported
 #elif WEBROGUE_GFX_SDL_VERSION == 3
 #include <SDL3/SDL.h>
 #define SDL_V(v2, v3) v3

@@ -10,7 +10,7 @@ impl wasi_common::WasiFile for STDOutFile {
     }
 
     async fn get_filetype(&self) -> Result<wasi_common::file::FileType, wasi_common::Error> {
-        Ok(wasi_common::file::FileType::Pipe)
+        Ok(wasi_common::file::FileType::CharacterDevice)
     }
 
     fn isatty(&self) -> bool {

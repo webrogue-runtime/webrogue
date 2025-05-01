@@ -49,4 +49,12 @@ impl GFXSystem {
     pub fn poll_read(&self) -> Option<&'static [u8]> {
         *self.event_buf.lock().unwrap()
     }
+
+    pub fn get_gl_swap_interval(&self) -> u32 {
+        let mut interval: u32 = 0;
+        unsafe {
+            crate::ffi::webrogue_gfx_ffi_get_gl_swap_interval(self.handle.0, &mut interval);
+        }
+        interval
+    }
 }

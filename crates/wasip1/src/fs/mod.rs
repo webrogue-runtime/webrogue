@@ -352,15 +352,18 @@ impl<
     }
 }
 
-struct OpenFile<FileReader: webrogue_wrapp::IFileReader> {
+struct OpenFile<
+    FileReader: webrogue_wrapp::IFileReader,
+    FilePosition: webrogue_wrapp::IFilePosition,
+> {
     reader: Mutex<FileReader>,
+    pos: FilePosition,
 }
 
-impl<FileReader: webrogue_wrapp::IFileReader> OpenFile<FileReader> {
-    fn open<
-        FilePosition: webrogue_wrapp::IFilePosition,
-        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-    >(
+impl<FileReader: webrogue_wrapp::IFileReader, FilePosition: webrogue_wrapp::IFilePosition>
+    OpenFile<FileReader, FilePosition>
+{
+    fn open<VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>>(
         source: Arc<File<FilePosition, FileReader, VFSHandle>>,
     ) -> Self {
         let Ok(reader) = source.handle.open_pos(source.position.clone()) else {
@@ -368,13 +371,16 @@ impl<FileReader: webrogue_wrapp::IFileReader> OpenFile<FileReader> {
         };
         Self {
             reader: Mutex::new(reader),
+            pos: source.position.clone(),
         }
     }
 }
 
 #[wiggle::async_trait]
-impl<FileReader: webrogue_wrapp::IFileReader + 'static> wasi_common::WasiFile
-    for OpenFile<FileReader>
+impl<
+        FileReader: webrogue_wrapp::IFileReader + 'static,
+        FilePosition: webrogue_wrapp::IFilePosition + 'static,
+    > wasi_common::WasiFile for OpenFile<FileReader, FilePosition>
 {
     fn as_any(&self) -> &dyn std::any::Any {
         self
@@ -440,22 +446,20 @@ impl<FileReader: webrogue_wrapp::IFileReader + 'static> wasi_common::WasiFile
     }
 
     async fn get_filestat(&self) -> Result<wasi_common::file::Filestat, wasi_common::Error> {
-        todo!();
-        // Ok(wasi_common::file::Filestat {
-        //     device_id: 0,
-        //     inode: 0,
-        //     filetype: self.get_filetype().await?,
-        //     nlink: 0,
-        //     size: 0, // XXX no way to get a size out of a Read :(
-        //     atim: None,
-        //     mtim: None,
-        //     ctim: None,
-        // })
+        Ok(wasi_common::file::Filestat {
+            device_id: 0,
+            inode: 0,
+            filetype: wasi_common::file::FileType::RegularFile,
+            nlink: 0,
+            size: self.pos.get_size() as u64,
+            atim: None,
+            mtim: None,
+            ctim: None,
+        })
     }
 
     async fn set_filestat_size(&self, _size: u64) -> Result<(), wasi_common::Error> {
-        todo!();
-        // Err(wasi_common::Error::badf())
+        Err(wasi_common::Error::badf())
     }
 
     async fn advise(

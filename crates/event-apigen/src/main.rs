@@ -107,6 +107,7 @@ fn main() -> anyhow::Result<()> {
         write!("void webroguegfx_gl_size(int *width, int *height);");
         write!("void webroguegfx_init_gl();");
         write!("void *webroguegfx_gl_loader(const char *procname);");
+        write!("void webroguegfx_get_gl_swap_interval(int *out_interval);");
         write!("");
         write!("// Events");
         for event in events::all() {

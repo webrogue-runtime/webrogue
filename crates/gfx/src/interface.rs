@@ -127,4 +127,13 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
             let _ = mem.copy_from_slice(result, buf.as_array(result.len() as u32));
         }
     }
+
+    fn get_gl_swap_interval(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        out_interval: wiggle::GuestPtr<u32>,
+    ) -> () {
+        let result = self.gfx.get_gl_swap_interval();
+        let _ = mem.write(out_interval, result);
+    }
 }

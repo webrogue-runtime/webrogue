@@ -26,6 +26,7 @@ extern "C" {
         out_userdata: *mut *const (),
     );
     pub fn webrogue_gfx_ffi_poll(system_ptr: *const (), out_buf: *mut *const (), out_len: *mut u32);
+    pub fn webrogue_gfx_ffi_get_gl_swap_interval(raw_system_ptr: *const (), out_interval: *mut u32);
 }
 
 // for ios DispatchQueue
