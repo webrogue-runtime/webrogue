@@ -8,7 +8,7 @@ WRAPP_PATH=examples/empty/empty.wrapp
 
 if test -f $WRAPP_PATH
 then
-    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.gnu.o x86_64-linux-gnu --pic
+    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.gnu.o x86_64-linux-gnu
     cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.musl.o x86_64-linux-musl --pic
 fi
 
@@ -25,11 +25,14 @@ docker run \
     -w /usr/src/myapp \
     $IMAGE_NAME \
     sh linux/glibc/build_cli.sh
-# || docker run \
-#     -it \
+
+# cd "$REPO_ROOT/linux/musl"
+# IMAGE_NAME=webrogue/webrogue-linux-musl-builder
+# docker build --tag $IMAGE_NAME .
+# docker run \
 #     --rm \
-#     --user "$(id -u)":"$(id -g)" \
-#     -v "$(dirname $(dirname $PWD))":/usr/src/myapp \
+#     $DOCKER_USER_FLAGS \
+#     -v "$REPO_ROOT":/usr/src/myapp \
 #     -w /usr/src/myapp \
 #     $IMAGE_NAME \
-#     bash
+#     sh linux/musl/build_cli.sh\
