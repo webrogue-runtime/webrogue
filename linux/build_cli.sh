@@ -12,12 +12,15 @@ then
     cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.musl.o x86_64-linux-musl --pic
 fi
 
+docker --version | grep podman >/dev/null || {
+    DOCKER_USER_FLAGS="-u $(id -u ${USER}):$(id -g ${USER})"
+}
 cd "$REPO_ROOT/linux/glibc"
 IMAGE_NAME=webrogue/webrogue-linux-gnu-builder
 docker build --tag $IMAGE_NAME .
 docker run \
     --rm \
-    --user "$(id -u)":"$(id -g)" \
+    $DOCKER_USER_FLAGS \
     -v "$REPO_ROOT":/usr/src/myapp \
     -w /usr/src/myapp \
     $IMAGE_NAME \

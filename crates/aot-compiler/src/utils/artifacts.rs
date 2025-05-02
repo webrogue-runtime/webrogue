@@ -1,3 +1,5 @@
+use anyhow::Context;
+
 pub struct Artifacts {
     inner: Box<dyn ArtifactsInner>,
 }
@@ -41,7 +43,9 @@ impl Artifacts {
         file: &str,
     ) -> anyhow::Result<super::TemporalFile> {
         let result = super::TemporalFile::for_tmp(base_path.as_ref(), file.replace("/", "_"))?;
-        self.inner.extract(result.path(), file)?;
+        self.inner
+            .extract(result.path(), file)
+            .with_context(|| format!("Unable to extract {} from archive", file))?;
         Ok(result)
     }
 

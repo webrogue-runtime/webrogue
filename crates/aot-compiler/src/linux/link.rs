@@ -59,23 +59,26 @@ pub fn link_glibc(
         .ok_or_else(|| anyhow::anyhow!("Path error"))?
         .to_path_buf();
 
-    let scrt1_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/Scrt1.o")?;
+    let crt1_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crt1.o")?;
     let crti_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crti.o")?;
-    let crtbegins_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtbeginS.o")?;
+    let crtbegin_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtbegin.o")?;
     let libwebrogue_aot_lib_tmp =
         artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libwebrogue_aot_lib.a")?;
     let libm_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libm.so.6")?;
-    let libc_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libc.so.6")?;
+    let libpthread_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libpthread.so")?;
+    let libdl_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libdl.so")?;
+
     let libgcc_s_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libgcc_s.so.1")?;
-    let libdl_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libdl.so.2")?;
-    let libpthread_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libpthread.so.0")?;
-    let crtends_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtendS.o")?;
+    let libgcc_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libgcc.a")?;
+    let libc_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libc.so.6")?;
+    let libc_nonshared_tmp =
+        artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/libc_nonshared.a")?;
+
+    let crtend_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtend.o")?;
     let crtn_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtn.o")?;
 
     crate::utils::lld!(
         "ld.lld",
-        "-pie",
-        "--no-dependent-libraries",
         "--hash-style=gnu",
         "--build-id",
         "--eh-frame-hdr",
@@ -85,27 +88,21 @@ pub fn link_glibc(
         "--gc-sections",
         "-dynamic-linker",
         "/lib64/ld-linux-x86-64.so.2",
-        "-z",
-        "relro",
         "-o",
         crate::utils::path_to_arg(output_file_path)?,
-        "--no-as-needed",
-        scrt1_tmp.as_arg()?,
-        "--no-as-needed",
+        crt1_tmp.as_arg()?,
         crti_tmp.as_arg()?,
-        "--no-as-needed",
-        crtbegins_tmp.as_arg()?,
+        crtbegin_tmp.as_arg()?,
         libwebrogue_aot_lib_tmp.as_arg()?,
         object_file,
         libm_tmp.as_arg()?,
-        "--as-needed",
-        libc_tmp.as_arg()?,
-        libgcc_s_tmp.as_arg()?,
-        libdl_tmp.as_arg()?,
         libpthread_tmp.as_arg()?,
-        "--no-as-needed",
-        crtends_tmp.as_arg()?,
-        "--no-as-needed",
+        libdl_tmp.as_arg()?,
+        libgcc_s_tmp.as_arg()?,
+        libgcc_tmp.as_arg()?,
+        libc_tmp.as_arg()?,
+        libc_nonshared_tmp.as_arg()?,
+        crtend_tmp.as_arg()?,
         crtn_tmp.as_arg()?,
     )
 }
