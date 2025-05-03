@@ -91,11 +91,15 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         let _ = mem.write(out_height, size.1);
     }
 
-    fn gl_init(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
-        if let Some(window) = &self.window {
+    fn gl_init(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_status: wiggle::GuestPtr<u8>) {
+        let result = if let Some(window) = &self.window {
             let ret = window.gl_init();
-            self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(ret.0, ret.1))
-        }
+            self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(ret.0, ret.1));
+            true
+        } else {
+            false
+        };
+        let _ = mem.write(out_status, if result { 1 } else { 0 });
     }
 
     fn commit_buffer(

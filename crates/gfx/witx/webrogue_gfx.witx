@@ -16,7 +16,9 @@
     (param $out_height (@witx pointer $gfx_size))
   )
 
-  (@interface func (export "gl_init"))
+  (@interface func (export "gl_init")
+    (param $out_status (@witx pointer u8))
+  )
   (@interface func (export "commit_buffer")
     (param $buf (@witx pointer u8))
     (param $len $size)

@@ -1,3 +1,5 @@
+use std::usize;
+
 #[derive(Clone)]
 pub struct Event {
     pub name: &'static str,
@@ -16,17 +18,20 @@ pub struct Field {
 #[derive(Clone, Copy)]
 pub enum FieldType {
     U32,
+    Bool,
 }
 impl FieldType {
     pub fn size(&self) -> usize {
         match self {
             FieldType::U32 => 4,
+            FieldType::Bool => 1,
         }
     }
 
     pub fn c_name(&self) -> &'static str {
         match self {
             FieldType::U32 => "uint32_t",
+            FieldType::Bool => "uint8_t",
         }
     }
 }
@@ -68,8 +73,19 @@ impl EventBuilder<'_> {
             offset: self.event.size,
             ty,
         });
-        self.event.size += ty.size();
+        self.align();
         self
+    }
+
+    fn align(&mut self) {
+        let mut field_refs = self.event.fields.iter_mut().collect::<Vec<_>>();
+        field_refs.sort_by_key(|field| usize::MAX - field.ty.size());
+        self.event.size = 4;
+        for field in &mut field_refs {
+            field.offset = self.event.size;
+            self.event.size += field.ty.size();
+        }
+        self.event.size = ((self.event.size + 3) / 4) * 4;
     }
 }
 
@@ -79,23 +95,27 @@ pub fn all() -> Vec<Event> {
     let mut builder = EventsBuilder::new();
 
     builder
-        .event("mouse_down", 1)
-        .field("x", U32)
-        .field("y", U32)
-        .field("button", U32);
-
-    builder
-        .event("mouse_up", 2)
-        .field("x", U32)
-        .field("y", U32)
-        .field("button", U32);
-
-    builder
-        .event("mouse_motion", 3)
+        .event("mouse_button", 1)
+        .field("button", U32)
+        .field("down", Bool)
         .field("x", U32)
         .field("y", U32);
 
+    builder
+        .event("mouse_motion", 2)
+        .field("x", U32)
+        .field("y", U32);
+
+    builder
+        .event("key", 3)
+        .field("down", Bool)
+        .field("scancode", U32);
+
     builder.event("quit", 4);
+
+    // This value must be incremented when an event is added or changed,
+    // then event's id must be changed to this value:
+    // 4
 
     builder.events()
 }

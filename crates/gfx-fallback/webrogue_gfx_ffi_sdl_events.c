@@ -1,4 +1,5 @@
 #include "webrogue_gfx_ffi_sdl_events.h"
+#include "webrogue_event_encoder.h"
 #include <SDL3/SDL.h>
 
 void webrogue_gfx_ffi_sdl_poll(webrogue_event_out_buf *event_buf,
@@ -9,12 +10,11 @@ void webrogue_gfx_ffi_sdl_poll(webrogue_event_out_buf *event_buf,
   while (SDL_PollEvent(&event) != 0) {
     switch (event.type) {
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
-      webrogue_event_encode_mouse_down(event_buf, event.button.x,
-                                       event.button.y, event.button.button);
-      break;
     case SDL_EVENT_MOUSE_BUTTON_UP:
-      webrogue_event_encode_mouse_up(event_buf, event.button.x, event.button.y,
-                                     event.button.button);
+      webrogue_event_encode_mouse_button(event_buf, event.button.button,
+                                         event.type ==
+                                             SDL_EVENT_MOUSE_BUTTON_DOWN,
+                                         event.button.x, event.button.y);
       break;
     case SDL_EVENT_MOUSE_MOTION:
       webrogue_event_encode_mouse_motion(event_buf, event.button.x,
@@ -22,6 +22,11 @@ void webrogue_gfx_ffi_sdl_poll(webrogue_event_out_buf *event_buf,
       break;
     case SDL_EVENT_QUIT:
       webrogue_event_encode_quit(event_buf);
+      break;
+    case SDL_EVENT_KEY_DOWN:
+    case SDL_EVENT_KEY_UP:
+      webrogue_event_encode_key(event_buf, event.type == SDL_EVENT_KEY_DOWN,
+                                event.key.scancode);
       break;
     }
   }

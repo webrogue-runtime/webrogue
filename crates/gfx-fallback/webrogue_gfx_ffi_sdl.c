@@ -24,7 +24,6 @@ typedef struct System {
 void *webrogue_gfx_ffi_create_system(void) {
   System *system_ptr = malloc(sizeof(System));
   system_ptr->event_buf = webrogue_event_out_buf_create();
-  SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11");
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     printf("SDL_Init failed: %s\n", SDL_GetError());
   };
