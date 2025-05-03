@@ -27,13 +27,12 @@ enum Cli {
     #[cfg(feature = "pack")]
     Pack {
         /// Path to webrogue.json file or directory containing this file
-        /// Current working directory is assumed if this option is not specified
         #[arg(short, long)]
-        config: Option<std::path::PathBuf>,
+        config: std::path::PathBuf,
         /// Path to put resulting WRAPP file to
-        /// Current working directory is assumed if this option is not specified
+        /// If specified path is directory, then file named out.wrapp will be created in this directory
         #[arg(short, long)]
-        output: Option<std::path::PathBuf>,
+        output: std::path::PathBuf,
     },
 }
 
@@ -101,7 +100,6 @@ pub fn main() -> anyhow::Result<()> {
         #[cfg(feature = "pack")]
         Cli::Pack { config, output } => {
             let cwd = std::env::current_dir()?;
-            let config = config.unwrap_or(cwd.clone());
             let (config_file, config_dir) = if config.is_dir() {
                 (config.join("webrogue.json"), config.clone())
             } else {
@@ -113,7 +111,6 @@ pub fn main() -> anyhow::Result<()> {
                         .to_path_buf(),
                 )
             };
-            let output = output.unwrap_or(cwd.clone());
             let output = if output.is_dir() {
                 output.join("out.wrapp")
             } else {
