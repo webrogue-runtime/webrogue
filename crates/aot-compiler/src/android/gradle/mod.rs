@@ -16,7 +16,8 @@ pub enum Signing {
 }
 
 pub fn build(
-    android_sdk_dir: &std::path::PathBuf,
+    sdk_env: Option<&std::path::PathBuf>,
+    java_home_env: Option<&std::path::PathBuf>,
     container_path: &std::path::PathBuf,
     build_dir: &std::path::PathBuf,
     signing: Signing,
@@ -89,8 +90,14 @@ pub fn build(
         } else {
             "assembleRelease"
         })
-        .current_dir(build_dir)
-        .env("ANDROID_HOME", std::path::absolute(android_sdk_dir)?);
+        .current_dir(build_dir);
+    if let Some(sdk_env) = sdk_env {
+        command.env("ANDROID_SDK_ROOT", sdk_env);
+    }
+    if let Some(java_home_env) = java_home_env {
+        command.env("JAVA_HOME", java_home_env);
+    }
+
     let mut properties_file =
         std::fs::File::create(build_dir.join("app").join("gradle.properties"))?;
     set_gradle_property(

@@ -99,7 +99,6 @@ pub fn main() -> anyhow::Result<()> {
         }
         #[cfg(feature = "pack")]
         Cli::Pack { config, output } => {
-            let cwd = std::env::current_dir()?;
             let (config_file, config_dir) = if config.is_dir() {
                 (config.join("webrogue.json"), config.clone())
             } else {

@@ -18,9 +18,12 @@ pub enum Commands {
         wrapp_path: std::path::PathBuf,
         /// Path where resulting project will be placed
         build_dir: std::path::PathBuf,
-        /// Path to Android SDK. If not specified, ANDROID_HOME environment variable is used
+        /// Path to Android SDK. If not specified, ANDROID_SDK_ROOT or ANDROID_HOME environment variable will be used
         #[arg(long, value_name = "PATH")]
         sdk: Option<std::path::PathBuf>,
+        /// Path to Java installation directory. If not specified, JAVA_HOME environment variable is used
+        #[arg(long, value_name = "PATH")]
+        java_home: Option<std::path::PathBuf>,
         /// Path to release signing keystore
         ///
         /// Hint: keystore can be generated using following command:
@@ -107,6 +110,7 @@ impl Commands {
                 wrapp_path,
                 build_dir,
                 sdk,
+                java_home,
                 keystore_path,
                 store_password,
                 key_password,
@@ -117,6 +121,7 @@ impl Commands {
                 wrapp_path,
                 build_dir,
                 sdk,
+                java_home,
                 keystore_path,
                 store_password,
                 key_password,

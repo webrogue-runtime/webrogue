@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 
 input_path = sys.argv[1]
