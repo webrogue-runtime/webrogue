@@ -297,7 +297,7 @@ jobs:
         mkdir webrogue-cli-windows-x86_64
         python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-x86_64/webrogue.exe
         curl -L https://github.com/webrogue-runtime/angle-builder/releases/download/latest_build/windows_x64.zip -o windows_x64.zip
-        unzip -j macos_arm64.zip -d webrogue-cli-windows-x86_64/
+        unzip -j windows_x64.zip -d webrogue-cli-windows-x86_64/
         zip -r webrogue-cli-windows-x86_64.zip webrogue-cli-windows-x86_64/
 
         mkdir webrogue-cli-macos-arm64
