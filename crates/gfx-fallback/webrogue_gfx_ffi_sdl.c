@@ -32,9 +32,11 @@ void *webrogue_gfx_ffi_create_system(void) {
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#ifndef __EMSCRIPTEN__
   SDL_SetHint(SDL_HINT_OPENGL_LIBRARY, getenv("SDL_VIDEO_GL_DRIVER"));
   SDL_SetHint(SDL_HINT_EGL_LIBRARY, getenv("SDL_VIDEO_EGL_DRIVER"));
   SDL_GL_LoadLibrary(getenv("SDL_VIDEO_GL_DRIVER"));
+#endif
 #endif
 
   return system_ptr;
