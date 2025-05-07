@@ -113,9 +113,12 @@ pub fn all() -> Vec<Event> {
 
     builder.event("quit", 4);
 
+    builder.event("window_resized", 5);
+    builder.event("gl_resized", 6);
+
     // This value must be incremented when an event is added or changed,
     // then event's id must be changed to this value:
-    // 4
+    // 6
 
     builder.events()
 }

@@ -28,6 +28,9 @@ void webrogue_gfx_ffi_sdl_poll(webrogue_event_out_buf *event_buf,
       webrogue_event_encode_key(event_buf, event.type == SDL_EVENT_KEY_DOWN,
                                 event.key.scancode);
       break;
+    case SDL_EVENT_WINDOW_RESIZED:
+      webrogue_event_encode_window_resized(event_buf);
+      break;
     }
   }
   *out_buf = event_buf->buf;

@@ -29,7 +29,7 @@ static void webrogue_event_out_buf_delete(webrogue_event_out_buf buf) {
 
 static inline void webrogue_event_encode_mouse_button(webrogue_event_out_buf *out, uint32_t button, uint8_t down, uint32_t x, uint32_t y) {
     BUF_SIZE(20);
-    SET(uint32_t, 0, 16);
+    SET(uint32_t, 0, 1);
     SET(uint32_t, 4, button);
     SET(uint8_t, 16, down);
     SET(uint32_t, 8, x);
@@ -37,19 +37,27 @@ static inline void webrogue_event_encode_mouse_button(webrogue_event_out_buf *ou
 }
 static inline void webrogue_event_encode_mouse_motion(webrogue_event_out_buf *out, uint32_t x, uint32_t y) {
     BUF_SIZE(12);
-    SET(uint32_t, 0, 17);
+    SET(uint32_t, 0, 2);
     SET(uint32_t, 4, x);
     SET(uint32_t, 8, y);
 }
 static inline void webrogue_event_encode_key(webrogue_event_out_buf *out, uint8_t down, uint32_t scancode) {
     BUF_SIZE(12);
-    SET(uint32_t, 0, 32);
+    SET(uint32_t, 0, 3);
     SET(uint8_t, 8, down);
     SET(uint32_t, 4, scancode);
 }
 static inline void webrogue_event_encode_quit(webrogue_event_out_buf *out) {
     BUF_SIZE(4);
-    SET(uint32_t, 0, 48);
+    SET(uint32_t, 0, 4);
+}
+static inline void webrogue_event_encode_window_resized(webrogue_event_out_buf *out) {
+    BUF_SIZE(4);
+    SET(uint32_t, 0, 5);
+}
+static inline void webrogue_event_encode_gl_resized(webrogue_event_out_buf *out) {
+    BUF_SIZE(4);
+    SET(uint32_t, 0, 6);
 }
 
 #undef BUF_SIZE

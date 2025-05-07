@@ -247,15 +247,17 @@ fn main() -> anyhow::Result<()> {
                     write!("case WEBROGUE_EVENT_TYPE_{}: {{", event.name.to_uppercase());
                     writer.inc_indent();
                     {
-                        write!("BUF_SIZE({});", event.size);
-                        for field in event.fields.clone() {
-                            write!(
-                                "result.inner.{}.{} = GET({}, {});",
-                                event.name,
-                                field.name,
-                                field.ty.c_name(),
-                                field.offset
-                            );
+                        if !event.fields.is_empty() {
+                            write!("BUF_SIZE({});", event.size);
+                            for field in event.fields.clone() {
+                                write!(
+                                    "result.inner.{}.{} = GET({}, {});",
+                                    event.name,
+                                    field.name,
+                                    field.ty.c_name(),
+                                    field.offset
+                                );
+                            }
                         }
                         write!("return result;");
                     }
