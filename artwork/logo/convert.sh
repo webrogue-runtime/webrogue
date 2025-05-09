@@ -32,7 +32,7 @@ ofsize() {
     V=$(expr $(expr $(expr 64 - $1) \* 64) / $1 / 2)
     SIZE=$(expr 64 + $V + $V)
     OFFSET=$(expr 0 - $V)
-    cat logo.svg | sed "s/viewBox=\"0 0 64 64\"/viewBox=\"$OFFSET $OFFSET $SIZE $SIZE\"/g"
+    cat logo.svg | sed "s/viewBox=\"-1 -1 66 66\"/viewBox=\"$OFFSET $OFFSET $SIZE $SIZE\"/g"
 }
 
 # Colors
