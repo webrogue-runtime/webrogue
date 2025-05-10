@@ -26,7 +26,7 @@ enum Cli {
     },
     #[cfg(feature = "pack")]
     Pack {
-        /// Path to webrogue.json file or directory containing this file
+        /// Path to webrogue.json file
         #[arg(short, long)]
         config: std::path::PathBuf,
         /// Path to put resulting WRAPP file to
@@ -34,12 +34,6 @@ enum Cli {
         #[arg(short, long)]
         output: std::path::PathBuf,
     },
-}
-
-#[cfg(feature = "run")]
-fn is_a_wrapp(path: &std::path::PathBuf) -> anyhow::Result<bool> {
-    let mut file = std::fs::File::open(&path)?;
-    Ok(webrogue_wrapp::is_a_wrapp(&mut file)?)
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -52,8 +46,9 @@ pub fn main() -> anyhow::Result<()> {
             optimized,
         } => {
             use anyhow::Context as _;
+            use webrogue_wrapp::IVFSBuilder as _;
 
-            if is_a_wrapp(&path)
+            if webrogue_wrapp::is_path_a_wrapp(&path)
                 .with_context(|| format!("Unable to determine file type for {}", path.display()))?
             {
                 let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(path)?;
@@ -63,7 +58,7 @@ pub fn main() -> anyhow::Result<()> {
                     .join(".webrogue")
                     .join(&config.id)
                     .join("persistent");
-                let handle = builder.build()?;
+                let handle = builder.into_vfs()?;
 
                 webrogue_wasmtime::run_jit(
                     handle.clone(),
@@ -74,7 +69,7 @@ pub fn main() -> anyhow::Result<()> {
                     None,
                 )?;
             } else {
-                let handle = webrogue_wasmtime::RealVFSHandle::new(path)?;
+                let handle = webrogue_wasmtime::RealVFSBuilder::new(path)?.into_vfs()?;
 
                 let persistent_path = std::env::current_dir()?
                     .join(".webrogue")
@@ -99,23 +94,7 @@ pub fn main() -> anyhow::Result<()> {
         }
         #[cfg(feature = "pack")]
         Cli::Pack { config, output } => {
-            let (config_file, config_dir) = if config.is_dir() {
-                (config.join("webrogue.json"), config.clone())
-            } else {
-                (
-                    config.clone(),
-                    config
-                        .parent()
-                        .ok_or_else(|| anyhow::anyhow!("Path error"))?
-                        .to_path_buf(),
-                )
-            };
-            let output = if output.is_dir() {
-                output.join("out.wrapp")
-            } else {
-                output
-            };
-            webrogue_wrapp::archive(&config_dir, &config_file, &output)?;
+            webrogue_wrapp::archive(&config, &output)?;
             Ok(())
         }
     }

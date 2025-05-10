@@ -1,6 +1,6 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, io::Read, sync::Arc};
 
-use anyhow::Context;
+use anyhow::{Context, Ok};
 
 #[derive(Clone)]
 pub struct RealFilePosition {
@@ -61,6 +61,50 @@ impl crate::IVFSHandle<RealFilePosition, RealFileReader> for RealVFSHandle {
 }
 
 impl RealVFSHandle {
+    pub fn open_file(&self, path: &str) -> anyhow::Result<Option<std::fs::File>> {
+        let Some(pos) = self.0.paths.get(path) else {
+            return Ok(None);
+        };
+        Ok(Some(std::fs::File::open(&pos.path)?))
+    }
+
+    pub fn config(&self) -> &crate::config::Config {
+        &self.0.config
+    }
+}
+
+fn visit_dir(
+    paths: &mut std::collections::HashMap<String, RealFilePosition>,
+    mapped_path: String,
+    real_path: std::path::PathBuf,
+) -> anyhow::Result<()> {
+    for entry in real_path.read_dir()? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        let name = entry.file_name().to_str().unwrap().to_owned();
+        let new_mapped_path = mapped_path.clone() + "/" + &name;
+        let new_real_path = real_path.join(&name);
+        if ty.is_file() {
+            paths.insert(
+                new_mapped_path,
+                RealFilePosition {
+                    path: new_real_path,
+                },
+            );
+        } else if ty.is_dir() {
+            visit_dir(paths, new_mapped_path, new_real_path)?;
+        }
+    }
+    Ok(())
+}
+
+pub struct RealVFSBuilder {
+    config: crate::config::Config,
+    paths: std::collections::HashMap<String, RealFilePosition>,
+    uncompressed_paths: std::collections::HashMap<String, std::path::PathBuf>,
+}
+
+impl RealVFSBuilder {
     pub fn new<P: AsRef<std::path::Path>>(config_path: P) -> anyhow::Result<Self> {
         let path = config_path.as_ref();
         let root_path = path
@@ -102,48 +146,47 @@ impl RealVFSHandle {
             }
         }
 
+        let mut uncompressed_paths = std::collections::HashMap::<String, std::path::PathBuf>::new();
+        if let Some(icon_path) = config
+            .icons
+            .as_ref()
+            .and_then(|icons| icons.normal.path.clone())
+        {
+            let mut real_icon_path = root_path.clone();
+            for part in icon_path.split('/') {
+                real_icon_path = real_icon_path.join(part);
+            }
+            uncompressed_paths.insert("normal_icon".to_owned(), real_icon_path);
+        }
+
         Ok(Self {
-            0: std::sync::Arc::new(RealVFS {
-                // root_path,
-                config,
-                paths,
-            }),
+            config,
+            paths,
+            uncompressed_paths,
         })
-    }
-
-    pub fn open_file(&self, path: &str) -> anyhow::Result<Option<std::fs::File>> {
-        let Some(pos) = self.0.paths.get(path) else {
-            return Ok(None);
-        };
-        Ok(Some(std::fs::File::open(&pos.path)?))
-    }
-
-    pub fn config(&self) -> &crate::config::Config {
-        &self.0.config
     }
 }
 
-fn visit_dir(
-    paths: &mut std::collections::HashMap<String, RealFilePosition>,
-    mapped_path: String,
-    real_path: std::path::PathBuf,
-) -> anyhow::Result<()> {
-    for entry in real_path.read_dir()? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        let name = entry.file_name().to_str().unwrap().to_owned();
-        let new_mapped_path = mapped_path.clone() + "/" + &name;
-        let new_real_path = real_path.join(&name);
-        if ty.is_file() {
-            paths.insert(
-                new_mapped_path,
-                RealFilePosition {
-                    path: new_real_path,
-                },
-            );
-        } else if ty.is_dir() {
-            visit_dir(paths, new_mapped_path, new_real_path)?;
-        }
+impl crate::IVFSBuilder<RealFilePosition, RealFileReader, RealVFSHandle> for RealVFSBuilder {
+    fn into_vfs(self) -> anyhow::Result<RealVFSHandle> {
+        return Ok(RealVFSHandle {
+            0: Arc::new(RealVFS {
+                config: self.config,
+                paths: self.paths,
+            }),
+        });
     }
-    Ok(())
+
+    fn config(&mut self) -> anyhow::Result<&crate::config::Config> {
+        Ok(&self.config)
+    }
+
+    fn get_uncompressed(&mut self, name: &str) -> anyhow::Result<Option<Vec<u8>>> {
+        let Some(path) = self.uncompressed_paths.get(name) else {
+            return Ok(None);
+        };
+        let mut content = Vec::new();
+        std::fs::File::open(path)?.read_to_end(&mut content)?;
+        Ok(Some(content))
+    }
 }

@@ -1,4 +1,6 @@
+use anyhow::Context as _;
 use std::io::Write;
+use webrogue_wrapp::IVFSBuilder as _;
 
 mod icons;
 mod link;
@@ -53,10 +55,20 @@ pub fn build(
         std::fs::create_dir(assets_path.clone())?;
     };
     println!("Generating stripped WRAPP file...");
-    webrogue_wrapp::strip(
-        container_path,
-        std::fs::File::create(assets_path.join("aot.swrapp"))?,
-    )?;
+    if webrogue_wrapp::is_path_a_wrapp(&container_path).with_context(|| {
+        format!(
+            "Unable to determine file type for {}",
+            container_path.display()
+        )
+    })? {
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::WrappVFSBuilder::from_file_path(
+            container_path,
+        )?)
+        .write(&mut std::fs::File::create(assets_path.join("aot.swrapp"))?)?;
+    } else {
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::new(container_path)?)
+            .write(&mut std::fs::File::create(assets_path.join("aot.swrapp"))?)?;
+    }
 
     let icons_stamp = icons::build(
         &build_dir,

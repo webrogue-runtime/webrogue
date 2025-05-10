@@ -17,6 +17,11 @@ pub fn is_a_wrapp(readable: &mut (impl std::io::Read + std::io::Seek)) -> anyhow
     return Ok(magic == *b"WRAPP\0");
 }
 
+pub fn is_path_a_wrapp<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<bool> {
+    let mut file = std::fs::File::open(path)?;
+    Ok(is_a_wrapp(&mut file)?)
+}
+
 impl Preamble {
     pub fn new(readable: &mut (impl std::io::Read + std::io::Seek)) -> anyhow::Result<Self> {
         anyhow::ensure!(

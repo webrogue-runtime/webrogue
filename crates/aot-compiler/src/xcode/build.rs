@@ -1,5 +1,6 @@
 use super::types::{Configuration, Destination};
 use std::io::BufRead as _;
+use webrogue_wrapp::IVFSBuilder as _;
 
 pub fn build(
     build_dir: &std::path::PathBuf,

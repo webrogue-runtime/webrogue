@@ -1,4 +1,5 @@
-use webrogue_wrapp::IVFSHandle as _;
+use anyhow::Context as _;
+use webrogue_wrapp::{IVFSBuilder as _, IVFSHandle as _};
 
 pub fn compile_wrapp_to_object(
     wrapp_file_path: &std::path::PathBuf,
@@ -17,21 +18,32 @@ pub fn compile_wrapp_to_object(
     if let Some(cache) = cache {
         config.cache_config_load(cache)?;
     }
-    unsafe {
-        if is_pic {
+    if is_pic {
+        unsafe {
             config.cranelift_flag_enable("is_pic");
         }
     }
     let engine = wasmtime::Engine::new(&config)?;
 
-    let vfs = webrogue_wrapp::WrappVFSBuilder::from_file_path(wrapp_file_path)?.build()?;
-
-    let mut file = vfs
-        .open_file("/app/main.wasm")?
-        .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
     let mut wasm_binary = Vec::new();
-    std::io::Read::read_to_end(&mut file, &mut wasm_binary)?;
-    drop(file);
+    if webrogue_wrapp::is_path_a_wrapp(&wrapp_file_path).with_context(|| {
+        format!(
+            "Unable to determine file type for {}",
+            wrapp_file_path.display()
+        )
+    })? {
+        let vfs = webrogue_wrapp::WrappVFSBuilder::from_file_path(wrapp_file_path)?.into_vfs()?;
+        let mut file = vfs
+            .open_file("/app/main.wasm")?
+            .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
+        std::io::Read::read_to_end(&mut file, &mut wasm_binary)?;
+    } else {
+        let vfs = webrogue_wrapp::RealVFSBuilder::new(wrapp_file_path)?.into_vfs()?;
+        let mut file = vfs
+            .open_file("/app/main.wasm")?
+            .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
+        std::io::Read::read_to_end(&mut file, &mut wasm_binary)?;
+    };
 
     let cwasm = engine.precompile_module(&wasm_binary)?;
 
@@ -42,7 +54,7 @@ pub fn compile_wrapp_to_object(
     obj.add_file_symbol(b"/app/main.wasm".into());
     let mut main_data = Vec::new();
     main_data.extend_from_slice(&(cwasm.len() as u64).to_le_bytes());
-    main_data.extend_from_slice(&(cwasm_info.max_alignment).to_le_bytes());
+    main_data.extend_from_slice(&(cwasm_info.max_alignment as u64).to_le_bytes());
     main_data.extend_from_slice(&vec![0u8].repeat(cwasm_info.max_alignment as usize - 16));
     main_data.extend_from_slice(&cwasm);
 

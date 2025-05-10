@@ -2,6 +2,8 @@ mod link;
 
 use std::io::{Seek, Write};
 
+use anyhow::Context as _;
+
 #[derive(Clone, Debug)]
 pub enum LibC {
     GLibC,
@@ -65,11 +67,25 @@ pub fn build_linux(
         .open(output_file_path)?;
 
     let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
-    webrogue_wrapp::strip(wrapp_file_path, &mut output_file)?;
+
+    if webrogue_wrapp::is_path_a_wrapp(&wrapp_file_path).with_context(|| {
+        format!(
+            "Unable to determine file type for {}",
+            wrapp_file_path.display()
+        )
+    })? {
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::WrappVFSBuilder::from_file_path(
+            wrapp_file_path,
+        )?)
+        .write(&mut output_file)?;
+    } else {
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::new(wrapp_file_path)?)
+            .write(&mut output_file)?;
+    }
     let new_size = output_file.seek(std::io::SeekFrom::End(0))?;
 
     let wrapp_size = new_size - original_size;
-    output_file.write_all(&wrapp_size.to_le_bytes())?;
+    output_file.write_all(&(wrapp_size as u64).to_le_bytes())?;
 
     anyhow::Ok(())
 }

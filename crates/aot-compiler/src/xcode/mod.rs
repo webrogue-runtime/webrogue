@@ -1,6 +1,7 @@
-use std::io::Write as _;
-
+use anyhow::Context as _;
 use clap::Subcommand;
+use std::io::Write as _;
+use webrogue_wrapp::IVFSBuilder as _;
 
 mod build;
 mod icons;
@@ -83,10 +84,24 @@ WEBROGUE_APPLICATION_VERSION = {}
     if !aot_dir.exists() {
         std::fs::create_dir(&aot_dir)?;
     }
-    webrogue_wrapp::strip(
-        &args.wrapp_path,
-        std::fs::File::create(args.build_dir.join("aot.swrapp"))?,
-    )?;
+    if webrogue_wrapp::is_path_a_wrapp(&args.build_dir).with_context(|| {
+        format!(
+            "Unable to determine file type for {}",
+            args.build_dir.display()
+        )
+    })? {
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::WrappVFSBuilder::from_file_path(
+            &args.wrapp_path,
+        )?)
+        .write(&mut std::fs::File::create(
+            args.build_dir.join("aot.swrapp"),
+        )?)?;
+    } else {
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::new(&args.wrapp_path)?)
+            .write(&mut std::fs::File::create(
+                args.build_dir.join("aot.swrapp"),
+            )?)?;
+    }
 
     match command {
         XcodeCommands::Macos { config } => {

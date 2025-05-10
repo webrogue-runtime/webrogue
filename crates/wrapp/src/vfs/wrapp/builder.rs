@@ -50,21 +50,16 @@ impl WrappVFSBuilder {
         }
         Ok(self.preamble.as_ref().unwrap())
     }
+}
 
-    pub fn config(&mut self) -> anyhow::Result<&crate::config::Config> {
-        Ok(&self.preamble()?.config)
-    }
-
-    pub fn get_uncompressed(&mut self, name: &str) -> anyhow::Result<Option<Vec<u8>>> {
-        let _ = self.preamble()?;
-        Ok(self
-            .preamble
-            .as_mut()
-            .unwrap()
-            .get_uncompressed(name, &mut self.reader)?)
-    }
-
-    pub fn build(mut self) -> anyhow::Result<super::WrappVFSHandle> {
+impl
+    crate::vfs::IVFSBuilder<
+        crate::vfs::wrapp::file_index::WrappFilePosition,
+        crate::vfs::wrapp::file_reader::WrappVFSFileReader,
+        crate::WrappVFSHandle,
+    > for WrappVFSBuilder
+{
+    fn into_vfs(mut self) -> anyhow::Result<crate::WrappVFSHandle> {
         let offset = self.preamble()?.offset;
         let config = self.preamble()?.config.clone();
         let mut seekable =
@@ -80,5 +75,18 @@ impl WrappVFSBuilder {
             inner: std::sync::Arc::new(std::sync::Mutex::new(wrapp)),
             file_index: std::sync::Arc::new(file_index),
         })
+    }
+
+    fn config(&mut self) -> anyhow::Result<&crate::config::Config> {
+        Ok(&self.preamble()?.config)
+    }
+
+    fn get_uncompressed(&mut self, name: &str) -> anyhow::Result<Option<Vec<u8>>> {
+        let _ = self.preamble()?;
+        Ok(self
+            .preamble
+            .as_mut()
+            .unwrap()
+            .get_uncompressed(name, &mut self.reader)?)
     }
 }

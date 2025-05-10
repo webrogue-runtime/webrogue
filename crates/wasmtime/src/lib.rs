@@ -1,7 +1,9 @@
 mod threads;
 
 pub use webrogue_gfx::DispatcherFunc;
-pub use webrogue_wrapp::{RealVFSHandle, WrappVFSBuilder, WrappVFSHandle};
+pub use webrogue_wrapp::{
+    IVFSBuilder, RealVFSBuilder, RealVFSHandle, WrappVFSBuilder, WrappVFSHandle,
+};
 
 #[derive(Clone)]
 struct State {
@@ -37,7 +39,7 @@ pub fn run_jit_builder(
     dispatcher: Option<DispatcherFunc>,
 ) -> anyhow::Result<()> {
     let config = wrapp_vfs_builder.config()?.clone();
-    let handle = wrapp_vfs_builder.build()?;
+    let handle = wrapp_vfs_builder.into_vfs()?;
     run_jit(handle, &config, persistent_dir, None, true, dispatcher)
 }
 #[cfg(feature = "cranelift")]
@@ -107,7 +109,7 @@ pub fn run_aot_builder(
     dispatcher: Option<DispatcherFunc>,
 ) -> anyhow::Result<()> {
     let config = wrapp_vfs_builder.config()?.clone();
-    let handle = wrapp_vfs_builder.build()?;
+    let handle = wrapp_vfs_builder.into_vfs()?;
     run_aot(handle, &config, persistent_dir, dispatcher)
 }
 #[cfg(feature = "aot")]

@@ -19,3 +19,13 @@ pub trait IVFSHandle<FilePosition: IFilePosition, FileReader: IFileReader>:
         Ok(Some(self.open_pos(pos.clone())?))
     }
 }
+pub trait IVFSBuilder<
+    FilePosition: IFilePosition,
+    FileReader: IFileReader,
+    VFSHandle: IVFSHandle<FilePosition, FileReader>,
+>
+{
+    fn into_vfs(self) -> anyhow::Result<VFSHandle>;
+    fn config(&mut self) -> anyhow::Result<&crate::config::Config>;
+    fn get_uncompressed(&mut self, name: &str) -> anyhow::Result<Option<Vec<u8>>>;
+}

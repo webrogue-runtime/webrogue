@@ -1,4 +1,5 @@
 use std::os::unix::io::FromRawFd;
+use webrogue_wasmtime::IVFSBuilder as _;
 
 extern "C" {
     fn webrogue_android_print(str: *const std::ffi::c_char, len: usize);
