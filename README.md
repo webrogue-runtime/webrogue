@@ -1,9 +1,9 @@
 <!-- Webrogue logo -->
-<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; flex-wrap: wrap;">
-    <image src="https://webrogue.dev/logo.svg" width="100" height="100" alt=""/>
-    <div style="width: 20px"></div>
-    <h1 class="post-title">Webrogue</h1>
-</div>
+<div align="center">
+    <h1>
+        <image src="https://webrogue.dev/logo.svg" width="100" height="100" alt=""/>
+        Webrogue
+    </h1>
 <div style="height: 40px"></div>
 
 [![Visual Studio Marketplace Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/webrogue.webrogue-vscode?label=VSCode%20extension%20release)](https://marketplace.visualstudio.com/items?itemName=webrogue.webrogue-vscode)
