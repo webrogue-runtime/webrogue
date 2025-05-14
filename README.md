@@ -18,15 +18,10 @@ See [guides](guides/index) to learn how to setup and use Webrogue.
 The key idea is compiling and packaging applications to OS-independent format called WRAPP (WebRogue APPlication).
 <!-- .wrapp -->
 Same WRAPP file can be compiled to multiple OS-native formats.
-Read more about compiling WRAPPs to native formats [here](posts/aot).
+Read more about compiling WRAPPs to native formats [here](docs/aot).
 
-Webrogue currently supports:
-- [Windows](posts/platform_windows)
-- [macOS](posts/platform_xcode)
-- [Linux](posts/platform_linux)
-- [Android](posts/platform_android)
-- [iOS](posts/platform_xcode)
-<!-- - [Web](topics/platform_web) -->
+Webrogue already supports [Windows](docs/platform_windows), [macOS](docs/platform_xcode), [Linux](docs/platform_linux), [Android](docs/platform_android) and [iOS](docs/platform_xcode).
+There are plans to support more OSes as well as running in browser.
 
 And of cause Webrogue is open source. 
 Visit [Webrogue repo](https://github.com/webrogue-runtime/webrogue) on GitHub.
