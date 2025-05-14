@@ -1,7 +1,7 @@
 <!-- Webrogue logo -->
 <div align="center">
-    <h1>
-        <image src="https://webrogue.dev/logo.svg" width="100" height="100" alt=""/>
+    <image src="https://webrogue.dev/logo.svg" width="100" height="100" alt=""/>
+    <h1 align="center">
         Webrogue
     </h1>
 <div style="height: 40px"></div>
