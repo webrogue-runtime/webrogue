@@ -4,7 +4,7 @@
     <h1 align="center">
         Webrogue
     </h1>
-<div style="height: 40px"></div>
+</div>
 
 [![Visual Studio Marketplace Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/webrogue.webrogue-vscode?label=VSCode%20extension%20release)](https://marketplace.visualstudio.com/items?itemName=webrogue.webrogue-vscode)
 [![](https://img.shields.io/github/release-date/webrogue-runtime/webrogue?label=CLI%20utility%20release)](https://github.com/webrogue-runtime/webrogue/releases/latest)
