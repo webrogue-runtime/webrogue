@@ -59,6 +59,11 @@ static inline void webrogue_event_encode_gl_resized(webrogue_event_out_buf *out)
     BUF_SIZE(4);
     SET(uint32_t, 0, 6);
 }
+static inline void webrogue_event_encode_text_input(webrogue_event_out_buf *out, uint8_t c) {
+    BUF_SIZE(8);
+    SET(uint32_t, 0, 7);
+    SET(uint8_t, 4, c);
+}
 
 #undef BUF_SIZE
 #undef SET

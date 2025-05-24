@@ -19,12 +19,14 @@ pub struct Field {
 pub enum FieldType {
     U32,
     Bool,
+    U8,
 }
 impl FieldType {
     pub fn size(&self) -> usize {
         match self {
             FieldType::U32 => 4,
             FieldType::Bool => 1,
+            FieldType::U8 => 1,
         }
     }
 
@@ -32,6 +34,7 @@ impl FieldType {
         match self {
             FieldType::U32 => "uint32_t",
             FieldType::Bool => "uint8_t",
+            FieldType::U8 => "uint8_t",
         }
     }
 }
@@ -116,9 +119,11 @@ pub fn all() -> Vec<Event> {
     builder.event("window_resized", 5);
     builder.event("gl_resized", 6);
 
+    builder.event("text_input", 7).field("c", U8);
+
     // This value must be incremented when an event is added or changed,
     // then event's id must be changed to this value:
-    // 6
+    // 7
 
     builder.events()
 }

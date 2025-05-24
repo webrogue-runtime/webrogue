@@ -31,6 +31,12 @@ void webrogue_gfx_ffi_sdl_poll(webrogue_event_out_buf *event_buf,
     case SDL_EVENT_WINDOW_RESIZED:
       webrogue_event_encode_window_resized(event_buf);
       break;
+    case SDL_EVENT_TEXT_INPUT: {
+      const char *c = event.text.text;
+      do {
+        webrogue_event_encode_text_input(event_buf, *c);
+      } while (*(c++)); // encodes \0 as well
+    } break;
     }
   }
   *out_buf = event_buf->buf;
