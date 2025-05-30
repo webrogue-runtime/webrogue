@@ -12,6 +12,7 @@ cache = ["wasmtime/cache"]
 
 [dependencies]
 webrogue-gfx = { workspace = true }
+webrogue-gfx-sdl = { workspace = true }
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
 webrogue-wasip1 = { workspace = true }

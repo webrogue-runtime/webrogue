@@ -5,12 +5,8 @@ authors.workspace = true
 license.workspace = true
 edition.workspace = true
 
-[features]
-fallback = ["dep:webrogue-gfx-fallback"]
-
 [dependencies]
 anyhow = { workspace = true }
-# wasmer = { workspace = true, default-features = false }
 webrogue-gfxstream = { workspace = true }
-webrogue-gfx-fallback = { workspace = true, optional = true }
+webrogue-events-macro = { workspace = true }
 wiggle = { workspace = true, default-features = false }

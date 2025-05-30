@@ -1,4 +1,3 @@
-
 #include "lld/Common/Driver.h"
 #include "lld/Common/ErrorHandler.h"
 #include "lld/Common/Memory.h"
@@ -6,7 +5,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Twine.h"
 #include <cstdlib>
-#include <optional>
 
 using namespace lld;
 using namespace llvm;

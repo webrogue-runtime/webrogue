@@ -1,5 +1,5 @@
 [package]
-name = "webrogue-event-apigen"
+name = "webrogue-events-apigen"
 version.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -7,6 +7,7 @@ edition.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+webrogue-events = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 clap = { workspace = true, features = ["derive"] }

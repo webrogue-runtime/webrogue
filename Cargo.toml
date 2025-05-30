@@ -45,15 +45,18 @@ members = [
   "crates/aot-data",
   "crates/aot-lib",
   "crates/cli",
-  "crates/event-apigen",
+  "crates/events",
+  "crates/events-apigen",
+  "crates/events-macro",
   "crates/gfx",
-  "crates/gfx-fallback",
+  "crates/gfx-sdl",
+  # "crates/gfx-fallback",
   "crates/gfxstream",
   "crates/lld",
   "crates/wasip1",
   "crates/wasmtime",
-  "crates/web-macro",
-  "crates/web",
+  # "crates/web-macro",
+  # "crates/web",
   "crates/wrapp",
 
   "android/runtime/common/src/main/rust",
@@ -70,16 +73,19 @@ exclude = [
 webrogue-aot-compiler = { path = "crates/aot-compiler", default-features=false }
 webrogue-aot-data = { path = "crates/aot-data" }
 webrogue-cli = { path = "crates/cli" }
+webrogue-events = { path = "crates/events" }
+webrogue-events-macro = { path = "crates/events-macro" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
 webrogue-gfx = { path = "crates/gfx" }
-webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
+webrogue-gfx-sdl = { path = "crates/gfx-sdl" }
+# webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
 webrogue-gfxstream = { path = "crates/gfxstream" }
 webrogue-lld = { path = "crates/lld" }
 webrogue-wasip1 = { path = "crates/wasip1" }
 webrogue-wrapp = { path = "crates/wrapp" }
 
 # Platform-specific crates
-webrogue-web-macro = { path = "crates/web-macro" }
+# webrogue-web-macro = { path = "crates/web-macro" }
 
 # Wasmtime
 wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
@@ -111,6 +117,7 @@ proc-macro2 = { version = "1.0", default-features = false }
 witx = { version = "0.9.1", default-features = false }
 dirs = { version = "6.0.0" }
 zip = { version = "2.6.1", default-features = false }
+sdl3 = { version = "0.14.27", default-features = false }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.2" }

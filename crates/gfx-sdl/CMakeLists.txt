@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.22)
+
+project(WEBROGUE_GFX_FALLBACK C)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(BUILD_SHARED_LIBS FALSE)
+set(SDL_SHARED FALSE)
+set(SDL_STATIC TRUE)
+add_subdirectory(SDL3)
+
+set(CMAKE_INSTALL_LIBDIR "")
+install(TARGETS SDL3-static)
+
+set_property(TARGET SDL3-static PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")

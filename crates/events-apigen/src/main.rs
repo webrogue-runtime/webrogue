@@ -1,5 +1,4 @@
 mod code_writer;
-mod events;
 
 #[derive(clap::Parser, Clone)]
 struct Cli {
@@ -40,7 +39,11 @@ fn main() -> anyhow::Result<()> {
         write!("");
         write!(
             "#define WEBROGUE_MAX_ENCODED_EVENT_SIZE {}",
-            events::all().iter().map(|event| event.size).max().unwrap()
+            webrogue_events::all()
+                .iter()
+                .map(|event| event.size)
+                .max()
+                .unwrap()
         );
         write!("");
         write!("static webrogue_event_out_buf webrogue_event_out_buf_create(void) {{");
@@ -66,7 +69,7 @@ fn main() -> anyhow::Result<()> {
         write!("#define BUF_SIZE(LEN) if(out->buf_size < (out->used_size + LEN)) {{ out->buf_size *= 2; out->buf = realloc(out->buf, out->buf_size); }}; char* current_pointer = ((char*)out->buf) + out->used_size; out->used_size += LEN");
         write!("#define SET(TYPE, OFFSET, VALUE) *((TYPE*)(current_pointer + OFFSET)) = VALUE");
         write!("");
-        for event in events::all() {
+        for event in webrogue_events::all() {
             let mut args = vec!["webrogue_event_out_buf *out".to_owned()];
             for field in event.fields.clone() {
                 args.push(field.ty.c_name().to_owned() + " " + field.name);
@@ -110,7 +113,7 @@ fn main() -> anyhow::Result<()> {
         write!("void webroguegfx_get_gl_swap_interval(int *out_interval);");
         write!("");
         write!("// Events");
-        for event in events::all() {
+        for event in webrogue_events::all() {
             write!("struct webrogue_event_{} {{", event.name);
             writer.inc_indent();
             {
@@ -125,7 +128,7 @@ fn main() -> anyhow::Result<()> {
         writer.inc_indent();
         {
             write!("WEBROGUE_EVENT_TYPE_INVALID = 0,");
-            for event in events::all() {
+            for event in webrogue_events::all() {
                 write!(
                     "WEBROGUE_EVENT_TYPE_{} = {},",
                     event.name.to_uppercase(),
@@ -142,7 +145,7 @@ fn main() -> anyhow::Result<()> {
             write!("union {{");
             writer.inc_indent();
             {
-                for event in events::all() {
+                for event in webrogue_events::all() {
                     write!("struct webrogue_event_{} {};", event.name, event.name);
                 }
             }
@@ -164,7 +167,11 @@ fn main() -> anyhow::Result<()> {
         write!("");
         write!(
             "#define WEBROGUE_MAX_ENCODED_EVENT_SIZE {}",
-            events::all().iter().map(|event| event.size).max().unwrap()
+            webrogue_events::all()
+                .iter()
+                .map(|event| event.size)
+                .max()
+                .unwrap()
         );
         write!("");
         write!("__attribute__((import_name(\"poll\")))");
@@ -243,7 +250,7 @@ fn main() -> anyhow::Result<()> {
             write!("switch (result.type) {{");
             writer.inc_indent();
             {
-                for event in events::all() {
+                for event in webrogue_events::all() {
                     write!("case WEBROGUE_EVENT_TYPE_{}: {{", event.name.to_uppercase());
                     writer.inc_indent();
                     {

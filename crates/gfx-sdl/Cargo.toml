@@ -1,0 +1,19 @@
+[package]
+name = "webrogue-gfx-sdl"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[features]
+src = ["dep:cmake", "dep:reqwest", "dep:zip-extract"]
+
+[dependencies]
+anyhow = { workspace = true }
+webrogue-gfx = { workspace = true }
+sdl3 = { workspace = true, features = [] }
+
+[build-dependencies]
+cmake = { workspace = true, optional = true }
+reqwest = { version = "0.12", optional = true, features = ["blocking"] }
+zip-extract = { version = "0.2.1", optional = true }

@@ -1,10 +1,8 @@
-mod dispatch;
-mod ffi;
+pub mod events;
 mod interface;
-mod system;
-mod window;
 
-pub use dispatch::DispatcherFunc;
+pub use interface::run;
 pub use interface::webrogue_gfx;
-pub use interface::GFXInterface;
-pub use system::GFXSystem;
+pub use interface::ISystem;
+pub use interface::IWindow;
+pub use interface::Interface;

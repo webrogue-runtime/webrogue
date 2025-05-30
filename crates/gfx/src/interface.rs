@@ -3,55 +3,79 @@ wiggle::from_witx!({
     wasmtime: false,
 });
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use types::*;
 
-pub struct GFXInterface {
-    gfx: Arc<crate::system::GFXSystem>,
-    window: Option<crate::window::Window>,
+pub trait ISystem<Window: IWindow> {
+    fn make_window(&self) -> Window;
+    fn poll(&self, events_buffer: &mut Vec<u8>);
+    fn get_gl_swap_interval(&self) -> u32;
+}
+pub trait IWindow {
+    fn present(&self);
+    fn get_size(&self) -> (u32, u32);
+    fn get_gl_size(&self) -> (u32, u32);
+    fn gl_init(&mut self) -> (*const (), *const ());
+}
+
+pub struct Interface<System: ISystem<Window>, Window: IWindow> {
+    system: Arc<System>,
+    window: Option<Window>,
     gfxstream_thread: Option<webrogue_gfxstream::Thread>,
-    dispatcher: Option<crate::DispatcherFunc>,
+    event_buf: Arc<Mutex<Vec<u8>>>,
+}
+
+pub fn run<T, System: ISystem<Window> + 'static, Window: IWindow + 'static>(
+    system: System,
+    f: impl FnOnce(Interface<System, Window>) -> T,
+) -> T {
+    let interface = Interface::new(Arc::new(system));
+
+    f(interface)
 }
 
 // gfx can be shared
 // window can't TODO
 // gfxstream_thread is not cloned/copied across threads
 // TODO make wasi-threads not to force Send implementation
-unsafe impl Send for GFXInterface {}
+unsafe impl<System: ISystem<Window>, Window: IWindow> Send for Interface<System, Window> {}
 
-impl GFXInterface {
-    pub fn new(gfx: Arc<crate::system::GFXSystem>) -> Self {
-        let dispatcher = gfx.dispatcher;
+impl<System: ISystem<Window>, Window: IWindow> Interface<System, Window> {
+    pub fn new(system: Arc<System>) -> Self {
+        // let dispatcher = gfx.dispatcher;
         Self {
-            gfx,
+            system,
             window: None,
             gfxstream_thread: None,
-            dispatcher,
+            event_buf: Arc::new(Mutex::new(Vec::new())),
         }
     }
 }
 
-impl Clone for GFXInterface {
+impl<System: ISystem<Window>, Window: IWindow> Clone for Interface<System, Window> {
     fn clone(&self) -> Self {
         Self {
-            gfx: self.gfx.clone(),
-            window: self.window.clone(),
+            system: self.system.clone(),
+            window: None,
             gfxstream_thread: None,
-            dispatcher: self.dispatcher,
+            event_buf: self.event_buf.clone(),
         }
     }
 }
 
-impl webrogue_gfx::WebrogueGfx for GFXInterface {
+impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
+    for Interface<System, Window>
+{
     fn make_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
         if self.window.is_some() {
             return;
         }
 
-        self.window = Some(crate::dispatch::dispatch(self.dispatcher, || {
-            self.gfx.make_window()
-        }));
+        self.window = Some(
+            // crate::dispatch::dispatch(self.dispatcher, || {
+            self.system.make_window(), // })
+        );
     }
 
     fn present(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
@@ -92,7 +116,7 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
     }
 
     fn gl_init(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_status: wiggle::GuestPtr<u8>) {
-        let result = if let Some(window) = &self.window {
+        let result = if let Some(window) = &mut self.window {
             let ret = window.gl_init();
             self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(ret.0, ret.1));
             true
@@ -135,15 +159,15 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
     }
 
     fn poll(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_len: wiggle::GuestPtr<Size>) {
-        let result = self.gfx.poll();
+        let mut event_buf = self.event_buf.lock().unwrap();
+        self.system.poll(&mut event_buf);
+        let result = event_buf.len() as u32;
         let _ = mem.write(out_len, result);
     }
 
     fn poll_read(&mut self, mem: &mut wiggle::GuestMemory<'_>, buf: wiggle::GuestPtr<u8>) {
-        let result = self.gfx.poll_read();
-        if let Some(result) = result {
-            let _ = mem.copy_from_slice(result, buf.as_array(result.len() as u32));
-        }
+        let event_buf = self.event_buf.lock().unwrap();
+        let _ = mem.copy_from_slice(&event_buf, buf.as_array(event_buf.len() as u32));
     }
 
     fn get_gl_swap_interval(
@@ -151,7 +175,7 @@ impl webrogue_gfx::WebrogueGfx for GFXInterface {
         mem: &mut wiggle::GuestMemory<'_>,
         out_interval: wiggle::GuestPtr<u32>,
     ) -> () {
-        let result = self.gfx.get_gl_swap_interval();
+        let result = self.system.get_gl_swap_interval();
         let _ = mem.write(out_interval, result);
     }
 }

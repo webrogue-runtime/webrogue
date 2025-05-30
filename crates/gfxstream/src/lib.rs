@@ -4,6 +4,8 @@ pub struct Thread {
     raw_thread_ptr: *const (),
 }
 
+unsafe impl Send for Thread {}
+
 impl Thread {
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // conflicts with "unnecessary `unsafe` block" warning, maybe clippy bug
     pub fn new(get_proc: *const (), userdata: *const ()) -> Self {
