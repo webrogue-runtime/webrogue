@@ -1,5 +1,18 @@
+#include <memory>
 #include <stdlib.h>
-#include "gl/gles2_dec/GLESv2Decoder.h"
+#include "aemu/base/Metrics.h"
+#include "gfxstream/host/BackendCallbacks.h"
+#include "ProcessResources.h"
+#include "utils/GfxApiLogger.h"
+#include "render-utils/IOStream.h"
+#include "VkDecoderContext.h"
+#include "VkDecoder.h"
+#include "snapshot/LazySnapshotObj.h"
+#include "RenderThreadInfoVk.h"
+#include "goldfish_vk_dispatch.h"
+#include "Features.h"
+#include "VkCommonOperations.h"
+#include "VkDecoderGlobalState.h"
 #include <cstring>
 
 #ifdef min
@@ -58,7 +71,7 @@ class WebrogueOutputStream : public gfxstream::IOStream {
         }
         memcpy((char*)m_ret_buffer + m_ret_buf_used, buf, len);
         m_ret_buf_used = needed_size;
-        return len;
+        return 0;
     }
 
     virtual void* getDmaForReading(uint64_t guest_paddr) { return nullptr; }
@@ -120,27 +133,113 @@ class WebrogueOutputStream : public gfxstream::IOStream {
 
 typedef void *(*get_proc_func_t)(const char *name, void *userData);
 
+class MetricsLoggerImpl: public android::base::MetricsLogger {
+  void logMetricEvent(android::base::MetricEventType eventType) override {}
+  void setCrashAnnotation(const char* key, const char* value) override {}
+};
+
+static get_proc_func_t sVkGetProc = nullptr;
+static void* sVkGetProcUserdata = nullptr;
+static std::unique_ptr<gfxstream::vk::VkEmulation> sEmulationVk = nullptr;
+ 
 class GFXStreamThread {
 public:
-  GLDecoderContextData decoderContextData;
-  std::unique_ptr<gfxstream::gl::GLESv2Decoder> gles2dec;
-  std::unique_ptr<ChecksumCalculator> checksum_calculator;
   std::unique_ptr<WebrogueOutputStream> webrogue_output_stream;
+  std::unique_ptr<gfxstream::ProcessResources> processResources;
+  std::unique_ptr<emugl::GfxApiLogger> gfxLogger;
+  std::unique_ptr<android::base::MetricsLogger> metricsLogger;
+  gfxstream::vk::VkDecoder vkDec;
   
 
-  GFXStreamThread(get_proc_func_t get_proc, void* userdata) {
-    decoderContextData = GLDecoderContextData();
-    gles2dec = std::make_unique<gfxstream::gl::GLESv2Decoder>();
-    checksum_calculator = std::make_unique<ChecksumCalculator>();
+  GFXStreamThread() {
+    // set_emugl_address_space_device_control_ops
+    if(!gfxstream::vk::RenderThreadInfoVk::get()) {
+      static int ctx_id = 1; // TODO sync
+      auto tinfo = gfxstream::vk::RenderThreadInfoVk();
+      tinfo.ctx_id = ctx_id++;
+    }
     webrogue_output_stream = std::make_unique<WebrogueOutputStream>(16);
-    gles2dec->initGL(get_proc, userdata);
-    gles2dec->setContextData(&decoderContextData);
+    processResources = std::unique_ptr(gfxstream::ProcessResources::create());
+    gfxLogger = std::make_unique<emugl::GfxApiLogger>();
+    metricsLogger = std::make_unique<MetricsLoggerImpl>();
   }
 };
 
 extern "C" {
-void* webrogue_gfxstream_ffi_create_thread(void *get_proc, void* userdata) {
-  return new GFXStreamThread((get_proc_func_t) get_proc, userdata);
+void webrogue_gfxstream_ffi_create_global_state(void *get_proc, void* userdata) {
+  sVkGetProc = reinterpret_cast<get_proc_func_t>(get_proc);
+  sVkGetProcUserdata = userdata;
+  
+  gfxstream::vk::VulkanDispatch* m_vkDispatch = gfxstream::vk::vkDispatch(false);
+  gfxstream::host::BackendCallbacks callbacks{
+        .registerProcessCleanupCallback =
+            [](void* key, std::function<void()> callback) {
+                abort();
+            },
+        .unregisterProcessCleanupCallback =
+            [](void* key) { abort(); },
+        .invalidateColorBuffer =
+            [](uint32_t colorBufferHandle) {
+              abort();
+            },
+        .flushColorBuffer =
+            [](uint32_t colorBufferHandle) {
+              abort();
+            },
+        .flushColorBufferFromBytes =
+            [](uint32_t colorBufferHandle, const void* bytes, size_t bytesSize) {
+              abort();
+            },
+        // .scheduleAsyncWork =
+        //     [](std::function<void()> work, std::string description) {
+        //       abort();
+        //         // auto promise = std::make_shared<AutoCancelingPromise>();
+        //         // auto future = promise->GetFuture();
+        //         // SyncThread::get()->triggerGeneral(
+        //         //     [promise = std::move(promise), work = std::move(work)]() mutable {
+        //         //         work();
+        //         //         promise->MarkComplete();
+        //         //     },
+        //         //     description);
+        //         // return future;
+        //     },
+#ifdef CONFIG_AEMU
+        .registerVulkanInstance =
+            [](uint64_t id, const char* appName) {
+              abort();
+            },
+        .unregisterVulkanInstance =
+            [](uint64_t id) { 
+              abort();
+            },
+#endif
+    };
+  gfxstream::host::FeatureSet features = gfxstream::host::FeatureSet();
+
+  features.VulkanNullOptionalStrings.enabled = true;
+  features.VulkanIgnoredHandles.enabled = true;
+  features.VulkanShaderFloat16Int8.enabled = true;
+  features.VulkanQueueSubmitWithCommands.enabled = true;
+  // features.DeferredVulkanCommands.enabled = true;
+  // features.VulkanAsyncQueueSubmit.enabled = true;
+  // features.VulkanCreateResourcesWithRequirements.enabled = true;
+  features.VirtioGpuNext.enabled = true;
+  features.VirtioGpuNativeSync.enabled = true;
+  features.VulkanBatchedDescriptorSetUpdate.enabled = false; // TODO ?
+  // features.VulkanAsyncQsri.enabled = true;
+
+  // ResourceTracker::streamFeatureBits |= VULKAN_STREAM_FEATURE_NULL_OPTIONAL_STRINGS_BIT;
+  // ResourceTracker::streamFeatureBits |= VULKAN_STREAM_FEATURE_IGNORED_HANDLES_BIT;
+  // ResourceTracker::streamFeatureBits |= VULKAN_STREAM_FEATURE_SHADER_FLOAT16_INT8_BIT;
+  // ResourceTracker::streamFeatureBits |= VULKAN_STREAM_FEATURE_QUEUE_SUBMIT_WITH_COMMANDS_BIT;
+                                                //  gfxstream::host::BackendCallbacks callbacks,
+                                                //  gfxstream::host::FeatureSet features
+  sEmulationVk = gfxstream::vk::VkEmulation::create(m_vkDispatch, callbacks, features);
+  gfxstream::vk::VkDecoderGlobalState::initialize(sEmulationVk.get());
+}
+
+void* webrogue_gfxstream_ffi_create_thread() {
+  return new GFXStreamThread();
 }
 
 void webrogue_gfxstream_ffi_destroy_thread(void *raw_thread_ptr) {
@@ -151,21 +250,30 @@ void webrogue_gfxstream_ffi_destroy_thread(void *raw_thread_ptr) {
 void webrogue_gfxstream_ffi_commit_buffer(void *raw_thread_ptr, void const* buf, uint32_t len) {
   GFXStreamThread *thread = (GFXStreamThread *)raw_thread_ptr;
   WebrogueOutputStream *stream = thread->webrogue_output_stream.get();
+
+  gfxstream::vk::VkDecoderContext context = {
+    .processName = "Webrogue contextName idk",
+    .gfxApiLogger = thread->gfxLogger.get(),
+    .healthMonitor = nullptr,
+    .metricsLogger = thread->metricsLogger.get(),
+  };
   if(stream->getIncompleteCommitSize()) {
     stream->addIncompleteCommit(buf, len);
-    size_t decoded = thread->gles2dec->decode(
+    size_t decoded = thread->vkDec.decode(
       stream->getIncompleteCommit(),
       stream->getIncompleteCommitSize(),
       thread->webrogue_output_stream.get(),
-      thread->checksum_calculator.get()
+      thread->processResources.get(),
+      context
     );
     stream->consumeIncompleteCommit(decoded);
   } else {
-    size_t decoded = thread->gles2dec->decode(
+    size_t decoded = thread->vkDec.decode(
       (void*)buf,
       len,
       thread->webrogue_output_stream.get(),
-      thread->checksum_calculator.get()
+      thread->processResources.get(),
+      context
     );
     if(decoded<len) {
       stream->addIncompleteCommit((char*)buf + decoded, len-decoded);
@@ -188,6 +296,26 @@ void webrogue_gfxstream_ffi_ret_buffer_read(void *raw_thread_ptr, void* buf, uin
 }
 }
 
-void gfxstream::gl::gles2_unimplemented() {
-  fprintf(stderr, "Called unimplemented GLES API\n");
+static void* sVulkanDispatchDlOpen() {
+  return sVkGetProcUserdata;
+}
+
+static void* sVulkanDispatchDlSym(void* lib, const char* sym) {
+  assert(lib == sVkGetProcUserdata);
+  return sVkGetProc(sym, lib);
+}
+
+namespace gfxstream {
+namespace vk {
+gfxstream::vk::VulkanDispatch* vkDispatch(bool forTesting) {
+  auto result = new gfxstream::vk::VulkanDispatch();
+  gfxstream::vk::init_vulkan_dispatch_from_system_loader(sVulkanDispatchDlOpen, sVulkanDispatchDlSym,  result);
+  return result;
+}
+
+bool vkDispatchValid(const VulkanDispatch* vk) {
+  return vk->vkEnumerateInstanceExtensionProperties != nullptr ||
+         vk->vkGetInstanceProcAddr != nullptr || vk->vkGetDeviceProcAddr != nullptr;
+}
+}
 }

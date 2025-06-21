@@ -8,11 +8,16 @@ unsafe impl Send for Thread {}
 
 impl Thread {
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // conflicts with "unnecessary `unsafe` block" warning, maybe clippy bug
-    pub fn new(get_proc: *const (), userdata: *const ()) -> Self {
+    pub fn init(
+        get_proc: extern "C" fn(sym: *const std::ffi::c_char, userdata: *const ()) -> *const (),
+        userdata: *const (),
+    ) {
+        unsafe { ffi::webrogue_gfxstream_ffi_create_global_state(get_proc as *const (), userdata) };
+    }
+
+    pub fn new() -> Self {
         Self {
-            raw_thread_ptr: unsafe {
-                ffi::webrogue_gfxstream_ffi_create_thread(get_proc, userdata)
-            },
+            raw_thread_ptr: unsafe { ffi::webrogue_gfxstream_ffi_create_thread() },
         }
     }
 

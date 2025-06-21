@@ -11,6 +11,7 @@ pub trait ISystem<Window: IWindow> {
     fn make_window(&self) -> Window;
     fn poll(&self, events_buffer: &mut Vec<u8>);
     fn get_gl_swap_interval(&self) -> u32;
+    fn make_gfxstream_thread(&self) -> webrogue_gfxstream::Thread;
 }
 pub trait IWindow {
     fn present(&self);
@@ -116,14 +117,15 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
     }
 
     fn gl_init(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_status: wiggle::GuestPtr<u8>) {
-        let result = if let Some(window) = &mut self.window {
-            let ret = window.gl_init();
-            self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(ret.0, ret.1));
-            true
-        } else {
-            false
-        };
-        let _ = mem.write(out_status, if result { 1 } else { 0 });
+        panic!();
+        // let result = if let Some(window) = &mut self.window {
+        //     let ret = window.gl_init();
+        //     self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(ret.0, ret.1));
+        //     true
+        // } else {
+        //     false
+        // };
+        // let _ = mem.write(out_status, if result { 1 } else { 0 });
     }
 
     fn commit_buffer(
@@ -132,9 +134,10 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
         buf: wiggle::GuestPtr<u8>,
         len: Size,
     ) {
-        let Some(gfxstream_thread) = &self.gfxstream_thread else {
-            return;
-        };
+        if self.gfxstream_thread.is_none() {
+            self.gfxstream_thread = Some(self.system.make_gfxstream_thread());
+        }
+        let gfxstream_thread = self.gfxstream_thread.as_ref().unwrap();
         let Ok(b) = mem.as_cow(buf.as_array(len)) else {
             return;
         };

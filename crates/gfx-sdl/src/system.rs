@@ -12,27 +12,38 @@ impl SDLSystem {
         crate::dispatch::dispatch(dispatcher, || {
             let sdl_context = sdl3::init().unwrap();
             let video_subsystem = sdl_context.video().unwrap();
-            video_subsystem
-                .gl_attr()
-                .set_context_profile(sdl3::video::GLProfile::GLES);
-            video_subsystem.gl_attr().set_context_major_version(3);
-            video_subsystem.gl_attr().set_context_minor_version(0);
-            video_subsystem.gl_attr().set_double_buffer(true);
+            // video_subsystem
+            //     .gl_attr()
+            //     .set_context_profile(sdl3::video::GLProfile::GLES);
+            // video_subsystem.gl_attr().set_context_major_version(3);
+            // video_subsystem.gl_attr().set_context_minor_version(0);
+            // video_subsystem.gl_attr().set_double_buffer(true);
 
             // SDL_SetHint(SDL_HINT_OPENGL_LIBRARY, getenv("SDL_VIDEO_GL_DRIVER"));
             // SDL_SetHint(SDL_HINT_EGL_LIBRARY, getenv("SDL_VIDEO_EGL_DRIVER"));
             // SDL_GL_LoadLibrary(getenv("SDL_VIDEO_GL_DRIVER"));
-            unsafe {
-                sdl3::sys::hints::SDL_SetHint(
-                    sdl3::sys::hints::SDL_HINT_OPENGL_LIBRARY,
-                    std::ptr::null(),
-                );
-                sdl3::sys::hints::SDL_SetHint(
-                    sdl3::sys::hints::SDL_HINT_EGL_LIBRARY,
-                    std::ptr::null(),
-                );
-            }
-            video_subsystem.gl_load_library_default().unwrap();
+            // unsafe {
+            //     sdl3::sys::hints::SDL_SetHint(
+            //         sdl3::sys::hints::SDL_HINT_OPENGL_LIBRARY,
+            //         std::ptr::null(),
+            //     );
+            //     sdl3::sys::hints::SDL_SetHint(
+            //         sdl3::sys::hints::SDL_HINT_EGL_LIBRARY,
+            //         std::ptr::null(),
+            //     );
+            // }
+            // video_subsystem.gl_load_library_default().unwrap();
+            video_subsystem.vulkan_load_library_default().unwrap();
+
+            let get_proc_address = video_subsystem
+                .vulkan_get_proc_address_function()
+                .unwrap();
+            let get_proc_address = Box::leak(Box::new(get_proc_address)); // TODO fix this 8 bytes per process leakage cz rust is safe and all
+
+            webrogue_gfx::GFXStreamThread::init(
+                get_vk_proc,
+                get_proc_address as *const _ as *const (),
+            );
             let event_pump = std::sync::Mutex::new(sdl_context.event_pump().unwrap());
 
             Self {
@@ -221,7 +232,21 @@ impl webrogue_gfx::ISystem<crate::window::SDLWindow> for SDLSystem {
         // unsafe {
         //     crate::ffi::webrogue_gfx_ffi_get_gl_swap_interval(self.handle.0, &mut interval);
         // }
-        // interval
         0
     }
+
+    fn make_gfxstream_thread(&self) -> webrogue_gfx::GFXStreamThread {
+        webrogue_gfx::GFXStreamThread::new()
+    }
+}
+
+extern "C" fn get_vk_proc(sym: *const std::ffi::c_char, userdata: *const ()) -> *const () {
+    let vk_get_instance_proc_addr = userdata as *const unsafe fn(instance: *const (), sym: *const std::ffi::c_char) -> *const ();
+    
+    let str = unsafe { std::ffi::CStr::from_ptr(sym) };
+    if str.to_str().unwrap() == "vkGetInstanceProcAddr" {
+        return (unsafe { *vk_get_instance_proc_addr }) as *const ();
+    }
+    
+    unsafe { (*vk_get_instance_proc_addr)(std::ptr::null(), sym) }
 }

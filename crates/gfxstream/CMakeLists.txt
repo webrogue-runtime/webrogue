@@ -15,6 +15,9 @@ target_include_directories(
     webrogue_gfxstream PRIVATE
     ${WEBROGUE_GFXSTREAM_INCLUDE_DIRS}
 )
+
+target_compile_definitions(webrogue_gfxstream PRIVATE VK_GFXSTREAM_STRUCTURE_TYPE_EXT)
+
 set(CMAKE_INSTALL_LIBDIR "")
 install(TARGETS webrogue_gfxstream)
 
