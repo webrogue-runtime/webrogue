@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-cranelift = ["wasmtime/cranelift", "wasmtime/debug-builtins", "wasmtime/debug-builtins", "wasmtime/parallel-compilation", "wasmtime/addr2line"]
+jit = ["wasmtime/cranelift", "wasmtime/winch", "wasmtime/debug-builtins", "wasmtime/debug-builtins", "wasmtime/parallel-compilation", "wasmtime/addr2line"]
 aot = ["dep:webrogue-aot-data"]
 cache = ["wasmtime/cache"]
 

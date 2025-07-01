@@ -140,7 +140,7 @@ class MetricsLoggerImpl: public android::base::MetricsLogger {
 
 static get_proc_func_t sVkGetProc = nullptr;
 static void* sVkGetProcUserdata = nullptr;
-static std::unique_ptr<gfxstream::vk::VkEmulation> sEmulationVk = nullptr;
+static *gfxstream::vk::VkEmulation sEmulationVk = nullptr; // TODO fix this leakage
  
 class GFXStreamThread {
 public:
@@ -155,8 +155,8 @@ public:
     // set_emugl_address_space_device_control_ops
     if(!gfxstream::vk::RenderThreadInfoVk::get()) {
       static int ctx_id = 1; // TODO sync
-      auto tinfo = gfxstream::vk::RenderThreadInfoVk();
-      tinfo.ctx_id = ctx_id++;
+      auto tinfo = new gfxstream::vk::RenderThreadInfoVk(); // TODO fix this leakage
+      tinfo->ctx_id = ctx_id++;
     }
     webrogue_output_stream = std::make_unique<WebrogueOutputStream>(16);
     processResources = std::unique_ptr(gfxstream::ProcessResources::create());
@@ -174,10 +174,13 @@ void webrogue_gfxstream_ffi_create_global_state(void *get_proc, void* userdata) 
   gfxstream::host::BackendCallbacks callbacks{
         .registerProcessCleanupCallback =
             [](void* key, std::function<void()> callback) {
-                abort();
+                // abort();
+                // TODO invoke this callbacks when GFXSystem drops
             },
         .unregisterProcessCleanupCallback =
-            [](void* key) { abort(); },
+            [](void* key) { 
+              // abort();
+            },
         .invalidateColorBuffer =
             [](uint32_t colorBufferHandle) {
               abort();

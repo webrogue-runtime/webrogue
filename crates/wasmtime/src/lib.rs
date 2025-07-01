@@ -30,10 +30,10 @@ impl wasmtime::CustomCodeMemory for StaticCodeMemory {
     }
 }
 
-// #[cfg(not(any(feature = "aot", feature = "cranelift")))]
+// #[cfg(not(any(feature = "aot", feature = "jit")))]
 // compile_error!("Either AOT or Cranelift features must be enabled");
 
-#[cfg(feature = "cranelift")]
+#[cfg(feature = "jit")]
 pub fn run_jit_builder(
     mut wrapp_vfs_builder: webrogue_wrapp::WrappVFSBuilder,
     persistent_dir: &std::path::PathBuf,
@@ -43,7 +43,7 @@ pub fn run_jit_builder(
     let handle = wrapp_vfs_builder.into_vfs()?;
     run_jit(handle, &config, persistent_dir, None, true, dispatcher)
 }
-#[cfg(feature = "cranelift")]
+#[cfg(feature = "jit")]
 pub fn run_jit<
     FilePosition: webrogue_wrapp::IFilePosition + 'static,
     FileReader: webrogue_wrapp::IFileReader + 'static,
@@ -65,10 +65,12 @@ pub fn run_jit<
     }
     // config.async_support(true);
     if optimized {
+        config.strategy(wasmtime::Strategy::Cranelift);
         config.debug_info(false);
         config.cranelift_opt_level(wasmtime::OptLevel::Speed);
         config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
     } else {
+        config.strategy(wasmtime::Strategy::Cranelift);
         config.debug_info(true);
         config.cranelift_opt_level(wasmtime::OptLevel::None);
         config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);

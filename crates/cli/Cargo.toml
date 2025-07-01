@@ -16,7 +16,7 @@ appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 
-webrogue-wasmtime = { workspace = true, features = ["cranelift", "cache"], optional = true }
+webrogue-wasmtime = { workspace = true, features = ["jit", "cache"], optional = true }
 webrogue-gfx = { workspace = true, optional = true }
 webrogue-gfx-sdl = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, features = ["cc"], optional = true }

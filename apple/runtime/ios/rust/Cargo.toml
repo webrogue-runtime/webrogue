@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-launcher = ["webrogue-wasmtime/cranelift"] # jit issue
+launcher = ["webrogue-wasmtime/jit"] # jit issue
 runner = ["webrogue-wasmtime/aot"]
 
 [lib]

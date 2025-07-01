@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-runtime = ["webrogue-wasmtime/cranelift", "webrogue-wasmtime/cache"]
+runtime = ["webrogue-wasmtime/jit", "webrogue-wasmtime/cache"]
 runner = ["webrogue-wasmtime/aot"]
 
 [lib]
