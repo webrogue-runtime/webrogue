@@ -140,7 +140,7 @@ class MetricsLoggerImpl: public android::base::MetricsLogger {
 
 static get_proc_func_t sVkGetProc = nullptr;
 static void* sVkGetProcUserdata = nullptr;
-static *gfxstream::vk::VkEmulation sEmulationVk = nullptr; // TODO fix this leakage
+static std::unique_ptr<gfxstream::vk::VkEmulation> sEmulationVk = nullptr; // TODO fix this leakage
  
 class GFXStreamThread {
 public:
