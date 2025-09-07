@@ -297,6 +297,14 @@ void webrogue_gfxstream_ffi_ret_buffer_read(void *raw_thread_ptr, void* buf, uin
     stream->m_ret_buf_consumed += to_read;
   }
 }
+void webrogue_gfxstream_ffi_read_device_memory(void *raw_thread_ptr, void* buf, uint64_t len, uint64_t offset, uint64_t deviceMemory) {
+  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  state->webrogue_gfxstream_ffi_read_device_memory(buf, len, offset, deviceMemory);
+}
+void webrogue_gfxstream_ffi_write_device_memory(void *raw_thread_ptr, void* buf, uint64_t len, uint64_t offset, uint64_t deviceMemory) {
+  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  state->webrogue_gfxstream_ffi_write_device_memory(buf, len, offset, deviceMemory);
+}
 }
 
 static void* sVulkanDispatchDlOpen() {

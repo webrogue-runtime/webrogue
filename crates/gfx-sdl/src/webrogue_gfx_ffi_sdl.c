@@ -179,13 +179,3 @@ void webrogue_gfx_ffi_poll(void *raw_system_ptr, void **out_buf,
   webrogue_event_out_buf *event_buf = &(system_ptr->event_buf);
   webrogue_gfx_ffi_sdl_poll(event_buf, out_buf, out_len);
 }
-
-void webrogue_gfx_ffi_get_gl_swap_interval(void *raw_system_ptr,
-                                           uint32_t *out_interval) {
-  (void)raw_system_ptr;
-  int interval;
-  if (!SDL_GL_GetSwapInterval(&interval)) {
-    fprintf(stderr, "SDL error: %s\n", SDL_GetError());
-  }
-  *out_interval = interval;
-}

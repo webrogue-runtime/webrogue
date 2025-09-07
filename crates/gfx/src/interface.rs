@@ -3,18 +3,21 @@ wiggle::from_witx!({
     wasmtime: false,
 });
 
-use std::sync::{Arc, Mutex};
+use types::Size as GuestSize;
+use types::WindowHandle as GuestWindowHandle;
+use types::WindowSize as GuestWindowSize;
 
-use types::*;
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+};
 
 pub trait ISystem<Window: IWindow> {
     fn make_window(&self) -> Window;
     fn poll(&self, events_buffer: &mut Vec<u8>);
-    fn get_gl_swap_interval(&self) -> u32;
     fn make_gfxstream_thread(&self) -> webrogue_gfxstream::Thread;
 }
 pub trait IWindow {
-    fn present(&self);
     fn get_size(&self) -> (u32, u32);
     fn get_gl_size(&self) -> (u32, u32);
     fn gl_init(&mut self) -> (*const (), *const ());
@@ -22,8 +25,8 @@ pub trait IWindow {
 
 pub struct Interface<System: ISystem<Window>, Window: IWindow> {
     system: Arc<System>,
-    window: Option<Window>,
-    gfxstream_thread: Option<webrogue_gfxstream::Thread>,
+    windows: Arc<Mutex<BTreeMap<u32, Arc<Window>>>>,
+    gfxstream_thread: Mutex<Option<Arc<webrogue_gfxstream::Thread>>>,
     event_buf: Arc<Mutex<Vec<u8>>>,
 }
 
@@ -47,8 +50,8 @@ impl<System: ISystem<Window>, Window: IWindow> Interface<System, Window> {
         // let dispatcher = gfx.dispatcher;
         Self {
             system,
-            window: None,
-            gfxstream_thread: None,
+            windows: Arc::new(Mutex::new(BTreeMap::new())),
+            gfxstream_thread: Mutex::new(None),
             event_buf: Arc::new(Mutex::new(Vec::new())),
         }
     }
@@ -58,8 +61,8 @@ impl<System: ISystem<Window>, Window: IWindow> Clone for Interface<System, Windo
     fn clone(&self) -> Self {
         Self {
             system: self.system.clone(),
-            window: None,
-            gfxstream_thread: None,
+            windows: self.windows.clone(),
+            gfxstream_thread: Mutex::new(None),
             event_buf: self.event_buf.clone(),
         }
     }
@@ -68,33 +71,15 @@ impl<System: ISystem<Window>, Window: IWindow> Clone for Interface<System, Windo
 impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
     for Interface<System, Window>
 {
-    fn make_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
-        if self.window.is_some() {
-            return;
-        }
-
-        self.window = Some(
-            // crate::dispatch::dispatch(self.dispatcher, || {
-            self.system.make_window(), // })
-        );
-    }
-
-    fn present(&mut self, _mem: &mut wiggle::GuestMemory<'_>) {
-        let Some(window) = self.window.as_mut() else {
-            return;
-        };
-        window.present();
-    }
-
     fn get_window_size(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
-        out_width: wiggle::GuestPtr<GfxSize>,
-        out_height: wiggle::GuestPtr<GfxSize>,
+        window: GuestWindowHandle,
+        out_width: wiggle::GuestPtr<GuestWindowSize>,
+        out_height: wiggle::GuestPtr<GuestWindowSize>,
     ) {
         let size = self
-            .window
-            .as_ref()
+            .get_window(window)
             .map(|window| window.get_size())
             .unwrap_or_default();
         let _ = mem.write(out_width, size.0);
@@ -104,64 +89,45 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
     fn get_gl_size(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
-        out_width: wiggle::GuestPtr<GfxSize>,
-        out_height: wiggle::GuestPtr<GfxSize>,
+        window: GuestWindowHandle,
+        out_width: wiggle::GuestPtr<GuestWindowSize>,
+        out_height: wiggle::GuestPtr<GuestWindowSize>,
     ) {
         let size = self
-            .window
-            .as_ref()
+            .get_window(window)
             .map(|window| window.get_gl_size())
             .unwrap_or_default();
         let _ = mem.write(out_width, size.0);
         let _ = mem.write(out_height, size.1);
     }
 
-    fn gl_init(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_status: wiggle::GuestPtr<u8>) {
-        panic!();
-        // let result = if let Some(window) = &mut self.window {
-        //     let ret = window.gl_init();
-        //     self.gfxstream_thread = Some(webrogue_gfxstream::Thread::new(ret.0, ret.1));
-        //     true
-        // } else {
-        //     false
-        // };
-        // let _ = mem.write(out_status, if result { 1 } else { 0 });
-    }
-
     fn commit_buffer(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
         buf: wiggle::GuestPtr<u8>,
-        len: Size,
+        len: GuestSize,
     ) {
-        if self.gfxstream_thread.is_none() {
-            self.gfxstream_thread = Some(self.system.make_gfxstream_thread());
-        }
-        let gfxstream_thread = self.gfxstream_thread.as_ref().unwrap();
         let Ok(b) = mem.as_cow(buf.as_array(len)) else {
             return;
         };
-        gfxstream_thread.commit(&b);
+        self.get_gfxstream_thread().commit(&b);
     }
 
     fn ret_buffer_read(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
         buf: wiggle::GuestPtr<u8>,
-        len: Size,
+        len: GuestSize,
     ) {
-        let Some(gfxstream_thread) = &self.gfxstream_thread else {
-            return;
-        };
         let buffer = {
             let mut buffer = vec![0u8; len as usize];
-            gfxstream_thread.read(&mut buffer);
+            self.get_gfxstream_thread().read(&mut buffer);
             buffer
         };
         let _ = mem.copy_from_slice(&buffer, buf.as_array(len));
     }
 
-    fn poll(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_len: wiggle::GuestPtr<Size>) {
+    fn poll(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_len: wiggle::GuestPtr<GuestSize>) {
         let mut event_buf = self.event_buf.lock().unwrap();
         self.system.poll(&mut event_buf);
         let result = event_buf.len() as u32;
@@ -173,12 +139,67 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
         let _ = mem.copy_from_slice(&event_buf, buf.as_array(event_buf.len() as u32));
     }
 
-    fn get_gl_swap_interval(
+    fn read_device_memory(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
-        out_interval: wiggle::GuestPtr<u32>,
-    ) -> () {
-        let result = self.system.get_gl_swap_interval();
-        let _ = mem.write(out_interval, result);
+        buf: wiggle::GuestPtr<u8>,
+        len: u64,
+        offset: u64,
+        device_memory: u64,
+    ) {
+        let buffer = {
+            let mut buffer = vec![0u8; len as usize];
+            self.get_gfxstream_thread()
+                .read_device_memory(&mut buffer, offset, device_memory);
+            buffer
+        };
+        let _ = mem.copy_from_slice(&buffer, buf.as_array(len as u32));
+    }
+
+    fn write_device_memory(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        buf: wiggle::GuestPtr<u8>,
+        len: u64,
+        offset: u64,
+        device_memory: u64,
+    ) {
+        let Ok(buffer) = mem.as_cow(buf.as_array(len as u32)) else {
+            return;
+        };
+        self.get_gfxstream_thread()
+            .write_device_memory(&buffer, offset, device_memory);
+    }
+
+    fn make_window(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        out_window: wiggle::GuestPtr<GuestWindowHandle>,
+    ) {
+        let mut windows = self.windows.lock().unwrap();
+
+        // TODO make something better
+        let new_window_id = (windows.len() + 1) as GuestWindowHandle;
+        assert!(!windows.contains_key(&new_window_id));
+
+        windows.insert(new_window_id, Arc::new(self.system.make_window()));
+        let _ = mem.write(out_window, new_window_id);
+    }
+}
+
+impl<System: ISystem<Window>, Window: IWindow> Interface<System, Window> {
+    fn get_window(&self, window_handle: GuestWindowHandle) -> Option<Arc<Window>> {
+        self.windows.lock().unwrap().get(&window_handle).cloned()
+    }
+    
+    fn get_gfxstream_thread(&self) -> Arc<webrogue_gfxstream::Thread> {
+        let mut stored_arc = self.gfxstream_thread.lock().unwrap();
+        if let Some(stored_arc) = stored_arc.as_ref() {
+            stored_arc.clone()
+        } else {
+            let arc = Arc::new(self.system.make_gfxstream_thread());
+            stored_arc.replace(arc.clone());
+            arc
+        }
     }
 }

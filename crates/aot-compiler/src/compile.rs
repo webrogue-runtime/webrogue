@@ -1,4 +1,7 @@
+use std::io::Write;
+
 use anyhow::Context as _;
+use wasmtime::Cache;
 use webrogue_wrapp::{IVFSBuilder as _, IVFSHandle as _};
 
 pub fn compile_wrapp_to_object(
@@ -16,7 +19,7 @@ pub fn compile_wrapp_to_object(
     config.generate_address_map(false);
     config.epoch_interruption(false);
     if let Some(cache) = cache {
-        config.cache_config_load(cache)?;
+        config.cache(Some(Cache::from_file(Some(cache))?));
     }
     if is_pic {
         unsafe {
@@ -78,8 +81,7 @@ pub fn compile_wrapp_to_object(
     );
 
     let mut writer = std::io::BufWriter::new(std::fs::File::create(&object_file_path)?);
-    obj.write_stream(&mut writer)
-        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    writer.write_all(&obj.write()?)?;
     std::io::Write::flush(&mut writer)?;
 
     Ok(())

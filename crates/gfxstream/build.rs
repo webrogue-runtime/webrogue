@@ -115,7 +115,8 @@ fn main() {
             for part in parts {
                 path = path.join(part);
             }
-            build.file(path);
+            build.file(&path);
+            println!("cargo:rerun-if-changed={}", path.display());
         }
 
         // .file(aemu_src_dir.join("host-common").join("vm_operations.cpp"))

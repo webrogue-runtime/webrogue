@@ -62,7 +62,7 @@ impl webrogue_gfx::ISystem<crate::window::SDLWindow> for SDLSystem {
             crate::window::SDLWindow::new(
                 self.video_subsystem
                     .window("webrogue", 800, 450)
-                    .opengl()
+                    .vulkan()
                     .resizable()
                     .high_pixel_density()
                     .build()
@@ -225,14 +225,6 @@ impl webrogue_gfx::ISystem<crate::window::SDLWindow> for SDLSystem {
                 _ => {}
             };
         }
-    }
-
-    fn get_gl_swap_interval(&self) -> u32 {
-        // let mut interval: u32 = 0;
-        // unsafe {
-        //     crate::ffi::webrogue_gfx_ffi_get_gl_swap_interval(self.handle.0, &mut interval);
-        // }
-        0
     }
 
     fn make_gfxstream_thread(&self) -> webrogue_gfx::GFXStreamThread {

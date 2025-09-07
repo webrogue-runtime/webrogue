@@ -32,9 +32,6 @@ impl webrogue_gfx::IWindow for SDLWindow {
     fn get_gl_size(&self) -> (u32, u32) {
         self.sdl_window.size_in_pixels()
     }
-    fn present(&self) {
-        self.sdl_window.gl_swap_window();
-    }
     fn gl_init(&mut self) -> (*const (), *const ()) {
         self.gl_context = Some(self.sdl_window.gl_create_context().unwrap());
         (

@@ -8,7 +8,6 @@ pub struct CWasmInfo {
 pub fn analyze_cwasm(cwasm: &[u8]) -> anyhow::Result<CWasmInfo> {
     let mut max_alignment = 0;
     let obj = object::read::elf::ElfFile64::<object::Endianness>::parse(cwasm.into())
-        .map_err(wasmtime_environ::obj::ObjectCrateErrorWrapper)
         .with_context(|| "failed to parse internal compilation artifact")?;
 
     for section in obj.sections() {

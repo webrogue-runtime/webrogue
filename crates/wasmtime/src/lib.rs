@@ -61,7 +61,7 @@ pub fn run_jit<
     let mut config = wasmtime::Config::new();
     #[cfg(feature = "cache")]
     if let Some(cache_config) = cache_config {
-        config.cache_config_load(cache_config)?;
+        config.cache(Some(wasmtime::Cache::from_file(Some(&cache_config))?));
     }
     // config.async_support(true);
     if optimized {

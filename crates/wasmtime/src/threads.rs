@@ -126,9 +126,10 @@ fn stop_all_threads(
         if let Some(engine) = engine.upgrade() {
             engine.increment_epoch();
             // TODO keep notifying to prevent sequential waits from deadlocking
-            for mem in shared_memories.lock().unwrap().iter() {
-                unsafe { mem.atomic_notify_all() };
-            }
+            // for mem in shared_memories.lock().unwrap().iter() {
+            //     unsafe { mem..atomic_notify_all() };
+            // }
+            unimplemented!();
         }
     } else {
         std::process::exit(1)

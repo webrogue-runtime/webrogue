@@ -40,6 +40,32 @@ impl Thread {
             )
         };
     }
+
+    pub fn read_device_memory(&self, buf: &mut [u8], offset: u64, device_memory: u64) {
+        unsafe {
+            ffi::webrogue_gfxstream_ffi_read_device_memory(
+                self.raw_thread_ptr,
+                buf.as_ptr() as *mut (),
+                buf.len() as u64,
+                offset,
+                device_memory,
+            )
+        };
+    }
+
+    pub fn write_device_memory(&self, buf: & [u8], offset: u64, device_memory: u64) {
+        unsafe {
+            ffi::webrogue_gfxstream_ffi_write_device_memory(
+                self.raw_thread_ptr,
+                buf.as_ptr() as *const (),
+                buf.len() as u64,
+                offset,
+                device_memory,
+            )
+        };
+    }
+
+    
 }
 
 impl Drop for Thread {
