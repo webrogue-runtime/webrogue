@@ -1,12 +1,18 @@
 (typename $size u32)
 (typename $window_handle u32)
 (typename $window_size u32)
+(typename $vk_object u64)
 
 (module $webrogue_gfx
   (import "memory" (memory))
 
   (@interface func (export "make_window")
     (param $out_window (@witx pointer $window_handle))
+  )
+  (@interface func (export "make_vk_surface")
+    (param $window $window_handle)
+    (param $vk_instance $vk_object)
+    (param $out_vk_surface (@witx pointer $vk_object))
   )
   (@interface func (export "get_window_size")
     (param $window $window_handle)

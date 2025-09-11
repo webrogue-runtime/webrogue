@@ -4,6 +4,7 @@ wiggle::from_witx!({
 });
 
 use types::Size as GuestSize;
+use types::VkObject as GuestVkObject;
 use types::WindowHandle as GuestWindowHandle;
 use types::WindowSize as GuestWindowSize;
 
@@ -16,16 +17,18 @@ pub trait ISystem<Window: IWindow> {
     fn make_window(&self) -> Window;
     fn poll(&self, events_buffer: &mut Vec<u8>);
     fn make_gfxstream_thread(&self) -> webrogue_gfxstream::Thread;
+    fn vk_extensions(&self) -> Vec<String>;
 }
 pub trait IWindow {
     fn get_size(&self) -> (u32, u32);
     fn get_gl_size(&self) -> (u32, u32);
-    fn gl_init(&mut self) -> (*const (), *const ());
+    fn make_vk_surface(&self, vk_instance: *mut ()) -> Option<*mut ()>;
 }
 
 pub struct Interface<System: ISystem<Window>, Window: IWindow> {
     system: Arc<System>,
     windows: Arc<Mutex<BTreeMap<u32, Arc<Window>>>>,
+    // TODO remove mutex
     gfxstream_thread: Mutex<Option<Arc<webrogue_gfxstream::Thread>>>,
     event_buf: Arc<Mutex<Vec<u8>>>,
 }
@@ -185,13 +188,35 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
         windows.insert(new_window_id, Arc::new(self.system.make_window()));
         let _ = mem.write(out_window, new_window_id);
     }
+
+    fn make_vk_surface(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        window: GuestWindowHandle,
+        vk_instance: GuestVkObject,
+        out_vk_surface: wiggle::GuestPtr<GuestVkObject>,
+    ) -> () {
+        let Some(window) = self.get_window(window) else {
+            todo!();
+        };
+
+        let gfxstream_thread = self.get_gfxstream_thread();
+        let vk_instance = gfxstream_thread.unbox_vk_instance(vk_instance);
+        let vk_surface = window.make_vk_surface(vk_instance);
+        if let Some(vk_surface) = vk_surface {
+            let vk_surface = gfxstream_thread.box_vk_surface(vk_surface);
+            let _ = mem.write(out_vk_surface, vk_surface);
+        } else {
+            todo!();
+        }
+    }
 }
 
 impl<System: ISystem<Window>, Window: IWindow> Interface<System, Window> {
     fn get_window(&self, window_handle: GuestWindowHandle) -> Option<Arc<Window>> {
         self.windows.lock().unwrap().get(&window_handle).cloned()
     }
-    
+
     fn get_gfxstream_thread(&self) -> Arc<webrogue_gfxstream::Thread> {
         let mut stored_arc = self.gfxstream_thread.lock().unwrap();
         if let Some(stored_arc) = stored_arc.as_ref() {

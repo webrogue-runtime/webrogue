@@ -230,6 +230,33 @@ impl webrogue_gfx::ISystem<crate::window::SDLWindow> for SDLSystem {
     fn make_gfxstream_thread(&self) -> webrogue_gfx::GFXStreamThread {
         webrogue_gfx::GFXStreamThread::new()
     }
+
+    fn vk_extensions(&self) -> Vec<String> {
+        let mut count: sdl3::libc::c_uint = 0;
+        // returns a pointer to an array of extension names
+        let extension_names_raw =
+            unsafe { sdl3::sys::vulkan::SDL_Vulkan_GetInstanceExtensions(&mut count) };
+
+            if extension_names_raw.is_null() {
+                unimplemented!();
+        }
+
+        // Create a slice from the raw pointer to the array
+        let names_slice =
+            unsafe { std::slice::from_raw_parts(extension_names_raw, count as usize) };
+
+        // Convert the C strings to Rust Strings
+        let mut extension_names = Vec::with_capacity(count as usize);
+        for &ext in names_slice {
+            if ext.is_null() {
+                unimplemented!();
+            }
+            let c_str = unsafe { std::ffi::CStr::from_ptr(ext) };
+            extension_names.push(c_str.to_string_lossy().into_owned());
+        };
+        extension_names
+    }
+
 }
 
 extern "C" fn get_vk_proc(sym: *const std::ffi::c_char, userdata: *const ()) -> *const () {

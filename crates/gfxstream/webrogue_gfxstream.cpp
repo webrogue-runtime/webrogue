@@ -13,6 +13,7 @@
 #include "Features.h"
 #include "VkCommonOperations.h"
 #include "VkDecoderGlobalState.h"
+#include "VulkanBoxedHandles.h"
 #include <cstring>
 
 #ifdef min
@@ -304,6 +305,16 @@ void webrogue_gfxstream_ffi_read_device_memory(void *raw_thread_ptr, void* buf, 
 void webrogue_gfxstream_ffi_write_device_memory(void *raw_thread_ptr, void* buf, uint64_t len, uint64_t offset, uint64_t deviceMemory) {
   auto state = gfxstream::vk::VkDecoderGlobalState::get();
   state->webrogue_gfxstream_ffi_write_device_memory(buf, len, offset, deviceMemory);
+}
+void* webrogue_gfxstream_ffi_unbox_vk_instance(uint64_t vk_instance) {
+  VkInstance instance = (VkInstance)vk_instance;
+  return gfxstream::vk::unbox_VkInstance(instance);
+}
+uint64_t webrogue_gfxstream_ffi_box_vk_surface(void *vk_surface) {
+  VkSurfaceKHR guest_vk_surface = (VkSurfaceKHR)vk_surface;
+  guest_vk_surface = gfxstream::vk::new_boxed_non_dispatchable_VkSurfaceKHR(guest_vk_surface);
+  gfxstream::vk::DefaultHandleMapping().mapHandles_VkSurfaceKHR(&guest_vk_surface, 1);
+  return (uint64_t)guest_vk_surface;
 }
 }
 

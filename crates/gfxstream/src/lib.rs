@@ -1,3 +1,5 @@
+use std::ffi::c_void;
+
 mod ffi;
 
 pub struct Thread {
@@ -53,7 +55,7 @@ impl Thread {
         };
     }
 
-    pub fn write_device_memory(&self, buf: & [u8], offset: u64, device_memory: u64) {
+    pub fn write_device_memory(&self, buf: &[u8], offset: u64, device_memory: u64) {
         unsafe {
             ffi::webrogue_gfxstream_ffi_write_device_memory(
                 self.raw_thread_ptr,
@@ -65,7 +67,14 @@ impl Thread {
         };
     }
 
-    
+    // unbox_VkInstance
+    pub fn unbox_vk_instance(&self, vk_instance: u64) -> *mut () {
+        unsafe { ffi::webrogue_gfxstream_ffi_unbox_vk_instance(vk_instance) }
+    }
+
+    pub fn box_vk_surface(&self, vk_surface: *mut ()) -> u64 {
+        unsafe { ffi::webrogue_gfxstream_ffi_box_vk_surface(vk_surface) }
+    }
 }
 
 impl Drop for Thread {

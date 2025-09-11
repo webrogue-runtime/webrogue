@@ -26,4 +26,6 @@ extern "C" {
         offset: u64,
         deviceMemory: u64,
     );
+    pub fn webrogue_gfxstream_ffi_unbox_vk_instance(vk_instance: u64) -> *mut ();
+    pub fn webrogue_gfxstream_ffi_box_vk_surface(vk_surface: *mut ()) -> u64;
 }
