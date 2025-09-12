@@ -1,10 +1,6 @@
 #include <memory>
 #include <stdlib.h>
-#include "aemu/base/Metrics.h"
 #include "gfxstream/host/BackendCallbacks.h"
-#include "ProcessResources.h"
-#include "utils/GfxApiLogger.h"
-#include "render-utils/IOStream.h"
 #include "VkDecoderContext.h"
 #include "VkDecoder.h"
 #include "snapshot/LazySnapshotObj.h"
@@ -14,7 +10,9 @@
 #include "VkCommonOperations.h"
 #include "VkDecoderGlobalState.h"
 #include "VulkanBoxedHandles.h"
+#include "gfxstream/Metrics.h"
 #include <cstring>
+#include "gfxstream/host/iostream.h"
 
 #ifdef min
 #undef min
@@ -78,11 +76,11 @@ class WebrogueOutputStream : public gfxstream::IOStream {
     virtual void* getDmaForReading(uint64_t guest_paddr) { return nullptr; }
     virtual void unlockDma(uint64_t guest_paddr) {}
 
-    virtual void onSave(android::base::Stream* stream) { 
+    virtual void onSave(gfxstream::base::Stream* stream) { 
       printf("WebrogueOutputStream::onSave not implemented\n");
       abort();
     }
-    virtual unsigned char* onLoad(android::base::Stream* stream) { 
+    virtual unsigned char* onLoad(gfxstream::base::Stream* stream) { 
       printf("WebrogueOutputStream::onLoad not implemented\n");
       abort();
     }
@@ -130,12 +128,20 @@ class WebrogueOutputStream : public gfxstream::IOStream {
     size_t getIncompleteCommitSize() {
       return m_input_buf_used - m_input_buf_consumed;
     }
+
+    virtual void onSave(gfxstream::Stream*) {
+      abort();
+    }
+
+    virtual unsigned char* onLoad(gfxstream::Stream*) {
+      abort();
+    }
 };
 
 typedef void *(*get_proc_func_t)(const char *name, void *userData);
 
-class MetricsLoggerImpl: public android::base::MetricsLogger {
-  void logMetricEvent(android::base::MetricEventType eventType) override {}
+class MetricsLoggerImpl: public gfxstream::base::MetricsLogger {
+  void logMetricEvent(gfxstream::base::MetricEventType eventType) override {}
   void setCrashAnnotation(const char* key, const char* value) override {}
 };
 
@@ -147,8 +153,8 @@ class GFXStreamThread {
 public:
   std::unique_ptr<WebrogueOutputStream> webrogue_output_stream;
   std::unique_ptr<gfxstream::ProcessResources> processResources;
-  std::unique_ptr<emugl::GfxApiLogger> gfxLogger;
-  std::unique_ptr<android::base::MetricsLogger> metricsLogger;
+  std::unique_ptr<gfxstream::host::GfxApiLogger> gfxLogger;
+  std::unique_ptr<gfxstream::base::MetricsLogger> metricsLogger;
   gfxstream::vk::VkDecoder vkDec;
   
 
@@ -161,8 +167,8 @@ public:
     }
     webrogue_output_stream = std::make_unique<WebrogueOutputStream>(16);
     processResources = std::unique_ptr(gfxstream::ProcessResources::create());
-    gfxLogger = std::make_unique<emugl::GfxApiLogger>();
-    metricsLogger = std::make_unique<MetricsLoggerImpl>();
+    gfxLogger = std::make_unique<gfxstream::host::GfxApiLogger>();
+    metricsLogger = gfxstream::base::CreateMetricsLogger();
   }
 };
 
@@ -173,50 +179,48 @@ void webrogue_gfxstream_ffi_create_global_state(void *get_proc, void* userdata) 
   
   gfxstream::vk::VulkanDispatch* m_vkDispatch = gfxstream::vk::vkDispatch(false);
   gfxstream::host::BackendCallbacks callbacks{
-        .registerProcessCleanupCallback =
-            [](void* key, std::function<void()> callback) {
-                // abort();
-                // TODO invoke this callbacks when GFXSystem drops
-            },
-        .unregisterProcessCleanupCallback =
-            [](void* key) { 
-              // abort();
-            },
-        .invalidateColorBuffer =
-            [](uint32_t colorBufferHandle) {
-              abort();
-            },
-        .flushColorBuffer =
-            [](uint32_t colorBufferHandle) {
-              abort();
-            },
-        .flushColorBufferFromBytes =
-            [](uint32_t colorBufferHandle, const void* bytes, size_t bytesSize) {
-              abort();
-            },
-        // .scheduleAsyncWork =
-        //     [](std::function<void()> work, std::string description) {
-        //       abort();
-        //         // auto promise = std::make_shared<AutoCancelingPromise>();
-        //         // auto future = promise->GetFuture();
-        //         // SyncThread::get()->triggerGeneral(
-        //         //     [promise = std::move(promise), work = std::move(work)]() mutable {
-        //         //         work();
-        //         //         promise->MarkComplete();
-        //         //     },
-        //         //     description);
-        //         // return future;
-        //     },
-#ifdef CONFIG_AEMU
-        .registerVulkanInstance =
-            [](uint64_t id, const char* appName) {
-              abort();
-            },
-        .unregisterVulkanInstance =
-            [](uint64_t id) { 
-              abort();
-            },
-#endif
+            .registerProcessCleanupCallback =
+                [](void* key, uint64_t contextId, std::function<void()> callback) {
+                  // abort();
+                  // TODO invoke this callbacks when GFXSystem drops
+                },
+            .unregisterProcessCleanupCallback =
+                [](void* key) { 
+                  // abort();
+                },
+            .invalidateColorBuffer =
+                [](uint32_t colorBufferHandle) {
+                  abort();
+                },
+            .flushColorBuffer =
+                [](uint32_t colorBufferHandle) {
+                  abort();
+                },
+            .flushColorBufferFromBytes =
+                [](uint32_t colorBufferHandle, const void* bytes,
+                                    size_t bytesSize) {
+                  abort();
+                },
+            // .scheduleAsyncWork =
+            //     [](std::function<void()> work, std::string description) {
+            //         auto promise = std::make_shared<AutoCancelingPromise>();
+            //         auto future = promise->GetFuture();
+            //         SyncThread::get()->triggerGeneral(
+            //             [promise = std::move(promise), work = std::move(work)]() mutable {
+            //                 work();
+            //                 promise->MarkComplete();
+            //             },
+            //             description);
+            //         return future;
+            //     },
+            // #ifdef CONFIG_AEMU
+            //             .registerVulkanInstance =
+            //                 [](uint64_t id, const char* appName) {
+            //                     impl->registerVulkanInstance(id, appName);
+            //                 },
+            //             .unregisterVulkanInstance =
+            //                 [](uint64_t id) { impl->unregisterVulkanInstance(id); },
+            // #endif
     };
   gfxstream::host::FeatureSet features = gfxstream::host::FeatureSet();
 

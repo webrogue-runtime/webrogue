@@ -7,12 +7,9 @@
 [submodule "external/gfxstream"]
 	path = external/gfxstream
 	url = https://github.com/webrogue-runtime/gfxstream.git
-[submodule "external/aemu"]
-	path = external/aemu
-	url = https://github.com/webrogue-runtime/aemu.git
 [submodule "external/wasmtime"]
 	path = external/wasmtime
-	url = https://github.com/bytecodealliance/wasmtime.git
+	url = https://github.com/webrogue-runtime/wasmtime.git
 [submodule "webrogue-sdk"]
 	path = webrogue-sdk
 	url = https://github.com/webrogue-runtime/webrogue-sdk.git

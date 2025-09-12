@@ -44,7 +44,6 @@ fn main() {
             .unwrap()
             .join("external");
         let gfx_src_dir = external_dir.join("gfxstream");
-        let aemu_src_dir = external_dir.join("aemu");
         let mut build = cc::Build::new();
         build
             .flag_if_supported("-Wno-unused-parameter")
@@ -55,9 +54,6 @@ fn main() {
 
         let sources = vec![
             "$WEBROGUE/webrogue_gfxstream.cpp",
-            // host
-            "external/gfxstream/host/ExternalObjectManager.cpp",
-            "external/gfxstream/host/GraphicsDriverLock.cpp",
             // host/vulkan
             "external/gfxstream/host/vulkan/VkDecoder.cpp",
             "external/gfxstream/host/vulkan/VulkanStream.cpp",
@@ -68,13 +64,14 @@ fn main() {
             "external/gfxstream/host/vulkan/DebugUtilsHelper.cpp",
             "external/gfxstream/host/vulkan/DeviceOpTracker.cpp",
             "external/gfxstream/host/vulkan/VkCommonOperations.cpp",
-            "external/gfxstream/host/vulkan/vk_util.cpp",
             "external/gfxstream/host/vulkan/DeviceLostHelper.cpp",
             "external/gfxstream/host/vulkan/VkEmulatedPhysicalDeviceQueue.cpp",
             "external/gfxstream/host/vulkan/VkEmulatedPhysicalDeviceMemory.cpp",
             "external/gfxstream/host/vulkan/VkDecoderSnapshot.cpp",
             "external/gfxstream/host/vulkan/VkReconstruction.cpp",
             "external/gfxstream/host/vulkan/SwapChainStateVk.cpp",
+            "external/gfxstream/host/vulkan/DependencyGraph.cpp",
+            "external/gfxstream/host/vulkan/VkUtils.cpp",
             // host/vulkan/cereal/common
             "external/gfxstream/host/vulkan/cereal/common/goldfish_vk_dispatch.cpp",
             "external/gfxstream/host/vulkan/cereal/common/goldfish_vk_transform.cpp",
@@ -86,18 +83,24 @@ fn main() {
             "external/gfxstream/host/vulkan/emulated_textures/GpuDecompressionPipeline.cpp",
             "external/gfxstream/host/vulkan/emulated_textures/AstcTexture.cpp",
             "external/gfxstream/host/vulkan/emulated_textures/CompressedImageInfo.cpp",
-            // host/vulkan/compressedTextureFormats
-            "external/gfxstream/host/compressedTextureFormats/AstcCpuDecompressorNoOp.cpp", // TODO impl
+            // host/compressed_textures
+            "external/gfxstream/host/compressed_textures/AstcCpuDecompressorNoOp.cpp",
             // host/features
             "external/gfxstream/host/features/Features.cpp",
-            // aemu
-            "external/aemu/base/System.cpp",
-            "external/aemu/host-common/GfxstreamFatalError.cpp",
-            "external/aemu/host-common/vm_operations.cpp",
-            "external/aemu/base/Tracing.cpp",
-            "external/aemu/base/Stream.cpp",
-            "external/aemu/base/Metrics.cpp",
-            "external/aemu/base/HealthMonitor.cpp",
+            // host/backend
+            "external/gfxstream/host/backend/external_object_manager.cpp",
+            "external/gfxstream/host/backend/vm_operations.cpp",
+            "external/gfxstream/host/backend/graphics_driver_lock.cpp",
+            // host/health
+            "external/gfxstream/host/health/HealthMonitor.cpp",
+            // host/metrics
+            "external/gfxstream/host/metrics/Metrics.cpp",
+            // common/base
+            "external/gfxstream/common/base/UdmabufCreator_stub.cpp",
+            "external/gfxstream/common/base/Thread_pthread.cpp", // TODO win32
+            "external/gfxstream/common/base/System.cpp",
+            // common/logging
+            "external/gfxstream/common/logging/logging.cpp",
         ];
 
         for source in sources.iter() {
@@ -106,7 +109,6 @@ fn main() {
                 "$WEBROGUE" => &_crate_manifest_dir,
                 "external" => match parts.next().unwrap() {
                     "gfxstream" => &gfx_src_dir,
-                    "aemu" => &aemu_src_dir,
                     _ => unimplemented!(),
                 },
                 _ => unimplemented!(),
@@ -119,52 +121,46 @@ fn main() {
             println!("cargo:rerun-if-changed={}", path.display());
         }
 
-        // .file(aemu_src_dir.join("host-common").join("vm_operations.cpp"))
-        // .file(aemu_src_dir.join("host-common").join("crash_reporter.cpp"))
+        let mut include = |rel_path: &str| {
+            let mut path = gfx_src_dir.clone();
+            for part in rel_path.split('/') {
+                path.push(part);
+            }
+            build.include(path);
+        };
+        include("host");
+        include("host/vulkan");
+        include("host/vulkan/cereal");
+        include("host/vulkan/cereal/common");
+        include("host/features/include");
+        include("host/gl/gl-host-common/include");
+        include("host/features/include/gfxstream/host");
+        include("host/tracing/include");
+        include("host/backend/include");
+        include("common/vulkan/include");
+        include("common/utils/include");
+        include("include");
+        include("utils/include");
+        include("third-party/renderdoc/include");
+        include("third-party/glm/include");
+        include("host/compressed_textures/include");
+        include("host/health/include");
+        include("common/base/include");
+        include("host/metrics/include");
+        include("common/logging/include");
+        include("host/decoder_common/include");
+        include("third_party/vulkan/include");
+        include("host/include");
+        include("host/iostream/include");
+        include("third_party/glm/include");
+        include("third_party/glm/include");
+        include("host/renderdoc/include");
+        include("third_party/renderdoc/include");
+        include("host/library/include");
+        include("host/snapshot/include");
+        include("third_party/astc-encoder/Source");
+
         build
-            .include(gfx_src_dir.join("host"))
-            .include(gfx_src_dir.join("host").join("vulkan"))
-            .include(gfx_src_dir.join("host").join("vulkan").join("cereal"))
-            .include(
-                gfx_src_dir
-                    .join("host")
-                    .join("vulkan")
-                    .join("cereal")
-                    .join("common"),
-            )
-            .include(gfx_src_dir.join("host").join("features").join("include"))
-            .include(
-                gfx_src_dir
-                    .join("host")
-                    .join("gl")
-                    .join("gl-host-common")
-                    .join("include"),
-            )
-            .include(
-                gfx_src_dir
-                    .join("host")
-                    .join("features")
-                    .join("include")
-                    .join("gfxstream")
-                    .join("host"),
-            )
-            .include(gfx_src_dir.join("host").join("tracing").join("include"))
-            .include(gfx_src_dir.join("host").join("backend").join("include"))
-            .include(gfx_src_dir.join("common").join("vulkan").join("include"))
-            .include(gfx_src_dir.join("common").join("utils").join("include"))
-            .include(gfx_src_dir.join("include"))
-            .include(gfx_src_dir.join("utils").join("include"))
-            .include(
-                gfx_src_dir
-                    .join("third-party")
-                    .join("renderdoc")
-                    .join("include"),
-            )
-            .include(gfx_src_dir.join("third-party").join("glm").join("include"))
-            // .include(gfx_src_dir.join("third-party").join("astc-encoder").join("Source"))
-            .include(aemu_src_dir.join("snapshot").join("include"))
-            .include(aemu_src_dir.join("base").join("include"))
-            .include(aemu_src_dir.join("host-common").join("include"))
             .define("VK_GFXSTREAM_STRUCTURE_TYPE_EXT", None)
             .compile("webrogue_gfxstream");
     }
