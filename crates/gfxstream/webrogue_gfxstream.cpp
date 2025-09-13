@@ -155,6 +155,7 @@ public:
   std::unique_ptr<gfxstream::ProcessResources> processResources;
   std::unique_ptr<gfxstream::host::GfxApiLogger> gfxLogger;
   std::unique_ptr<gfxstream::base::MetricsLogger> metricsLogger;
+  std::atomic_bool m_shouldExit{false};
   gfxstream::vk::VkDecoder vkDec;
   
 
@@ -260,10 +261,11 @@ void webrogue_gfxstream_ffi_commit_buffer(void *raw_thread_ptr, void const* buf,
   WebrogueOutputStream *stream = thread->webrogue_output_stream.get();
 
   gfxstream::vk::VkDecoderContext context = {
-    .processName = "Webrogue contextName idk",
+    .processName = "Webrogue",
     .gfxApiLogger = thread->gfxLogger.get(),
     .healthMonitor = nullptr,
     .metricsLogger = thread->metricsLogger.get(),
+    .shouldExit = &(thread->m_shouldExit),
   };
   if(stream->getIncompleteCommitSize()) {
     stream->addIncompleteCommit(buf, len);
@@ -302,14 +304,6 @@ void webrogue_gfxstream_ffi_ret_buffer_read(void *raw_thread_ptr, void* buf, uin
     stream->m_ret_buf_consumed += to_read;
   }
 }
-void webrogue_gfxstream_ffi_read_device_memory(void *raw_thread_ptr, void* buf, uint64_t len, uint64_t offset, uint64_t deviceMemory) {
-  auto state = gfxstream::vk::VkDecoderGlobalState::get();
-  state->webrogue_gfxstream_ffi_read_device_memory(buf, len, offset, deviceMemory);
-}
-void webrogue_gfxstream_ffi_write_device_memory(void *raw_thread_ptr, void* buf, uint64_t len, uint64_t offset, uint64_t deviceMemory) {
-  auto state = gfxstream::vk::VkDecoderGlobalState::get();
-  state->webrogue_gfxstream_ffi_write_device_memory(buf, len, offset, deviceMemory);
-}
 void* webrogue_gfxstream_ffi_unbox_vk_instance(uint64_t vk_instance) {
   VkInstance instance = (VkInstance)vk_instance;
   return gfxstream::vk::unbox_VkInstance(instance);
@@ -319,6 +313,15 @@ uint64_t webrogue_gfxstream_ffi_box_vk_surface(void *vk_surface) {
   guest_vk_surface = gfxstream::vk::new_boxed_non_dispatchable_VkSurfaceKHR(guest_vk_surface);
   gfxstream::vk::DefaultHandleMapping().mapHandles_VkSurfaceKHR(&guest_vk_surface, 1);
   return (uint64_t)guest_vk_surface;
+}
+void webrogue_gfxstream_ffi_register_blob(
+  void* raw_thread_ptr,
+  void* buf,
+  uint64_t size,
+  uint64_t id
+) {
+  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  state->registerWebrogueBlob(buf, size, id);
 }
 }
 

@@ -110,6 +110,9 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
         buf: wiggle::GuestPtr<u8>,
         len: GuestSize,
     ) {
+        if !mem.is_shared_memory() {
+            unimplemented!()
+        }
         let Ok(b) = mem.as_cow(buf.as_array(len)) else {
             return;
         };
@@ -140,38 +143,6 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
     fn poll_read(&mut self, mem: &mut wiggle::GuestMemory<'_>, buf: wiggle::GuestPtr<u8>) {
         let event_buf = self.event_buf.lock().unwrap();
         let _ = mem.copy_from_slice(&event_buf, buf.as_array(event_buf.len() as u32));
-    }
-
-    fn read_device_memory(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        buf: wiggle::GuestPtr<u8>,
-        len: u64,
-        offset: u64,
-        device_memory: u64,
-    ) {
-        let buffer = {
-            let mut buffer = vec![0u8; len as usize];
-            self.get_gfxstream_thread()
-                .read_device_memory(&mut buffer, offset, device_memory);
-            buffer
-        };
-        let _ = mem.copy_from_slice(&buffer, buf.as_array(len as u32));
-    }
-
-    fn write_device_memory(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        buf: wiggle::GuestPtr<u8>,
-        len: u64,
-        offset: u64,
-        device_memory: u64,
-    ) {
-        let Ok(buffer) = mem.as_cow(buf.as_array(len as u32)) else {
-            return;
-        };
-        self.get_gfxstream_thread()
-            .write_device_memory(&buffer, offset, device_memory);
     }
 
     fn make_window(
@@ -209,6 +180,28 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
         } else {
             todo!();
         }
+    }
+
+    fn vk_register_blob(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        blob_id: u64,
+        size: u64,
+        buf: wiggle::GuestPtr<u8>,
+    ) -> () {
+        let slice = match mem {
+            wiggle::GuestMemory::Unshared(items) => unimplemented!(),
+            wiggle::GuestMemory::Shared(unsafe_cells) => {
+                let offset = buf.offset() as usize;
+                let size = size as usize;
+                &unsafe_cells[offset..][..size]
+            },
+        };
+        if slice.len() != size as usize {
+            return;
+        }
+        // register_blob will store buf and pass it to vulkan driver for later use
+        unsafe { self.get_gfxstream_thread().register_blob(slice, blob_id) };
     }
 }
 
