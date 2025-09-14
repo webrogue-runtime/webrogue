@@ -16,6 +16,7 @@ use std::{
 pub trait ISystem<Window: IWindow> {
     fn make_window(&self) -> Window;
     fn poll(&self, events_buffer: &mut Vec<u8>);
+    fn pump(&self);
     fn make_gfxstream_thread(&self) -> webrogue_gfxstream::Thread;
     fn vk_extensions(&self) -> Vec<String>;
 }
@@ -135,6 +136,7 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
 
     fn poll(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_len: wiggle::GuestPtr<GuestSize>) {
         let mut event_buf = self.event_buf.lock().unwrap();
+        self.system.pump();
         self.system.poll(&mut event_buf);
         let result = event_buf.len() as u32;
         let _ = mem.write(out_len, result);
@@ -195,7 +197,7 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
                 let offset = buf.offset() as usize;
                 let size = size as usize;
                 &unsafe_cells[offset..][..size]
-            },
+            }
         };
         if slice.len() != size as usize {
             return;

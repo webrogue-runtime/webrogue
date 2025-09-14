@@ -1,3 +1,5 @@
+use std::{env::current_exe, ffi::CStr};
+
 use webrogue_gfx::events;
 
 pub struct SDLSystem {
@@ -11,6 +13,25 @@ impl SDLSystem {
     pub fn new(dispatcher: Option<crate::dispatch::DispatcherFunc>) -> Self {
         crate::dispatch::dispatch(dispatcher, || {
             let sdl_context = sdl3::init().unwrap();
+            // sdl_context.
+            //
+
+            #[cfg(target_os = "macos")]
+            sdl3::hint::set(
+                unsafe {
+                    CStr::from_ptr(sdl3_sys::hints::SDL_HINT_VULKAN_LIBRARY)
+                        .to_str()
+                        .unwrap()
+                },
+                current_exe()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .join("libMoltenVK.dylib")
+                    .display()
+                    .to_string()
+                    .as_str(),
+            );
             let video_subsystem = sdl_context.video().unwrap();
             // video_subsystem
             //     .gl_attr()
@@ -35,9 +56,7 @@ impl SDLSystem {
             // video_subsystem.gl_load_library_default().unwrap();
             video_subsystem.vulkan_load_library_default().unwrap();
 
-            let get_proc_address = video_subsystem
-                .vulkan_get_proc_address_function()
-                .unwrap();
+            let get_proc_address = video_subsystem.vulkan_get_proc_address_function().unwrap();
             let get_proc_address = Box::leak(Box::new(get_proc_address)); // TODO fix this 8 bytes per process leakage cz rust is safe and all
 
             webrogue_gfx::GFXStreamThread::init(
@@ -237,8 +256,8 @@ impl webrogue_gfx::ISystem<crate::window::SDLWindow> for SDLSystem {
         let extension_names_raw =
             unsafe { sdl3::sys::vulkan::SDL_Vulkan_GetInstanceExtensions(&mut count) };
 
-            if extension_names_raw.is_null() {
-                unimplemented!();
+        if extension_names_raw.is_null() {
+            unimplemented!();
         }
 
         // Create a slice from the raw pointer to the array
@@ -253,19 +272,23 @@ impl webrogue_gfx::ISystem<crate::window::SDLWindow> for SDLSystem {
             }
             let c_str = unsafe { std::ffi::CStr::from_ptr(ext) };
             extension_names.push(c_str.to_string_lossy().into_owned());
-        };
+        }
         extension_names
     }
-
+    
+    fn pump(&self) {
+        self.event_pump.lock().unwrap().pump_events();
+    }
 }
 
 extern "C" fn get_vk_proc(sym: *const std::ffi::c_char, userdata: *const ()) -> *const () {
-    let vk_get_instance_proc_addr = userdata as *const unsafe fn(instance: *const (), sym: *const std::ffi::c_char) -> *const ();
-    
+    let vk_get_instance_proc_addr = userdata
+        as *const unsafe fn(instance: *const (), sym: *const std::ffi::c_char) -> *const ();
+
     let str = unsafe { std::ffi::CStr::from_ptr(sym) };
     if str.to_str().unwrap() == "vkGetInstanceProcAddr" {
         return (unsafe { *vk_get_instance_proc_addr }) as *const ();
     }
-    
+
     unsafe { (*vk_get_instance_proc_addr)(std::ptr::null(), sym) }
 }

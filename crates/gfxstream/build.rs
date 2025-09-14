@@ -53,8 +53,16 @@ fn main() {
             .static_crt(true)
             .std("c++20");
 
-        if _os == "windows" {
-            build.define("VK_USE_PLATFORM_WIN32_KHR", None);
+        match _os.as_str() {
+            "windows" => {
+                build.define("VK_USE_PLATFORM_WIN32_KHR", None);
+            },
+            "macos" => {
+                build
+                    .define("VK_USE_PLATFORM_METAL_EXT", None)
+                    .define("VK_USE_PLATFORM_MACOS_MVK", None);
+            },
+            _ => unimplemented!(),
         }
             
         let mut sources = vec![
@@ -107,7 +115,7 @@ fn main() {
             "external/gfxstream/common/logging/logging.cpp",
         ];
 
-        if(_os == "windows") {
+        if _os == "windows"  {
             sources.push("external/gfxstream/common/base/Thread_win32.cpp");
             sources.push("external/gfxstream/common/base/Win32UnicodeString.cpp");
             sources.push("external/gfxstream/common/base/StringFormat.cpp");
