@@ -3,6 +3,7 @@ use std::str::FromStr as _;
 fn main() {
     let _crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
+    let _os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
 
     #[cfg(feature = "cmake")]
     {
@@ -50,9 +51,13 @@ fn main() {
             .flag_if_supported("-Wno-attributes")
             .cpp(true)
             .static_crt(true)
-            .std("c++17");
+            .std("c++20");
 
-        let sources = vec![
+        if _os == "windows" {
+            build.define("VK_USE_PLATFORM_WIN32_KHR", None);
+        }
+            
+        let mut sources = vec![
             "$WEBROGUE/webrogue_gfxstream.cpp",
             // host/vulkan
             "external/gfxstream/host/vulkan/VkDecoder.cpp",
@@ -97,11 +102,20 @@ fn main() {
             "external/gfxstream/host/metrics/Metrics.cpp",
             // common/base
             "external/gfxstream/common/base/UdmabufCreator_stub.cpp",
-            "external/gfxstream/common/base/Thread_pthread.cpp", // TODO win32
             "external/gfxstream/common/base/System.cpp",
             // common/logging
             "external/gfxstream/common/logging/logging.cpp",
         ];
+
+        if(_os == "windows") {
+            sources.push("external/gfxstream/common/base/Thread_win32.cpp");
+            sources.push("external/gfxstream/common/base/Win32UnicodeString.cpp");
+            sources.push("external/gfxstream/common/base/StringFormat.cpp");
+            sources.push("external/gfxstream/host/backend/stream_utils.cpp");
+            sources.push("external/gfxstream/host/health/TestClock.cpp");
+        } else {
+            sources.push("external/gfxstream/common/base/Thread_pthread.cpp");
+        }
 
         for source in sources.iter() {
             let mut parts = source.split('/');
@@ -159,6 +173,7 @@ fn main() {
         include("host/library/include");
         include("host/snapshot/include");
         include("third_party/astc-encoder/Source");
+        include("third_party/opengl/include");
 
         build
             .define("VK_GFXSTREAM_STRUCTURE_TYPE_EXT", None)

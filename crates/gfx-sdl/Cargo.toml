@@ -12,6 +12,7 @@ src = ["dep:cmake", "dep:reqwest", "dep:zip-extract"]
 anyhow = { workspace = true }
 webrogue-gfx = { workspace = true }
 sdl3 = { workspace = true, features = [] }
+sdl3-sys = { workspace = true, features = ["no-link"] }
 
 [build-dependencies]
 cmake = { workspace = true, optional = true }
