@@ -47,9 +47,9 @@ pub fn run<T, System: ISystem<Window> + 'static, Window: IWindow + 'static>(
 // window can't TODO
 // gfxstream_thread is not cloned/copied across threads
 // TODO make wasi-threads not to force Send implementation
-unsafe impl<System: ISystem<Window>, Window: IWindow> Send for Interface<System, Window> {}
+unsafe impl<System: ISystem<Window> + 'static, Window: IWindow> Send for Interface<System, Window> {}
 
-impl<System: ISystem<Window>, Window: IWindow> Interface<System, Window> {
+impl<System: ISystem<Window> + 'static, Window: IWindow> Interface<System, Window> {
     pub fn new(system: Arc<System>) -> Self {
         // let dispatcher = gfx.dispatcher;
         Self {
@@ -61,7 +61,7 @@ impl<System: ISystem<Window>, Window: IWindow> Interface<System, Window> {
     }
 }
 
-impl<System: ISystem<Window>, Window: IWindow> Clone for Interface<System, Window> {
+impl<System: ISystem<Window> + 'static, Window: IWindow> Clone for Interface<System, Window> {
     fn clone(&self) -> Self {
         Self {
             system: self.system.clone(),
@@ -72,7 +72,7 @@ impl<System: ISystem<Window>, Window: IWindow> Clone for Interface<System, Windo
     }
 }
 
-impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
+impl<System: ISystem<Window> + 'static, Window: IWindow> webrogue_gfx::WebrogueGfx
     for Interface<System, Window>
 {
     fn get_window_size(
@@ -207,7 +207,7 @@ impl<System: ISystem<Window>, Window: IWindow> webrogue_gfx::WebrogueGfx
     }
 }
 
-impl<System: ISystem<Window>, Window: IWindow> Interface<System, Window> {
+impl<System: ISystem<Window> + 'static, Window: IWindow> Interface<System, Window> {
     fn get_window(&self, window_handle: GuestWindowHandle) -> Option<Arc<Window>> {
         self.windows.lock().unwrap().get(&window_handle).cloned()
     }
@@ -218,6 +218,12 @@ impl<System: ISystem<Window>, Window: IWindow> Interface<System, Window> {
             stored_arc.clone()
         } else {
             let arc = Arc::new(self.system.make_gfxstream_thread());
+            arc.set_extensions(self.system.vk_extensions());
+            let cloned_system = self.system.clone();
+            arc.set_presentation_callback(Box::new(move || {
+                cloned_system.pump();
+            }));
+
             stored_arc.replace(arc.clone());
             arc
         }

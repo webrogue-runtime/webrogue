@@ -56,15 +56,16 @@ fn main() {
         match _os.as_str() {
             "windows" => {
                 build.define("VK_USE_PLATFORM_WIN32_KHR", None);
-            },
+            }
             "macos" => {
                 build
                     .define("VK_USE_PLATFORM_METAL_EXT", None)
                     .define("VK_USE_PLATFORM_MACOS_MVK", None);
-            },
+            }
+            "linux" => {}
             _ => unimplemented!(),
         }
-            
+
         let mut sources = vec![
             "$WEBROGUE/webrogue_gfxstream.cpp",
             // host/vulkan
@@ -115,7 +116,7 @@ fn main() {
             "external/gfxstream/common/logging/logging.cpp",
         ];
 
-        if _os == "windows"  {
+        if _os == "windows" {
             sources.push("external/gfxstream/common/base/Thread_win32.cpp");
             sources.push("external/gfxstream/common/base/Win32UnicodeString.cpp");
             sources.push("external/gfxstream/common/base/StringFormat.cpp");

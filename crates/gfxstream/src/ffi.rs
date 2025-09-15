@@ -1,3 +1,5 @@
+use std::ffi::{c_char, CStr};
+
 extern "C" {
     pub fn webrogue_gfxstream_ffi_commit_buffer(
         raw_thread_ptr: *const (),
@@ -19,5 +21,15 @@ extern "C" {
         buf: *mut (),
         size: u64,
         id: u64,
+    );
+    pub fn webrogue_gfxstream_ffi_set_extensions(
+        raw_thread_ptr: *const (),
+        raw_extensions: *const *const c_char,
+        count: u32,
+    );
+    pub fn webrogue_gfxstream_ffi_set_presentation_callback(
+        raw_thread_ptr: *const (),
+        callback: unsafe extern "C" fn(*const ()),
+        userdata: *const (),
     );
 }

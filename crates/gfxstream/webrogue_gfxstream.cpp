@@ -12,6 +12,7 @@
 #include "VulkanBoxedHandles.h"
 #include "gfxstream/Metrics.h"
 #include <cstring>
+#include <vector>
 #include "gfxstream/host/iostream.h"
 
 #ifdef min
@@ -322,6 +323,26 @@ void webrogue_gfxstream_ffi_register_blob(
 ) {
   auto state = gfxstream::vk::VkDecoderGlobalState::get();
   state->registerWebrogueBlob(buf, size, id);
+}
+void webrogue_gfxstream_ffi_set_extensions(
+  void* raw_thread_ptr,
+  char** raw_extensions,
+  uint32_t count
+) {
+  std::vector<std::string> extension;
+  for(int i = 0; i < count; i++) {
+    extension.push_back(std::string(raw_extensions[i]));
+  }
+  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  state->setWebrogueExtensions(extension);
+}
+void webrogue_gfxstream_ffi_set_presentation_callback(
+  void* raw_thread_ptr,
+  void (*callback)(void*),
+  void* userdata
+) {
+  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  state->setPresentCallback(callback, userdata);
 }
 }
 
