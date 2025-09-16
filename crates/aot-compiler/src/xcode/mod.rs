@@ -84,10 +84,10 @@ WEBROGUE_APPLICATION_VERSION = {}
     if !aot_dir.exists() {
         std::fs::create_dir(&aot_dir)?;
     }
-    if webrogue_wrapp::is_path_a_wrapp(&args.build_dir).with_context(|| {
+    if webrogue_wrapp::is_path_a_wrapp(&args.wrapp_path).with_context(|| {
         format!(
             "Unable to determine file type for {}",
-            args.build_dir.display()
+            args.wrapp_path.display()
         )
     })? {
         webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::WrappVFSBuilder::from_file_path(

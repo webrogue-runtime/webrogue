@@ -61,10 +61,7 @@ targets:
           - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
     dependencies:
-    - bundle: libEGL.dylib
-      embed: true
-      codeSign: true
-    - bundle: libGLESv2.dylib
+    - bundle: libMoltenVK.dylib
       embed: true
       codeSign: true
       dependencies:
@@ -87,14 +84,12 @@ targets:
         name: Copy libraries
         inputFiles:
           - ${SRCROOT}/scripts/copy_bin.sh
-          - ${SRCROOT}/bin/macos/libEGL.dylib
-          - ${SRCROOT}/bin/macos/libGLESv2.dylib
+          - ${SRCROOT}/bin/macos/libMoltenVK.dylib
           - ${SRCROOT}/bin/macos/libwebrogue_macos.a
           - ${SRCROOT}/bin/macos/libGFXStream.a
           - ${SRCROOT}/bin/macos/libSDL3.a
         outputFiles:
-          - ${BUILT_PRODUCTS_DIR}/libEGL.dylib
-          - ${BUILT_PRODUCTS_DIR}/libGLESv2.dylib
+          - ${BUILT_PRODUCTS_DIR}/libMoltenVK.dylib
           - ${BUILT_PRODUCTS_DIR}/libSDL3.a
           - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_macos.a
@@ -156,8 +151,7 @@ targets:
     - sdk: CoreAudio.framework
     - sdk: AVFoundation.framework
     - sdk: AudioToolbox.framework
-    - framework: bin/libEGL.xcframework
-    - framework: bin/libGLESv2.xcframework
+    - framework: bin/MoltenVK.xcframework
     preBuildScripts:
       - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/copy_bin_ios.sh"
         name: Copy libraries

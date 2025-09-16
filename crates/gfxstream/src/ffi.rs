@@ -1,4 +1,4 @@
-use std::ffi::{c_char, CStr};
+use std::ffi::c_char;
 
 extern "C" {
     pub fn webrogue_gfxstream_ffi_commit_buffer(

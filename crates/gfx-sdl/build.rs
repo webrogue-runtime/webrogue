@@ -1,3 +1,4 @@
+#[cfg(feature = "src")]
 use std::str::FromStr as _;
 
 #[cfg(not(feature = "src"))]

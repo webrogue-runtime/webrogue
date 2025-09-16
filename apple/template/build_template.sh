@@ -16,8 +16,7 @@ mkdir -p ../template/bin/macos
 cp $XC_BUILD_DIR/rust_artifacts/runner/ReleaseLocal/macosx/libwebrogue_macos.a ../template/bin/macos/libwebrogue_macos.a
 cat $XC_BUILD_DIR/Release/SDL3.framework/SDL3 > ../template/bin/macos/libSDL3.a
 cp $XC_BUILD_DIR/ReleaseLocal/libGFXStream.a ../template/bin/macos/libGFXStream.a
-cp $XC_BUILD_DIR/ReleaseLocal/libEGL.dylib ../template/bin/macos/libEGL.dylib
-cp $XC_BUILD_DIR/ReleaseLocal/libGLESv2.dylib ../template/bin/macos/libGLESv2.dylib
+cp external/MoltenVK/MoltenVK/dylib/macOS/libMoltenVK.dylib ../template/bin/macos/libMoltenVK.dylib
 
 # XC_FLAGS="-workspace webrogue.xcworkspace -scheme iOS_Runner_ReleaseLocal -configuration ReleaseLocal -destination"
 # XC_DESTINATION_FLAG="generic/platform=iOS Simulator"
@@ -86,8 +85,7 @@ cp runtime/ios/runner/main.swift template/ios/main.swift
 cp runtime/ios/runner/Info.plist template/ios/Info.plist
 cp runtime/ios/runner/ios.entitlements template/ios/ios.entitlements
 cp runtime/ios/runner/Bridging-Header.h template/ios/Bridging-Header.h
-cp -r runtime/external/libEGL.xcframework template/bin/libEGL.xcframework
-cp -r runtime/external/libGLESv2.xcframework template/bin/libGLESv2.xcframework
+cp -r runtime/external/MoltenVK/MoltenVK/static/MoltenVK.xcframework template/bin/MoltenVK.xcframework
 # apple/template
 cd template
 xcodegen

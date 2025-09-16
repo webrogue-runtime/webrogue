@@ -17,21 +17,32 @@ impl SDLSystem {
             //
 
             #[cfg(target_os = "macos")]
-            sdl3::hint::set(
-                unsafe {
-                    CStr::from_ptr(sdl3_sys::hints::SDL_HINT_VULKAN_LIBRARY)
-                        .to_str()
-                        .unwrap()
-                },
-                current_exe()
+            {
+                let mut path = current_exe()
                     .unwrap()
                     .parent()
                     .unwrap()
-                    .join("libMoltenVK.dylib")
-                    .display()
-                    .to_string()
-                    .as_str(),
-            );
+                    .join("libMoltenVK.dylib");
+                if !path.exists() {
+                    path = current_exe()
+                        .unwrap()
+                        .parent()
+                        .unwrap()
+                        .parent()
+                        .unwrap()
+                        .join("Resources")
+                        .join("libMoltenVK.dylib");
+                }
+                sdl3::hint::set(
+                    unsafe {
+                        CStr::from_ptr(sdl3_sys::hints::SDL_HINT_VULKAN_LIBRARY)
+                            .to_str()
+                            .unwrap()
+                    },
+                    path.display().to_string().as_str(),
+                );
+            }
+
             let video_subsystem = sdl_context.video().unwrap();
             // video_subsystem
             //     .gl_attr()
@@ -276,7 +287,7 @@ impl webrogue_gfx::ISystem<crate::window::SDLWindow> for SDLSystem {
         }
         extension_names
     }
-    
+
     fn pump(&self) {
         self.event_pump.lock().unwrap().pump_events();
     }
