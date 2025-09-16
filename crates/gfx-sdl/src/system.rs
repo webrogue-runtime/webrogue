@@ -1,5 +1,3 @@
-use std::{env::current_exe, ffi::CStr};
-
 use webrogue_gfx::events;
 
 pub struct SDLSystem {
@@ -18,6 +16,8 @@ impl SDLSystem {
 
             #[cfg(target_os = "macos")]
             {
+                use std::{env::current_exe, ffi::CStr};
+                
                 let mut path = current_exe()
                     .unwrap()
                     .parent()

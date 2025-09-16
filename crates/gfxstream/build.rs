@@ -105,8 +105,10 @@ fn main() {
             "external/gfxstream/host/backend/external_object_manager.cpp",
             "external/gfxstream/host/backend/vm_operations.cpp",
             "external/gfxstream/host/backend/graphics_driver_lock.cpp",
+            "external/gfxstream/host/backend/stream_utils.cpp",
             // host/health
             "external/gfxstream/host/health/HealthMonitor.cpp",
+            "external/gfxstream/host/health/TestClock.cpp",
             // host/metrics
             "external/gfxstream/host/metrics/Metrics.cpp",
             // common/base
@@ -118,12 +120,18 @@ fn main() {
 
         if _os == "windows" {
             sources.push("external/gfxstream/common/base/Thread_win32.cpp");
-            sources.push("external/gfxstream/common/base/Win32UnicodeString.cpp");
-            sources.push("external/gfxstream/common/base/StringFormat.cpp");
-            sources.push("external/gfxstream/host/backend/stream_utils.cpp");
-            sources.push("external/gfxstream/host/health/TestClock.cpp");
         } else {
             sources.push("external/gfxstream/common/base/Thread_pthread.cpp");
+        }
+
+        if _os == "windows" {
+            sources.push("external/gfxstream/common/base/Win32UnicodeString.cpp");
+            sources.push("external/gfxstream/common/base/StringFormat.cpp");
+        }
+
+        if _os == "linux" {
+            sources.push("external/gfxstream/host/backend/stream_utils.cpp");
+            sources.push("external/gfxstream/host/health/TestClock.cpp");
         }
 
         for source in sources.iter() {
@@ -144,45 +152,48 @@ fn main() {
             println!("cargo:rerun-if-changed={}", path.display());
         }
 
-        let mut include = |rel_path: &str| {
+        let includes = [
+            "host",
+            "host/vulkan",
+            "host/vulkan/cereal",
+            "host/vulkan/cereal/common",
+            "host/features/include",
+            "host/gl/gl-host-common/include",
+            "host/features/include/gfxstream/host",
+            "host/tracing/include",
+            "host/backend/include",
+            "common/vulkan/include",
+            "common/utils/include",
+            "include",
+            "utils/include",
+            "third-party/renderdoc/include",
+            "third-party/glm/include",
+            "host/compressed_textures/include",
+            "host/health/include",
+            "common/base/include",
+            "host/metrics/include",
+            "common/logging/include",
+            "host/decoder_common/include",
+            "third_party/vulkan/include",
+            "host/include",
+            "host/iostream/include",
+            "third_party/glm/include",
+            "third_party/glm/include",
+            "host/renderdoc/include",
+            "third_party/renderdoc/include",
+            "host/library/include",
+            "host/snapshot/include",
+            "third_party/astc-encoder/Source",
+            "third_party/opengl/include",
+        ];
+
+        for rel_path in includes {
             let mut path = gfx_src_dir.clone();
             for part in rel_path.split('/') {
                 path.push(part);
             }
             build.include(path);
         };
-        include("host");
-        include("host/vulkan");
-        include("host/vulkan/cereal");
-        include("host/vulkan/cereal/common");
-        include("host/features/include");
-        include("host/gl/gl-host-common/include");
-        include("host/features/include/gfxstream/host");
-        include("host/tracing/include");
-        include("host/backend/include");
-        include("common/vulkan/include");
-        include("common/utils/include");
-        include("include");
-        include("utils/include");
-        include("third-party/renderdoc/include");
-        include("third-party/glm/include");
-        include("host/compressed_textures/include");
-        include("host/health/include");
-        include("common/base/include");
-        include("host/metrics/include");
-        include("common/logging/include");
-        include("host/decoder_common/include");
-        include("third_party/vulkan/include");
-        include("host/include");
-        include("host/iostream/include");
-        include("third_party/glm/include");
-        include("third_party/glm/include");
-        include("host/renderdoc/include");
-        include("third_party/renderdoc/include");
-        include("host/library/include");
-        include("host/snapshot/include");
-        include("third_party/astc-encoder/Source");
-        include("third_party/opengl/include");
 
         build
             .define("VK_GFXSTREAM_STRUCTURE_TYPE_EXT", None)

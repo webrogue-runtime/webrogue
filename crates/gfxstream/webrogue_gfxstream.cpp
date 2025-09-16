@@ -178,6 +178,8 @@ extern "C" {
 void webrogue_gfxstream_ffi_create_global_state(void *get_proc, void* userdata) {
   sVkGetProc = reinterpret_cast<get_proc_func_t>(get_proc);
   sVkGetProcUserdata = userdata;
+
+  gfxstream::host::SetGfxstreamLogLevel(gfxstream::host::LogLevel::kWarning);
   
   gfxstream::vk::VulkanDispatch* m_vkDispatch = gfxstream::vk::vkDispatch(false);
   gfxstream::host::BackendCallbacks callbacks{
