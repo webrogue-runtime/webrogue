@@ -1,8 +1,7 @@
 cd $(dirname $0)
 set -ex
 
-sh scripts/download_angle_ios_headers.sh
-sh scripts/download_angle_ios_xcframeworks.sh
+sh scripts/download_moltenvk.sh
 sh scripts/download_sdl_src.sh
 
 WRAPP_PATH=../../examples/empty/empty.wrapp

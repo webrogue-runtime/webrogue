@@ -1,9 +1,7 @@
 /external/SDL3.zip
 /external/SDL3
-/external/libEGL.xcframework
-/external/libGLESv2.xcframework
-/external/angle_ios_headers
-/external/angle_ios_headers.zip
+/external/MoltenVK-all.tar
+/external/MoltenVK
 *.xcuserstate
 /external/macos_fat.zip
 /webrogue.xcodeproj

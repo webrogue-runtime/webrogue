@@ -17,5 +17,3 @@ crate-type = ["staticlib"]
 anyhow = { workspace = true }
 webrogue-wasmtime = { workspace = true }
 
-[build-dependencies]
-cc = { workspace = true }

@@ -87,6 +87,7 @@ impl webrogue_gfx::ISystem<crate::window::SDLWindow> for SDLSystem {
                     .build()
                     .unwrap(),
                 self.video_subsystem.clone(),
+                self.dispatcher.clone(),
             )
         })
     }

@@ -38,27 +38,92 @@ targets:
   GFXStream:
     type: library.static
     platform: [macOS, iOS]
-    sources: 
+    sources:
     - ../../crates/gfxstream/webrogue_gfxstream.cpp
-    - ../../external/gfxstream/host/gl/glsnapshot/GLSnapshot.cpp
-    - ../../external/gfxstream/host/gl/gles2_dec/GLESv2Decoder.cpp
-    - ../../external/gfxstream/host/gl/gles2_dec/gles2_server_context.cpp
-    - ../../external/gfxstream/host/gl/gles2_dec/gles2_dec.cpp
-    - ../../external/gfxstream/host/apigen-codec-common/ChecksumCalculatorThreadInfo.cpp
-    - ../../external/gfxstream/host/apigen-codec-common/ChecksumCalculator.cpp
-    - ../../external/aemu/host-common/vm_operations.cpp
-    - ../../external/aemu/host-common/crash_reporter.cpp
-    - ../../external/aemu/base/Tracing.cpp
-    - ../../external/aemu/base/Stream.cpp
+    - ../../external/gfxstream/host/vulkan/VkDecoder.cpp
+    - ../../external/gfxstream/host/vulkan/VulkanStream.cpp
+    - ../../external/gfxstream/host/vulkan/VulkanHandleMapping.cpp
+    - ../../external/gfxstream/host/vulkan/VulkanBoxedHandles.cpp
+    - ../../external/gfxstream/host/vulkan/VkDecoderGlobalState.cpp
+    - ../../external/gfxstream/host/vulkan/RenderThreadInfoVk.cpp
+    - ../../external/gfxstream/host/vulkan/DebugUtilsHelper.cpp
+    - ../../external/gfxstream/host/vulkan/DeviceOpTracker.cpp
+    - ../../external/gfxstream/host/vulkan/VkCommonOperations.cpp
+    - ../../external/gfxstream/host/vulkan/DeviceLostHelper.cpp
+    - ../../external/gfxstream/host/vulkan/VkEmulatedPhysicalDeviceQueue.cpp
+    - ../../external/gfxstream/host/vulkan/VkEmulatedPhysicalDeviceMemory.cpp
+    - ../../external/gfxstream/host/vulkan/VkDecoderSnapshot.cpp
+    - ../../external/gfxstream/host/vulkan/VkReconstruction.cpp
+    - ../../external/gfxstream/host/vulkan/SwapChainStateVk.cpp
+    - ../../external/gfxstream/host/vulkan/DependencyGraph.cpp
+    - ../../external/gfxstream/host/vulkan/VkUtils.cpp
+    - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_dispatch.cpp
+    - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_transform.cpp
+    - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_extension_structs.cpp
+    - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_reserved_marshaling.cpp
+    - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_deepcopy.cpp
+    - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_marshaling.cpp
+    - ../../external/gfxstream/host/vulkan/emulated_textures/GpuDecompressionPipeline.cpp
+    - ../../external/gfxstream/host/vulkan/emulated_textures/AstcTexture.cpp
+    - ../../external/gfxstream/host/vulkan/emulated_textures/CompressedImageInfo.cpp
+    - ../../external/gfxstream/host/compressed_textures/AstcCpuDecompressorNoOp.cpp
+    - ../../external/gfxstream/host/features/Features.cpp
+    - ../../external/gfxstream/host/backend/external_object_manager.cpp
+    - ../../external/gfxstream/host/backend/vm_operations.cpp
+    - ../../external/gfxstream/host/backend/graphics_driver_lock.cpp
+    - ../../external/gfxstream/host/health/HealthMonitor.cpp
+    - ../../external/gfxstream/host/metrics/Metrics.cpp
+    - ../../external/gfxstream/common/base/UdmabufCreator_stub.cpp
+    - ../../external/gfxstream/common/base/System.cpp
+    - ../../external/gfxstream/common/logging/logging.cpp
+    - ../../external/gfxstream/common/base/Thread_pthread.cpp
+    - ../../external/gfxstream/host/backend/stream_utils.cpp
+    - ../../external/gfxstream/common/base/system-native-mac.mm
+    - ../../external/gfxstream/host/health/TestClock.cpp
     settings:
       base:
-        HEADER_SEARCH_PATHS: 
+        HEADER_SEARCH_PATHS:
         - "$(SRCROOT)/../../external/gfxstream/host"
+        - "$(SRCROOT)/../../external/gfxstream/host/vulkan"
+        - "$(SRCROOT)/../../external/gfxstream/host/vulkan/cereal"
+        - "$(SRCROOT)/../../external/gfxstream/host/vulkan/cereal/common"
+        - "$(SRCROOT)/../../external/gfxstream/host/features/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/gl/gl-host-common/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/features/include/gfxstream/host"
+        - "$(SRCROOT)/../../external/gfxstream/host/tracing/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/backend/include"
+        - "$(SRCROOT)/../../external/gfxstream/common/vulkan/include"
+        - "$(SRCROOT)/../../external/gfxstream/common/utils/include"
         - "$(SRCROOT)/../../external/gfxstream/include"
-        - "$(SRCROOT)/../../external/gfxstream/host/apigen-codec-common"
-        - "$(SRCROOT)/../../external/gfxstream/host/gl/glsnapshot"
-        - "$(SRCROOT)/../../external/aemu/base/include"
-        - "$(SRCROOT)/../../external/aemu/host-common/include"
+        - "$(SRCROOT)/../../external/gfxstream/utils/include"
+        - "$(SRCROOT)/../../external/gfxstream/third-party/renderdoc/include"
+        - "$(SRCROOT)/../../external/gfxstream/third-party/glm/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/compressed_textures/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/health/include"
+        - "$(SRCROOT)/../../external/gfxstream/common/base/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/metrics/include"
+        - "$(SRCROOT)/../../external/gfxstream/common/logging/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/decoder_common/include"
+        - "$(SRCROOT)/../../external/gfxstream/third_party/vulkan/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/iostream/include"
+        - "$(SRCROOT)/../../external/gfxstream/third_party/glm/include"
+        - "$(SRCROOT)/../../external/gfxstream/third_party/glm/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/renderdoc/include"
+        - "$(SRCROOT)/../../external/gfxstream/third_party/renderdoc/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/library/include"
+        - "$(SRCROOT)/../../external/gfxstream/host/snapshot/include"
+        - "$(SRCROOT)/../../external/gfxstream/third_party/astc-encoder/Source"
+        - "$(SRCROOT)/../../external/gfxstream/third_party/opengl/include"
+        CLANG_CXX_LANGUAGE_STANDARD:
+        - "gnu++20"
+        GCC_PREPROCESSOR_DEFINITIONS:
+        - "VK_GFXSTREAM_STRUCTURE_TYPE_EXT=1"
+        - "VK_USE_PLATFORM_METAL_EXT=1"
+        - "VK_USE_PLATFORM_MACOS_MVK=1"
+        OTHER_CPLUSPLUSFLAGS:
+        - "$(OTHER_CFLAGS)"
+        - "-Wno-return-type-c-linkage"
   Launcher:
     type: application
     platform: macOS
@@ -80,21 +145,16 @@ targets:
       codeSign: true
       copy:
         destination: executables
-    - bundle: libEGL.dylib
-      embed: true
-      codeSign: true
-    - bundle: libGLESv2.dylib
+    - bundle: libMoltenVK.dylib
       embed: true
       codeSign: true
     preBuildScripts:
-      - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/download_angle_bin.sh"
-        name: Download ANGLE
+      - script: "cp \"${SRCROOT}/external/MoltenVK/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib\" \"${BUILT_PRODUCTS_DIR}/libMoltenVK.dylib\""
+        name: Download MoltenVK for macOS
         inputFiles:
-          - ${SRCROOT}/scripts/download_angle_bin.sh
+          - ${SRCROOT}/external/MoltenVK/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib
         outputFiles:
-          - ${BUILT_PRODUCTS_DIR}/macos_fat.zip
-          - ${BUILT_PRODUCTS_DIR}/libEGL.dylib
-          - ${BUILT_PRODUCTS_DIR}/libGLESv2.dylib
+          - ${BUILT_PRODUCTS_DIR}/libMoltenVK.dylib
   Runtime:
     type: tool
     platform: macOS
@@ -133,9 +193,7 @@ targets:
     type: library.static
     platform: iOS
     sources:
-    - ios/lib
-    - ../../crates/gfx-fallback/webrogue_gfx_ffi_sdl.c
-    - ../../crates/gfx-fallback/webrogue_gfx_ffi_sdl_events.c
+    - ios/lib 
     settings:
       base:
         SWIFT_INSTALL_OBJC_HEADER: false
@@ -143,11 +201,7 @@ targets:
         - "$(SRCROOT)/external/SDL3/include"
         - "$(SRCROOT)/external/SDL3/include/SDL3"
         PRODUCT_NAME: wrios
-        SYSTEM_HEADER_SEARCH_PATHS:
-        - "$(SRCROOT)/external/angle_ios_headers"
         SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/lib/Bridging-Header.h"
-        GCC_PREPROCESSOR_DEFINITIONS: 
-        - "WEBROGUE_GFX_IOS=1"
   _SDL: # Needed only to build SDL for aot template
     type: library.static
     platform: iOS
@@ -193,8 +247,7 @@ targets:
     - sdk: CoreAudio.framework
     - sdk: AVFoundation.framework
     - sdk: AudioToolbox.framework
-    - framework: external/libEGL.xcframework
-    - framework: external/libGLESv2.xcframework
+    - framework: external/MoltenVK/MoltenVK/static/MoltenVK.xcframework
   Runner_iOS:
     type: application
     platform: iOS
@@ -238,8 +291,7 @@ targets:
     - sdk: CoreAudio.framework
     - sdk: AVFoundation.framework
     - sdk: AudioToolbox.framework
-    - framework: external/libEGL.xcframework
-    - framework: external/libGLESv2.xcframework
+    - framework: external/MoltenVK/MoltenVK/static/MoltenVK.xcframework
     preBuildScripts:
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/ios/runner ${BUILD_DIR}/rust_artifacts/ios_runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o"
         name: Combine object to lipo
@@ -318,10 +370,7 @@ targets:
     - sdk: AudioToolbox.framework
     - sdk: libc++.tbd
     - sdk: libc++abi.tbd
-    - bundle: libEGL.dylib
-      embed: true
-      codeSign: true
-    - bundle: libGLESv2.dylib
+    - bundle: libMoltenVK.dylib
       embed: true
       codeSign: true
     preBuildScripts:
@@ -334,14 +383,12 @@ targets:
         outputFiles:
           - ${BUILD_DIR}/rust_artifacts/runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o
           - ${BUILD_DIR}/rust_artifacts/runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o.lipo
-      - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/download_angle_bin.sh"
-        name: Download ANGLE
+      - script: "cp \"${SRCROOT}/external/MoltenVK/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib\" \"${BUILT_PRODUCTS_DIR}/libMoltenVK.dylib\""
+        name: Download MoltenVK for macOS
         inputFiles:
-          - ${SRCROOT}/scripts/download_angle_bin.sh
+          - ${SRCROOT}/external/MoltenVK/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib
         outputFiles:
-          - ${BUILT_PRODUCTS_DIR}/macos_fat.zip
-          - ${BUILT_PRODUCTS_DIR}/libEGL.dylib
-          - ${BUILT_PRODUCTS_DIR}/libGLESv2.dylib
+          - ${BUILT_PRODUCTS_DIR}/libMoltenVK.dylib
 schemes:
   MacOS_Launcher_Debug:
     build:
