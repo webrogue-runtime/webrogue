@@ -21,7 +21,14 @@ impl Target {
             .find(|target| target.name() == name)
             .and_then(|target| Some(*target))
             .ok_or_else(|| {
-                anyhow::anyhow!("Target {} is not supported by webrogue-aot-compiler", name)
+                anyhow::anyhow!(
+                    "Target {} is not supported by webrogue-aot-compiler. Supported targets are:\n{}", 
+                    name, 
+                    Target::all_cases()
+                        .map(|target| format!("\t{}", target.name()))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                )
             })
     }
     pub fn all_cases() -> std::slice::Iter<'static, Target> {

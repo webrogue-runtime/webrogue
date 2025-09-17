@@ -2,46 +2,11 @@ plugins {
     alias(libs.plugins.android.library)
 }
 
-task downloadZipFile(type: MyDownload) {
-    target = project.file('src/main/cpp/external/SDL-release-3.2.10.zip')
-}
-
-class MyDownload extends DefaultTask {
-    @OutputFile
-    File target
-
-    @TaskAction
-    void download() {
-        if (!target.exists()) {
-            new URL('https://codeload.github.com/libsdl-org/SDL/zip/refs/tags/release-3.2.10')
-                    .withInputStream { i -> target.withOutputStream { it << i } }
-        }
-    }
-}
-
-task downloadAndUnzipFile(dependsOn: downloadZipFile, type: Copy) {
-    from zipTree(downloadZipFile.target)
-    into project.file('src/main/cpp/external')
-}
-
-task copySDLJavaSources(dependsOn: downloadAndUnzipFile, type: Copy) {
-    from project.file('src/main/cpp/external/SDL-release-3.2.10/android-project/app/src/main/java/org/libsdl/app')
-    into project.file('src/main/java/org/libsdl/app')
-}
-
 android {
     namespace 'io.github.webrogue_runtime.common'
-    compileSdk 35
-    ndkVersion "27.2.12479018"
+    compileSdk 36
+    ndkVersion "27.3.13750724"
 
-    tasks.whenTaskAdded { task ->
-        if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
-            task.dependsOn copySDLJavaSources
-        }
-        if ((task.name == 'extractDebugAnnotations' || task.name == 'extractReleaseAnnotations')) {
-            task.dependsOn copySDLJavaSources
-        }
-    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

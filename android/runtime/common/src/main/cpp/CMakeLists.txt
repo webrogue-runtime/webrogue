@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 
+set(ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES ON)
+
 project("webrogue_common")
 
 set(WEBROGUE_SDL_VERSION "3.2.10")
@@ -12,6 +14,10 @@ endif()
 
 set(SDL_SHARED ON)
 set(SDL_STATIC OFF)
+set(SDL_OPENGL OFF)
+set(SDL_OPENGLES OFF)
+set(SDL_VULKAN ON)
+set(SDL_GPU OFF)
 add_subdirectory("${WEBROGUE_SDL_DIR}" SDL3)
 # set(SDL2TTF_VENDORED ON)
 # set(SDL2TTF_INSTALL OFF)
@@ -22,12 +28,10 @@ include(${WEBROGUE_GFXSTREAM_DIR}/paths.cmake)
 
 add_library(
     webrogue_static STATIC
-    ../../../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl.c
-    ../../../../../../crates/gfx-fallback/webrogue_gfx_ffi_sdl_events.c
     ${WEBROGUE_GFXSTREAM_SOURCES}
 )
+target_compile_definitions(webrogue_static PRIVATE VK_GFXSTREAM_STRUCTURE_TYPE_EXT VK_USE_PLATFORM_ANDROID_KHR)
 
-target_compile_definitions(webrogue_static PRIVATE WEBROGUE_GFX_SDL_VERSION=3)
 
 add_library(
     webrogue SHARED

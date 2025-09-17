@@ -6,7 +6,7 @@ def isSigning = project.hasProperty("webrogueKeystore") || project.hasProperty("
 
 android {
     namespace webrogueApplicationId
-    compileSdk 35
+    compileSdk 36
 
     if(isSigning) {
         signingConfigs {

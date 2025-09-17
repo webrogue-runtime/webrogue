@@ -193,7 +193,7 @@ fn main() {
                 path.push(part);
             }
             build.include(path);
-        };
+        }
 
         build
             .define("VK_GFXSTREAM_STRUCTURE_TYPE_EXT", None)

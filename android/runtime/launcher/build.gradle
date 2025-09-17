@@ -7,12 +7,12 @@ plugins {
 // apply plugin: 'com.android.application'
 // apply plugin: 'com.jetbrains.kotlin.android'
 
-def cargoProfile = "release"
+def cargoProfile = "dev"
 
 android {
     namespace 'io.github.webrogue_runtime.launcher'
-    compileSdk 35
-    ndkVersion "27.2.12479018"
+    compileSdk 36
+    ndkVersion "27.3.13750724"
 
     defaultConfig {
         applicationId "io.github.webrogue_runtime.launcher"
@@ -28,7 +28,9 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags ''
-                arguments "-DCARGO_PROFILE=${cargoProfile}"
+                arguments "-DCARGO_PROFILE=${cargoProfile}", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                // abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+                abiFilters 'arm64-v8a'
             }
         }
     }
@@ -97,14 +99,6 @@ android {
         cmake {
             path file('src/main/cpp/CMakeLists.txt')
             version '3.22.1'
-        }
-    }
-    defaultConfig {
-        externalNativeBuild {
-            cmake {
-                // abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
-                abiFilters 'arm64-v8a'
-            }
         }
     }
     applicationVariants.configureEach { variant ->
