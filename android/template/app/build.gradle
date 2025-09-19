@@ -18,8 +18,11 @@ android {
             }
         }
     }
-    aaptOptions {
-        noCompress "swrapp"
+    androidResources {
+        noCompress 'swrapp'
+    }
+    lint {
+        warning 'Instantiatable'
     }
     defaultConfig {
         applicationId webrogueApplicationId

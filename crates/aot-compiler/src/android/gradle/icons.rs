@@ -1,18 +1,22 @@
 use crate::android::gradle::types::IconsStamp;
 use std::io::Write as _;
-use webrogue_wrapp::IVFSBuilder as _;
 
-pub fn build(
+pub fn build<
+    FilePosition: webrogue_wrapp::IFilePosition,
+    FileReader: webrogue_wrapp::IFileReader,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
+    VFSBuilder: webrogue_wrapp::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
+>(
     build_dir: &std::path::PathBuf,
-    wrapp_builder: &mut webrogue_wrapp::WrappVFSBuilder,
+    vfs_builder: &mut VFSBuilder,
     old_stamp: Option<&IconsStamp>,
 ) -> anyhow::Result<IconsStamp> {
-    let icons_config = wrapp_builder
+    let icons_config = vfs_builder
         .config()?
         .icons
         .clone()
         .ok_or_else(|| anyhow::anyhow!("No icons configuration found in WRAPP"))?;
-    let icon_bytes = wrapp_builder.get_uncompressed("normal_icon")?;
+    let icon_bytes = vfs_builder.get_uncompressed("normal_icon")?;
     let new_stamp = IconsStamp {
         config: icons_config,
         normal_icon_bytes: icon_bytes,

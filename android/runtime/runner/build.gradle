@@ -18,9 +18,6 @@ android {
             storePassword "testtestz"
         }
     }
-    aaptOptions {
-        noCompress "swrapp"
-    }
     defaultConfig {
         applicationId "io.github.webrogue_runtime.runner"
         minSdk 24
@@ -93,6 +90,9 @@ android {
             path file('src/main/cpp/CMakeLists.txt')
             version '3.22.1'
         }
+    }
+    androidResources {
+        noCompress 'swrapp'
     }
     applicationVariants.configureEach { variant ->
         def nativeBuildTask = "externalNativeBuild${variant.name.capitalize()}"

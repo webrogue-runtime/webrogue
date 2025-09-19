@@ -7,7 +7,7 @@ plugins {
 // apply plugin: 'com.android.application'
 // apply plugin: 'com.jetbrains.kotlin.android'
 
-def cargoProfile = "dev"
+def cargoProfile = "release"
 
 android {
     namespace 'io.github.webrogue_runtime.launcher'

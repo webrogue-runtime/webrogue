@@ -20,6 +20,7 @@ pub fn link(
     let libwebrogue_android_tmp =
         artifacts.extract_tmp(&build_dir, "android_gradle/libs/libwebrogue_android.a")?;
     let libc_tmp = artifacts.extract_tmp(&build_dir, "android_gradle/libs/libc.so")?;
+    let liblog_tmp = artifacts.extract_tmp(&build_dir, "android_gradle/libs/liblog.so")?;
     let libdl_tmp = artifacts.extract_tmp(&build_dir, "android_gradle/libs/libdl.so")?;
     let crtend_tmp = artifacts.extract_tmp(&build_dir, "android_gradle/libs/crtend_so.o")?;
 
@@ -41,6 +42,8 @@ pub fn link(
         "-o",
         path_to_arg(&output_path)?,
         crtbegin_tmp.as_arg()?,
+        "-z",
+        "max-page-size=16384",
         "--build-id=sha1",
         "--no-rosegment",
         "--no-undefined-version",
@@ -59,8 +62,9 @@ pub fn link(
                 .join("libSDL3.so")
         )?,
         object_file,
-        // -landroid, -llog, -latomic libm.so
+        // -landroid, -latomic libm.so
         libc_tmp.as_arg()?,
+        liblog_tmp.as_arg()?,
         libdl_tmp.as_arg()?,
         crtend_tmp.as_arg()?,
     )

@@ -42,7 +42,12 @@ test -f ../examples/empty/empty.wrapp && {
     cp ../examples/empty/empty.wrapp runtime/runner/src/main/assets/aot.swrapp # TODO strip
 }
 
-./runtime/gradlew --project-dir=runtime :runner:assembleRelease
+sh runtime/common/src/main/cpp/external/download_sdl.sh
+
+rm -f process_dump/p.*
+STRACE_COMMAND="strace -s 1000 -o process_dump/p -ff"
+STRACE_COMMAND=""
+$STRACE_COMMAND ./runtime/gradlew --no-daemon --project-dir=runtime :runner:assembleRelease
 
 rm -rf ../aot_artifacts/android_gradle
 mkdir -p ../aot_artifacts/android_gradle
@@ -83,6 +88,7 @@ cp \
     runtime/runner/src/main/cpp/../rust_target/aarch64-linux-android/aot/libwebrogue_android.a \
     $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libc.so \
     $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/libdl.so \
+    $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/liblog.so \
     $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/crtbegin_so.o \
     $ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/$ANDROID_API_VERSION/crtend_so.o \
     ../aot_artifacts/android_gradle/libs
