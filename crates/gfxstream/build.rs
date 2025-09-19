@@ -1,6 +1,10 @@
 use std::str::FromStr as _;
 
 fn main() {
+    cfg_aliases::cfg_aliases! {
+        signal_bases_shadow_blob: { all(not(target_os = "macos"), not(target_os = "ios")) },
+    }
+
     let _crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
     let _os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();

@@ -119,6 +119,10 @@ dirs = { version = "6.0.0" }
 zip = { version = "4.5.0", default-features = false }
 sdl3 = { version = "0.14.27", default-features = false }
 sdl3-sys = { version = "*", default-features = false }
+libc = { version = "0.2.112", default-features = false }
+lazy_static = { version = "1.5.0" }
+rustix = { version = "1.0.3", default-features = false }
+cfg_aliases = { version = "0.2.1" }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.4.1" }

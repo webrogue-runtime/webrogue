@@ -48,7 +48,7 @@ impl EventsBuilder {
         Self { events: Vec::new() }
     }
 
-    fn event(&mut self, name: &'static str, id: usize) -> EventBuilder {
+    fn event<'a>(&'a mut self, name: &'static str, id: usize) -> EventBuilder<'a> {
         self.events.push(Event {
             name,
             id,

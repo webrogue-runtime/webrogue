@@ -1,34 +1,59 @@
-use std::{ffi::CString, mem::transmute, str::FromStr, sync::Mutex};
+use std::{
+    ffi::CString,
+    mem::transmute,
+    str::FromStr,
+    sync::{Arc, Mutex},
+};
 
 mod ffi;
+pub mod shadow_blob;
 
-pub struct Thread {
-    raw_thread_ptr: *const (),
+pub struct System {
+}
+
+impl System {
+    #[allow(clippy::not_unsafe_ptr_arg_deref)] // conflicts with "unnecessary `unsafe` block" warning, maybe clippy bug
+    pub fn new(
+        get_proc: extern "C" fn(sym: *const std::ffi::c_char, userdata: *const ()) -> *const (),
+        userdata: *const (),
+    ) -> Self {
+        unsafe { ffi::webrogue_gfxstream_ffi_create_global_state(get_proc as *const (), userdata) };
+        shadow_blob::init();
+        Self { }
+    }
+}
+
+impl Drop for System {
+    fn drop(&mut self) {
+        unsafe { ffi::webrogue_gfxstream_ffi_destroy_global_state() };
+    }
+}
+
+pub struct Decoder {
+    _system: Arc<System>,
+    raw_decoder_ptr: *const (),
     presentation_callback: Mutex<Option<Box<Box<dyn Fn()>>>>,
 }
 
-unsafe impl Send for Thread {}
+unsafe impl Send for Decoder {}
 
-impl Thread {
-    #[allow(clippy::not_unsafe_ptr_arg_deref)] // conflicts with "unnecessary `unsafe` block" warning, maybe clippy bug
-    pub fn init(
-        get_proc: extern "C" fn(sym: *const std::ffi::c_char, userdata: *const ()) -> *const (),
-        userdata: *const (),
-    ) {
-        unsafe { ffi::webrogue_gfxstream_ffi_create_global_state(get_proc as *const (), userdata) };
-    }
-
-    pub fn new() -> Self {
+impl<'a> Decoder {
+    pub fn new(system: Arc<System>) -> Self {
+        let raw_decoder_ptr = unsafe { ffi::webrogue_gfxstream_ffi_create_decoder() };
         Self {
-            raw_thread_ptr: unsafe { ffi::webrogue_gfxstream_ffi_create_thread() },
+            _system: system,
+            raw_decoder_ptr,
             presentation_callback: Mutex::new(None),
         }
     }
 
     pub fn commit(&self, buf: &[u8]) {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+
         unsafe {
             ffi::webrogue_gfxstream_ffi_commit_buffer(
-                self.raw_thread_ptr,
+                self.raw_decoder_ptr,
                 buf.as_ptr() as *const (),
                 buf.len() as u32,
             )
@@ -38,7 +63,7 @@ impl Thread {
     pub fn read(&self, buf: &mut [u8]) {
         unsafe {
             ffi::webrogue_gfxstream_ffi_ret_buffer_read(
-                self.raw_thread_ptr,
+                self.raw_decoder_ptr,
                 buf.as_ptr() as *mut (),
                 buf.len() as u32,
             )
@@ -46,9 +71,10 @@ impl Thread {
     }
 
     pub unsafe fn register_blob(&self, buf: &[std::cell::UnsafeCell<u8>], id: u64) {
+        // crate::shadow_blob::register_blob(buf.as_ptr() as *mut std::ffi::c_void, buf.len());
         unsafe {
             ffi::webrogue_gfxstream_ffi_register_blob(
-                self.raw_thread_ptr,
+                self.raw_decoder_ptr,
                 buf.as_ptr() as *mut (),
                 buf.len() as u64,
                 id,
@@ -69,7 +95,7 @@ impl Thread {
         let count = extensions.len();
         unsafe {
             ffi::webrogue_gfxstream_ffi_set_extensions(
-                self.raw_thread_ptr,
+                self.raw_decoder_ptr,
                 extensions
                     .into_iter()
                     .map(|extension| CString::from_str(extension.as_str()).unwrap())
@@ -98,7 +124,7 @@ impl Thread {
 
         unsafe {
             ffi::webrogue_gfxstream_ffi_set_presentation_callback(
-                self.raw_thread_ptr,
+                self.raw_decoder_ptr,
                 c_callback,
                 userdata as *const (),
             )
@@ -106,10 +132,10 @@ impl Thread {
     }
 }
 
-impl Drop for Thread {
+impl Drop for Decoder {
     fn drop(&mut self) {
         unsafe {
-            ffi::webrogue_gfxstream_ffi_destroy_thread(self.raw_thread_ptr);
+            ffi::webrogue_gfxstream_ffi_destroy_decoder(self.raw_decoder_ptr);
         }
     }
 }

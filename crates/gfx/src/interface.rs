@@ -17,7 +17,7 @@ pub trait ISystem<Window: IWindow> {
     fn make_window(&self) -> Window;
     fn poll(&self, events_buffer: &mut Vec<u8>);
     fn pump(&self);
-    fn make_gfxstream_thread(&self) -> webrogue_gfxstream::Thread;
+    fn make_gfxstream_decoder(&self) -> webrogue_gfxstream::Decoder;
     fn vk_extensions(&self) -> Vec<String>;
 }
 pub trait IWindow {
@@ -30,7 +30,7 @@ pub struct Interface<System: ISystem<Window>, Window: IWindow> {
     system: Arc<System>,
     windows: Arc<Mutex<BTreeMap<u32, Arc<Window>>>>,
     // TODO remove mutex
-    gfxstream_thread: Mutex<Option<Arc<webrogue_gfxstream::Thread>>>,
+    gfxstream_decoder: Mutex<Option<Arc<webrogue_gfxstream::Decoder>>>,
     event_buf: Arc<Mutex<Vec<u8>>>,
 }
 
@@ -45,7 +45,7 @@ pub fn run<T, System: ISystem<Window> + 'static, Window: IWindow + 'static>(
 
 // gfx can be shared
 // window can't TODO
-// gfxstream_thread is not cloned/copied across threads
+// gfxstream_decoder is not cloned/copied across threads
 // TODO make wasi-threads not to force Send implementation
 unsafe impl<System: ISystem<Window> + 'static, Window: IWindow> Send for Interface<System, Window> {}
 
@@ -55,7 +55,7 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> Interface<System, Windo
         Self {
             system,
             windows: Arc::new(Mutex::new(BTreeMap::new())),
-            gfxstream_thread: Mutex::new(None),
+            gfxstream_decoder: Mutex::new(None),
             event_buf: Arc::new(Mutex::new(Vec::new())),
         }
     }
@@ -66,9 +66,16 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> Clone for Interface<Sys
         Self {
             system: self.system.clone(),
             windows: self.windows.clone(),
-            gfxstream_thread: Mutex::new(None),
+            gfxstream_decoder: Mutex::new(None),
             event_buf: self.event_buf.clone(),
         }
+    }
+}
+
+impl<System: ISystem<Window>, Window: IWindow> Drop for Interface<System, Window> {
+    fn drop(&mut self) {
+        // gfxstream must be deinitialized before sdl unloads vulkan library
+        *self.gfxstream_decoder.lock().unwrap() = None;
     }
 }
 
@@ -117,7 +124,7 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> webrogue_gfx::WebrogueG
         let Ok(b) = mem.as_cow(buf.as_array(len)) else {
             return;
         };
-        self.get_gfxstream_thread().commit(&b);
+        self.get_gfxstream_decoder().commit(&b);
     }
 
     fn ret_buffer_read(
@@ -128,7 +135,7 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> webrogue_gfx::WebrogueG
     ) {
         let buffer = {
             let mut buffer = vec![0u8; len as usize];
-            self.get_gfxstream_thread().read(&mut buffer);
+            self.get_gfxstream_decoder().read(&mut buffer);
             buffer
         };
         let _ = mem.copy_from_slice(&buffer, buf.as_array(len));
@@ -173,11 +180,11 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> webrogue_gfx::WebrogueG
             todo!();
         };
 
-        let gfxstream_thread = self.get_gfxstream_thread();
-        let vk_instance = gfxstream_thread.unbox_vk_instance(vk_instance);
+        let gfxstream_decoder = self.get_gfxstream_decoder();
+        let vk_instance = gfxstream_decoder.unbox_vk_instance(vk_instance);
         let vk_surface = window.make_vk_surface(vk_instance);
         if let Some(vk_surface) = vk_surface {
-            let vk_surface = gfxstream_thread.box_vk_surface(vk_surface);
+            let vk_surface = gfxstream_decoder.box_vk_surface(vk_surface);
             let _ = mem.write(out_vk_surface, vk_surface);
         } else {
             todo!();
@@ -192,7 +199,7 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> webrogue_gfx::WebrogueG
         buf: wiggle::GuestPtr<u8>,
     ) -> () {
         let slice = match mem {
-            wiggle::GuestMemory::Unshared(items) => unimplemented!(),
+            wiggle::GuestMemory::Unshared(_) => unimplemented!(),
             wiggle::GuestMemory::Shared(unsafe_cells) => {
                 let offset = buf.offset() as usize;
                 let size = size as usize;
@@ -203,7 +210,7 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> webrogue_gfx::WebrogueG
             return;
         }
         // register_blob will store buf and pass it to vulkan driver for later use
-        unsafe { self.get_gfxstream_thread().register_blob(slice, blob_id) };
+        unsafe { self.get_gfxstream_decoder().register_blob(slice, blob_id) };
     }
 }
 
@@ -212,12 +219,12 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> Interface<System, Windo
         self.windows.lock().unwrap().get(&window_handle).cloned()
     }
 
-    fn get_gfxstream_thread(&self) -> Arc<webrogue_gfxstream::Thread> {
-        let mut stored_arc = self.gfxstream_thread.lock().unwrap();
+    fn get_gfxstream_decoder(&self) -> Arc<webrogue_gfxstream::Decoder> {
+        let mut stored_arc = self.gfxstream_decoder.lock().unwrap();
         if let Some(stored_arc) = stored_arc.as_ref() {
             stored_arc.clone()
         } else {
-            let arc = Arc::new(self.system.make_gfxstream_thread());
+            let arc = Arc::new(System::make_gfxstream_decoder(&self.system));
             arc.set_extensions(self.system.vk_extensions());
             let cloned_system = self.system.clone();
             arc.set_presentation_callback(Box::new(move || {

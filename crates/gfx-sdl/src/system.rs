@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use webrogue_gfx::events;
 
 pub struct SDLSystem {
@@ -5,19 +7,28 @@ pub struct SDLSystem {
     pub video_subsystem: sdl3::VideoSubsystem,
     event_pump: std::sync::Mutex<sdl3::EventPump>,
     pub(crate) dispatcher: Option<crate::dispatch::DispatcherFunc>,
+
+    get_proc_address: unsafe extern "C" fn(),
+    gfxstream_system: std::sync::Mutex<Option<Arc<webrogue_gfx::GFXStreamSystem>>>,
+}
+
+
+impl Drop for SDLSystem {
+    fn drop(&mut self) {
+        // gfxstream must be deinitialized before sdl unloads vulkan library
+        *self.gfxstream_system.lock().unwrap() = None;
+    }
 }
 
 impl SDLSystem {
     pub fn new(dispatcher: Option<crate::dispatch::DispatcherFunc>) -> Self {
         crate::dispatch::dispatch(dispatcher, || {
             let sdl_context = sdl3::init().unwrap();
-            // sdl_context.
-            //
 
             #[cfg(target_os = "macos")]
             {
                 use std::{env::current_exe, ffi::CStr};
-                
+
                 let mut path = current_exe()
                     .unwrap()
                     .parent()
@@ -68,12 +79,6 @@ impl SDLSystem {
             video_subsystem.vulkan_load_library_default().unwrap();
 
             let get_proc_address = video_subsystem.vulkan_get_proc_address_function().unwrap();
-            let get_proc_address = Box::leak(Box::new(get_proc_address)); // TODO fix this 8 bytes per process leakage cz rust is safe and all
-
-            webrogue_gfx::GFXStreamThread::init(
-                get_vk_proc,
-                get_proc_address as *const _ as *const (),
-            );
             let event_pump = std::sync::Mutex::new(sdl_context.event_pump().unwrap());
 
             Self {
@@ -81,6 +86,8 @@ impl SDLSystem {
                 video_subsystem,
                 event_pump,
                 dispatcher,
+                get_proc_address,
+                gfxstream_system: Mutex::new(None),
             }
         })
     }
@@ -258,8 +265,24 @@ impl webrogue_gfx::ISystem<crate::window::SDLWindow> for SDLSystem {
         }
     }
 
-    fn make_gfxstream_thread(&self) -> webrogue_gfx::GFXStreamThread {
-        webrogue_gfx::GFXStreamThread::new()
+    fn make_gfxstream_decoder(&self) -> webrogue_gfx::GFXStreamDecoder {
+        let gfxstream_system = {
+            let mut owned_gfxstream_system = self.gfxstream_system.lock().unwrap();
+            if let Some(gfxstream_system) = owned_gfxstream_system.as_ref() {
+                gfxstream_system.clone()
+            } else {
+                let get_proc_address = Box::leak(Box::new(self.get_proc_address)); // TODO fix this 8 bytes per process leakage cz rust is safe and all
+
+                let gfxstream_system = Arc::new(webrogue_gfx::GFXStreamSystem::new(
+                    get_vk_proc,
+                    get_proc_address as *const _ as *const (),
+                ));
+
+                owned_gfxstream_system.replace(gfxstream_system.clone());
+                gfxstream_system
+            }
+        };
+        webrogue_gfx::GFXStreamDecoder::new(gfxstream_system)
     }
 
     fn vk_extensions(&self) -> Vec<String> {

@@ -9,6 +9,11 @@ edition.workspace = true
 cmake = ["dep:cmake", "dep:cc"]
 cc = ["dep:cc"]
 
+[dependencies]
+lazy_static = { workspace = true }
+rustix = { workspace = true, default-features = true, features = ["mm", "param"] }
+
 [build-dependencies]
 cmake = { workspace = true, optional = true }
 cc = { workspace = true, optional = true }
+cfg_aliases = { workspace = true }

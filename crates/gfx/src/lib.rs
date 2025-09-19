@@ -1,7 +1,8 @@
 pub mod events;
 mod interface;
 
-pub use webrogue_gfxstream::Thread as GFXStreamThread;
+pub use webrogue_gfxstream::Decoder as GFXStreamDecoder;
+pub use webrogue_gfxstream::System as GFXStreamSystem;
 
 pub use interface::run;
 pub use interface::webrogue_gfx;

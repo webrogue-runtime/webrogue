@@ -146,11 +146,12 @@ class MetricsLoggerImpl: public gfxstream::base::MetricsLogger {
   void setCrashAnnotation(const char* key, const char* value) override {}
 };
 
+static std::unique_ptr<gfxstream::vk::VulkanDispatch> sVulkanDispatch = nullptr;
 static get_proc_func_t sVkGetProc = nullptr;
 static void* sVkGetProcUserdata = nullptr;
 static std::unique_ptr<gfxstream::vk::VkEmulation> sEmulationVk = nullptr; // TODO fix this leakage
  
-class GFXStreamThread {
+class GFXStreamDecoder {
 public:
   std::unique_ptr<WebrogueOutputStream> webrogue_output_stream;
   std::unique_ptr<gfxstream::ProcessResources> processResources;
@@ -160,7 +161,7 @@ public:
   gfxstream::vk::VkDecoder vkDec;
   
 
-  GFXStreamThread() {
+  GFXStreamDecoder() {
     // set_emugl_address_space_device_control_ops
     if(!gfxstream::vk::RenderThreadInfoVk::get()) {
       static int ctx_id = 1; // TODO sync
@@ -250,17 +251,22 @@ void webrogue_gfxstream_ffi_create_global_state(void *get_proc, void* userdata) 
   gfxstream::vk::VkDecoderGlobalState::initialize(sEmulationVk.get());
 }
 
-void* webrogue_gfxstream_ffi_create_thread() {
-  return new GFXStreamThread();
+void webrogue_gfxstream_ffi_destroy_global_state() {
+  sEmulationVk = nullptr;
+  sVulkanDispatch = nullptr;
 }
 
-void webrogue_gfxstream_ffi_destroy_thread(void *raw_thread_ptr) {
-  GFXStreamThread *thread = (GFXStreamThread *)raw_thread_ptr;
+void* webrogue_gfxstream_ffi_create_decoder() {
+  return new GFXStreamDecoder();
+}
+
+void webrogue_gfxstream_ffi_destroy_decoder(void *raw_decoder_ptr) {
+  GFXStreamDecoder *thread = (GFXStreamDecoder *)raw_decoder_ptr;
   delete thread;
 }
 
-void webrogue_gfxstream_ffi_commit_buffer(void *raw_thread_ptr, void const* buf, uint32_t len) {
-  GFXStreamThread *thread = (GFXStreamThread *)raw_thread_ptr;
+void webrogue_gfxstream_ffi_commit_buffer(void *raw_decoder_ptr, void const* buf, uint32_t len) {
+  GFXStreamDecoder *thread = (GFXStreamDecoder *)raw_decoder_ptr;
   WebrogueOutputStream *stream = thread->webrogue_output_stream.get();
 
   gfxstream::vk::VkDecoderContext context = {
@@ -293,8 +299,8 @@ void webrogue_gfxstream_ffi_commit_buffer(void *raw_thread_ptr, void const* buf,
     }
   }
 }
-void webrogue_gfxstream_ffi_ret_buffer_read(void *raw_thread_ptr, void* buf, uint32_t len) {
-  GFXStreamThread *thread = (GFXStreamThread *)raw_thread_ptr;
+void webrogue_gfxstream_ffi_ret_buffer_read(void *raw_decoder_ptr, void* buf, uint32_t len) {
+  GFXStreamDecoder *thread = (GFXStreamDecoder *)raw_decoder_ptr;
   WebrogueOutputStream *stream = thread->webrogue_output_stream.get();
   size_t available = stream->m_ret_buf_used - stream->m_ret_buf_consumed;
   assert(len<=available);
@@ -318,7 +324,7 @@ uint64_t webrogue_gfxstream_ffi_box_vk_surface(void *vk_surface) {
   return (uint64_t)guest_vk_surface;
 }
 void webrogue_gfxstream_ffi_register_blob(
-  void* raw_thread_ptr,
+  void* raw_decoder_ptr,
   void* buf,
   uint64_t size,
   uint64_t id
@@ -327,7 +333,7 @@ void webrogue_gfxstream_ffi_register_blob(
   state->registerWebrogueBlob(buf, size, id);
 }
 void webrogue_gfxstream_ffi_set_extensions(
-  void* raw_thread_ptr,
+  void* raw_decoder_ptr,
   char** raw_extensions,
   uint32_t count
 ) {
@@ -339,12 +345,29 @@ void webrogue_gfxstream_ffi_set_extensions(
   state->setWebrogueExtensions(extension);
 }
 void webrogue_gfxstream_ffi_set_presentation_callback(
-  void* raw_thread_ptr,
+  void* raw_decoder_ptr,
   void (*callback)(void*),
   void* userdata
 ) {
   auto state = gfxstream::vk::VkDecoderGlobalState::get();
   state->setPresentCallback(callback, userdata);
+}
+void webrogue_gfxstream_ffi_shadow_blob_copy(
+  uint64_t blob_id,
+  void* data,
+  uint64_t blob_offset,
+  uint64_t size,
+  uint32_t direction
+) {
+  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  state->copyWebrogueShadowBlob(blob_id, data, blob_offset, size, direction);
+}
+
+void webrogue_gfxstream_ffi_set_register_shadow_blob_callback(
+  void (*callback)(void*, uint64_t, uint64_t)
+) {
+  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  state->setWebrogueRegisterBlobCallback(callback);
 }
 }
 
@@ -360,9 +383,11 @@ static void* sVulkanDispatchDlSym(void* lib, const char* sym) {
 namespace gfxstream {
 namespace vk {
 gfxstream::vk::VulkanDispatch* vkDispatch(bool forTesting) {
-  auto result = new gfxstream::vk::VulkanDispatch();
-  gfxstream::vk::init_vulkan_dispatch_from_system_loader(sVulkanDispatchDlOpen, sVulkanDispatchDlSym,  result);
-  return result;
+  if(!sVulkanDispatch) {
+    sVulkanDispatch = std::make_unique<gfxstream::vk::VulkanDispatch>();
+    gfxstream::vk::init_vulkan_dispatch_from_system_loader(sVulkanDispatchDlOpen, sVulkanDispatchDlSym, sVulkanDispatch.get());
+  }
+  return sVulkanDispatch.get();
 }
 
 bool vkDispatchValid(const VulkanDispatch* vk) {

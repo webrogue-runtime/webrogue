@@ -1,5 +1,6 @@
 mod threads;
 
+use wasmtime::unix::StoreExt;
 pub use webrogue_gfx_sdl::DispatcherFunc;
 pub use webrogue_wrapp::{
     IVFSBuilder, RealVFSBuilder, RealVFSHandle, WrappVFSBuilder, WrappVFSHandle,
@@ -177,6 +178,16 @@ fn run_module<
         state.preview1_ctx.as_mut().unwrap()
     })?;
     // wasi_common::sync::add_to_linker(&mut linker, |state| state.preview1_ctx.as_mut().unwrap())?;
+
+    unsafe {
+        store.set_signal_handler(move |signum, siginfo, _| {
+            if libc::SIGSEGV != signum && libc::SIGBUS != signum {
+                return false;
+            }
+            let si_addr: *mut libc::c_void = (*siginfo).si_addr();
+            webrogue_gfxstream::shadow_blob::handle_segfault(si_addr)
+        });
+    }
     bindings::add_webrogue_gfx_to_linker(&mut linker, |state| state.gfx.as_mut().unwrap())?;
     crate::threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
         host.wasi_threads_ctx.as_ref().unwrap()
