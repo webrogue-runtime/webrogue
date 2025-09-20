@@ -1,6 +1,5 @@
 mod threads;
 
-use wasmtime::unix::StoreExt;
 pub use webrogue_gfx_sdl::DispatcherFunc;
 pub use webrogue_wrapp::{
     IVFSBuilder, RealVFSBuilder, RealVFSHandle, WrappVFSBuilder, WrappVFSHandle,
@@ -179,13 +178,28 @@ fn run_module<
     })?;
     // wasi_common::sync::add_to_linker(&mut linker, |state| state.preview1_ctx.as_mut().unwrap())?;
 
+    #[cfg(not(target_os = "windows"))]
     unsafe {
+        use wasmtime::unix::StoreExt;
+
         store.set_signal_handler(move |signum, siginfo, _| {
-            if libc::SIGSEGV != signum && libc::SIGBUS != signum {
+            let Some(addr) = webrogue_gfxstream::shadow_blob::get_segfault_addr(signum, siginfo)
+            else {
                 return false;
-            }
-            let si_addr: *mut libc::c_void = (*siginfo).si_addr();
+            };
             webrogue_gfxstream::shadow_blob::handle_segfault(si_addr)
+        });
+    }
+    #[cfg(target_os = "windows")]
+    unsafe {
+        use wasmtime::windows::StoreExt;
+
+        store.set_signal_handler(move |exception_info| {
+            let Some(addr) = webrogue_gfxstream::shadow_blob::get_segfault_addr(exception_info)
+            else {
+                return false;
+            };
+            webrogue_gfxstream::shadow_blob::handle_segfault(addr)
         });
     }
     bindings::add_webrogue_gfx_to_linker(&mut linker, |state| state.gfx.as_mut().unwrap())?;

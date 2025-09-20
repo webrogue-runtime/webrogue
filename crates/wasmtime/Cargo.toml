@@ -21,4 +21,3 @@ wasmtime = { workspace = true, default-features = false, features = ["runtime", 
 wasi-common = { workspace = true, default-features = false, features = ["sync"] }
 wiggle = { workspace = true, default-features = false, features = ["wasmtime"] }
 webrogue-aot-data = { workspace = true, optional = true }
-libc = { workspace = true }

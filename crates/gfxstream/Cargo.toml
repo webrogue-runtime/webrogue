@@ -11,7 +11,14 @@ cc = ["dep:cc"]
 
 [dependencies]
 lazy_static = { workspace = true }
-rustix = { workspace = true, default-features = true, features = ["mm", "param"] }
+
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { workspace = true, default-features = false, features = ["Win32_System_Memory", "Win32_System_SystemInformation"] }
+
+[target.'cfg(unix)'.dependencies]
+rustix = { workspace = true, default-features = false, features = ["mm", "param"]}
+libc = { workspace = true }
 
 [build-dependencies]
 cmake = { workspace = true, optional = true }

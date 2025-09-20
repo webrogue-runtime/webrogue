@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, ffi::c_void, sync::Mutex};
+use std::{collections::BTreeMap, sync::Mutex};
 
 use lazy_static::lazy_static;
 
@@ -26,7 +26,7 @@ impl Storage {
         Self {
             blobs: BTreeMap::new(),
             pages: BTreeMap::new(),
-            page_size: rustix::param::page_size(),
+            page_size: super::get_page_size(),
             loaded_pages: Vec::new(),
         }
     }
@@ -42,7 +42,7 @@ pub fn init() {
     }
 }
 
-pub fn handle_segfault(segfault_addr: *mut c_void) -> bool {
+pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     let segfault_addr = segfault_addr as Ptr;
     let mut storage = static_storage.lock().unwrap();
     let page_size = storage.page_size;
@@ -74,14 +74,7 @@ pub fn handle_segfault(segfault_addr: *mut c_void) -> bool {
     }
     assert!(blob_id != 0);
     unsafe {
-        use rustix::mm::MprotectFlags;
-
-        rustix::mm::mprotect(
-            base_page_addr as *mut c_void,
-            page_size * matching_pages,
-            MprotectFlags::READ | MprotectFlags::WRITE,
-        )
-        .unwrap();
+        super::mprotect(base_page_addr, page_size, matching_pages, true, true);
 
         crate::ffi::webrogue_gfxstream_ffi_shadow_blob_copy(
             blob_id,
@@ -108,14 +101,8 @@ pub fn flush_all() {
 
         // TODO collect multiple pages
         unsafe {
-            use rustix::mm::MprotectFlags;
+            super::mprotect(loaded_page_addr, page_size, 1, true, false);
 
-            rustix::mm::mprotect(
-                loaded_page_addr as *mut c_void,
-                page_size * 1,
-                MprotectFlags::READ,
-            )
-            .unwrap();
             crate::ffi::webrogue_gfxstream_ffi_shadow_blob_copy(
                 page.blob_id,
                 loaded_page_addr as *mut (),
@@ -123,12 +110,8 @@ pub fn flush_all() {
                 page_size as u64,
                 1,
             );
-            rustix::mm::mprotect(
-                loaded_page_addr as *mut c_void,
-                page_size * 1,
-                MprotectFlags::empty(),
-            )
-            .unwrap();
+
+            super::mprotect(loaded_page_addr, page_size, 1, false, false);
         };
     }
 }
@@ -137,9 +120,9 @@ extern "C" fn register_blob(ptr: *const (), len: u64, blob_id: u64) {
     let blob_ptr = ptr as Ptr;
     let len = len as usize;
     let mut storage = static_storage.lock().unwrap();
-    unsafe {
-        rustix::mm::mprotect(ptr as *mut c_void, len, rustix::mm::MprotectFlags::empty()).unwrap()
-    };
+    let page_size = storage.page_size;
+
+    super::mprotect(blob_ptr, page_size, len / page_size, false, false);
     storage.blobs.insert(blob_ptr, Blob { size: len });
     assert!(len % storage.page_size == 0);
     for page_index in 0..(len / storage.page_size) {

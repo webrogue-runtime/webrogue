@@ -1,6 +1,6 @@
 pub fn init() {}
 
-pub fn handle_segfault(_: *mut std::ffi::c_void) -> bool {
+pub fn handle_segfault(_: *const ()) -> bool {
     false
 }
 
