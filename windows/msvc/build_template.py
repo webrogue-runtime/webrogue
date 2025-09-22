@@ -1,3 +1,6 @@
+# It might be needed to set LongPathsEnabled registry key to let MSVC function properly with CMake. Try this PowerShell command:
+# New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+
 import os
 import subprocess
 import requests
@@ -10,6 +13,9 @@ sdk_dir = os.environ["WindowsSdkDir"]
 sdk_version = os.environ["WindowsSDKVersion"].removesuffix("\\")
 vc_tools_install_dir = os.environ["VCToolsInstallDir"]
 
+# gfxstream doesn't seem to support MSVC
+os.environ["CXX"] = "clang-cl"
+
 subprocess.run(
     [
         "cargo",
@@ -17,7 +23,7 @@ subprocess.run(
         "--manifest-path=../../crates/aot-lib/Cargo.toml",
         "--target-dir=./target",
         "--target=x86_64-pc-windows-msvc",
-        "--features=gfx-fallback-cmake",
+        "--features=build-gfxstream-cc,build-sdl",
         "--profile",
         "aot",
     ],
@@ -200,24 +206,3 @@ os.rename(
     webrogue_aot_lib_path,
     webrogue_aot_lib_out_path,
 )
-
-angle_zip_path = os.path.join(os.path.dirname(template_dir), "angle_windows_x64.zip")
-if not os.path.exists(angle_zip_path):
-    response = requests.get(
-        "https://github.com/webrogue-runtime/angle-builder/releases/latest/download/windows_x64.zip",
-        allow_redirects=True,
-    )
-    open(angle_zip_path, "wb").write(response.content)
-
-zip = zipfile.ZipFile(angle_zip_path)
-for libname in ["libEGL.dll", "libGLESv2.dll"]:
-    lib_path = os.path.join(os.path.dirname(template_dir), libname)
-    if not os.path.exists(lib_path):
-        open(lib_path, "wb").write(zip.read(f"x64/{libname}"))
-    lib_out_path = os.path.join(out_dir, libname)
-    if os.path.exists(lib_out_path):
-        os.remove(lib_out_path)
-    os.rename(
-        lib_path,
-        lib_out_path,
-    )

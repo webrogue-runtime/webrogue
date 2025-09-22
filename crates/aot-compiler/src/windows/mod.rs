@@ -63,17 +63,6 @@ pub fn build(
     // println!("Generating stripped WRAPP file...");
     // webrogue_wrapp::strip(wrapp_file_path, std::fs::File::create(stripped_wrapp_path)?)?;
 
-    println!("Copying ANGLE files...");
-    for lib in ["libEGL.dll", "libGLESv2.dll"] {
-        artifacts.extract(
-            output_file_path
-                .parent()
-                .ok_or(anyhow::anyhow!("Path error"))?
-                .join(lib),
-            &format!("x86_64-windows-msvc/{}", lib),
-        )?;
-    }
-
     anyhow::Ok(())
 }
 
