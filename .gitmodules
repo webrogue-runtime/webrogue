@@ -13,3 +13,6 @@
 [submodule "webrogue-sdk"]
 	path = webrogue-sdk
 	url = https://github.com/webrogue-runtime/webrogue-sdk.git
+[submodule "external/winit"]
+	path = external/winit
+	url = https://github.com/rust-windowing/winit.git

@@ -47,10 +47,10 @@ do
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
     cp $XC_BUILD_DIR/rust_artifacts/ios_runner/ReleaseLocal/$IOS_ENV/libwebrogue_ios.a ../template/bin/$IOS_ENV/libwebrogue_ios.a
 
-    XC_FLAGS="-workspace webrogue.xcworkspace -scheme wrios -configuration ReleaseLocal -destination"
+    XC_FLAGS="-workspace webrogue.xcworkspace -scheme runnerlib -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
-    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libwrios.a ../template/bin/$IOS_ENV/libwrios.a
+    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/librunnerlib.a ../template/bin/$IOS_ENV/librunnerlib.a
 
     XC_FLAGS="-workspace webrogue.xcworkspace -scheme GFXStream_iOS -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)

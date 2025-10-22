@@ -125,7 +125,7 @@ targets:
         PRODUCT_NAME: $(WEBROGUE_APPLICATION_NAME)
         OTHER_LDFLAGS:
         - "-lwebrogue_ios"
-        - "-lwrios"
+        - "-lrunnerlib"
         - "-lGFXStream"
         - "-lSDL3"
         - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
@@ -158,16 +158,16 @@ targets:
         inputFiles:
           - ${SRCROOT}/scripts/copy_bin_ios.sh
           - ${SRCROOT}/bin/iphonesimulator/libwebrogue_ios.a
-          - ${SRCROOT}/bin/iphonesimulator/libwrios.a
+          - ${SRCROOT}/bin/iphonesimulator/librunnerlib.a
           - ${SRCROOT}/bin/iphonesimulator/libGFXStream.a
           - ${SRCROOT}/bin/iphonesimulator/libSDL3.a
           - ${SRCROOT}/bin/iphoneos/libwebrogue_ios.a
-          - ${SRCROOT}/bin/iphoneos/libwrios.a
+          - ${SRCROOT}/bin/iphoneos/librunnerlib.a
           - ${SRCROOT}/bin/iphoneos/libGFXStream.a
           - ${SRCROOT}/bin/iphoneos/libSDL3.a
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_ios.a
-          - ${BUILT_PRODUCTS_DIR}/libwrios.a
+          - ${BUILT_PRODUCTS_DIR}/librunnerlib.a
           - ${BUILT_PRODUCTS_DIR}/libSDL3.a
           - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"

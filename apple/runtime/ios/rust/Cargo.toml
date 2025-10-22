@@ -6,7 +6,8 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-launcher = ["webrogue-wasmtime/jit"] # jit issue
+# default = ["launcher"]
+launcher = ["webrogue-wasmtime/jit", "webrogue-launcher"] # jit issue
 runner = ["webrogue-wasmtime/aot"]
 
 [lib]
@@ -17,3 +18,5 @@ crate-type = ["staticlib"]
 anyhow = { workspace = true }
 webrogue-wasmtime = { workspace = true }
 webrogue-wrapp = { workspace = true }
+webrogue-launcher = { workspace = true, optional = true }
+winit = { workspace = true, default-features = true }

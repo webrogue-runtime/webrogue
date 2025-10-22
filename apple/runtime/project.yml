@@ -189,19 +189,19 @@ targets:
     - sdk: AudioToolbox.framework
     - sdk: libc++.tbd
     - sdk: libc++abi.tbd
-  wrios: # I ran out of imagination while naming this
+  runnerlib:
     type: library.static
     platform: iOS
     sources:
-    - ios/lib 
+    - ios/runnerlib 
     settings:
       base:
         SWIFT_INSTALL_OBJC_HEADER: false
         HEADER_SEARCH_PATHS:
         - "$(SRCROOT)/external/SDL3/include"
         - "$(SRCROOT)/external/SDL3/include/SDL3"
-        PRODUCT_NAME: wrios
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/lib/Bridging-Header.h"
+        PRODUCT_NAME: runnerlib
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/runnerlib/Bridging-Header.h"
   _SDL: # Needed only to build SDL for aot template
     type: library.static
     platform: iOS
@@ -221,7 +221,6 @@ targets:
         PRODUCT_NAME: Webrogue Runtime
         OTHER_LDFLAGS: "-lwebrogue_ios"
         LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/ios_launcher/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/launcher/Bridging-Header.h"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
@@ -230,9 +229,8 @@ targets:
         INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen.storyboard
     dependencies:
     - target: Cargo_iOS_launcher
-    - target: SDL/SDL3
-    - target: wrios
     - target: GFXStream_iOS
+    # SDL deps
     - sdk: UIKit.framework
     - sdk: QuartzCore.framework
     - sdk: Metal.framework
@@ -247,6 +245,10 @@ targets:
     - sdk: CoreAudio.framework
     - sdk: AVFoundation.framework
     - sdk: AudioToolbox.framework
+
+    # Wry deps
+    - sdk: WebKit.framework
+    # MoltenVK
     - framework: external/MoltenVK/MoltenVK/static/MoltenVK.xcframework
   Runner_iOS:
     type: application
@@ -275,7 +277,7 @@ targets:
     dependencies:
     - target: Cargo_iOS_runner
     - target: SDL/SDL3
-    - target: wrios
+    - target: runnerlib
     - target: GFXStream_iOS
     - sdk: UIKit.framework
     - sdk: QuartzCore.framework

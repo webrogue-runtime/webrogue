@@ -187,7 +187,7 @@ fn run_module<
             else {
                 return false;
             };
-            webrogue_gfxstream::shadow_blob::handle_segfault(si_addr)
+            webrogue_gfxstream::shadow_blob::handle_segfault(addr)
         });
     }
     #[cfg(target_os = "windows")]

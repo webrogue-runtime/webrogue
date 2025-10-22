@@ -1,3 +1,3 @@
 #import <UIKit/UIKit.h>
 
-int webrogue_ios_main(int argc, char *argv[], UIViewController* _Nullable (^ _Nullable controllerBlock)(void));
+int webrogue_ios_main_runner(int argc, char *argv[], UIViewController* _Nullable (^ _Nullable controllerBlock)(void));

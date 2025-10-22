@@ -76,7 +76,7 @@ for DEST_ARCH in $ARCHS; do
 
     # cargo can't compile C sources when Xcode's PATH is active
     export PATH="$MODIFIED_PATH"
-    CARGO_TARGET_DIR=$BUILT_PRODUCTS_DIR/rust_target cargo build $FLAGS_CONFIG --target=$CARGO_TARGET --features=$VARIANT
+    CARGO_TARGET_DIR=$BUILT_PRODUCTS_DIR/rust_target cargo build $FLAGS_CONFIG --target=$CARGO_TARGET --no-default-features --features=$VARIANT
     export PATH="$XCODE_PATH"
     LIPO_PATHS[$LIPO_PATHS_I]="$BUILT_PRODUCTS_DIR/rust_target/$CARGO_TARGET/$CARGO_PROFILE/libwebrogue_ios.a"
     LIPO_PATHS_I=$(expr $LIPO_PATHS_I '+' 1)

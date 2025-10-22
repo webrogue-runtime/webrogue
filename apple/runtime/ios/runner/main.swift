@@ -1,1 +1,1 @@
-webrogue_ios_main(CommandLine.argc, CommandLine.unsafeArgv, nil)
+webrogue_ios_main_runner(CommandLine.argc, CommandLine.unsafeArgv, nil)

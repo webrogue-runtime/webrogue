@@ -1,11 +1,11 @@
 bin/iphoneos/libGFXStream.a
 bin/iphoneos/libSDL3.a
 bin/iphoneos/libwebrogue_ios.a
-bin/iphoneos/libwrios.a
+bin/iphoneos/librunnerlib.a
 bin/iphonesimulator/libGFXStream.a
 bin/iphonesimulator/libSDL3.a
 bin/iphonesimulator/libwebrogue_ios.a
-bin/iphonesimulator/libwrios.a
+bin/iphonesimulator/librunnerlib.a
 bin/MoltenVK.xcframework/Info.plist
 bin/MoltenVK.xcframework/ios-arm64/libMoltenVK.a
 bin/MoltenVK.xcframework/ios-arm64_x86_64-simulator/libMoltenVK.a

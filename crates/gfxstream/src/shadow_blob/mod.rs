@@ -66,7 +66,7 @@ pub fn get_segfault_addr(
     if libc::SIGSEGV != signum && libc::SIGBUS != signum {
         return None;
     }
-    Some((*siginfo).si_addr() as *const ());
+    Some(unsafe { (*siginfo).si_addr() } as *const ())
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -89,12 +89,14 @@ pub(crate) fn mprotect(
         flags |= MprotectFlags::READ
     }
     if can_write {
-        flags |= MprotectFlags::REWRITEAD
+        flags |= MprotectFlags::WRITE
     }
-    rustix::mm::mprotect(
-        loaded_page_addr as *mut std::ffi::c_void,
-        page_size * pages,
-        flags,
-    )
-    .unwrap();
+    unsafe {
+        rustix::mm::mprotect(
+            base_page_addr as *mut std::ffi::c_void,
+            page_size * pages,
+            flags,
+        )
+        .unwrap()
+    };
 }
