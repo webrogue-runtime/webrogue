@@ -1,0 +1,17 @@
+[package]
+name = "webrogue-gfx-winit"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[features]
+static-vk = []
+
+[dependencies]
+anyhow = { workspace = true }
+webrogue-gfx = { workspace = true }
+winit = { workspace = true, default-features = true }
+
+ash = { workspace = true, features = ["std", "loaded"], default-features = false }
+ash-window = { workspace = true }

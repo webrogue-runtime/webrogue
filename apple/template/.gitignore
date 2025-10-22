@@ -5,7 +5,6 @@
 /scripts/lipo_object_combiner.sh
 /macos/runner.entitlements
 /macos/main.m
-/ios/Bridging-Header.h
 /ios/Info.plist
 /ios/ios.entitlements
-/ios/main.swift
+/ios/main.m

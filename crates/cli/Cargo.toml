@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx", "dep:webrogue-gfx-sdl", "webrogue-gfx-sdl/src", "dep:webrogue-gfxstream", "dep:webrogue-wrapp"]
+run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx", "dep:webrogue-gfxstream", "dep:webrogue-wrapp"]
 compile = ["dep:webrogue-aot-compiler"]
 pack = ["dep:webrogue-wrapp"]
 llvm = ["webrogue-aot-compiler/llvm"]
@@ -18,7 +18,6 @@ clap = { workspace = true, features = ["derive"] }
 
 webrogue-wasmtime = { workspace = true, features = ["jit", "cache"], optional = true }
 webrogue-gfx = { workspace = true, optional = true }
-webrogue-gfx-sdl = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, features = ["cc"], optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }
 webrogue-wrapp = { workspace = true, features = ["write"], optional = true }

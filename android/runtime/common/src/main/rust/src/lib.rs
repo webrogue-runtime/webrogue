@@ -144,9 +144,9 @@ fn main() -> anyhow::Result<()> {
         .join("persistent");
 
     #[cfg(feature = "launcher")]
-    return webrogue_wasmtime::run_jit_builder(builder, &persistent_path, None);
+    return webrogue_wasmtime::run_jit_builder(builder, &persistent_path);
     #[cfg(feature = "runner")]
-    return webrogue_wasmtime::run_aot_builder(builder, &persistent_path, None);
+    return webrogue_wasmtime::run_aot_builder(builder, &persistent_path);
     #[cfg(not(any(feature = "launcher", feature = "runner")))]
     {
         let _ = builder;

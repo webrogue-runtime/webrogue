@@ -3,9 +3,6 @@ configs:
   Debug: debug
   Release: release
   ReleaseLocal: release
-projectReferences:
-  SDL:
-    path: ./external/SDL3/Xcode/SDL/SDL.xcodeproj
 settings:
   base:
     MACOSX_DEPLOYMENT_TARGET: 12.0
@@ -17,7 +14,6 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: true
     ENABLE_MODULE_VERIFIER: true
     MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS: "gnu11 gnu++14"
-    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: true
   configs:
     Debug:
       CODE_SIGN_IDENTITY: "-"
@@ -167,13 +163,9 @@ targets:
         PRODUCT_NAME: webrogue_runtime
         OTHER_LDFLAGS: "-lwebrogue_macos"
         LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/runtime/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        HEADER_SEARCH_PATHS: 
-        - "$(SRCROOT)/external/SDL3/include"
-        - "$(SRCROOT)/external/SDL3/include/SDL3"
         ENABLE_HARDENED_RUNTIME: true
     dependencies:
     - target: Cargo_macos_runtime
-    - target: SDL/SDL3
     - target: GFXStream_macOS
     - sdk: Quartz.framework
     - sdk: Metal.framework
@@ -196,17 +188,7 @@ targets:
     - ios/runnerlib 
     settings:
       base:
-        SWIFT_INSTALL_OBJC_HEADER: false
-        HEADER_SEARCH_PATHS:
-        - "$(SRCROOT)/external/SDL3/include"
-        - "$(SRCROOT)/external/SDL3/include/SDL3"
         PRODUCT_NAME: runnerlib
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/runnerlib/Bridging-Header.h"
-  _SDL: # Needed only to build SDL for aot template
-    type: library.static
-    platform: iOS
-    dependencies:
-    - target: SDL/SDL3
   Launcher_iOS:
     type: application
     platform: iOS
@@ -267,7 +249,6 @@ targets:
         - "-lwebrogue_ios"
         - "$(BUILD_DIR)/rust_artifacts/ios_runner/$(CONFIGURATION)/$(PLATFORM_NAME)/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/ios_runner/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/runner/Bridging-Header.h"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
@@ -276,7 +257,6 @@ targets:
         INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen.storyboard
     dependencies:
     - target: Cargo_iOS_runner
-    - target: SDL/SDL3
     - target: runnerlib
     - target: GFXStream_iOS
     - sdk: UIKit.framework
@@ -293,7 +273,10 @@ targets:
     - sdk: CoreAudio.framework
     - sdk: AVFoundation.framework
     - sdk: AudioToolbox.framework
+    - sdk: IOSurface.framework
     - framework: external/MoltenVK/MoltenVK/static/MoltenVK.xcframework
+    - sdk: libc++.tbd
+    - sdk: libc++abi.tbd
     preBuildScripts:
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/ios/runner ${BUILD_DIR}/rust_artifacts/ios_runner/${CONFIGURATION}/${PLATFORM_NAME}/aot_lipo.o"
         name: Combine object to lipo
@@ -350,13 +333,9 @@ targets:
         - "-lwebrogue_macos"
         - "$(BUILD_DIR)/rust_artifacts/runner/$(CONFIGURATION)/$(PLATFORM_NAME)/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILD_DIR)/rust_artifacts/runner/$(CONFIGURATION)/$(PLATFORM_NAME)"
-        HEADER_SEARCH_PATHS:
-        - "$(SRCROOT)/external/SDL3/include"
-        - "$(SRCROOT)/external/SDL3/include/SDL3"
         ENABLE_HARDENED_RUNTIME: true
     dependencies:
     - target: Cargo_macos_runner
-    - target: SDL/SDL3
     - target: GFXStream_macOS
     - sdk: Quartz.framework
     - sdk: Metal.framework
@@ -408,7 +387,6 @@ schemes:
     build:
       targets:
         Launcher: ReleaseLocal
-        SDL/SDL3: Release
     run:
       config: ReleaseLocal
   MacOS_Runner_Debug:

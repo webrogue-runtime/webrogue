@@ -14,7 +14,6 @@ rm -rf ../template/bin
 mkdir -p ../template/bin
 mkdir -p ../template/bin/macos
 cp $XC_BUILD_DIR/rust_artifacts/runner/ReleaseLocal/macosx/libwebrogue_macos.a ../template/bin/macos/libwebrogue_macos.a
-cat $XC_BUILD_DIR/Release/SDL3.framework/SDL3 > ../template/bin/macos/libSDL3.a
 cp $XC_BUILD_DIR/ReleaseLocal/libGFXStream.a ../template/bin/macos/libGFXStream.a
 cp external/MoltenVK/MoltenVK/dylib/macOS/libMoltenVK.dylib ../template/bin/macos/libMoltenVK.dylib
 
@@ -22,10 +21,6 @@ cp external/MoltenVK/MoltenVK/dylib/macOS/libMoltenVK.dylib ../template/bin/maco
 # XC_DESTINATION_FLAG="generic/platform=iOS Simulator"
 # XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
 # xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
-
-# cp $XC_BUILD_DIR/rust_artifacts/ios_runner/ReleaseLocal/iphonesimulator/libwebrogue_ios.a ../template/bin/libwebrogue_ios.iphonesimulator.a
-# cp $XC_BUILD_DIR/Release-iphonesimulator/libSDL2.a ../template/bin/libSDL2.iphonesimulator.a
-# cp $XC_BUILD_DIR/ReleaseLocal-iphonesimulator/libwrios.a ../template/bin/libwrios.iphonesimulator.a
 
 
 for IOS_ENV in iphoneos iphonesimulator
@@ -56,11 +51,6 @@ do
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
     cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libGFXStream.a ../template/bin/$IOS_ENV/libGFXStream.a
-
-    XC_FLAGS="-workspace webrogue.xcworkspace -configuration Release -destination"
-    XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -scheme "_SDL" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
-    xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -scheme "_SDL" -parallelizeTargets -allowProvisioningUpdates
-    cat $XC_BUILD_DIR/Release-$IOS_ENV/SDL3.framework/SDL3 > ../template/bin/$IOS_ENV/libSDL3.a
 done
 
 # apple
@@ -81,10 +71,9 @@ cp runtime/macos/runner/main.m template/macos/main.m
 cp runtime/macos/runner/runner.entitlements template/macos/runner.entitlements
 
 mkdir -p template/ios
-cp runtime/ios/runner/main.swift template/ios/main.swift
+cp runtime/ios/runner/main.m template/ios/main.m
 cp runtime/ios/runner/Info.plist template/ios/Info.plist
 cp runtime/ios/runner/ios.entitlements template/ios/ios.entitlements
-cp runtime/ios/runner/Bridging-Header.h template/ios/Bridging-Header.h
 cp -r runtime/external/MoltenVK/MoltenVK/static/MoltenVK.xcframework template/bin/MoltenVK.xcframework
 # apple/template
 cd template

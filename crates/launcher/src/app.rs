@@ -82,27 +82,6 @@ impl ApplicationHandler for App {
         }
         // todo!()
     }
-    // fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-    //     let window = event_loop
-    //         .create_window(Window::default_attributes())
-    //         .unwrap();
-    //     let builder = WebViewBuilder::new().with_url("https://tauri.app");
-
-    //     let webview = builder.build(&window).unwrap();
-    //     // webview.set_background_color((255, 255, 0, 128));
-
-    //     self.window = Some(window);
-    //     self.webview = Some(webview);
-    // }
-
-    // fn window_event(
-    //     &mut self,
-    //     _event_loop: &ActiveEventLoop,
-    //     _window_id: WindowId,
-    //     event: WindowEvent,
-    // ) {
-
-    // }
 }
 
 impl App {

@@ -1,0 +1,56 @@
+use ash::Entry;
+
+#[cfg(not(feature = "static-vk"))]
+use std::path::PathBuf;
+
+#[cfg(not(feature = "static-vk"))]
+fn get_path() -> Option<PathBuf> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::env::current_exe;
+
+        let mut path = current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("libMoltenVK.dylib");
+        if !path.exists() {
+            path = current_exe()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("Resources")
+                .join("libMoltenVK.dylib");
+        }
+        if path.exists() {
+            return Some(path);
+        }
+    }
+    return None;
+}
+
+#[cfg(feature = "static-vk")]
+extern "system" {
+    fn vkGetInstanceProcAddr(
+        instance: ash::vk::Instance,
+        name: *const std::ffi::c_char,
+    ) -> ash::vk::PFN_vkVoidFunction;
+}
+
+pub fn load_vulkan_entry() -> Option<Entry> {
+    #[cfg(feature = "static-vk")]
+    return Some(unsafe {
+        Entry::from_static_fn(ash::StaticFn {
+            get_instance_proc_addr: vkGetInstanceProcAddr,
+        })
+    });
+
+    #[cfg(not(feature = "static-vk"))]
+    if let Some(path) = get_path() {
+        return unsafe { Entry::load_from(path).ok() };
+    } else {
+        return unsafe { Entry::load().ok() };
+    }
+}

@@ -14,7 +14,6 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: true
     ENABLE_MODULE_VERIFIER: true
     MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS: "gnu11 gnu++14"
-    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: false
     CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: true
   configs:
     Debug:
@@ -56,7 +55,6 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: $(WEBROGUE_APPLICATION_NAME)
         OTHER_LDFLAGS:
           - "-lwebrogue_macos"
-          - "-lSDL3"
           - "-lGFXStream"
           - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
@@ -87,10 +85,8 @@ targets:
           - ${SRCROOT}/bin/macos/libMoltenVK.dylib
           - ${SRCROOT}/bin/macos/libwebrogue_macos.a
           - ${SRCROOT}/bin/macos/libGFXStream.a
-          - ${SRCROOT}/bin/macos/libSDL3.a
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/libMoltenVK.dylib
-          - ${BUILT_PRODUCTS_DIR}/libSDL3.a
           - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_macos.a
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
@@ -107,10 +103,9 @@ targets:
     platform: iOS
     sources:
     - ios/Assets.xcassets
-    - ios/Bridging-Header.h
     - ios/Info.plist
     - ios/LaunchScreen.storyboard
-    - ios/main.swift
+    - ios/main.m
     - aot.swrapp
     - aot.xcconfig
     configFiles:
@@ -127,10 +122,8 @@ targets:
         - "-lwebrogue_ios"
         - "-lrunnerlib"
         - "-lGFXStream"
-        - "-lSDL3"
         - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
-        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/ios/Bridging-Header.h"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
@@ -151,7 +144,10 @@ targets:
     - sdk: CoreAudio.framework
     - sdk: AVFoundation.framework
     - sdk: AudioToolbox.framework
+    - sdk: IOSurface.framework
     - framework: bin/MoltenVK.xcframework
+    - sdk: libc++.tbd
+    - sdk: libc++abi.tbd
     preBuildScripts:
       - script: "cd \"${BUILT_PRODUCTS_DIR}\"; sh ${SRCROOT}/scripts/copy_bin_ios.sh"
         name: Copy libraries
@@ -160,15 +156,12 @@ targets:
           - ${SRCROOT}/bin/iphonesimulator/libwebrogue_ios.a
           - ${SRCROOT}/bin/iphonesimulator/librunnerlib.a
           - ${SRCROOT}/bin/iphonesimulator/libGFXStream.a
-          - ${SRCROOT}/bin/iphonesimulator/libSDL3.a
           - ${SRCROOT}/bin/iphoneos/libwebrogue_ios.a
           - ${SRCROOT}/bin/iphoneos/librunnerlib.a
           - ${SRCROOT}/bin/iphoneos/libGFXStream.a
-          - ${SRCROOT}/bin/iphoneos/libSDL3.a
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_ios.a
           - ${BUILT_PRODUCTS_DIR}/librunnerlib.a
-          - ${BUILT_PRODUCTS_DIR}/libSDL3.a
           - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         name: Combine object to lipo

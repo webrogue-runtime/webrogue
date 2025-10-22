@@ -1,9 +1,7 @@
 bin/iphoneos/libGFXStream.a
-bin/iphoneos/libSDL3.a
 bin/iphoneos/libwebrogue_ios.a
 bin/iphoneos/librunnerlib.a
 bin/iphonesimulator/libGFXStream.a
-bin/iphonesimulator/libSDL3.a
 bin/iphonesimulator/libwebrogue_ios.a
 bin/iphonesimulator/librunnerlib.a
 bin/MoltenVK.xcframework/Info.plist
@@ -11,16 +9,14 @@ bin/MoltenVK.xcframework/ios-arm64/libMoltenVK.a
 bin/MoltenVK.xcframework/ios-arm64_x86_64-simulator/libMoltenVK.a
 bin/macos/libMoltenVK.dylib
 bin/macos/libGFXStream.a
-bin/macos/libSDL3.a
 bin/macos/libwebrogue_macos.a
 ios/Assets.xcassets/AppIcon.appiconset/Contents.json
 ios/Assets.xcassets/Contents.json
 ios/Assets.xcassets/SplashScreen.imageset/Contents.json
-ios/Bridging-Header.h
 ios/Info.plist
 ios/LaunchScreen.storyboard
 ios/ios.entitlements
-ios/main.swift
+ios/main.m
 macos/Assets.xcassets/AppIcon.appiconset/Contents.json
 macos/Assets.xcassets/Contents.json
 macos/main.m

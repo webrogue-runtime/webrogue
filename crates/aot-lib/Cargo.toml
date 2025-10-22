@@ -10,14 +10,12 @@ edition.workspace = true
 crate-type=["staticlib"]
 
 [features]
-build-sdl = ["webrogue-gfx-sdl/src"]
 build-gfxstream-cc = ["webrogue-gfxstream/cc"]
 
 
 [dependencies]
 webrogue-wasmtime = { workspace = true, features = ["aot"] }
 webrogue-gfx = { workspace = true }
-webrogue-gfx-sdl = { workspace = true }
 webrogue-gfxstream = { workspace = true, optional = true }
 dirs = { workspace = true }
 

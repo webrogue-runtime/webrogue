@@ -66,7 +66,6 @@ pub fn main() -> anyhow::Result<()> {
                     &persistent_path,
                     cache.as_ref(),
                     optimized,
-                    None,
                 )?;
             } else {
                 let handle = webrogue_wasmtime::RealVFSBuilder::new(path)?.into_vfs()?;
@@ -82,7 +81,6 @@ pub fn main() -> anyhow::Result<()> {
                     &persistent_path,
                     cache.as_ref(),
                     optimized,
-                    None,
                 )?;
             }
             Ok(())

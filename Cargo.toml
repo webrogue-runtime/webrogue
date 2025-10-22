@@ -49,7 +49,7 @@ members = [
   "crates/events-apigen",
   "crates/events-macro",
   "crates/gfx",
-  "crates/gfx-sdl",
+  "crates/gfx-winit",
   # "crates/gfx-fallback",
   "crates/gfxstream",
   "crates/launcher",
@@ -80,6 +80,7 @@ webrogue-events-macro = { path = "crates/events-macro" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-sdl = { path = "crates/gfx-sdl" }
+webrogue-gfx-winit = { path = "crates/gfx-winit" }
 # webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
 webrogue-gfxstream = { path = "crates/gfxstream" }
 webrogue-lld = { path = "crates/lld" }
@@ -120,8 +121,6 @@ proc-macro2 = { version = "1.0", default-features = false }
 witx = { version = "0.9.1", default-features = false }
 dirs = { version = "6.0.0" }
 zip = { version = "4.5.0", default-features = false }
-sdl3 = { version = "0.14.27", default-features = false }
-sdl3-sys = { version = "*", default-features = false }
 libc = { version = "0.2.112", default-features = false }
 lazy_static = { version = "1.5.0" }
 rustix = { version = "1.0.3", default-features = false }
@@ -132,6 +131,9 @@ tao = { version = "0.34.5", default-features = false }
 winit = { path = "external/winit/winit", default-features = false }
 gtk = { version = "0.18.2", default-features = false }
 dpi = { version = "*", default-features = false }
+libloading = { version = "0.8.9", default-features = false }
+ash = { version = "0.38.0", default-features = false }
+ash-window = { version = "0.13.0", default-features = false }
 
 
 reqwest = { version = "0.12" }
