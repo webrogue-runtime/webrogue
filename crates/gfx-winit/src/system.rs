@@ -9,11 +9,7 @@ use ash::{
 };
 use winit::window::WindowAttributes;
 
-use crate::{
-    run::Mailbox,
-    vulkan_library::{load_vulkan_entry},
-    WinitWindow,
-};
+use crate::{builder::Mailbox, vulkan_library::load_vulkan_entry, WinitWindow};
 
 pub struct WinitSystem {
     pub(crate) mailbox: Mailbox,
@@ -42,9 +38,11 @@ impl WinitSystem {
 impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
     fn make_window(&self) -> WinitWindow {
         let window = self.mailbox.execute(|event_loop| {
-            Arc::new(event_loop
-                .create_window(WindowAttributes::default())
-                .unwrap())
+            Arc::new(
+                event_loop
+                    .create_window(WindowAttributes::default())
+                    .unwrap(),
+            )
         });
 
         WinitWindow {
@@ -54,7 +52,7 @@ impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
         }
     }
 
-    fn poll(&self, events_buffer: &mut Vec<u8>) {}
+    fn poll(&self, _events_buffer: &mut Vec<u8>) {}
 
     fn make_gfxstream_decoder(&self) -> webrogue_gfx::GFXStreamDecoder {
         let gfxstream_system = {
@@ -82,12 +80,31 @@ impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
         webrogue_gfx::GFXStreamDecoder::new(gfxstream_system)
     }
 
+    #[allow(unreachable_code)]
     fn vk_extensions(&self) -> Vec<String> {
-        vec![
+        #[cfg(any(target_os = "ios", target_os = "macos"))]
+        return vec![
             "VK_KHR_surface".to_owned(),
             "VK_EXT_metal_surface".to_owned(),
             "VK_KHR_portability_enumeration".to_owned(),
-        ]
+        ];
+
+        #[cfg(target_os = "linux")]
+        return vec![
+            "VK_KHR_surface".to_owned(),
+            "VK_KHR_wayland_surface".to_owned(),
+            "VK_KHR_xlib_surface".to_owned(),
+            "VK_KHR_xcb_surface".to_owned(),
+        ];
+
+        #[cfg(target_os = "android")]
+        return vec![
+            "VK_KHR_surface".to_owned(),
+            "VK_KHR_android_surface".to_owned(),
+        ];
+
+        #[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "linux", target_os = "android")))]
+        compile_error!("Specify required Vulkan extensions list")
     }
 
     fn pump(&self) {}

@@ -1,1 +1,4 @@
-/build
+*
+!/common_files.txt
+!/.gitignore
+!/build.gradle.kts

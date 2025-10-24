@@ -67,9 +67,14 @@ fn main() {
                     .define("VK_USE_PLATFORM_MACOS_MVK", None);
             }
             "linux" => {}
+            "android" => {
+                build
+                    .define("VK_USE_PLATFORM_ANDROID_KHR", None)
+                    .cpp_link_stdlib("c++_static");
+                println!("cargo:rustc-link-lib=c++abi");
+            }
             _ => unimplemented!(),
         }
-
         let mut sources = vec![
             "$WEBROGUE/webrogue_gfxstream.cpp",
             // host/vulkan
@@ -198,6 +203,8 @@ fn main() {
             }
             build.include(path);
         }
+
+        build.static_crt(true);
 
         build
             .define("VK_GFXSTREAM_STRUCTURE_TYPE_EXT", None)

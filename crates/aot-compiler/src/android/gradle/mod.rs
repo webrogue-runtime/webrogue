@@ -2,7 +2,6 @@ use anyhow::Context as _;
 use std::io::Write;
 
 mod icons;
-mod link;
 mod types;
 
 #[derive(PartialEq)]
@@ -22,7 +21,7 @@ fn build_using_vfs<
     VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
     VFSBuilder: webrogue_wrapp::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
 >(
-    vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder> ,
+    vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
     sdk_env: Option<&std::path::PathBuf>,
     java_home_env: Option<&std::path::PathBuf>,
     container_path: &std::path::PathBuf,
@@ -77,9 +76,20 @@ fn build_using_vfs<
         crate::Target::ARM64LinuxAndroid,
         cache,
         true,
+        true,
     )?;
 
-    link::link(&object_file, &mut artifacts, build_dir)?;
+    crate::android::link::link(
+        &object_file,
+        crate::Target::ARM64LinuxAndroid,
+        &build_dir
+            .join("app")
+            .join("src")
+            .join("main")
+            .join("jniLibs")
+            .join("arm64-v8a")
+            .join("libwebrogue_aot.so"),
+    )?;
     drop(object_file);
 
     println!("Building Android project...");
@@ -87,22 +97,6 @@ fn build_using_vfs<
     let (gradle_shell, gradle_script) = ("cmd", "gradlew.bat");
     #[cfg(not(target_os = "windows"))]
     let (gradle_shell, gradle_script) = ("sh", "gradlew");
-    let mut command = std::process::Command::new(gradle_shell);
-    command
-        .arg(gradle_script)
-        // .arg("--no-daemon")
-        .arg(if debug {
-            "assembleDebug"
-        } else {
-            "assembleRelease"
-        })
-        .current_dir(build_dir);
-    if let Some(sdk_env) = sdk_env {
-        command.env("ANDROID_SDK_ROOT", sdk_env);
-    }
-    if let Some(java_home_env) = java_home_env {
-        command.env("JAVA_HOME", java_home_env);
-    }
 
     let mut properties_file =
         std::fs::File::create(build_dir.join("app").join("gradle.properties"))?;
@@ -155,6 +149,22 @@ fn build_using_vfs<
         );
     }
     drop(properties_file);
+    let mut command = std::process::Command::new(gradle_shell);
+    command
+        .arg(gradle_script)
+        .arg("--no-daemon")
+        .arg(if debug {
+            "assembleDebug"
+        } else {
+            "assembleRelease"
+        })
+        .current_dir(build_dir);
+    if let Some(sdk_env) = sdk_env {
+        command.env("ANDROID_SDK_ROOT", sdk_env);
+    }
+    if let Some(java_home_env) = java_home_env {
+        command.env("JAVA_HOME", java_home_env);
+    }
     let gradle_output = command.output()?;
     anyhow::ensure!(
         gradle_output.status.success(),
@@ -220,7 +230,7 @@ pub fn build(
         )
     })? {
         build_using_vfs(
-        || webrogue_wrapp::WrappVFSBuilder::from_file_path(container_path),
+            || webrogue_wrapp::WrappVFSBuilder::from_file_path(container_path),
             sdk_env,
             java_home_env,
             container_path,

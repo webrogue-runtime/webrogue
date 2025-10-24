@@ -1,8 +1,8 @@
-mod run;
+mod builder;
 mod system;
 mod window;
 mod vulkan_library;
 
 pub use system::WinitSystem;
 pub use window::WinitWindow;
-pub use run::run;
+pub use builder::WinitBuilder;

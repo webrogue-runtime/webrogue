@@ -16,6 +16,7 @@ pub fn compile(
                 crate::Target::x86_64AppleDarwin,
                 cache,
                 true, // TODO check
+                false,
             )?;
             println!("Compiling AOT object for AArch64 macOS...");
             crate::compile::compile_wrapp_to_object(
@@ -24,6 +25,7 @@ pub fn compile(
                 crate::Target::ARM64AppleDarwin,
                 cache,
                 true, // TODO check
+                false,
             )?;
         }
         Destination::IOS => {
@@ -34,6 +36,7 @@ pub fn compile(
                 crate::Target::ARM64AppleIOS,
                 cache,
                 true, // TODO check
+                false,
             )?;
         }
         Destination::IOSSim => {
@@ -44,6 +47,7 @@ pub fn compile(
                 crate::Target::ARM64AppleIOSSIM,
                 cache,
                 true, // TODO check
+                false,
             )?;
             println!("Compiling AOT object for x86_64 iOS simulator...");
             crate::compile::compile_wrapp_to_object(
@@ -52,6 +56,7 @@ pub fn compile(
                 crate::Target::X86_64AppleIOSSIM,
                 cache,
                 true, // TODO check
+                false,
             )?;
         }
     }

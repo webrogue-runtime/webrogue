@@ -40,15 +40,11 @@
         android:allowBackup="true"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="webrogue runner">
+        android:label="@string/app_name"
+        android:hasCode="false">
 
-        <!--
-         Example of setting SDL hints from AndroidManifest.xml:
-        <meta-data android:name="SDL_ENV.SDL_ACCELEROMETER_AS_JOYSTICK" android:value="0"/>
-        -->
-        <!--            -->
         <activity
-            android:name=".WebrogueRunnerActivity"
+            android:name="android.app.NativeActivity"
             android:alwaysRetainTaskState="true"
             android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
             android:exported="true"
@@ -71,6 +67,7 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
             -->
+            <meta-data android:name="android.app.lib_name" android:value="webrogue" />
         </activity>
     </application>
 

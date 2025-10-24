@@ -1,4 +1,6 @@
 mod gradle;
+mod link;
+pub use link::link;
 
 pub fn build(
     wrapp_path: &std::path::PathBuf,

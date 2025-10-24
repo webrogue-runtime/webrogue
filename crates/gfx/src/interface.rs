@@ -13,6 +13,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+pub trait IBuilder<System: ISystem<Window>, Window: IWindow> {
+    fn run<Output>(self, body_fn: impl FnOnce(System) -> Output + Send + 'static) -> Output
+    where
+        Output: Send + 'static;
+}
+
 pub trait ISystem<Window: IWindow> {
     fn make_window(&self) -> Window;
     fn poll(&self, events_buffer: &mut Vec<u8>);
@@ -75,7 +81,9 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> Clone for Interface<Sys
 impl<System: ISystem<Window>, Window: IWindow> Drop for Interface<System, Window> {
     fn drop(&mut self) {
         // gfxstream must be deinitialized before sdl unloads vulkan library
-        *self.gfxstream_decoder.lock().unwrap() = None;
+        if let Ok(mut decoder) = self.gfxstream_decoder.lock() {
+            *decoder = None;
+        }
     }
 }
 

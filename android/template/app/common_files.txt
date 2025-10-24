@@ -1,0 +1,5 @@
+src/main/AndroidManifest.xml
+src/main/res/xml/data_extraction_rules.xml
+src/main/res/xml/backup_rules.xml
+src/main/res/values/colors.xml
+src/main/jniLibs/arm64-v8a/libwebrogue.so

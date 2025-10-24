@@ -1,0 +1,21 @@
+[package]
+name = "webrogue-android-launcher"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[lib]
+name = "launcher"
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = { workspace = true }
+webrogue-launcher = { workspace = true }
+tao = { workspace = true, features = ["rwh_06"] }
+wry = { workspace = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android-activity = { workspace = true, features = ["native-activity"] }
+log = { workspace = true }
+android_logger = { workspace = true }

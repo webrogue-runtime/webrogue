@@ -4,10 +4,6 @@ use lazy_static::lazy_static;
 
 type Ptr = usize;
 
-struct Blob {
-    size: usize,
-}
-
 struct Page {
     blob_id: u64,
     blob_offset: u64,
@@ -15,7 +11,6 @@ struct Page {
 }
 
 struct Storage {
-    blobs: BTreeMap<Ptr, Blob>,
     pages: BTreeMap<Ptr, Page>,
     page_size: usize,
     loaded_pages: Vec<Ptr>,
@@ -24,7 +19,6 @@ struct Storage {
 impl Storage {
     fn new() -> Self {
         Self {
-            blobs: BTreeMap::new(),
             pages: BTreeMap::new(),
             page_size: super::get_page_size(),
             loaded_pages: Vec::new(),
@@ -123,7 +117,6 @@ extern "C" fn register_blob(ptr: *const (), len: u64, blob_id: u64) {
     let page_size = storage.page_size;
 
     super::mprotect(blob_ptr, page_size, len / page_size, false, false);
-    storage.blobs.insert(blob_ptr, Blob { size: len });
     assert!(len % storage.page_size == 0);
     for page_index in 0..(len / storage.page_size) {
         let page_ptr = blob_ptr + storage.page_size * page_index;

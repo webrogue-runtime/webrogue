@@ -119,7 +119,7 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
 
 fn stop_all_threads(
     engine: wasmtime::EngineWeak,
-    shared_memories: Arc<Mutex<Vec<wasmtime::SharedMemory>>>,
+    _shared_memories: Arc<Mutex<Vec<wasmtime::SharedMemory>>>,
     epoch_interruption: bool,
 ) {
     if epoch_interruption {

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use ash::Entry;
 use winit::window::Window;
 
-use crate::run::Mailbox;
+use crate::builder::Mailbox;
 
 pub struct WinitWindow {
     pub(crate) window: Arc<Box<dyn Window>>,

@@ -11,6 +11,7 @@ pub enum Target {
     ARM64AppleIOSSIM,
     ARM64AppleIOS,
     ARM64LinuxAndroid,
+    X86_64LinuxAndroid,
     // TODO
     // aarch64-linux-gnu
 }
@@ -44,6 +45,7 @@ impl Target {
             ARM64AppleIOSSIM,
             ARM64AppleIOS,
             ARM64LinuxAndroid,
+            X86_64LinuxAndroid,
         ]
         .iter()
     }
@@ -61,6 +63,7 @@ impl Target {
             ARM64AppleIOSSIM => "arm64-apple-ios-sim",
             ARM64AppleIOS => "arm64-apple-ios",
             ARM64LinuxAndroid => "aarch64-linux-android",
+            X86_64LinuxAndroid => "x86_64-linux-android",
         }
     }
 }
@@ -81,6 +84,7 @@ impl Target {
             X86_64LinuxGNU => (Elf, X86_64, Little),
             X86_64LinuxMUSL => (Elf, X86_64, Little),
             ARM64LinuxAndroid => (Elf, Aarch64, Little),
+            X86_64LinuxAndroid => (Elf, X86_64, Little),
             x86_64WindowsGNU => (Coff, X86_64, Little),
             x86_64WindowsMSVC => (Coff, X86_64, Little),
             x86_64AppleDarwin => (MachO, X86_64, Little),
@@ -116,7 +120,7 @@ impl Target {
         match (self, is_pic) {
             (
                 X86_64LinuxGNU | X86_64LinuxMUSL | x86_64AppleDarwin | x86_64WindowsGNU
-                | x86_64WindowsMSVC,
+                | x86_64WindowsMSVC | X86_64LinuxAndroid,
                 false,
             ) => (-4, Relative, Generic, 32),
             (

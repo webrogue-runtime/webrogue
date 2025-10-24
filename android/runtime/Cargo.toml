@@ -1,0 +1,33 @@
+[package]
+name = "webrogue-android"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[features]
+launcher = ["webrogue-wasmtime/jit"]
+runner = ["webrogue-wasmtime/aot"]
+
+[lib]
+name = "webrogue"
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = { workspace = true }
+webrogue-wasmtime = { workspace = true }
+webrogue-launcher = { workspace = true }
+winit = { workspace = true }
+webrogue-gfxstream = { workspace = true, features = ["cc"] }
+webrogue-gfx-winit = { workspace = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
+winit-android = { workspace = true }
+android-activity = { workspace = true, features = ["native-activity"] }
+log = { workspace = true }
+android_logger = { workspace = true }
+ndk-sys = { workspace = true }
+ndk = { workspace = true }
+
+[target.aarch64-linux-android.webrogue-android]
+rustc-flags = "aboba"

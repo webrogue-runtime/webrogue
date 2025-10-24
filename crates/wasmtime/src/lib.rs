@@ -4,13 +4,23 @@ pub use webrogue_wrapp::{
     IVFSBuilder, RealVFSBuilder, RealVFSHandle, WrappVFSBuilder, WrappVFSHandle,
 };
 
-#[derive(Clone)]
-struct State {
+// #[derive(Clone)]
+struct State<System: webrogue_gfx::ISystem<Window>, Window: webrogue_gfx::IWindow> {
     pub preview1_ctx: Option<wasi_common::WasiCtx>,
     pub wasi_threads_ctx: Option<std::sync::Arc<crate::threads::WasiThreadsCtx<Self>>>,
-    pub gfx: Option<
-        webrogue_gfx::Interface<webrogue_gfx_winit::WinitSystem, webrogue_gfx_winit::WinitWindow>,
-    >,
+    pub gfx: Option<webrogue_gfx::Interface<System, Window>>,
+}
+
+impl<System: webrogue_gfx::ISystem<Window> + 'static, Window: webrogue_gfx::IWindow + 'static> Clone
+    for State<System, Window>
+{
+    fn clone(&self) -> Self {
+        Self {
+            preview1_ctx: self.preview1_ctx.clone(),
+            wasi_threads_ctx: self.wasi_threads_ctx.clone(),
+            gfx: self.gfx.clone(),
+        }
+    }
 }
 
 #[cfg(feature = "aot")]
@@ -34,20 +44,29 @@ impl wasmtime::CustomCodeMemory for StaticCodeMemory {
 // compile_error!("Either AOT or Cranelift features must be enabled");
 
 #[cfg(feature = "jit")]
-pub fn run_jit_builder(
+pub fn run_jit_builder<
+    Window: webrogue_gfx::IWindow + 'static,
+    System: webrogue_gfx::ISystem<Window> + 'static,
+    Builder: webrogue_gfx::IBuilder<System, Window>,
+>(
+    gfx_builder: Builder,
     mut wrapp_vfs_builder: webrogue_wrapp::WrappVFSBuilder,
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
     let config = wrapp_vfs_builder.config()?.clone();
     let handle = wrapp_vfs_builder.into_vfs()?;
-    run_jit(handle, &config, persistent_dir, None, true)
+    run_jit(gfx_builder, handle, &config, persistent_dir, None, true)
 }
 #[cfg(feature = "jit")]
 pub fn run_jit<
+    Window: webrogue_gfx::IWindow + 'static,
+    System: webrogue_gfx::ISystem<Window> + 'static,
+    Builder: webrogue_gfx::IBuilder<System, Window>,
     FilePosition: webrogue_wrapp::IFilePosition + 'static,
     FileReader: webrogue_wrapp::IFileReader + 'static,
     VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
 >(
+    gfx_builder: Builder,
     handle: VFSHandle,
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
@@ -61,6 +80,8 @@ pub fn run_jit<
     if let Some(cache_config) = cache_config {
         config.cache(Some(wasmtime::Cache::from_file(Some(&cache_config))?));
     }
+    #[cfg(not(feature = "cache"))]
+    let _ = cache_config;
     // config.async_support(true);
     if optimized {
         config.strategy(wasmtime::Strategy::Cranelift);
@@ -93,6 +114,7 @@ pub fn run_jit<
 
     let module = wasmtime::Module::from_binary(&engine, &wasm_binary)?;
     run_module(
+        gfx_builder,
         handle,
         wrapp_config,
         persistent_dir,
@@ -103,20 +125,29 @@ pub fn run_jit<
 }
 
 #[cfg(feature = "aot")]
-pub fn run_aot_builder(
+pub fn run_aot_builder<
+    Window: webrogue_gfx::IWindow + 'static,
+    System: webrogue_gfx::ISystem<Window> + 'static,
+    Builder: webrogue_gfx::IBuilder<System, Window>,
+>(
+    gfx_builder: Builder,
     mut wrapp_vfs_builder: webrogue_wrapp::WrappVFSBuilder,
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
     let config = wrapp_vfs_builder.config()?.clone();
     let handle = wrapp_vfs_builder.into_vfs()?;
-    run_aot(handle, &config, persistent_dir)
+    run_aot(gfx_builder, handle, &config, persistent_dir)
 }
 #[cfg(feature = "aot")]
 pub fn run_aot<
+    Window: webrogue_gfx::IWindow + 'static,
+    System: webrogue_gfx::ISystem<Window> + 'static,
+    Builder: webrogue_gfx::IBuilder<System, Window>,
     FilePosition: webrogue_wrapp::IFilePosition + 'static,
     FileReader: webrogue_wrapp::IFileReader + 'static,
     VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
 >(
+    gfx_builder: Builder,
     handle: VFSHandle,
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
@@ -133,6 +164,7 @@ pub fn run_aot<
     };
 
     run_module(
+        gfx_builder,
         handle,
         wrapp_config,
         persistent_dir,
@@ -143,10 +175,14 @@ pub fn run_aot<
 }
 
 fn run_module<
+    Window: webrogue_gfx::IWindow + 'static,
+    System: webrogue_gfx::ISystem<Window> + 'static,
+    Builder: webrogue_gfx::IBuilder<System, Window>,
     FilePosition: webrogue_wrapp::IFilePosition + 'static,
     FileReader: webrogue_wrapp::IFileReader + 'static,
     VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
 >(
+    gfx_builder: Builder,
     handle: VFSHandle,
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::PathBuf,
@@ -154,7 +190,7 @@ fn run_module<
     engine: wasmtime::Engine,
     module: wasmtime::Module,
 ) -> anyhow::Result<()> {
-    let mut linker: wasmtime::Linker<State> = wasmtime::Linker::new(&engine);
+    let mut linker: wasmtime::Linker<State<System, Window>> = wasmtime::Linker::new(&engine);
     let state = State {
         preview1_ctx: None,
         wasi_threads_ctx: None,
@@ -212,7 +248,7 @@ fn run_module<
         persistent_dir,
     )?);
 
-    webrogue_gfx_winit::run(move |system| -> anyhow::Result<()> {
+    gfx_builder.run(move |system| -> anyhow::Result<()> {
         webrogue_gfx::run(system, |gfx| -> anyhow::Result<()> {
             store.data_mut().gfx = Some(gfx);
 

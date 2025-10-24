@@ -38,6 +38,7 @@ pub fn build_linux(
                 crate::Target::X86_64LinuxGNU,
                 cache,
                 false,
+                false,
             )?;
 
             println!("Linking native binary...");
@@ -51,6 +52,7 @@ pub fn build_linux(
                 crate::Target::X86_64LinuxMUSL,
                 cache,
                 true,
+                false,
             )?;
 
             println!("Linking native binary...");

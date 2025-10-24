@@ -10,6 +10,7 @@ pub fn compile_wrapp_to_object(
     target: crate::Target,
     cache: Option<&std::path::PathBuf>,
     is_pic: bool,
+    export_dynamic: bool,
 ) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
     config.target(target.name())?;
@@ -66,7 +67,11 @@ pub fn compile_wrapp_to_object(
         value: 0,
         size: 0,
         kind: object::SymbolKind::Text,
-        scope: object::SymbolScope::Linkage,
+        scope: if export_dynamic {
+            object::SymbolScope::Dynamic
+        } else {
+            object::SymbolScope::Linkage
+        },
         weak: false,
         section: object::write::SymbolSection::Undefined,
         flags: object::SymbolFlags::None,

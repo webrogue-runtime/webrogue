@@ -17,6 +17,7 @@ pub fn build(
         crate::Target::x86_64WindowsMSVC,
         cache,
         false, // TODO check
+        false,
     )?;
 
     let mut artifacts = crate::utils::Artifacts::new()?;

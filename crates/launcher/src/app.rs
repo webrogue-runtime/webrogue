@@ -1,4 +1,9 @@
 use dpi::{PhysicalPosition, PhysicalSize};
+#[cfg(target_os = "linux")]
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
@@ -11,6 +16,8 @@ pub struct App {
     window: Option<Box<dyn Window>>,
     webview: Option<wry::WebView>,
     as_child: bool,
+    #[cfg(target_os = "linux")]
+    should_quit: Arc<AtomicBool>,
 }
 
 impl App {
@@ -19,12 +26,18 @@ impl App {
             window: None,
             webview: None,
             as_child,
+
+            #[cfg(target_os = "linux")]
+            should_quit: Arc::new(AtomicBool::new(false)),
         }
     }
 }
 
 impl ApplicationHandler for App {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
+        #[cfg(target_os = "linux")]
+        gtk::init().unwrap();
+
         let window = event_loop
             .create_window(WindowAttributes::default())
             .unwrap();
@@ -40,6 +53,23 @@ impl ApplicationHandler for App {
         self.webview = Some(webview);
 
         self.resize_webview(self.window.as_ref().unwrap().surface_size());
+
+        #[cfg(target_os = "linux")]
+        {
+            let proxy = event_loop.create_proxy();
+            let should_quit = self.should_quit.clone();
+
+            std::thread::Builder::new()
+                .spawn(move || {
+                    use std::time::Duration;
+
+                    while !should_quit.load(Ordering::Relaxed) {
+                        std::thread::sleep(Duration::from_millis(50));
+                        proxy.wake_up();
+                    }
+                })
+                .unwrap();
+        }
     }
 
     fn window_event(
@@ -54,14 +84,18 @@ impl ApplicationHandler for App {
                 self.resize_webview(physical_size);
             }
             // WindowEvent::Moved(physical_position) => todo!(),
-            WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::CloseRequested => {
+                #[cfg(target_os = "linux")]
+                self.should_quit.store(true, Ordering::Relaxed);
+                event_loop.exit();
+            }
             // WindowEvent::Destroyed => todo!(),
             // WindowEvent::DragEntered { paths, position } => todo!(),
             // WindowEvent::DragMoved { position } => todo!(),
             // WindowEvent::DragDropped { paths, position } => todo!(),
             // WindowEvent::DragLeft { position } => todo!(),
             // WindowEvent::Focused(_) => todo!(),
-            WindowEvent::KeyboardInput { device_id, event, is_synthetic } => todo!(),
+            // WindowEvent::KeyboardInput { device_id, event, is_synthetic } => todo!(),
             // WindowEvent::ModifiersChanged(modifiers) => todo!(),
             // WindowEvent::Ime(ime) => todo!(),
             // WindowEvent::PointerMoved { device_id, position, primary, source } => todo!(),
@@ -80,7 +114,22 @@ impl ApplicationHandler for App {
             // WindowEvent::RedrawRequested => todo!(),
             _ => {}
         }
+
         // todo!()
+        #[cfg(target_os = "linux")]
+        gtk::main_iteration_do(false);
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &dyn ActiveEventLoop) {
+        #[cfg(target_os = "linux")]
+        while gtk::events_pending() {
+            gtk::main_iteration_do(false);
+        }
+    }
+
+    fn proxy_wake_up(&mut self, _event_loop: &dyn ActiveEventLoop) {
+        #[cfg(target_os = "linux")]
+        gtk::main_iteration_do(false);
     }
 }
 

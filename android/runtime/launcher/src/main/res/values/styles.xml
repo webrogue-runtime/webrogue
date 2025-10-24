@@ -1,7 +1,5 @@
 <resources>
-
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="@style/Theme.Webrogue">
+    <style name="LauncherTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
     </style>
-
 </resources>

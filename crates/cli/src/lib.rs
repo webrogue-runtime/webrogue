@@ -46,6 +46,7 @@ pub fn main() -> anyhow::Result<()> {
             optimized,
         } => {
             use anyhow::Context as _;
+            use webrogue_gfx_winit::WinitBuilder;
             use webrogue_wrapp::IVFSBuilder as _;
 
             if webrogue_wrapp::is_path_a_wrapp(&path)
@@ -61,6 +62,7 @@ pub fn main() -> anyhow::Result<()> {
                 let handle = builder.into_vfs()?;
 
                 webrogue_wasmtime::run_jit(
+                    WinitBuilder::default(),
                     handle.clone(),
                     &config,
                     &persistent_path,
@@ -76,6 +78,7 @@ pub fn main() -> anyhow::Result<()> {
                     .join("persistent");
 
                 webrogue_wasmtime::run_jit(
+                    WinitBuilder::default(),
                     handle.clone(),
                     handle.config(),
                     &persistent_path,

@@ -66,6 +66,13 @@ pub enum Commands {
         #[arg(short, long)]
         pic: bool,
     },
+    /// Compile shared library
+    /// This commands is intended be invoked from other build systems
+    AndroidSo {
+        wrapp_path: std::path::PathBuf,
+        out_path: std::path::PathBuf,
+        target: String,
+    },
     /// Xcode-related commands
     Xcode {
         /// Path to WRAPP file
@@ -92,7 +99,25 @@ impl Commands {
                     crate::Target::from_name(target)?,
                     cache,
                     *pic,
+                    false,
                 )?;
+            }
+            Commands::AndroidSo {
+                wrapp_path,
+                out_path,
+                target,
+            } => {
+                let target = crate::Target::from_name(target)?;
+                let object_file = crate::utils::TemporalFile::for_tmp_object(out_path)?;
+                crate::compile::compile_wrapp_to_object(
+                    wrapp_path,
+                    object_file.path(),
+                    target,
+                    cache,
+                    true,
+                    true,
+                )?;
+                crate::android::link(&object_file, target, out_path)?;
             }
             Commands::Linux {
                 wrapp_path,
