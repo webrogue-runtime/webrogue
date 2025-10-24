@@ -1,13 +1,13 @@
 use std::str::FromStr;
 
-fn main(
-    wrapp_path: String,
-    persistent_path: String,
-) -> anyhow::Result<()> {
+fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
     let builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(wrapp_path)?;
-    
-    return webrogue_wasmtime::run_aot_builder(builder, &persistent_path.into());
-    
+
+    return webrogue_wasmtime::run_aot_builder(
+        webrogue_gfx_winit::WinitBuilder::default(),
+        builder,
+        &persistent_path.into(),
+    );
 }
 
 #[no_mangle]
