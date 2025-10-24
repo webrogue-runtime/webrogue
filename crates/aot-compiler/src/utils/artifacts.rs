@@ -49,13 +49,13 @@ impl Artifacts {
         Ok(result)
     }
 
-    pub fn extract<P: AsRef<std::path::Path>>(
-        &mut self,
-        output_path: P,
-        file: &str,
-    ) -> anyhow::Result<()> {
-        self.inner.extract(output_path.as_ref(), file)
-    }
+    // pub fn extract<P: AsRef<std::path::Path>>(
+    //     &mut self,
+    //     output_path: P,
+    //     file: &str,
+    // ) -> anyhow::Result<()> {
+    //     self.inner.extract(output_path.as_ref(), file)
+    // }
 
     pub fn get_data(&mut self, file: &str) -> anyhow::Result<Vec<u8>> {
         self.inner.get_data(file)

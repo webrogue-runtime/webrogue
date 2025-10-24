@@ -186,7 +186,17 @@ fn build_using_vfs<
     let gradle_apk_path = if debug {
         gradle_apk_path.join("debug").join("app-debug.apk")
     } else {
-        gradle_apk_path.join("release").join("app-release.apk")
+        match signing {
+            Signing::Unsigned => gradle_apk_path
+                .join("release")
+                .join("app-release-unsigned.apk"),
+            Signing::Signed {
+                keystore_path: _,
+                store_password: _,
+                key_password: _,
+                key_alias: _,
+            } => gradle_apk_path.join("release").join("app-release.apk"),
+        }
     };
 
     let output_apk_filename = vfs_builder.config()?.name.clone().replace(' ', "_") + ".apk";

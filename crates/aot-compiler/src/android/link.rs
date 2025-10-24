@@ -5,8 +5,6 @@ pub fn link(
     target: crate::Target,
     output_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    use crate::utils::path_to_arg;
-
     match target {
         crate::Target::ARM64LinuxAndroid => {
             crate::utils::lld!(
