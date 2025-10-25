@@ -20,19 +20,17 @@ android {
 
     buildTypes {
         release {
-            resValue("string", "app_name", "Webrogue")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "kotlin/dev/webrogue/launcher/proguard-wry.pro",
                 "proguard-rules.pro"
             )
             isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("debug")
+            // signingConfig = signingConfigs.getByName("debug")
         }
         debug {
             isDebuggable = true
             applicationIdSuffix = ".dev"
-            resValue("string", "app_name", "Webrogue debug")
         }
     }
     compileOptions {

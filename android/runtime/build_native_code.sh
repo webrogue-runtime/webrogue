@@ -51,14 +51,14 @@ for TARGET in arm64-v8a x86_64; do
         --features runner \
         --profile $1
 
-    cargo ndk \
+    $STRACE_COMMAND cargo ndk \
         -t $TARGET \
         -o launcher/src/main/jniLibs/ \
         build \
         --features launcher \
         --profile $1
 
-    cargo ndk \
+    $STRACE_COMMAND cargo ndk \
         -t $TARGET \
         --manifest-path launcher/Cargo.toml \
         -o launcher/src/main/jniLibs/ \
