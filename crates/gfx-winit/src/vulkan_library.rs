@@ -40,6 +40,9 @@ extern "system" {
 }
 
 pub fn load_vulkan_entry() -> Option<Entry> {
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    std::env::set_var("MVK_CONFIG_LOG_LEVEL", "1");
+
     #[cfg(feature = "static-vk")]
     return Some(unsafe {
         Entry::from_static_fn(ash::StaticFn {

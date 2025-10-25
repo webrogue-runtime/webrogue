@@ -18,6 +18,6 @@ crate-type = ["staticlib"]
 anyhow = { workspace = true }
 webrogue-wasmtime = { workspace = true }
 webrogue-wrapp = { workspace = true }
-webrogue-launcher = { workspace = true, optional = true }
+webrogue-launcher = { workspace = true, optional = true, features = ["winit"] }
 winit = { workspace = true, default-features = true }
 webrogue-gfx-winit = { workspace = true, features = ["static-vk"] }
