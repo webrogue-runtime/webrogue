@@ -1,0 +1,14 @@
+[package]
+name = "webrogue-launcher-dev"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+webrogue-launcher = { workspace = true, features = ["winit"] }
+winit = { workspace = true, default-features = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+winit-x11 = { workspace = true }
+

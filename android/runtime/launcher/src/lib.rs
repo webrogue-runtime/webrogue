@@ -3,7 +3,7 @@ use tao::{
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::WindowBuilder,
 };
-use wry::{http, WebView, WebViewBuilder};
+use wry::{WebView};
 
 fn init_logging() {
     #[cfg(target_os = "android")]
@@ -71,53 +71,7 @@ pub fn main() {
 }
 
 fn build_webview(event_loop: &EventLoopWindowTarget<()>) -> anyhow::Result<WebView> {
-    let window = WindowBuilder::new()
-        .with_title("A fantastic window!")
-        .build(&event_loop)?;
+    let window = WindowBuilder::new().build(&event_loop)?;
 
-    let builder = WebViewBuilder::new()
-        .with_url("https://tauri.app")
-        // If you want to use custom protocol, set url like this and add files like index.html to assets directory.
-        // .with_url("wry://assets/index.html")?
-        .with_devtools(true)
-        .with_initialization_script("console.log('hello world from init script');")
-        .with_ipc_handler(|s| {
-            dbg!(s);
-        })
-        .with_custom_protocol("wry".into(), move |_, _request| {
-            http::Response::builder()
-                .header(http::header::CONTENT_TYPE, "text/html")
-                .body(
-                    r#"<html>
-                <body>
-                  Hello Wry!!
-                </body>
-                </html>"#
-                        .as_bytes()
-                        .into(),
-                )
-                .unwrap_or_default()
-        });
-
-    #[cfg(any(
-        target_os = "windows",
-        target_os = "macos",
-        target_os = "ios",
-        target_os = "android"
-    ))]
-    let webview = builder.build(&window)?;
-    #[cfg(not(any(
-        target_os = "windows",
-        target_os = "macos",
-        target_os = "ios",
-        target_os = "android"
-    )))]
-    let webview = {
-        use tao::platform::unix::WindowExtUnix;
-        use wry::WebViewBuilderExtUnix;
-        let vbox = window.default_vbox().unwrap();
-        builder.build_gtk(vbox)?
-    };
-
-    Ok(webview)
+    Ok(webrogue_launcher::build_webview(&window, false)?)
 }

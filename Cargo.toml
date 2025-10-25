@@ -53,6 +53,7 @@ members = [
   # "crates/gfx-fallback",
   "crates/gfxstream",
   "crates/launcher",
+  "crates/launcher_dev",
   "crates/lld",
   "crates/wasip1",
   "crates/wasmtime",
@@ -129,8 +130,9 @@ cfg_aliases = { version = "0.2.1" }
 windows-sys = { version = "0.60.0", default-features = false }
 wry = { version = "0.51", default-features = false }
 tao = { version = "0.34.5", default-features = false }
-winit = { path = "external/winit/winit", default-features = false }
-winit-android = { path = "external/winit/winit-android", default-features = false }
+winit = { git = "https://github.com/rust-windowing/winit.git", default-features = false }
+winit-android = { git = "https://github.com/rust-windowing/winit.git", default-features = false }
+winit-x11 = { git = "https://github.com/rust-windowing/winit.git", default-features = false }
 gtk = { version = "0.18.2", default-features = false }
 dpi = { version = "*", default-features = false }
 libloading = { version = "0.8.9", default-features = false }

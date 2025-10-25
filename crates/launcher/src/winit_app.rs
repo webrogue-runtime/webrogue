@@ -10,7 +10,9 @@ use winit::{
     event_loop::ActiveEventLoop,
     window::{Window, WindowAttributes, WindowId},
 };
-use wry::{Rect, WebViewBuilder};
+use wry::Rect;
+
+use crate::build_webview;
 
 pub struct App {
     window: Option<Box<dyn Window>>,
@@ -41,14 +43,8 @@ impl ApplicationHandler for App {
         let window = event_loop
             .create_window(WindowAttributes::default())
             .unwrap();
-        let builder = WebViewBuilder::new().with_url("https://tauri.app");
 
-        let webview = if self.as_child {
-            builder.build_as_child(&window).unwrap()
-        } else {
-            builder.build(&window).unwrap()
-        };
-
+        let webview = build_webview(&window, self.as_child).unwrap();
         self.window = Some(window);
         self.webview = Some(webview);
 

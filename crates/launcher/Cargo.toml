@@ -6,11 +6,12 @@ license.workspace = true
 edition.workspace = true
 
 [features]
+winit = ["dep:winit"]
 
 [dependencies]
 wry = { workspace = true, default-features = true }
 # tao = { workspace = true, default-features = true }
-winit = { workspace = true, default-features = true }
+winit = { workspace = true, default-features = true, optional = true }
 dpi = { workspace = true, default-features = false }
 
 [target.'cfg(target_os = "linux")'.dependencies]
