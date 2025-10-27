@@ -103,7 +103,19 @@ impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
             "VK_KHR_android_surface".to_owned(),
         ];
 
-        #[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "linux", target_os = "android")))]
+        #[cfg(target_os = "windows")]
+        return vec![
+            "VK_KHR_surface".to_owned(),
+            "VK_KHR_win32_surface".to_owned(),
+        ];
+
+        #[cfg(not(any(
+            target_os = "ios", 
+            target_os = "macos", 
+            target_os = "linux", 
+            target_os = "android", 
+            target_os = "windows"
+        )))]
         compile_error!("Specify required Vulkan extensions list")
     }
 

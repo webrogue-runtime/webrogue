@@ -50,7 +50,6 @@ members = [
   "crates/events-macro",
   "crates/gfx",
   "crates/gfx-winit",
-  # "crates/gfx-fallback",
   "crates/gfxstream",
   "crates/launcher",
   "crates/launcher_dev",
@@ -69,7 +68,6 @@ members = [
 ]
 exclude = [
   "external/wasmtime",
-  "external/winit",
 ]
 
 [workspace.dependencies]

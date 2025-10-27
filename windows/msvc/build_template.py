@@ -3,8 +3,6 @@
 
 import os
 import subprocess
-import requests
-import zipfile
 
 template_dir = os.path.dirname(os.path.realpath(__file__))
 repo_dir = os.path.dirname(os.path.dirname(template_dir))
@@ -23,7 +21,7 @@ subprocess.run(
         "--manifest-path=../../crates/aot-lib/Cargo.toml",
         "--target-dir=./target",
         "--target=x86_64-pc-windows-msvc",
-        "--features=build-gfxstream-cc,build-sdl",
+        "--features=build-gfxstream-cc",
         "--profile",
         "aot",
     ],
@@ -106,22 +104,24 @@ subprocess.run(
         os.path.join(vc_tools_install_dir, "lib", "x64", "oldnames.lib"),
         os.path.join(vc_tools_install_dir, "lib", "x64", "libcmt.lib"),
         os.path.join(sdk_dir, "Lib", sdk_version, "ucrt", "x64", "libucrt.lib"),
-        os.path.join(um_lib_dir, "ws2_32.lib"),
+        # os.path.join(um_lib_dir, "ws2_32.lib"),
         os.path.join(um_lib_dir, "ntdll.lib"),
         os.path.join(um_lib_dir, "AdvAPI32.Lib"),
         os.path.join(um_lib_dir, "bcrypt.lib"),
         os.path.join(um_lib_dir, "kernel32.lib"),
-        os.path.join(um_lib_dir, "UserEnv.Lib"),
-        os.path.join(um_lib_dir, "oleaut32.lib"),
+        # os.path.join(um_lib_dir, "UserEnv.Lib"),
+        # os.path.join(um_lib_dir, "oleaut32.lib"),
         os.path.join(um_lib_dir, "ole32.lib"),
         os.path.join(um_lib_dir, "gdi32.lib"),
         os.path.join(um_lib_dir, "user32.lib"),
         os.path.join(um_lib_dir, "imm32.lib"),
-        os.path.join(um_lib_dir, "version.lib"),
-        os.path.join(um_lib_dir, "setupapi.lib"),
-        os.path.join(um_lib_dir, "winmm.lib"),
-        os.path.join(um_lib_dir, "shell32.lib"),
-        os.path.join(um_lib_dir, "uuid.lib"),
+        # os.path.join(um_lib_dir, "version.lib"),
+        # os.path.join(um_lib_dir, "setupapi.lib"),
+        # os.path.join(um_lib_dir, "winmm.lib"),
+        # os.path.join(um_lib_dir, "shell32.lib"),
+        # os.path.join(um_lib_dir, "uuid.lib"),
+        os.path.join(um_lib_dir, "Uxtheme.lib"),
+        os.path.join(um_lib_dir, "dwmapi.lib"),
     ],
     cwd=str(template_dir),
 ).check_returncode()
