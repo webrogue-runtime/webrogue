@@ -16,7 +16,6 @@ crate-type = ["cdylib"]
 [dependencies]
 anyhow = { workspace = true }
 webrogue-wasmtime = { workspace = true }
-webrogue-launcher = { workspace = true }
 winit = { workspace = true }
 webrogue-gfxstream = { workspace = true, features = ["cc"] }
 webrogue-gfx-winit = { workspace = true }

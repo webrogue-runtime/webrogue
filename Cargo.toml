@@ -52,8 +52,10 @@ members = [
   "crates/gfx-winit",
   "crates/gfxstream",
   "crates/launcher",
-  "crates/launcher_dev",
+  "crates/launcher/src/openapi",
+  "crates/launcher-dev",
   "crates/lld",
+  "crates/vscode-server",
   "crates/wasip1",
   "crates/wasmtime",
   # "crates/web-macro",
@@ -87,6 +89,7 @@ webrogue-lld = { path = "crates/lld" }
 webrogue-wasip1 = { path = "crates/wasip1" }
 webrogue-wrapp = { path = "crates/wrapp" }
 webrogue-launcher = { path = "crates/launcher" }
+webrogue-launcher-server-openapi = { path = "crates/launcher/src/openapi", default-features=false }
 
 # Platform-specific crates
 # webrogue-web-macro = { path = "crates/web-macro" }
@@ -141,6 +144,7 @@ log = { version = "0.4", default-features = false }
 android_logger = { version = "0.11.0", default-features = false }
 ndk-sys = { version = "0.6.0", default-features = false }
 ndk = { version = "0.9.0", default-features = false }
+json-escape = { version = "0.3.0" }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.4.1" }

@@ -17,4 +17,3 @@ crate-type = ["staticlib"]
 anyhow = { workspace = true }
 webrogue-wasmtime = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
-

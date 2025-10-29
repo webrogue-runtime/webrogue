@@ -1,0 +1,125 @@
+openapi: 3.0.3
+info:
+  title: Webrogue Launcher protocol schema
+  version: 1.0.0
+paths:
+  /getWRAPPConfig:
+    get:
+      operationId: getWRAPPConfig
+      responses:
+        '200':
+          description: Successfully retrieved device list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebrogueConfig'
+components:
+  schemas:
+    Color:
+      type: object
+      description: RGB color specification
+      required:
+        - red
+        - green
+        - blue
+      properties:
+        red:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Red component of color
+        green:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Green component of color
+        blue:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Blue component of color
+    Icon:
+      type: object
+      description: Icon configuration
+      required:
+        - path
+        - inset
+        - background
+      properties:
+        path:
+          type: string
+          description: Relative path to application icon
+        inset:
+          type: number
+          description: Icon's relative inset
+          minimum: 0
+          maximum: 0.5
+        background:
+          $ref: '#/components/schemas/Color'
+    WebrogueConfig:
+      required:
+        - name
+        - id
+        - version
+      properties:
+        name:
+          type: string
+          description: Human-readable application name
+        id:
+          type: string
+          description: Apple-style application identifier. Same value will be used as bundle ID for macOS and iOS applications. Lowercased value will be used as Android Application ID.
+        main:
+          type: string
+          description: Relative path to WebAssembly module file. 'main.wasm' is assumed if this value is not specified.
+        version:
+          type: string
+          description: Application semantic version. Read https://semver.org/ to learn about format of this value.
+        icons:
+          type: object
+          description: Icon's configuration. This field is required to build for Android, macOS and iOS.
+          required:
+            - normal
+          properties:
+            normal:
+              $ref: '#/components/schemas/Icon'
+        filesystem:
+          type: object
+          description: Filesystem configuration
+          properties:
+            resources:
+              type: array
+              description: Readonly files and directories packaged with application
+              items:
+                type: object
+                description: Readonly files and directories packaged with application
+                required:
+                  - real_path
+                  - mapped_path
+                properties:
+                  real_path:
+                    type: string
+                    description: Relative path to file or directory you want to package.
+                  mapped_path:
+                    type: string
+                    description: Absolute path to packaged file or directory. Application can refer is's resources by this path.
+            persistent:
+              type: array
+              description: Read-write volume's configuration.
+              items:
+                type: object
+                description: Read-write volume configuration.
+                required:
+                  - name
+                  - mapped_path
+                properties:
+                  name:
+                    type: string
+                    description: Volume's name.
+                  mapped_path:
+                    type: string
+                    description: Absolute path to volume. Application can refer volumes by this path.
+        env:
+          type: object
+          description: Environment variables
+          additionalProperties:
+            type: string

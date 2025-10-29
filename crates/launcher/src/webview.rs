@@ -1,27 +1,74 @@
-use wry::{
-    http,
-    raw_window_handle::HasWindowHandle,
-    WebView, WebViewBuilder,
-};
+use anyhow;
+use bytes::Bytes;
+use futures_util::stream::TryStreamExt;
+use http::{Request, Response};
+use lazy_static::lazy_static;
+use tokio_stream::{self, StreamExt as _};
+use tower_service::Service;
+use wry::{http, raw_window_handle::HasWindowHandle, WebView, WebViewBuilder};
+
+use crate::server::make_router;
+
+lazy_static! {
+    static ref ROUTER: axum::Router = make_router();
+    static ref RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+}
+
+fn use_localhost_ui() -> bool {
+    cfg!(debug_assertions)
+}
+
+fn launcher_api() -> Option<&'static str> {
+    None
+    // cfg!(debug_assertions)
+}
+
+fn api_url() -> Option<&'static str> {
+    if use_localhost_ui() {
+        if cfg!(target_os = "android") {
+            Some("http://10.0.2.2:8080")
+        } else {
+            Some("http://localhost:8080")
+        }
+    } else {
+        None
+    }
+}
+
+fn assets_url() -> &'static str {
+    if use_localhost_ui() {
+        if cfg!(target_os = "android") {
+            "http://10.0.2.2:5202/"
+        } else {
+            "http://localhost:5202/"
+        }
+    } else {
+        "wrlauncher://asset/"
+    }
+}
 
 pub fn build_webview<W: HasWindowHandle>(
     window: &W,
     as_child: bool,
 ) -> Result<WebView, wry::Error> {
-    let builder = WebViewBuilder::new()
-        .with_url("wrlauncher://asset/")
-        .with_devtools(true)
-        .with_custom_protocol("wrlauncher".into(), move |_webview_id, request| {
-            match get_wry_response(request) {
-                Ok(r) => r.map(Into::into),
-                Err(e) => http::Response::builder()
-                    .header(http::header::CONTENT_TYPE, "text/plain")
-                    .status(500)
-                    .body(e.to_string().as_bytes().to_vec())
-                    .unwrap()
-                    .map(Into::into),
-            }
-        });
+    let mut builder = WebViewBuilder::new()
+        .with_url(assets_url())
+        .with_devtools(cfg!(debug_assertions))
+        .with_asynchronous_custom_protocol("wrlauncher".into(), handler);
+
+    if let Some(url) = api_url() {
+        builder = builder.with_initialization_script(format!(
+            "wrApiBasePath = \"{}\"",
+            json_escape::escape_str(url)
+        ))
+    }
+    builder = builder.with_initialization_script(format!(
+        "wrLauncherHostChannelUrl = \"{}\"",
+        json_escape::escape_str(launcher_api().unwrap_or("wrlauncher://api/"))
+    ));
 
     if as_child {
         builder.build_as_child(window)
@@ -30,13 +77,73 @@ pub fn build_webview<W: HasWindowHandle>(
     }
 }
 
-fn get_wry_response(
+fn handler(
+    _webview_id: &str,
+    request: http::Request<Vec<u8>>,
+    responder: wry::RequestAsyncResponder,
+) {
+    let autrority = request.uri().authority().map(|a| a.as_str());
+    match autrority {
+        Some("asset") => match get_asset_response(request) {
+            Ok(r) => responder.respond(r),
+            Err(e) => responder.respond(internal_server_error_response(&e.to_string())),
+        },
+        Some("api") => {
+            let _ = RUNTIME.spawn(async {
+                let result = async {
+                    let method = request.method().clone();
+                    let uri = request.uri().clone();
+                    let stream: tokio_stream::Iter<
+                        std::vec::IntoIter<Result<Bytes, anyhow::Error>>,
+                    > = tokio_stream::iter(vec![Ok(Bytes::from(request.into_body()))]);
+                    let mut router = ROUTER.clone();
+                    let mapped_request = Request::builder()
+                        .method(method)
+                        .uri(uri)
+                        .body(axum::body::Body::from_stream(stream))
+                        .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;
+
+                    let response = router
+                        .call(mapped_request)
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Router call failed: {}", e))?;
+                    let status = response.status();
+                    let headers = response.headers().clone();
+                    let body_stream = response.into_body().into_data_stream();
+                    let body_vec: Vec<u8> = body_stream
+                        .map(|result| {
+                            result.map_err(|e| anyhow::anyhow!("Body stream error: {}", e))
+                        })
+                        .try_collect::<Vec<bytes::Bytes>>()
+                        .await?
+                        .into_iter()
+                        .flat_map(|bytes| bytes.into_iter())
+                        .collect();
+                    let mut response_builder = Response::builder().status(status);
+                    for (header_name, header_value) in headers {
+                        if let Some(header_name) = header_name {
+                            response_builder = response_builder.header(header_name, header_value);
+                        }
+                    }
+                    response_builder
+                        .body(body_vec)
+                        .map_err(|e| anyhow::anyhow!("Failed to build response: {}", e))
+                }
+                .await;
+
+                match result {
+                    Ok(response) => responder.respond(response),
+                    Err(e) => responder.respond(internal_server_error_response(&e.to_string())),
+                }
+            });
+        }
+        _ => responder.respond(not_found_response()),
+    }
+}
+
+fn get_asset_response(
     request: http::Request<Vec<u8>>,
 ) -> Result<http::Response<&'static [u8]>, Box<dyn std::error::Error>> {
-    if !matches!(request.uri().authority().map(|a| a.as_str()), Some("asset")) {
-        return Ok(not_found_response());
-    }
-
     let path = request.uri().path();
     let data: Option<(&[u8], _)> = match path {
         "/" => Some((include_bytes!("../webview_assets/index.html"), "text/html")),
@@ -62,5 +169,13 @@ fn not_found_response() -> http::Response<&'static [u8]> {
         .header(http::header::CONTENT_TYPE, "text/plain")
         .status(404)
         .body(b"not found" as &[u8])
+        .unwrap()
+}
+
+fn internal_server_error_response(message: &str) -> http::Response<Vec<u8>> {
+    http::Response::builder()
+        .header(http::header::CONTENT_TYPE, "text/plain")
+        .status(500)
+        .body(message.as_bytes().to_vec())
         .unwrap()
 }

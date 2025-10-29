@@ -15,7 +15,6 @@ build-gfxstream-cc = ["webrogue-gfxstream/cc"]
 
 [dependencies]
 webrogue-wasmtime = { workspace = true, features = ["aot"] }
-webrogue-gfx = { workspace = true }
 webrogue-gfxstream = { workspace = true, optional = true }
 dirs = { workspace = true }
 webrogue-gfx-winit = { workspace = true }

@@ -41,7 +41,8 @@
         android:allowBackup="true"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="Webrogue">
+        android:label="Webrogue"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name="dev.webrogue.launcher.LauncherActivity"

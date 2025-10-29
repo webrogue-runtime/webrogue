@@ -1,4 +1,5 @@
 use std::{
+    ffi::CStr,
     ptr::null,
     sync::{Arc, Mutex},
 };
@@ -82,41 +83,27 @@ impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
 
     #[allow(unreachable_code)]
     fn vk_extensions(&self) -> Vec<String> {
-        #[cfg(any(target_os = "ios", target_os = "macos"))]
-        return vec![
-            "VK_KHR_surface".to_owned(),
-            "VK_EXT_metal_surface".to_owned(),
-            "VK_KHR_portability_enumeration".to_owned(),
-        ];
-
-        #[cfg(target_os = "linux")]
-        return vec![
-            "VK_KHR_surface".to_owned(),
-            "VK_KHR_wayland_surface".to_owned(),
-            "VK_KHR_xlib_surface".to_owned(),
-            "VK_KHR_xcb_surface".to_owned(),
-        ];
-
-        #[cfg(target_os = "android")]
-        return vec![
-            "VK_KHR_surface".to_owned(),
-            "VK_KHR_android_surface".to_owned(),
-        ];
-
-        #[cfg(target_os = "windows")]
-        return vec![
-            "VK_KHR_surface".to_owned(),
-            "VK_KHR_win32_surface".to_owned(),
-        ];
-
-        #[cfg(not(any(
-            target_os = "ios", 
-            target_os = "macos", 
-            target_os = "linux", 
-            target_os = "android", 
-            target_os = "windows"
-        )))]
-        compile_error!("Specify required Vulkan extensions list")
+        self.mailbox.execute(|event_loop| {
+            ash_window::enumerate_required_extensions(
+                event_loop
+                    .rwh_06_handle()
+                    .display_handle()
+                    .unwrap()
+                    .as_raw(),
+            )
+            .map(|extensions| {
+                extensions
+                    .iter()
+                    .map(|extension| unsafe {
+                        CStr::from_ptr(extension.clone())
+                            .to_str()
+                            .unwrap()
+                            .to_owned()
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_else(|_| vec![])
+        })
     }
 
     fn pump(&self) {}
