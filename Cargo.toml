@@ -12,12 +12,13 @@ path = "main.rs"
 doc = false
 
 [features]
-default = ["run", "compile", "pack"]
-full = ["run", "compile", "pack", "appended_artifacts", "llvm"]
+default = ["run", "compile", "pack", "hub"]
+full = ["run", "compile", "pack", "hub", "appended_artifacts", "llvm"]
 
 run = ["webrogue-cli/run"]
 compile = ["webrogue-cli/compile"]
 pack = ["webrogue-cli/pack"]
+hub = ["webrogue-cli/hub"]
 
 # to use this feature, you need to process resulting binary 
 # using append_artifacts.py script, so it is disabled by default
@@ -51,6 +52,9 @@ members = [
   "crates/gfx",
   "crates/gfx-winit",
   "crates/gfxstream",
+  "crates/hub-client",
+  "crates/hub-client/src/openapi",
+  "crates/icons",
   "crates/launcher",
   "crates/launcher/src/openapi",
   "crates/launcher-dev",
@@ -61,6 +65,7 @@ members = [
   # "crates/web-macro",
   # "crates/web",
   "crates/wrapp",
+  "crates/wrapp-reader",
 
   "android/runtime",
   "android/runtime/launcher",
@@ -80,6 +85,9 @@ webrogue-cli = { path = "crates/cli" }
 webrogue-events = { path = "crates/events" }
 webrogue-events-macro = { path = "crates/events-macro" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
+webrogue-hub-client = { path = "crates/hub-client" }
+webrogue-hub-client-openapi = { path = "crates/hub-client/src/openapi" }
+webrogue-icons = { path = "crates/icons" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-sdl = { path = "crates/gfx-sdl" }
 webrogue-gfx-winit = { path = "crates/gfx-winit" }
@@ -145,6 +153,7 @@ android_logger = { version = "0.11.0", default-features = false }
 ndk-sys = { version = "0.6.0", default-features = false }
 ndk = { version = "0.9.0", default-features = false }
 json-escape = { version = "0.3.0" }
+wit-bindgen = { version = "0.21.0" }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.4.1" }
@@ -174,3 +183,7 @@ opt-level = 3
 [profile.dev.package.gimli]
 opt-level = 3
 codegen-units = 1
+
+[patch.crates-io]
+zstd-safe = { path = "external/zstd-rs/zstd-safe" }
+zstd = { path = "external/zstd-rs" }

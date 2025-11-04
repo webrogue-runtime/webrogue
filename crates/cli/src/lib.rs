@@ -34,6 +34,12 @@ enum Cli {
         #[arg(short, long)]
         output: std::path::PathBuf,
     },
+    /// Commands related to Webrogue-Hub
+    #[cfg(feature = "hub")]
+    Hub {
+        #[command(subcommand)]
+        command: webrogue_hub_client::Commands,
+    },
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -96,6 +102,11 @@ pub fn main() -> anyhow::Result<()> {
         #[cfg(feature = "pack")]
         Cli::Pack { config, output } => {
             webrogue_wrapp::archive(&config, &output)?;
+            Ok(())
+        }
+        #[cfg(feature = "hub")]
+        Cli::Hub { command } => {
+            command.run()?;
             Ok(())
         }
     }

@@ -9,6 +9,7 @@ edition.workspace = true
 run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-gfxstream", "dep:webrogue-wrapp"]
 compile = ["dep:webrogue-aot-compiler"]
 pack = ["dep:webrogue-wrapp"]
+hub = ["dep:webrogue-hub-client"]
 llvm = ["webrogue-aot-compiler/llvm"]
 appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
 
@@ -21,3 +22,4 @@ webrogue-gfx-winit = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, features = ["cc"], optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }
 webrogue-wrapp = { workspace = true, features = ["write"], optional = true }
+webrogue-hub-client = { workspace = true, optional = true }

@@ -13,3 +13,6 @@
 [submodule "webrogue-sdk"]
 	path = webrogue-sdk
 	url = https://github.com/webrogue-runtime/webrogue-sdk.git
+[submodule "external/zstd-rs"]
+	path = external/zstd-rs
+	url = https://github.com/webrogue-runtime/zstd-rs.git

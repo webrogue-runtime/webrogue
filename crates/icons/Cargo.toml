@@ -1,0 +1,17 @@
+[package]
+name = "webrogue-icons"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[features]
+default = []
+rayon = ["image/rayon"]
+
+[dependencies]
+image = { workspace = true, default-features = false, features = ["png", "rayon", "webp"] }
+imageproc = { workspace = true, default-features = false, features = ["rayon"] }
+anyhow = { workspace = true }
+webrogue-wrapp = { workspace = true }
+serde = { workspace = true, features = ['derive'] }

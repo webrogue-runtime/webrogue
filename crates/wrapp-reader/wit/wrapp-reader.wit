@@ -1,0 +1,19 @@
+// wit/calculator.wit
+package vscode:example;
+
+interface types {
+	record input {
+		path: string,
+	}
+	record output {
+		data: string,
+		macos-icon: list<u8>
+	}
+}
+world wrapp-reader {
+	use types.{ input, output };
+
+	import log: func(msg: string);
+
+	export read: func(i: input) -> result<output, string>;
+}

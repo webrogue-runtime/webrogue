@@ -1,0 +1,17 @@
+[package]
+name = "webrogue-wrapp-reader"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+webrogue-wrapp = { workspace = true }
+webrogue-icons = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+wit-bindgen = { workspace = true }
+image = { workspace = true, default-features = false, features = ["png"] }
+
+[lib]
+crate-type = ["cdylib"]

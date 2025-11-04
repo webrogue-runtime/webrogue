@@ -1,0 +1,11 @@
+[package]
+name = "webrogue-hub-client"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+webrogue-hub-client-openapi = { workspace = true, default-features = true }
+clap = { workspace = true, features = ["derive"] }
+anyhow = { workspace = true }
