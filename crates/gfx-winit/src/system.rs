@@ -10,7 +10,7 @@ use ash::{
 };
 use winit::window::WindowAttributes;
 
-use crate::{builder::Mailbox, vulkan_library::load_vulkan_entry, WinitWindow};
+use crate::{mailbox::Mailbox, vulkan_library::load_vulkan_entry, WinitWindow};
 
 pub struct WinitSystem {
     pub(crate) mailbox: Mailbox,

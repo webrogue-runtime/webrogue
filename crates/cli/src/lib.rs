@@ -38,7 +38,7 @@ enum Cli {
     #[cfg(feature = "hub")]
     Hub {
         #[command(subcommand)]
-        command: webrogue_hub_client::Commands,
+        command: webrogue_hub_client::CLICommand,
     },
 }
 
@@ -52,7 +52,7 @@ pub fn main() -> anyhow::Result<()> {
             optimized,
         } => {
             use anyhow::Context as _;
-            use webrogue_gfx_winit::WinitBuilder;
+            use webrogue_gfx_winit::SimpleWinitBuilder;
             use webrogue_wrapp::IVFSBuilder as _;
 
             if webrogue_wrapp::is_path_a_wrapp(&path)
@@ -68,7 +68,7 @@ pub fn main() -> anyhow::Result<()> {
                 let handle = builder.into_vfs()?;
 
                 webrogue_wasmtime::run_jit(
-                    WinitBuilder::default(),
+                    SimpleWinitBuilder::default(),
                     handle.clone(),
                     &config,
                     &persistent_path,
@@ -76,7 +76,8 @@ pub fn main() -> anyhow::Result<()> {
                     optimized,
                 )?;
             } else {
-                let handle = webrogue_wasmtime::RealVFSBuilder::new(path)?.into_vfs()?;
+                let handle =
+                    webrogue_wasmtime::RealVFSBuilder::from_config_path(path)?.into_vfs()?;
 
                 let persistent_path = std::env::current_dir()?
                     .join(".webrogue")
@@ -84,7 +85,7 @@ pub fn main() -> anyhow::Result<()> {
                     .join("persistent");
 
                 webrogue_wasmtime::run_jit(
-                    WinitBuilder::default(),
+                    SimpleWinitBuilder::default(),
                     handle.clone(),
                     handle.config(),
                     &persistent_path,

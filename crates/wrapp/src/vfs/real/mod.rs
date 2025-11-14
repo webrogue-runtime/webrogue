@@ -105,7 +105,7 @@ pub struct RealVFSBuilder {
 }
 
 impl RealVFSBuilder {
-    pub fn new<P: AsRef<std::path::Path>>(config_path: P) -> anyhow::Result<Self> {
+    pub fn from_config_path<P: AsRef<std::path::Path>>(config_path: P) -> anyhow::Result<Self> {
         let path = config_path.as_ref();
         let root_path = path
             .parent()
@@ -113,6 +113,13 @@ impl RealVFSBuilder {
             .to_path_buf();
 
         let config: crate::config::Config = serde_json::from_reader(std::fs::File::open(path)?)?;
+        Self::new(root_path, config)
+    }
+
+    pub fn new(
+        root_path: std::path::PathBuf,
+        config: crate::config::Config,
+    ) -> anyhow::Result<Self> {
         let mut paths = std::collections::HashMap::<String, RealFilePosition>::new();
 
         let mut main_path = root_path.clone();

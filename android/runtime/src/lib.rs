@@ -25,7 +25,7 @@ fn android_main(app: android_activity::AndroidApp) {
 
     let data_dir = app.internal_data_path().unwrap();
 
-    let gfx_builder = webrogue_gfx_winit::WinitBuilder::default().with_event_loop(event_loop);
+    let gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::default().with_event_loop(event_loop);
 
     #[cfg(feature = "launcher")]
     webrogue_wasmtime::run_jit_builder(gfx_builder, vfs_builder, &data_dir).unwrap();

@@ -252,7 +252,7 @@ pub fn build(
         )
     } else {
         build_using_vfs(
-            || webrogue_wrapp::RealVFSBuilder::new(container_path),
+            || webrogue_wrapp::RealVFSBuilder::from_config_path(container_path),
             sdk_env,
             java_home_env,
             container_path,

@@ -1,7 +1,2 @@
 /webview_assets/main.js
 /webview_assets/style.css
-/node_modules
-/package-lock.json
-/openapitools.json
-/launcher-client
-/wrapp-config.schema.json

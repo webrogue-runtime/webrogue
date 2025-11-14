@@ -9,6 +9,7 @@ fn main() {
     #[cfg(not(target_os = "linux"))]
     let event_loop = EventLoop::new().unwrap();
 
-    let mut app = webrogue_launcher::App::new(true);
+    let mut app =
+        webrogue_launcher::App::new(true, std::env::temp_dir().join("webrogue_launcher_dev"));
     event_loop.run_app(&mut app).unwrap();
 }

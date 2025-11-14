@@ -16,7 +16,7 @@ impl Guest for WRAPPReader {
                     File::open(i.path)?,
                 )?)?)
             } else {
-                Ok(extract_config(webrogue_wrapp::RealVFSBuilder::new(
+                Ok(extract_config(webrogue_wrapp::RealVFSBuilder::from_config_path(
                     i.path,
                 )?)?)
             }

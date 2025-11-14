@@ -42,7 +42,7 @@ pub fn compile_wrapp_to_object(
             .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
         std::io::Read::read_to_end(&mut file, &mut wasm_binary)?;
     } else {
-        let vfs = webrogue_wrapp::RealVFSBuilder::new(wrapp_file_path)?.into_vfs()?;
+        let vfs = webrogue_wrapp::RealVFSBuilder::from_config_path(wrapp_file_path)?.into_vfs()?;
         let mut file = vfs
             .open_file("/app/main.wasm")?
             .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;

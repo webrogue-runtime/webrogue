@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-winit = ["dep:winit"]
+winit = ["dep:winit", "dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-gfxstream"]
 
 [dependencies]
 wry = { workspace = true, default-features = true }
@@ -26,7 +26,17 @@ bytes = "1.0"
 tokio-stream = "0.1"
 tower-http = { version = "*", features = ["cors"] }
 lazy_static = "1.4"
-futures-util = "0.3"
+futures-util = { workspace = true }
+webrtc = { workspace = true }
+serde_json = { workspace = true }
+webrogue-hub-client = { workspace = true }
+blake3 = { workspace = true }
+webrogue-wrapp = { workspace = true }
+webrogue-wasmtime = { workspace = true, features = ["jit"], optional = true }
+webrogue-gfx-winit = { workspace = true, optional = true }
+webrogue-gfxstream = { workspace = true, features = ["cc"], optional = true }
+
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
+wry = { workspace = true, features = ["linux-body"] }

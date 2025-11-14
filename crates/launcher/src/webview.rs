@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow;
 use bytes::Bytes;
 use futures_util::stream::TryStreamExt;
@@ -5,12 +7,14 @@ use http::{Request, Response};
 use lazy_static::lazy_static;
 use tokio_stream::{self, StreamExt as _};
 use tower_service::Service;
-use wry::{http, raw_window_handle::HasWindowHandle, WebView, WebViewBuilder};
+use wry::{
+    http, raw_window_handle::HasWindowHandle, RequestAsyncResponder, WebView, WebViewBuilder,
+    WebViewId,
+};
 
-use crate::server::make_router;
+use crate::server::{make_router, ServerConfig};
 
 lazy_static! {
-    static ref ROUTER: axum::Router = make_router();
     static ref RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -53,11 +57,14 @@ fn assets_url() -> &'static str {
 pub fn build_webview<W: HasWindowHandle>(
     window: &W,
     as_child: bool,
+    server_config: Arc<dyn ServerConfig>,
 ) -> Result<WebView, wry::Error> {
+    let router = RUNTIME.block_on(async { make_router(server_config).await.unwrap() });
+
     let mut builder = WebViewBuilder::new()
         .with_url(assets_url())
         .with_devtools(cfg!(debug_assertions))
-        .with_asynchronous_custom_protocol("wrlauncher".into(), handler);
+        .with_asynchronous_custom_protocol("wrlauncher".into(), make_handler(router));
 
     if let Some(url) = api_url() {
         builder = builder.with_initialization_script(format!(
@@ -77,67 +84,75 @@ pub fn build_webview<W: HasWindowHandle>(
     }
 }
 
-fn handler(
-    _webview_id: &str,
-    request: http::Request<Vec<u8>>,
-    responder: wry::RequestAsyncResponder,
-) {
-    let autrority = request.uri().authority().map(|a| a.as_str());
-    match autrority {
-        Some("asset") => match get_asset_response(request) {
-            Ok(r) => responder.respond(r),
-            Err(e) => responder.respond(internal_server_error_response(&e.to_string())),
-        },
-        Some("api") => {
-            let _ = RUNTIME.spawn(async {
-                let result = async {
-                    let method = request.method().clone();
-                    let uri = request.uri().clone();
-                    let stream: tokio_stream::Iter<
-                        std::vec::IntoIter<Result<Bytes, anyhow::Error>>,
-                    > = tokio_stream::iter(vec![Ok(Bytes::from(request.into_body()))]);
-                    let mut router = ROUTER.clone();
-                    let mapped_request = Request::builder()
-                        .method(method)
-                        .uri(uri)
-                        .body(axum::body::Body::from_stream(stream))
-                        .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;
-
-                    let response = router
-                        .call(mapped_request)
-                        .await
-                        .map_err(|e| anyhow::anyhow!("Router call failed: {}", e))?;
-                    let status = response.status();
-                    let headers = response.headers().clone();
-                    let body_stream = response.into_body().into_data_stream();
-                    let body_vec: Vec<u8> = body_stream
-                        .map(|result| {
-                            result.map_err(|e| anyhow::anyhow!("Body stream error: {}", e))
-                        })
-                        .try_collect::<Vec<bytes::Bytes>>()
-                        .await?
-                        .into_iter()
-                        .flat_map(|bytes| bytes.into_iter())
-                        .collect();
-                    let mut response_builder = Response::builder().status(status);
-                    for (header_name, header_value) in headers {
-                        if let Some(header_name) = header_name {
-                            response_builder = response_builder.header(header_name, header_value);
+fn make_handler(
+    router: axum::Router,
+) -> impl Fn(WebViewId, Request<Vec<u8>>, RequestAsyncResponder) {
+    move |_webview_id, request: http::Request<Vec<u8>>, responder: wry::RequestAsyncResponder| {
+        let authority = request.uri().authority().map(|a| a.as_str());
+        match authority {
+            Some("asset") => match get_asset_response(request) {
+                Ok(r) => responder.respond(r),
+                Err(e) => responder.respond(internal_server_error_response(&e.to_string())),
+            },
+            Some("api") => {
+                let mut local_router = router.clone();
+                let _ = RUNTIME.spawn(async move {
+                    let result = async {
+                        let method = request.method().clone();
+                        let uri = request.uri().clone();
+                        let headers = request.headers().clone();
+                        let body = request.into_body();
+                        let stream: tokio_stream::Iter<
+                            std::vec::IntoIter<Result<Bytes, anyhow::Error>>,
+                        > = tokio_stream::iter(vec![Ok(Bytes::from(body))]);
+                        let mut mapped_request_builder = Request::builder().method(method).uri(uri);
+                        for (header_name, header_value) in headers {
+                            if let Some(header_name) = header_name {
+                                mapped_request_builder =
+                                    mapped_request_builder.header(header_name, header_value);
+                            }
                         }
-                    }
-                    response_builder
-                        .body(body_vec)
-                        .map_err(|e| anyhow::anyhow!("Failed to build response: {}", e))
-                }
-                .await;
+                        let mapped_request = mapped_request_builder
+                            .body(axum::body::Body::from_stream(stream))
+                            .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;
 
-                match result {
-                    Ok(response) => responder.respond(response),
-                    Err(e) => responder.respond(internal_server_error_response(&e.to_string())),
-                }
-            });
+                        let response = local_router
+                            .call(mapped_request)
+                            .await
+                            .map_err(|e| anyhow::anyhow!("Router call failed: {}", e))?;
+                        let status = response.status();
+                        let headers = response.headers().clone();
+                        let body_stream = response.into_body().into_data_stream();
+                        let body_vec: Vec<u8> = body_stream
+                            .map(|result| {
+                                result.map_err(|e| anyhow::anyhow!("Body stream error: {}", e))
+                            })
+                            .try_collect::<Vec<bytes::Bytes>>()
+                            .await?
+                            .into_iter()
+                            .flat_map(|bytes| bytes.into_iter())
+                            .collect();
+                        let mut response_builder = Response::builder().status(status);
+                        for (header_name, header_value) in headers {
+                            if let Some(header_name) = header_name {
+                                response_builder =
+                                    response_builder.header(header_name, header_value);
+                            }
+                        }
+                        response_builder
+                            .body(body_vec)
+                            .map_err(|e| anyhow::anyhow!("Failed to build response: {}", e))
+                    }
+                    .await;
+
+                    match result {
+                        Ok(response) => responder.respond(response),
+                        Err(e) => responder.respond(internal_server_error_response(&e.to_string())),
+                    }
+                });
+            }
+            _ => responder.respond(not_found_response()),
         }
-        _ => responder.respond(not_found_response()),
     }
 }
 

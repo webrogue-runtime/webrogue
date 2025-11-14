@@ -1,9 +1,0 @@
-[package]
-name = "webrogue-vscode-server"
-version.workspace = true
-authors.workspace = true
-license.workspace = true
-edition.workspace = true
-
-[dependencies]
-webrogue-launcher = { workspace = true }

@@ -1,18 +1,49 @@
 use dpi::{PhysicalPosition, PhysicalSize};
+use std::sync::Mutex;
 #[cfg(target_os = "linux")]
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+use webrogue_gfx_winit::{ProxiedWinitBuilder, WinitProxy};
+use webrogue_wrapp::{IVFSBuilder, RealVFSBuilder};
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
-    event_loop::ActiveEventLoop,
+    event_loop::{ActiveEventLoop, EventLoopProxy},
     window::{Window, WindowAttributes, WindowId},
 };
 use wry::Rect;
 
 use crate::build_webview;
+struct ServerConfigImpl {
+    storage_path: std::path::PathBuf,
+    proxy_container: Arc<Mutex<Option<WinitProxy>>>,
+    event_loop_proxy: EventLoopProxy,
+}
+
+impl crate::server::ServerConfig for ServerConfigImpl {
+    fn storage_path(&self) -> std::path::PathBuf {
+        self.storage_path.clone()
+    }
+
+    fn run(&self, mut vfs_builder: RealVFSBuilder) -> anyhow::Result<()> {
+        let config = vfs_builder.config()?.clone();
+        let vfs = vfs_builder.into_vfs()?;
+        let (builder, proxy) = ProxiedWinitBuilder::new(self.event_loop_proxy.clone());
+        *self.proxy_container.lock().unwrap() = Some(proxy);
+        let persistent_dir = self.storage_path.join("persistent");
+
+        let _ = std::thread::Builder::new()
+            .name("wasi-thread-main".to_owned())
+            .spawn(move || {
+                let _ =
+                    webrogue_wasmtime::run_jit(builder, vfs, &config, &persistent_dir, None, false);
+            });
+
+        Ok(())
+    }
+}
 
 pub struct App {
     window: Option<Box<dyn Window>>,
@@ -20,17 +51,20 @@ pub struct App {
     as_child: bool,
     #[cfg(target_os = "linux")]
     should_quit: Arc<AtomicBool>,
+    storage_path: std::path::PathBuf,
+    proxy_container: Arc<Mutex<Option<WinitProxy>>>,
 }
 
 impl App {
-    pub fn new(as_child: bool) -> Self {
+    pub fn new(as_child: bool, storage_path: std::path::PathBuf) -> Self {
         Self {
             window: None,
             webview: None,
             as_child,
-
             #[cfg(target_os = "linux")]
             should_quit: Arc::new(AtomicBool::new(false)),
+            storage_path,
+            proxy_container: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -44,7 +78,16 @@ impl ApplicationHandler for App {
             .create_window(WindowAttributes::default())
             .unwrap();
 
-        let webview = build_webview(&window, self.as_child).unwrap();
+        let webview = build_webview(
+            &window,
+            self.as_child,
+            Arc::new(ServerConfigImpl {
+                storage_path: self.storage_path.clone(),
+                proxy_container: self.proxy_container.clone(),
+                event_loop_proxy: event_loop.create_proxy(),
+            }),
+        )
+        .unwrap();
         self.window = Some(window);
         self.webview = Some(webview);
 
@@ -71,9 +114,13 @@ impl ApplicationHandler for App {
     fn window_event(
         &mut self,
         event_loop: &dyn ActiveEventLoop,
-        _window_id: WindowId,
+        window_id: WindowId,
         event: WindowEvent,
     ) {
+        if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
+            proxy.window_event(event_loop, window_id, event.clone());
+        }
+
         match event {
             // WindowEvent::ActivationTokenDone { serial, token } => todo!(),
             WindowEvent::SurfaceResized(physical_size) => {
@@ -123,9 +170,13 @@ impl ApplicationHandler for App {
         }
     }
 
-    fn proxy_wake_up(&mut self, _event_loop: &dyn ActiveEventLoop) {
+    fn proxy_wake_up(&mut self, event_loop: &dyn ActiveEventLoop) {
         #[cfg(target_os = "linux")]
         gtk::main_iteration_do(false);
+
+        if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
+            proxy.proxy_wake_up(event_loop);
+        }
     }
 }
 

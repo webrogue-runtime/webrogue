@@ -1,9 +1,0 @@
-{
-  "name": "webrogue-launcher",
-  "private": true,
-  "version": "0.0.0",
-  "devDependencies": {
-    "@openapitools/openapi-generator-cli": "^2.24.0",
-    "js-yaml": "^4.1.0"
-  }
-}

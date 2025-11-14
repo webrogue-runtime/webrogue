@@ -97,7 +97,7 @@ WEBROGUE_APPLICATION_VERSION = {}
             args.build_dir.join("aot.swrapp"),
         )?)?;
     } else {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::new(&args.wrapp_path)?)
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(&args.wrapp_path)?)
             .write(&mut std::fs::File::create(
                 args.build_dir.join("aot.swrapp"),
             )?)?;

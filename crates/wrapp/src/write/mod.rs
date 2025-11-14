@@ -5,7 +5,7 @@ fn real_archive(
     config_path: &std::path::PathBuf,
     output_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    writer::WRAPPWriter::new(crate::RealVFSBuilder::new(config_path)?)
+    writer::WRAPPWriter::new(crate::RealVFSBuilder::from_config_path(config_path)?)
         .keep_wasm()
         .write(&mut std::fs::File::create(output_path)?)?;
     Ok(())

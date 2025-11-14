@@ -81,7 +81,7 @@ pub fn build_linux(
         )?)
         .write(&mut output_file)?;
     } else {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::new(wrapp_file_path)?)
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(wrapp_file_path)?)
             .write(&mut output_file)?;
     }
     let new_size = output_file.seek(std::io::SeekFrom::End(0))?;

@@ -53,13 +53,12 @@ members = [
   "crates/gfx-winit",
   "crates/gfxstream",
   "crates/hub-client",
-  "crates/hub-client/src/openapi",
+  "crates/hub-client/openapi",
   "crates/icons",
   "crates/launcher",
-  "crates/launcher/src/openapi",
+  "crates/launcher/server-openapi",
   "crates/launcher-dev",
   "crates/lld",
-  "crates/vscode-server",
   "crates/wasip1",
   "crates/wasmtime",
   # "crates/web-macro",
@@ -86,7 +85,7 @@ webrogue-events = { path = "crates/events" }
 webrogue-events-macro = { path = "crates/events-macro" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
 webrogue-hub-client = { path = "crates/hub-client" }
-webrogue-hub-client-openapi = { path = "crates/hub-client/src/openapi" }
+webrogue-hub-client-openapi = { path = "crates/hub-client/openapi" }
 webrogue-icons = { path = "crates/icons" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-sdl = { path = "crates/gfx-sdl" }
@@ -97,7 +96,7 @@ webrogue-lld = { path = "crates/lld" }
 webrogue-wasip1 = { path = "crates/wasip1" }
 webrogue-wrapp = { path = "crates/wrapp" }
 webrogue-launcher = { path = "crates/launcher" }
-webrogue-launcher-server-openapi = { path = "crates/launcher/src/openapi", default-features=false }
+webrogue-launcher-server-openapi = { path = "crates/launcher/server-openapi", default-features=false }
 
 # Platform-specific crates
 # webrogue-web-macro = { path = "crates/web-macro" }
@@ -154,6 +153,12 @@ ndk-sys = { version = "0.6.0", default-features = false }
 ndk = { version = "0.9.0", default-features = false }
 json-escape = { version = "0.3.0" }
 wit-bindgen = { version = "0.21.0" }
+webrtc = { version = "0.14.0" }
+base64 = { version = "0.22.1" }
+tokio-tungstenite = { version = "*" }
+futures-util = { version = "0.3" }
+uuid = { version = "^1.8", default-features = false }
+blake3  = { version = "1.8.2" }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.4.1" }

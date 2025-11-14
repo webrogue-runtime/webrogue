@@ -12,10 +12,14 @@ crate-type = ["cdylib"]
 [dependencies]
 anyhow = { workspace = true }
 webrogue-launcher = { workspace = true }
+webrogue-wrapp = { workspace = true }
 tao = { workspace = true, features = ["rwh_06"] }
 wry = { workspace = true }
+lazy_static = "1.4"
+log = { workspace = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android-activity = { workspace = true, features = ["native-activity"] }
-log = { workspace = true }
 android_logger = { workspace = true }
+jni = "0.21"
+ndk = "0.9"
