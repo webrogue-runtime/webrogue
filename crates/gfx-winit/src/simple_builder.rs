@@ -34,6 +34,12 @@ impl<BodyFn: FnOnce(WinitSystem) -> () + Send + 'static> ApplicationHandler for 
             .unwrap();
     }
 
+    fn destroy_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
+        if let Some(proxy) = self.proxy.as_ref() {
+            proxy.destroy_surfaces(event_loop);
+        }
+    }
+
     fn window_event(
         &mut self,
         event_loop: &dyn ActiveEventLoop,
@@ -55,11 +61,17 @@ impl<BodyFn: FnOnce(WinitSystem) -> () + Send + 'static> ApplicationHandler for 
 #[derive(Default)]
 pub struct SimpleWinitBuilder {
     event_loop: Option<EventLoop>,
+    on_hide: Option<Box<dyn Fn() + Send + Sync + 'static>>,
 }
 
 impl SimpleWinitBuilder {
     pub fn with_event_loop(mut self, event_loop: EventLoop) -> Self {
         self.event_loop = Some(event_loop);
+        self
+    }
+
+    pub fn with_on_hide(mut self, on_hide: Box<dyn Fn() + Send + Sync + 'static>) -> Self {
+        self.on_hide = Some(on_hide);
         self
     }
 }
@@ -79,7 +91,11 @@ impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for SimpleWinitBuilder {
         let mut app = App {
             body_fn: Some(wrapped_body_fn),
             create_system_fn: Some(Box::new(|event_loop_proxy| {
-                ProxiedWinitBuilder::new(event_loop_proxy)
+                let (mut builder, mailbox) = ProxiedWinitBuilder::new(event_loop_proxy);
+                if let Some(on_hide) = self.on_hide {
+                    builder = builder.with_on_hide(on_hide);
+                }
+                (builder, mailbox)
             })),
             proxy: None,
         };

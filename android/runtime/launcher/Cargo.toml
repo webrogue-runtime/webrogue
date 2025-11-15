@@ -17,9 +17,11 @@ tao = { workspace = true, features = ["rwh_06"] }
 wry = { workspace = true }
 lazy_static = "1.4"
 log = { workspace = true }
+webrogue-hub-client-openapi = { workspace = true, default-features = false, features = ["rustls-tls"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android-activity = { workspace = true, features = ["native-activity"] }
 android_logger = { workspace = true }
 jni = "0.21"
 ndk = "0.9"
+serde_json = { workspace = true }

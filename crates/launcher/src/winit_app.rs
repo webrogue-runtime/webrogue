@@ -1,3 +1,4 @@
+use crate::WinitMailbox;
 use dpi::{PhysicalPosition, PhysicalSize};
 use std::sync::Mutex;
 #[cfg(target_os = "linux")]
@@ -48,6 +49,7 @@ impl crate::server::ServerConfig for ServerConfigImpl {
 pub struct App {
     window: Option<Box<dyn Window>>,
     webview: Option<wry::WebView>,
+    mailbox: Option<WinitMailbox>,
     as_child: bool,
     #[cfg(target_os = "linux")]
     should_quit: Arc<AtomicBool>,
@@ -60,6 +62,7 @@ impl App {
         Self {
             window: None,
             webview: None,
+            mailbox: None,
             as_child,
             #[cfg(target_os = "linux")]
             should_quit: Arc::new(AtomicBool::new(false)),
@@ -77,8 +80,8 @@ impl ApplicationHandler for App {
         let window = event_loop
             .create_window(WindowAttributes::default())
             .unwrap();
-
-        let webview = build_webview(
+        let event_loop_proxy = event_loop.create_proxy();
+        let (webview, mailbox) = build_webview(
             &window,
             self.as_child,
             Arc::new(ServerConfigImpl {
@@ -86,10 +89,12 @@ impl ApplicationHandler for App {
                 proxy_container: self.proxy_container.clone(),
                 event_loop_proxy: event_loop.create_proxy(),
             }),
+            |internal| WinitMailbox::new(event_loop_proxy, internal),
         )
         .unwrap();
         self.window = Some(window);
         self.webview = Some(webview);
+        self.mailbox = Some(mailbox);
 
         self.resize_webview(self.window.as_ref().unwrap().surface_size());
 
@@ -108,6 +113,12 @@ impl ApplicationHandler for App {
                     }
                 })
                 .unwrap();
+        }
+    }
+
+    fn destroy_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
+        if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
+            proxy.destroy_surfaces(event_loop);
         }
     }
 
@@ -176,6 +187,11 @@ impl ApplicationHandler for App {
 
         if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
             proxy.proxy_wake_up(event_loop);
+        }
+        if let Some(mailbox) = self.mailbox.as_ref() {
+            if let Some(webview) = self.webview.as_ref() {
+                mailbox.proxy_wake_up(webview);
+            }
         }
     }
 }

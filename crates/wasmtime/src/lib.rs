@@ -48,13 +48,17 @@ pub fn run_jit_builder<
     Window: webrogue_gfx::IWindow + 'static,
     System: webrogue_gfx::ISystem<Window> + 'static,
     Builder: webrogue_gfx::IBuilder<System, Window>,
+    FilePosition: webrogue_wrapp::IFilePosition + 'static,
+    FileReader: webrogue_wrapp::IFileReader + 'static,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
+    VFSBuilder: webrogue_wrapp::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
 >(
     gfx_builder: Builder,
-    mut wrapp_vfs_builder: webrogue_wrapp::WrappVFSBuilder,
+    mut vfs_builder: VFSBuilder,
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    let config = wrapp_vfs_builder.config()?.clone();
-    let handle = wrapp_vfs_builder.into_vfs()?;
+    let config = vfs_builder.config()?.clone();
+    let handle = vfs_builder.into_vfs()?;
     run_jit(gfx_builder, handle, &config, persistent_dir, None, true)
 }
 #[cfg(feature = "jit")]
@@ -129,13 +133,17 @@ pub fn run_aot_builder<
     Window: webrogue_gfx::IWindow + 'static,
     System: webrogue_gfx::ISystem<Window> + 'static,
     Builder: webrogue_gfx::IBuilder<System, Window>,
+    FilePosition: webrogue_wrapp::IFilePosition + 'static,
+    FileReader: webrogue_wrapp::IFileReader + 'static,
+    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
+    VFSBuilder: webrogue_wrapp::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
 >(
     gfx_builder: Builder,
-    mut wrapp_vfs_builder: webrogue_wrapp::WrappVFSBuilder,
+    mut vfs_builder: VFSBuilder,
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    let config = wrapp_vfs_builder.config()?.clone();
-    let handle = wrapp_vfs_builder.into_vfs()?;
+    let config = vfs_builder.config()?.clone();
+    let handle = vfs_builder.into_vfs()?;
     run_aot(gfx_builder, handle, &config, persistent_dir)
 }
 #[cfg(feature = "aot")]

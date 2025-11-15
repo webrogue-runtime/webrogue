@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-launcher = ["webrogue-wasmtime/jit"]
+launcher = ["webrogue-wasmtime/jit", "dep:jni", "dep:serde_json"]
 runner = ["webrogue-wasmtime/aot"]
 
 [lib]
@@ -19,6 +19,8 @@ webrogue-wasmtime = { workspace = true }
 winit = { workspace = true }
 webrogue-gfxstream = { workspace = true, features = ["cc"] }
 webrogue-gfx-winit = { workspace = true }
+jni = { version = "0.21", optional = true }
+serde_json = { workspace = true, optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 winit-android = { workspace = true }
@@ -27,6 +29,3 @@ log = { workspace = true }
 android_logger = { workspace = true }
 ndk-sys = { workspace = true }
 ndk = { workspace = true }
-
-[target.aarch64-linux-android.webrogue-android]
-rustc-flags = "aboba"

@@ -2,7 +2,7 @@ use std::{fmt::Debug, io::Read, sync::Arc};
 
 use anyhow::{Context, Ok};
 
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct RealFilePosition {
     pub path: std::path::PathBuf,
 }
@@ -98,6 +98,7 @@ fn visit_dir(
     Ok(())
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct RealVFSBuilder {
     config: crate::config::Config,
     paths: std::collections::HashMap<String, RealFilePosition>,

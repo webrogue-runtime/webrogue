@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [dependencies]
-webrogue-hub-client-openapi = { workspace = true, default-features = true }
+webrogue-hub-client-openapi = { workspace = true, default-features = false }
 clap = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 webrtc = { workspace = true }

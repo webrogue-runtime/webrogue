@@ -28,6 +28,7 @@ tower-http = { version = "*", features = ["cors"] }
 lazy_static = "1.4"
 futures-util = { workspace = true }
 webrtc = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 webrogue-hub-client = { workspace = true }
 blake3 = { workspace = true }

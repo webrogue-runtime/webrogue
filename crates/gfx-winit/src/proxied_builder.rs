@@ -8,44 +8,6 @@ use winit::{
 
 use crate::{mailbox::Mailbox, WinitSystem, WinitWindow};
 
-// impl<BodyFn: FnOnce(WinitSystem) -> () + Send + 'static> ApplicationHandler for App<BodyFn> {
-//     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
-//         let Some(body_fn) = self.body_fn.take() else {
-//             return;
-//         };
-//         let mailbox = Mailbox {
-//             event_loop_proxy: event_loop.create_proxy(),
-//             requests: Arc::new(Mutex::new(Vec::new())),
-//         };
-//         self.mailbox = Some(mailbox.clone());
-//         std::thread::Builder::new()
-//             .name(format!("wasi-thread-main"))
-//             .spawn(move || {
-//                 let system = WinitSystem::new(mailbox);
-//                 body_fn(system);
-//             })
-//             .unwrap();
-//     }
-
-//     fn window_event(
-//         &mut self,
-//         _event_loop: &dyn ActiveEventLoop,
-//         _window_id: WindowId,
-//         _event: WindowEvent,
-//     ) {
-//     }
-
-//     fn proxy_wake_up(&mut self, event_loop: &dyn ActiveEventLoop) {
-//         let Some(mailbox) = self.mailbox.as_ref() else {
-//             return;
-//         };
-//         let mut requests = mailbox.requests.lock().unwrap();
-//         while let Some(func) = requests.pop() {
-//             func(event_loop)
-//         }
-//     }
-// }
-
 pub struct ProxiedWinitBuilder {
     proxy: WinitProxy,
 }
@@ -57,7 +19,10 @@ impl ProxiedWinitBuilder {
             requests: Arc::new(Mutex::new(Vec::new())),
         };
         let proxy = WinitProxy {
-            internal: Arc::new(Mutex::new(WinitProxyInternal { mailbox })),
+            internal: Arc::new(Mutex::new(WinitProxyInternal {
+                mailbox,
+                on_hide: None,
+            })),
         };
         (
             Self {
@@ -66,10 +31,15 @@ impl ProxiedWinitBuilder {
             proxy,
         )
     }
+
+    pub fn with_on_hide(self, on_hide: Box<dyn Fn() + Send + Sync + 'static>) -> Self {
+        self.proxy.internal.lock().unwrap().on_hide = Some(on_hide);
+        self
+    }
 }
 struct WinitProxyInternal {
-    // ready_fn: Option<Box<dyn FnOnce(&dyn ActiveEventLoop) -> () + Send + 'static>>,
     mailbox: Mailbox,
+    on_hide: Option<Box<dyn Fn() + Send + Sync + 'static>>,
 }
 
 #[derive(Clone)]
@@ -78,12 +48,19 @@ pub struct WinitProxy {
 }
 
 impl WinitProxy {
-    // pub fn can_create_surfaces(&self, event_loop: &dyn ActiveEventLoop) {}
     pub fn proxy_wake_up(&self, event_loop: &dyn ActiveEventLoop) {
         let internal = self.internal.lock().unwrap();
         let mut requests = internal.mailbox.requests.lock().unwrap();
         while let Some(func) = requests.pop() {
             func(event_loop)
+        }
+    }
+
+    // pub fn can_create_surfaces(&self, event_loop: &dyn ActiveEventLoop) {}
+
+    pub fn destroy_surfaces(&self, _event_loop: &dyn ActiveEventLoop) {
+        if let Some(on_hide) = self.internal.lock().unwrap().on_hide.as_ref() {
+            (on_hide)()
         }
     }
 
@@ -101,12 +78,6 @@ impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for ProxiedWinitBuilder {
     where
         Output: Send + 'static,
     {
-        // let (done_tx, done_rx) = std::sync::mpsc::channel::<Output>();
-        // let wrapped_body_fn = move |system| {
-        //     let result = body_fn(system);
-        //     done_tx.send(result).unwrap();
-        // };
-        // done_rx.recv().unwrap()
         let mailbox = self.proxy.internal.lock().unwrap().mailbox.clone();
         let system = WinitSystem::new(mailbox);
         body_fn(system)

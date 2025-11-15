@@ -85,7 +85,7 @@ webrogue-events = { path = "crates/events" }
 webrogue-events-macro = { path = "crates/events-macro" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
 webrogue-hub-client = { path = "crates/hub-client" }
-webrogue-hub-client-openapi = { path = "crates/hub-client/openapi" }
+webrogue-hub-client-openapi = { path = "crates/hub-client/openapi", default-features=false }
 webrogue-icons = { path = "crates/icons" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-sdl = { path = "crates/gfx-sdl" }
@@ -96,7 +96,7 @@ webrogue-lld = { path = "crates/lld" }
 webrogue-wasip1 = { path = "crates/wasip1" }
 webrogue-wrapp = { path = "crates/wrapp" }
 webrogue-launcher = { path = "crates/launcher" }
-webrogue-launcher-server-openapi = { path = "crates/launcher/server-openapi", default-features=false }
+webrogue-launcher-server-openapi = { path = "crates/launcher/server-openapi", default-features = false }
 
 # Platform-specific crates
 # webrogue-web-macro = { path = "crates/web-macro" }

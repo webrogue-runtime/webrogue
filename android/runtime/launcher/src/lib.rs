@@ -5,9 +5,10 @@ use std::{
 };
 use tao::{
     event::{Event, StartCause, WindowEvent},
-    event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
+    event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget},
     window::WindowBuilder,
 };
+use webrogue_launcher::MailboxInternal;
 use webrogue_wrapp::RealVFSBuilder;
 use wry::WebView;
 
@@ -18,7 +19,7 @@ fn init_logging() {
     #[cfg(target_os = "android")]
     android_logger::init_once(
         android_logger::Config::default()
-            .with_min_level(log::Level::Trace)
+            .with_min_level(log::Level::Info)
             .with_tag("webrogue_launcher_logger"),
     );
 }
@@ -44,6 +45,12 @@ lazy_static! {
 }
 
 #[cfg(target_os = "android")]
+lazy_static! {
+    static ref JVM: Mutex<Option<jni::JavaVM>> = Mutex::new(None);
+    static ref ACTIVITY: Mutex<Option<jni::objects::GlobalRef>> = Mutex::new(None);
+}
+
+#[cfg(target_os = "android")]
 unsafe fn android_setup(
     package: &str,
     mut env: jni::JNIEnv,
@@ -54,6 +61,9 @@ unsafe fn android_setup(
     use std::str::FromStr;
 
     init_logging();
+
+    *JVM.lock().unwrap() = Some(env.get_java_vm().unwrap());
+    *ACTIVITY.lock().unwrap() = Some(activity.clone());
 
     let path: anyhow::Result<PathBuf> = (|| {
         let file = env
@@ -87,8 +97,9 @@ pub extern "C" fn start_app() {
         tao::android_binding!(
             dev_webrogue,
             launcher,
+            // LauncherActivity,
             WryActivity,
-            android_setup, // pass the wry::android_setup function to tao which will invoke when the event loop is created
+            android_setup,
             _start_app
         );
         wry::android_binding!(dev_webrogue, launcher);
@@ -98,6 +109,7 @@ pub extern "C" fn start_app() {
 pub fn main() {
     init_logging();
     let event_loop = EventLoop::new();
+    let event_loop_proxy = event_loop.create_proxy();
 
     let mut webview = None;
     event_loop.run(move |event, event_loop, control_flow| {
@@ -105,7 +117,7 @@ pub fn main() {
 
         match event {
             Event::NewEvents(StartCause::Init) => {
-                webview = Some(build_webview(event_loop).unwrap());
+                webview = Some(build_webview(event_loop, event_loop_proxy.clone()).unwrap());
             }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested { .. },
@@ -114,12 +126,20 @@ pub fn main() {
                 webview.take();
                 *control_flow = ControlFlow::Exit;
             }
+            Event::UserEvent(_) => {
+                if let Some(webview) = webview.as_ref() {
+                    webview.1.proxy_wake_up(&webview.0);
+                }
+            }
             _ => (),
         }
     });
 }
 
-fn build_webview(event_loop: &EventLoopWindowTarget<()>) -> anyhow::Result<WebView> {
+fn build_webview(
+    event_loop: &EventLoopWindowTarget<()>,
+    event_loop_proxy: EventLoopProxy<()>,
+) -> anyhow::Result<(WebView, TaoMailbox)> {
     let window = WindowBuilder::new().build(&event_loop)?;
 
     let dir = ANDROID_CACHE_DIR.lock().unwrap().clone();
@@ -131,6 +151,10 @@ fn build_webview(event_loop: &EventLoopWindowTarget<()>) -> anyhow::Result<WebVi
                 .unwrap_or_else(|| std::env::temp_dir())
                 .join("server_storage"),
         }),
+        |internal| TaoMailbox {
+            event_loop_proxy,
+            internal,
+        },
     )?)
 }
 
@@ -143,7 +167,90 @@ impl webrogue_launcher::ServerConfig for ServerConfigImpl {
         self.storage_path.clone()
     }
 
-    fn run(&self, mut vfs_builder: RealVFSBuilder) -> anyhow::Result<()> {
-        todo!()
+    fn run(&self, _vfs_builder: RealVFSBuilder) -> anyhow::Result<()> {
+        #[cfg(target_os = "android")]
+        {
+            let jvm_lock = JVM.lock().unwrap();
+            let jvm = jvm_lock.as_ref().unwrap();
+            let mut env = jvm.attach_current_thread().unwrap();
+
+            let activity_lock = ACTIVITY.lock().unwrap();
+            let activity = activity_lock.as_ref().unwrap().clone();
+
+            let intent_class = env.find_class("android/content/Intent").unwrap();
+            // let native_activity_class = env
+            //     .find_class("dev/webrogue/launcher/LauncherActivity")
+            //     .unwrap();
+
+            let class_name =
+                env.new_string("android.app.NativeActivity".to_owned().replace('/', "."))?;
+            let native_activity_class = env
+                .call_method(
+                    activity.clone(),
+                    "getAppClass",
+                    "(Ljava/lang/String;)Ljava/lang/Class;",
+                    &[(&class_name).into()],
+                )?
+                .l()
+                .unwrap();
+
+            let intent = env
+                .new_object(
+                    intent_class,
+                    "(Landroid/content/Context;Ljava/lang/Class;)V",
+                    &[
+                        jni::objects::JValue::Object(activity.as_obj().into()),
+                        (&native_activity_class).into(),
+                    ],
+                )
+                .unwrap();
+
+            let key = env.new_string("data").unwrap();
+            let value = env
+                .new_string(serde_json::to_string(&_vfs_builder).unwrap())
+                .unwrap();
+            env.call_method(
+                &intent,
+                "putExtra",
+                "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
+                &[(&key).into(), (&value).into()],
+            )
+            .unwrap();
+
+            env.call_method(
+                &intent,
+                "setFlags",
+                "(I)Landroid/content/Intent;",
+                &[(0x10000000 | 0x08000000).into()], // FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK
+            )
+            .unwrap();
+
+            env.call_method(
+                &activity,
+                "startActivity",
+                "(Landroid/content/Intent;)V",
+                &[(&intent).into()],
+            )
+            .unwrap();
+        };
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+struct TaoMailbox {
+    event_loop_proxy: EventLoopProxy<()>,
+    internal: MailboxInternal,
+}
+
+impl webrogue_launcher::Mailbox for TaoMailbox {
+    fn wake_up(&self) {
+        let _ = self.event_loop_proxy.send_event(());
+    }
+}
+
+impl TaoMailbox {
+    fn proxy_wake_up(&self, webview: &WebView) {
+        self.internal.proxy_wake_up(webview);
     }
 }

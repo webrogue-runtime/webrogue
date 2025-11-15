@@ -60,5 +60,29 @@
 
             <meta-data android:name="android.app.lib_name" android:value="launcher" />
         </activity>
+
+        <activity
+            android:name="android.app.NativeActivity"
+            android:alwaysRetainTaskState="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:launchMode="singleInstancePerTask"
+            android:taskAffinity=""
+            android:process=":runner">
+            <!-- Let Android know that we can handle some USB devices and should receive this event -->
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <!-- Drop file event -->
+            <!--
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            -->
+            <meta-data android:name="android.app.lib_name" android:value="webrogue" />
+        </activity>
     </application>
 </manifest>
