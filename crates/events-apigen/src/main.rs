@@ -25,14 +25,23 @@ fn main() -> anyhow::Result<()> {
         write!("#include <stddef.h>");
         write!("#include <stdint.h>");
         write!("");
-        write!("typedef uint32_t wr_window_handle;");
+        write!("#ifdef __cplusplus");
+        write!("extern \"C\" {{");
+        write!("#endif");
         write!("");
-        write!("void webroguegfx_make_window(wr_window_handle *out_window);");
-        write!("void webroguegfx_window_size(wr_window_handle window, int *width, int *height);");
-        write!("void webroguegfx_gl_size(wr_window_handle window, int *width, int *height);");
+        write!("typedef struct wr_window_s wr_window_s;");
+        write!("typedef wr_window_s* wr_window;");
+        write!("");
+        write!("void webroguegfx_make_window(wr_window *out_window);");
+        write!("void webroguegfx_window_size(wr_window window, int *width, int *height);");
+        write!("void webroguegfx_gl_size(wr_window window, int *width, int *height);");
+        write!("uint64_t webroguegfx_vulkan_make_surface(wr_window window, uint64_t vk_instance);");
         write!("");
         write!("// Events");
         for event in webrogue_events::all() {
+            if event.fields.is_empty() {
+                continue;
+            }
             write!("struct webrogue_event_{} {{", event.name);
             writer.inc_indent();
             {
@@ -65,6 +74,9 @@ fn main() -> anyhow::Result<()> {
             writer.inc_indent();
             {
                 for event in webrogue_events::all() {
+                    if event.fields.is_empty() {
+                        continue;
+                    }
                     write!("struct webrogue_event_{} {};", event.name, event.name);
                 }
             }
@@ -75,6 +87,11 @@ fn main() -> anyhow::Result<()> {
         write!("}} webrogue_event;");
         write!("");
         write!("webrogue_event webroguegfx_poll();");
+        write!("");
+        write!("#ifdef __cplusplus");
+        write!("}}");
+        write!("#endif");
+        write!("");
         write!("#endif // WEBROGUEGFX_h_");
     }
 

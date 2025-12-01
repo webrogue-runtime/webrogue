@@ -30,7 +30,13 @@ impl<BodyFn: FnOnce(WinitSystem) -> () + Send + 'static> ApplicationHandler for 
         self.proxy = Some(proxy);
         std::thread::Builder::new()
             .name("wasi-thread-main".to_owned())
-            .spawn(move || builder.run(body_fn))
+            .spawn(move || {
+                builder.run(|winit_system| {
+                    let mailbox = winit_system.mailbox.clone();
+                    let _ = body_fn(winit_system);
+                    mailbox.execute(|event_loop| event_loop.exit());
+                })
+            })
             .unwrap();
     }
 

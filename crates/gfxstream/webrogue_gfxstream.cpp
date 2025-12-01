@@ -150,11 +150,11 @@ static std::unique_ptr<gfxstream::vk::VulkanDispatch> sVulkanDispatch = nullptr;
 static get_proc_func_t sVkGetProc = nullptr;
 static void* sVkGetProcUserdata = nullptr;
 static std::unique_ptr<gfxstream::vk::VkEmulation> sEmulationVk = nullptr; // TODO fix this leakage
+static std::unique_ptr<gfxstream::ProcessResources> sProcessResources = nullptr;
  
 class GFXStreamDecoder {
 public:
   std::unique_ptr<WebrogueOutputStream> webrogue_output_stream;
-  std::unique_ptr<gfxstream::ProcessResources> processResources;
   std::unique_ptr<gfxstream::host::GfxApiLogger> gfxLogger;
   std::unique_ptr<gfxstream::base::MetricsLogger> metricsLogger;
   std::atomic_bool m_shouldExit{false};
@@ -169,7 +169,6 @@ public:
       tinfo->ctx_id = ctx_id++;
     }
     webrogue_output_stream = std::make_unique<WebrogueOutputStream>(16);
-    processResources = std::unique_ptr(gfxstream::ProcessResources::create());
     gfxLogger = std::make_unique<gfxstream::host::GfxApiLogger>();
     metricsLogger = gfxstream::base::CreateMetricsLogger();
   }
@@ -248,6 +247,7 @@ void webrogue_gfxstream_ffi_create_global_state(void *get_proc, void* userdata) 
                                                 //  gfxstream::host::BackendCallbacks callbacks,
                                                 //  gfxstream::host::FeatureSet features
   sEmulationVk = gfxstream::vk::VkEmulation::create(m_vkDispatch, callbacks, features);
+  sProcessResources = std::unique_ptr(gfxstream::ProcessResources::create());
   gfxstream::vk::VkDecoderGlobalState::initialize(sEmulationVk.get());
 }
 
@@ -282,7 +282,7 @@ void webrogue_gfxstream_ffi_commit_buffer(void *raw_decoder_ptr, void const* buf
       stream->getIncompleteCommit(),
       stream->getIncompleteCommitSize(),
       thread->webrogue_output_stream.get(),
-      thread->processResources.get(),
+      sProcessResources.get(),
       context
     );
     stream->consumeIncompleteCommit(decoded);
@@ -291,7 +291,7 @@ void webrogue_gfxstream_ffi_commit_buffer(void *raw_decoder_ptr, void const* buf
       (void*)buf,
       len,
       thread->webrogue_output_stream.get(),
-      thread->processResources.get(),
+      sProcessResources.get(),
       context
     );
     if(decoded<len) {
