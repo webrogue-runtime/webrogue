@@ -1,7 +1,12 @@
 name:  Build Webrogue CLI utility
 
 on:
-  workflow_dispatch
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
 
 jobs:
   linux_artifacts:
@@ -317,19 +322,14 @@ jobs:
         tar czf webrogue-cli-macos-x86_64.tar.gz webrogue-cli-macos-x86_64/
 
     - uses: ncipollo/release-action@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
         artifacts: |
           webrogue-cli-linux-x86_64.tar.gz
           webrogue-cli-windows-x86_64.zip
           webrogue-cli-macos-arm64.tar.gz
           webrogue-cli-macos-x86_64.tar.gz
-        name: Continuous build
-        allowUpdates: true
-        tag: latest
+        name: Release ${{ github.ref_name }}
+        tag: ${{ github.ref_name }}
         commit: ${{ github.ref }}
         makeLatest: true
-
-    - name: Update tag
-      run: |
-        git tag -f latest
-        git push --force origin latest
