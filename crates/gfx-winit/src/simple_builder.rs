@@ -94,7 +94,7 @@ impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for SimpleWinitBuilder {
             let result = body_fn(system);
             let _ = cloned_output.lock().unwrap().insert(Some(result));
         };
-        let mut app = App {
+        let app = App {
             body_fn: Some(wrapped_body_fn),
             create_system_fn: Some(Box::new(|event_loop_proxy| {
                 let (mut builder, mailbox) = ProxiedWinitBuilder::new(event_loop_proxy);
@@ -105,7 +105,7 @@ impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for SimpleWinitBuilder {
             })),
             proxy: None,
         };
-        event_loop.run_app(&mut app).unwrap();
+        event_loop.run_app(app).unwrap();
         let output = output.lock().unwrap().as_mut().unwrap().take();
         output.unwrap()
     }

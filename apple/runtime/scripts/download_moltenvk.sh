@@ -1,6 +1,6 @@
 set -ex
 
-cd $(dirname $0)/../external
+cd $(dirname $(realpath $0))/../external
 
 if [ ! -f "MoltenVK-all.tar" ]; then
     curl -L https://github.com/KhronosGroup/MoltenVK/releases/download/v1.3.0/MoltenVK-all.tar -o MoltenVK-all.tar

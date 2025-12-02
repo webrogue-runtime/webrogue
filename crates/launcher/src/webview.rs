@@ -68,7 +68,7 @@ pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
     let mut builder = WebViewBuilder::new()
         .with_url(assets_url())
         .with_devtools(cfg!(debug_assertions))
-        .with_asynchronous_custom_protocol("wrlauncher".into(), make_handler(router))
+        .with_asynchronous_custom_protocol("wrlauncher".into(), make_handler)
         .with_initialization_script("onWRLauncherMessage = undefined")
         .with_ipc_handler(move |request| {
             let mailbox_2 = mailbox_1.clone();
@@ -175,17 +175,17 @@ pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
 }
 
 fn make_handler(
-    router: axum::Router,
-) -> impl Fn(WebViewId, Request<Vec<u8>>, RequestAsyncResponder) {
-    move |_webview_id, request: http::Request<Vec<u8>>, responder: wry::RequestAsyncResponder| {
-        let authority = request.uri().authority().map(|a| a.as_str());
-        match authority {
-            Some("asset") | Some("asset.wrlauncher") => match get_asset_response(request) {
-                Ok(r) => responder.respond(r),
-                Err(e) => responder.respond(internal_server_error_response(&e.to_string())),
-            },
-            _ => responder.respond(not_found_response()),
-        }
+    _webview_id: WebViewId,
+    request: Request<Vec<u8>>,
+    responder: RequestAsyncResponder,
+) {
+    let authority = request.uri().authority().map(|a| a.as_str());
+    match authority {
+        Some("asset") | Some("asset.wrlauncher") => match get_asset_response(request) {
+            Ok(r) => responder.respond(r),
+            Err(e) => responder.respond(internal_server_error_response(&e.to_string())),
+        },
+        _ => responder.respond(not_found_response()),
     }
 }
 

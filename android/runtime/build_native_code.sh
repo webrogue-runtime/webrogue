@@ -1,5 +1,5 @@
 cd $(dirname $0) # android/runtime
-set -e
+set -ex
 
 cd .. # android
 . ./setup_sdk.sh
@@ -51,17 +51,19 @@ for TARGET in arm64-v8a x86_64; do
         --features runner \
         --profile $1
 
-    $STRACE_COMMAND cargo ndk \
-        -t $TARGET \
-        -o launcher/src/main/jniLibs/ \
-        build \
-        --features launcher \
-        --profile $1
+    if [ "$BUILD_WEBROGUE_ANDROID_LAUNCHER" = "1" ]; then
+        $STRACE_COMMAND cargo ndk \
+            -t $TARGET \
+            -o launcher/src/main/jniLibs/ \
+            build \
+            --features launcher \
+            --profile $1
 
-    $STRACE_COMMAND cargo ndk \
-        -t $TARGET \
-        --manifest-path launcher/Cargo.toml \
-        -o launcher/src/main/jniLibs/ \
-        build \
-        --profile $1
+        $STRACE_COMMAND cargo ndk \
+            -t $TARGET \
+            --manifest-path launcher/Cargo.toml \
+            -o launcher/src/main/jniLibs/ \
+            build \
+            --profile $1
+    fi
 done
