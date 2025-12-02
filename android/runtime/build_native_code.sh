@@ -9,7 +9,7 @@ export ANDROID_HOME="$ANDROID_SDK_ROOT"
 export ANDROID_NDK_HOME="$ANDROID_NDK_PATH"
 export CARGO_NDK_PLATFORM=$ANDROID_API_VERSION
 
-WRAPP_PATH=../../examples/glfw/glfw.wrapp
+WRAPP_PATH=../../examples/empty/empty.wrapp
 mkdir -p runner/src/main/assets
 cp $WRAPP_PATH runner/src/main/assets/aot.swrapp
 rm -rf runner/src/main/jniLibs
