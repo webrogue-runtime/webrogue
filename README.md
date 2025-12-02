@@ -7,8 +7,8 @@
 </div>
 
 [![Visual Studio Marketplace Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/webrogue.webrogue-vscode?label=VSCode%20extension%20release)](https://marketplace.visualstudio.com/items?itemName=webrogue.webrogue-vscode)
-[![](https://img.shields.io/github/release-date/webrogue-runtime/webrogue?label=CLI%20utility%20release)](https://github.com/webrogue-runtime/webrogue/releases/latest)
-[![](https://img.shields.io/github/release-date/webrogue-runtime/webrogue?label=SDK%20release)](https://github.com/webrogue-runtime/webrogue-sdk/releases/latest)
+[![Build Webrogue CLI utility](https://github.com/webrogue-runtime/webrogue/actions/workflows/build_cli.yml/badge.svg)](https://github.com/webrogue-runtime/webrogue/actions/workflows/build_cli.yml)
+[![Build Webrogue SDK](https://github.com/webrogue-runtime/webrogue-sdk/actions/workflows/build_sdk.yml/badge.svg)](https://github.com/webrogue-runtime/webrogue-sdk/actions/workflows/build_sdk.yml)
 [![](https://img.shields.io/twitter/follow/WebrogueRuntime)](https://x.com/intent/follow?screen_name=WebrogueRuntime)
 
 Webrogue is a way to port applications to different OSes with minimal effort.
