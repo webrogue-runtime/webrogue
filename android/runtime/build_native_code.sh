@@ -30,17 +30,17 @@ for TARGET in arm64-v8a x86_64; do
         RUST_TARGET="$TARGET"
     fi
 
-    # mkdir -p runner/src/main/jniLibs/$TARGET
-    # cargo \
-    #     run \
-    #     --manifest-path ../../Cargo.toml \
-    #     --no-default-features \
-    #     --features=compile,llvm \
-    #     compile \
-    #     android-so \
-    #     "$WRAPP_PATH" \
-    #     runner/src/main/jniLibs/$TARGET/libwebrogue_aot.so \
-    #     $RUST_TARGET-linux-android
+    mkdir -p runner/src/main/jniLibs/$TARGET
+    cargo \
+        run \
+        --manifest-path ../../Cargo.toml \
+        --no-default-features \
+        --features=compile,llvm \
+        compile \
+        android-so \
+        "$WRAPP_PATH" \
+        runner/src/main/jniLibs/$TARGET/libwebrogue_aot.so \
+        $RUST_TARGET-linux-android
 
     rustup target add $RUST_TARGET-linux-android
 
