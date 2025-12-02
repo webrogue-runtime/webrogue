@@ -17,7 +17,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
     
     - name: Build AOT artifacts
       run: |
@@ -38,7 +38,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
 
     - name: Setup Python
       run: |
@@ -65,7 +65,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
     
     - name: Setup Rust
       run: |
@@ -90,7 +90,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
 
     - name: Install Xcodegen
       run: |
@@ -123,7 +123,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm external/zstd-rs
   
     - name: Build
       run: |
@@ -144,7 +144,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm external/zstd-rs
     
     - name: Setup Rust
       run: |
@@ -169,7 +169,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm external/zstd-rs
     
     - name: Setup Rust
       run: |
