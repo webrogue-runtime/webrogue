@@ -6,7 +6,7 @@ cd ../runtime
 
 sh setup.command
 
-XC_FLAGS="-destination generic/platform=macOS -workspace webrogue.xcworkspace -scheme MacOS_Runner_ReleaseLocal -configuration ReleaseLocal"
+XC_FLAGS="-destination generic/platform=macOS -project webrogue.xcodeproj -scheme MacOS_Runner_ReleaseLocal -configuration ReleaseLocal"
 XC_BUILD_DIR=$(xcodebuild $XC_FLAGS -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
 xcodebuild $XC_FLAGS -parallelizeTargets -allowProvisioningUpdates
 
@@ -17,7 +17,7 @@ cp $XC_BUILD_DIR/rust_artifacts/runner/ReleaseLocal/macosx/libwebrogue_macos.a .
 cp $XC_BUILD_DIR/ReleaseLocal/libGFXStream.a ../template/bin/macos/libGFXStream.a
 cp external/MoltenVK/MoltenVK/dylib/macOS/libMoltenVK.dylib ../template/bin/macos/libMoltenVK.dylib
 
-# XC_FLAGS="-workspace webrogue.xcworkspace -scheme iOS_Runner_ReleaseLocal -configuration ReleaseLocal -destination"
+# XC_FLAGS="-project webrogue.xcodeproj -scheme iOS_Runner_ReleaseLocal -configuration ReleaseLocal -destination"
 # XC_DESTINATION_FLAG="generic/platform=iOS Simulator"
 # XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
 # xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
@@ -37,17 +37,17 @@ do
             exit 1
             ;;
     esac
-    XC_FLAGS="-workspace webrogue.xcworkspace -scheme Cargo_iOS_runner -configuration ReleaseLocal -destination"
+    XC_FLAGS="-project webrogue.xcodeproj -scheme Cargo_iOS_runner -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
     cp $XC_BUILD_DIR/rust_artifacts/ios_runner/ReleaseLocal/$IOS_ENV/libwebrogue_ios.a ../template/bin/$IOS_ENV/libwebrogue_ios.a
 
-    XC_FLAGS="-workspace webrogue.xcworkspace -scheme runnerlib -configuration ReleaseLocal -destination"
+    XC_FLAGS="-project webrogue.xcodeproj -scheme runnerlib -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
     cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/librunnerlib.a ../template/bin/$IOS_ENV/librunnerlib.a
 
-    XC_FLAGS="-workspace webrogue.xcworkspace -scheme GFXStream_iOS -configuration ReleaseLocal -destination"
+    XC_FLAGS="-project webrogue.xcodeproj -scheme GFXStream_iOS -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
     cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libGFXStream.a ../template/bin/$IOS_ENV/libGFXStream.a
