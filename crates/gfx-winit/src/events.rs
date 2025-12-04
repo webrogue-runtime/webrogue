@@ -36,21 +36,21 @@ pub fn encode_event(
             };
             let mut physical_key = translate_physical_key(event.physical_key);
             let mut encode_buffer = [0u8; 4];
+            let mut text_buffer = [0u8; 32];
+            let mut text_buffer_size = 0;
+            macro_rules! flush {
+                () => {
+                    events_encoder::key(
+                        events_buffer,
+                        event.state.is_pressed(),
+                        named_key,
+                        physical_key,
+                        text_buffer_size as u8,
+                        &text_buffer,
+                    );
+                };
+            }
             if let Some(text) = event.text {
-                let mut text_buffer = [0u8; 32];
-                let mut text_buffer_size = 0;
-                macro_rules! flush {
-                    () => {
-                        events_encoder::key(
-                            events_buffer,
-                            event.state.is_pressed(),
-                            named_key,
-                            physical_key,
-                            text_buffer_size as u8,
-                            &text_buffer,
-                        );
-                    };
-                }
                 let max_buffer_size = 31; // must be null-terminated
                 for char in text.chars() {
                     let new_len = text_buffer_size + char.len_utf8();
@@ -66,9 +66,12 @@ pub fn encode_event(
                         .copy_from_slice(new_bytes);
                     text_buffer_size += new_bytes.len();
                 }
-                if text_buffer_size != 0 {
-                    flush!();
-                }
+            }
+            if text_buffer_size != 0
+                || named_key != events_encoder::NamedKey::Unknown
+                || physical_key != events_encoder::PhysicalKey::Unknown
+            {
+                flush!();
             }
         }
         // WindowEvent::ModifiersChanged(modifiers) => todo!(),

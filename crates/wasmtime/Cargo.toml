@@ -8,7 +8,7 @@ edition.workspace = true
 [features]
 jit = ["wasmtime/cranelift", "wasmtime/winch", "wasmtime/debug-builtins", "wasmtime/debug-builtins", "wasmtime/parallel-compilation", "wasmtime/addr2line"]
 aot = ["dep:webrogue-aot-data"]
-cache = ["wasmtime/cache"]
+cache = ["wasmtime/cache"] # TODO "wasmtime/incremental-cache"
 
 [dependencies]
 webrogue-gfx = { workspace = true }

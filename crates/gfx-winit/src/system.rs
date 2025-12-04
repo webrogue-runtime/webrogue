@@ -44,13 +44,14 @@ impl WinitSystem {
 impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
     fn make_window(&self) -> WinitWindow {
         let window = self.mailbox.execute(|event_loop| {
-            Arc::new(
+            let window = Arc::new(
                 event_loop
                     .create_window(WindowAttributes::default())
                     .unwrap(),
-            )
+            );
+            window.set_title("Webrogue");
+            window
         });
-
         let window_id = window.id();
 
         let internal = Arc::new(WinitWindowInternal {

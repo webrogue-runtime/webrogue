@@ -83,9 +83,10 @@ pub fn run_jit<
     #[cfg(feature = "cache")]
     if let Some(cache_config) = cache_config {
         config.cache(Some(wasmtime::Cache::from_file(Some(&cache_config))?));
+        // TODO config.enable_incremental_compilation(cache_store)
     }
     #[cfg(not(feature = "cache"))]
-    let _ = cache_config;
+    assert!(cache_config.is_none());
     // config.async_support(true);
     if optimized {
         config.strategy(wasmtime::Strategy::Cranelift);

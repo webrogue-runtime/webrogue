@@ -145,6 +145,7 @@ fn enum_definition(r#enum: webrogue_events::Enum) -> proc_macro2::TokenStream {
         quote! { #enum_ident::#case_ident => #value, }
     });
     quote! {
+        #[derive(PartialEq)]
         pub enum #enum_name {
             #(#cases)*
         }
