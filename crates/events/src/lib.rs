@@ -1,129 +1,591 @@
-use std::usize;
+use crate::builder::EventsBuilder;
 
-#[derive(Clone)]
-pub struct Event {
-    pub name: &'static str,
-    pub id: usize,
-    pub fields: Vec<Field>,
-    pub size: usize,
-}
+mod builder;
+mod types;
+pub use types::*;
 
-#[derive(Clone)]
-pub struct Field {
-    pub name: &'static str,
-    pub offset: usize,
-    pub ty: FieldType,
-}
-
-#[derive(Clone, Copy)]
-pub enum FieldType {
-    U32,
-    Bool,
-    U8,
-}
-impl FieldType {
-    pub fn size(&self) -> usize {
-        match self {
-            FieldType::U32 => 4,
-            FieldType::Bool => 1,
-            FieldType::U8 => 1,
-        }
-    }
-
-    pub fn c_name(&self) -> &'static str {
-        match self {
-            FieldType::U32 => "uint32_t",
-            FieldType::Bool => "uint8_t",
-            FieldType::U8 => "uint8_t",
-        }
-    }
-}
-
-struct EventsBuilder {
-    events: Vec<Event>,
-}
-
-impl EventsBuilder {
-    fn new() -> Self {
-        Self { events: Vec::new() }
-    }
-
-    fn event<'a>(&'a mut self, name: &'static str, id: usize) -> EventBuilder<'a> {
-        self.events.push(Event {
-            name,
-            id,
-            fields: Vec::new(),
-            size: 4,
-        });
-        EventBuilder {
-            event: self.events.last_mut().unwrap(),
-        }
-    }
-
-    fn events(self) -> Vec<Event> {
-        self.events
-    }
-}
-
-struct EventBuilder<'a> {
-    event: &'a mut Event,
-}
-
-impl EventBuilder<'_> {
-    fn field(&mut self, name: &'static str, ty: FieldType) -> &mut Self {
-        self.event.fields.push(Field {
-            name,
-            offset: self.event.size,
-            ty,
-        });
-        self.align();
-        self
-    }
-
-    fn align(&mut self) {
-        let mut field_refs = self.event.fields.iter_mut().collect::<Vec<_>>();
-        field_refs.sort_by_key(|field| usize::MAX - field.ty.size());
-        self.event.size = 4;
-        for field in &mut field_refs {
-            field.offset = self.event.size;
-            self.event.size += field.ty.size();
-        }
-        self.event.size = ((self.event.size + 3) / 4) * 4;
-    }
-}
-
-pub fn all() -> Vec<Event> {
-    use FieldType::*;
+fn build() -> EventsBuilder {
+    use RawType::*;
 
     let mut builder = EventsBuilder::new();
 
+    let mouse_button_enum = builder
+        .add_enum("mouse button", U8)
+        .add_case("unknown", 0)
+        .add_case("left", 1)
+        .add_case("right", 2)
+        .add_case("middle", 3)
+        .build();
+
+    let named_key_enum = builder
+        .add_enum("named key", U16)
+        .add_case("unknown", 0)
+        .add_case("alt", 1)
+        .add_case("alt graph", 2)
+        .add_case("caps lock", 3)
+        .add_case("control", 4)
+        .add_case("fn", 5)
+        .add_case("fn lock", 6)
+        .add_case("meta", 7)
+        .add_case("num lock", 8)
+        .add_case("scroll lock", 9)
+        .add_case("shift", 10)
+        .add_case("symbol", 11)
+        .add_case("symbol lock", 12)
+        .add_case("hyper", 13)
+        .add_case("super", 14)
+        .add_case("enter", 15)
+        .add_case("tab", 16)
+        .add_case("arrow down", 17)
+        .add_case("arrow left", 18)
+        .add_case("arrow right", 19)
+        .add_case("arrow up", 20)
+        .add_case("end", 21)
+        .add_case("home", 22)
+        .add_case("page down", 23)
+        .add_case("page up", 24)
+        .add_case("backspace", 25)
+        .add_case("clear", 26)
+        .add_case("copy", 27)
+        .add_case("cr sel", 28)
+        .add_case("cut", 29)
+        .add_case("delete", 30)
+        .add_case("erase eof", 31)
+        .add_case("ex sel", 32)
+        .add_case("insert", 33)
+        .add_case("paste", 34)
+        .add_case("redo", 35)
+        .add_case("undo", 36)
+        .add_case("accept", 37)
+        .add_case("again", 38)
+        .add_case("attn", 39)
+        .add_case("cancel", 40)
+        .add_case("context menu", 41)
+        .add_case("escape", 42)
+        .add_case("execute", 43)
+        .add_case("find", 44)
+        .add_case("help", 45)
+        .add_case("pause", 46)
+        .add_case("play", 47)
+        .add_case("props", 48)
+        .add_case("select", 49)
+        .add_case("zoom in", 50)
+        .add_case("zoom out", 51)
+        .add_case("brightness down", 52)
+        .add_case("brightness up", 53)
+        .add_case("eject", 54)
+        .add_case("log off", 55)
+        .add_case("power", 56)
+        .add_case("power off", 57)
+        .add_case("print screen", 58)
+        .add_case("hibernate", 59)
+        .add_case("standby", 60)
+        .add_case("wake up", 61)
+        .add_case("all candidates", 62)
+        .add_case("alphanumeric", 63)
+        .add_case("code input", 64)
+        .add_case("compose", 65)
+        .add_case("convert", 66)
+        .add_case("dead", 67)
+        .add_case("final mode", 68)
+        .add_case("group first", 69)
+        .add_case("group last", 70)
+        .add_case("group next", 71)
+        .add_case("group previous", 72)
+        .add_case("mode change", 73)
+        .add_case("next candidate", 74)
+        .add_case("non convert", 75)
+        .add_case("previous candidate", 76)
+        .add_case("process", 77)
+        .add_case("single candidate", 78)
+        .add_case("hangul mode", 79)
+        .add_case("hanja mode", 80)
+        .add_case("junja mode", 81)
+        .add_case("eisu", 82)
+        .add_case("hankaku", 83)
+        .add_case("hiragana", 84)
+        .add_case("hiragana katakana", 85)
+        .add_case("kana mode", 86)
+        .add_case("kanji mode", 87)
+        .add_case("katakana", 88)
+        .add_case("romaji", 89)
+        .add_case("zenkaku", 90)
+        .add_case("zenkaku hankaku", 91)
+        .add_case("soft 1", 92)
+        .add_case("soft 2", 93)
+        .add_case("soft 3", 94)
+        .add_case("soft 4", 95)
+        .add_case("channel down", 96)
+        .add_case("channel up", 97)
+        .add_case("close", 98)
+        .add_case("mail forward", 99)
+        .add_case("mail reply", 100)
+        .add_case("mail send", 101)
+        .add_case("media close", 102)
+        .add_case("media fast forward", 103)
+        .add_case("media pause", 104)
+        .add_case("media play", 105)
+        .add_case("media play pause", 106)
+        .add_case("media record", 107)
+        .add_case("media rewind", 108)
+        .add_case("media stop", 109)
+        .add_case("media track next", 110)
+        .add_case("media track previous", 111)
+        .add_case("new", 112)
+        .add_case("open", 113)
+        .add_case("print", 114)
+        .add_case("save", 115)
+        .add_case("spell check", 116)
+        .add_case("key 1 1", 117)
+        .add_case("key 1 2", 118)
+        .add_case("audio balance left", 119)
+        .add_case("audio balance right", 120)
+        .add_case("audio bass boost down", 121)
+        .add_case("audio bass boost toggle", 122)
+        .add_case("audio bass boost up", 123)
+        .add_case("audio fader front", 124)
+        .add_case("audio fader rear", 125)
+        .add_case("audio surround mode next", 126)
+        .add_case("audio treble down", 127)
+        .add_case("audio treble up", 128)
+        .add_case("audio volume down", 129)
+        .add_case("audio volume up", 130)
+        .add_case("audio volume mute", 131)
+        .add_case("microphone toggle", 132)
+        .add_case("microphone volume down", 133)
+        .add_case("microphone volume up", 134)
+        .add_case("microphone volume mute", 135)
+        .add_case("speech correction list", 136)
+        .add_case("speech input toggle", 137)
+        .add_case("launch application 1", 138)
+        .add_case("launch application 2", 139)
+        .add_case("launch calendar", 140)
+        .add_case("launch contacts", 141)
+        .add_case("launch mail", 142)
+        .add_case("launch media player", 143)
+        .add_case("launch music player", 144)
+        .add_case("launch phone", 145)
+        .add_case("launch screen saver", 146)
+        .add_case("launch spreadsheet", 147)
+        .add_case("launch web browser", 148)
+        .add_case("launch web cam", 149)
+        .add_case("launch word processor", 150)
+        .add_case("browser back", 151)
+        .add_case("browser favorites", 152)
+        .add_case("browser forward", 153)
+        .add_case("browser home", 154)
+        .add_case("browser refresh", 155)
+        .add_case("browser search", 156)
+        .add_case("browser stop", 157)
+        .add_case("app switch", 158)
+        .add_case("call", 159)
+        .add_case("camera", 160)
+        .add_case("camera focus", 161)
+        .add_case("end call", 162)
+        .add_case("go back", 163)
+        .add_case("go home", 164)
+        .add_case("headset hook", 165)
+        .add_case("last number redial", 166)
+        .add_case("notification", 167)
+        .add_case("manner mode", 168)
+        .add_case("voice dial", 169)
+        .add_case("tv", 170)
+        .add_case("tv 3d mode", 171)
+        .add_case("tv antenna cable", 172)
+        .add_case("tv audio description", 173)
+        .add_case("tv audio description mix down", 174)
+        .add_case("tv audio description mix up", 175)
+        .add_case("tv contents menu", 176)
+        .add_case("tv data service", 177)
+        .add_case("tv input", 178)
+        .add_case("tv input component 1", 179)
+        .add_case("tv input component 2", 180)
+        .add_case("tv input composite 1", 181)
+        .add_case("tv input composite 2", 182)
+        .add_case("tv input hdmi 1", 183)
+        .add_case("tv input hdmi 2", 184)
+        .add_case("tv input hdmi 3", 185)
+        .add_case("tv input hdmi 4", 186)
+        .add_case("tv input vga 1", 187)
+        .add_case("tv media context", 188)
+        .add_case("tv network", 189)
+        .add_case("tv number entry", 190)
+        .add_case("tv power", 191)
+        .add_case("tv radio service", 192)
+        .add_case("tv satellite", 193)
+        .add_case("tv satellite bs", 194)
+        .add_case("tv satellite cs", 195)
+        .add_case("tv satellite toggle", 196)
+        .add_case("tv terrestrial analog", 197)
+        .add_case("tv terrestrial digital", 198)
+        .add_case("tv timer", 199)
+        .add_case("avr input", 200)
+        .add_case("avr power", 201)
+        .add_case("color f 0red", 202)
+        .add_case("color f 1green", 203)
+        .add_case("color f 2yellow", 204)
+        .add_case("color f 3blue", 205)
+        .add_case("color f 4grey", 206)
+        .add_case("color f 5brown", 207)
+        .add_case("closed caption toggle", 208)
+        .add_case("dimmer", 209)
+        .add_case("display swap", 210)
+        .add_case("dvr", 211)
+        .add_case("exit", 212)
+        .add_case("favorite clear 0", 213)
+        .add_case("favorite clear 1", 214)
+        .add_case("favorite clear 2", 215)
+        .add_case("favorite clear 3", 216)
+        .add_case("favorite recall 0", 217)
+        .add_case("favorite recall 1", 218)
+        .add_case("favorite recall 2", 219)
+        .add_case("favorite recall 3", 220)
+        .add_case("favorite store 0", 221)
+        .add_case("favorite store 1", 222)
+        .add_case("favorite store 2", 223)
+        .add_case("favorite store 3", 224)
+        .add_case("guide", 225)
+        .add_case("guide next day", 226)
+        .add_case("guide previous day", 227)
+        .add_case("info", 228)
+        .add_case("instant replay", 229)
+        .add_case("link", 230)
+        .add_case("list program", 231)
+        .add_case("live content", 232)
+        .add_case("lock", 233)
+        .add_case("media apps", 234)
+        .add_case("media audio track", 235)
+        .add_case("media last", 236)
+        .add_case("media skip backward", 237)
+        .add_case("media skip forward", 238)
+        .add_case("media step backward", 239)
+        .add_case("media step forward", 240)
+        .add_case("media top menu", 241)
+        .add_case("navigate in", 242)
+        .add_case("navigate next", 243)
+        .add_case("navigate out", 244)
+        .add_case("navigate previous", 245)
+        .add_case("next favorite channel", 246)
+        .add_case("next user profile", 247)
+        .add_case("on demand", 248)
+        .add_case("pairing", 249)
+        .add_case("pin p down", 250)
+        .add_case("pin p move", 251)
+        .add_case("pin p toggle", 252)
+        .add_case("pin p up", 253)
+        .add_case("play speed down", 254)
+        .add_case("play speed reset", 255)
+        .add_case("play speed up", 256)
+        .add_case("random toggle", 257)
+        .add_case("rc low battery", 258)
+        .add_case("record speed next", 259)
+        .add_case("rf bypass", 260)
+        .add_case("scan channels toggle", 261)
+        .add_case("screen mode next", 262)
+        .add_case("settings", 263)
+        .add_case("split screen toggle", 264)
+        .add_case("stb input", 265)
+        .add_case("stb power", 266)
+        .add_case("subtitle", 267)
+        .add_case("teletext", 268)
+        .add_case("video mode next", 269)
+        .add_case("wink", 270)
+        .add_case("zoom toggle", 271)
+        .add_case("f1", 272)
+        .add_case("f2", 273)
+        .add_case("f3", 274)
+        .add_case("f4", 275)
+        .add_case("f5", 276)
+        .add_case("f6", 277)
+        .add_case("f7", 278)
+        .add_case("f8", 279)
+        .add_case("f9", 280)
+        .add_case("f10", 281)
+        .add_case("f11", 282)
+        .add_case("f12", 283)
+        .add_case("f13", 284)
+        .add_case("f14", 285)
+        .add_case("f15", 286)
+        .add_case("f16", 287)
+        .add_case("f17", 288)
+        .add_case("f18", 289)
+        .add_case("f19", 290)
+        .add_case("f20", 291)
+        .add_case("f21", 292)
+        .add_case("f22", 293)
+        .add_case("f23", 294)
+        .add_case("f24", 295)
+        .add_case("f25", 296)
+        .add_case("f26", 297)
+        .add_case("f27", 298)
+        .add_case("f28", 299)
+        .add_case("f29", 300)
+        .add_case("f30", 301)
+        .add_case("f31", 302)
+        .add_case("f32", 303)
+        .add_case("f33", 304)
+        .add_case("f34", 305)
+        .add_case("f35", 306)
+        .build();
+
+    let physical_key_enum = builder
+        .add_enum("physical key", U16)
+        .add_case("unknown", 0)
+        .add_case("backquote", 1)
+        .add_case("backslash", 2)
+        .add_case("bracket left", 3)
+        .add_case("bracket right", 4)
+        .add_case("comma", 5)
+        .add_case("digit 0", 6)
+        .add_case("digit 1", 7)
+        .add_case("digit 2", 8)
+        .add_case("digit 3", 9)
+        .add_case("digit 4", 10)
+        .add_case("digit 5", 11)
+        .add_case("digit 6", 12)
+        .add_case("digit 7", 13)
+        .add_case("digit 8", 14)
+        .add_case("digit 9", 15)
+        .add_case("equal", 16)
+        .add_case("intl backslash", 17)
+        .add_case("intl ro", 18)
+        .add_case("intl yen", 19)
+        .add_case("key a", 20)
+        .add_case("key b", 21)
+        .add_case("key c", 22)
+        .add_case("key d", 23)
+        .add_case("key e", 24)
+        .add_case("key f", 25)
+        .add_case("key g", 26)
+        .add_case("key h", 27)
+        .add_case("key i", 28)
+        .add_case("key j", 29)
+        .add_case("key k", 30)
+        .add_case("key l", 31)
+        .add_case("key m", 32)
+        .add_case("key n", 33)
+        .add_case("key o", 34)
+        .add_case("key p", 35)
+        .add_case("key q", 36)
+        .add_case("key r", 37)
+        .add_case("key s", 38)
+        .add_case("key t", 39)
+        .add_case("key u", 40)
+        .add_case("key v", 41)
+        .add_case("key w", 42)
+        .add_case("key x", 43)
+        .add_case("key y", 44)
+        .add_case("key z", 45)
+        .add_case("minus", 46)
+        .add_case("period", 47)
+        .add_case("quote", 48)
+        .add_case("semicolon", 49)
+        .add_case("slash", 50)
+        .add_case("alt left", 51)
+        .add_case("alt right", 52)
+        .add_case("backspace", 53)
+        .add_case("caps lock", 54)
+        .add_case("context menu", 55)
+        .add_case("control left", 56)
+        .add_case("control right", 57)
+        .add_case("enter", 58)
+        .add_case("meta left", 59)
+        .add_case("meta right", 60)
+        .add_case("shift left", 61)
+        .add_case("shift right", 62)
+        .add_case("space", 63)
+        .add_case("tab", 64)
+        .add_case("convert", 65)
+        .add_case("kana mode", 66)
+        .add_case("lang 1", 67)
+        .add_case("lang 2", 68)
+        .add_case("lang 3", 69)
+        .add_case("lang 4", 70)
+        .add_case("lang 5", 71)
+        .add_case("non convert", 72)
+        .add_case("delete", 73)
+        .add_case("end", 74)
+        .add_case("help", 75)
+        .add_case("home", 76)
+        .add_case("insert", 77)
+        .add_case("page down", 78)
+        .add_case("page up", 79)
+        .add_case("arrow down", 80)
+        .add_case("arrow left", 81)
+        .add_case("arrow right", 82)
+        .add_case("arrow up", 83)
+        .add_case("num lock", 84)
+        .add_case("numpad 0", 85)
+        .add_case("numpad 1", 86)
+        .add_case("numpad 2", 87)
+        .add_case("numpad 3", 88)
+        .add_case("numpad 4", 89)
+        .add_case("numpad 5", 90)
+        .add_case("numpad 6", 91)
+        .add_case("numpad 7", 92)
+        .add_case("numpad 8", 93)
+        .add_case("numpad 9", 94)
+        .add_case("numpad add", 95)
+        .add_case("numpad backspace", 96)
+        .add_case("numpad clear", 97)
+        .add_case("numpad clear entry", 98)
+        .add_case("numpad comma", 99)
+        .add_case("numpad decimal", 100)
+        .add_case("numpad divide", 101)
+        .add_case("numpad enter", 102)
+        .add_case("numpad equal", 103)
+        .add_case("numpad hash", 104)
+        .add_case("numpad memory add", 105)
+        .add_case("numpad memory clear", 106)
+        .add_case("numpad memory recall", 107)
+        .add_case("numpad memory store", 108)
+        .add_case("numpad memory subtract", 109)
+        .add_case("numpad multiply", 110)
+        .add_case("numpad paren left", 111)
+        .add_case("numpad paren right", 112)
+        .add_case("numpad star", 113)
+        .add_case("numpad subtract", 114)
+        .add_case("escape", 115)
+        .add_case("fn", 116)
+        .add_case("fn lock", 117)
+        .add_case("print screen", 118)
+        .add_case("scroll lock", 119)
+        .add_case("pause", 120)
+        .add_case("browser back", 121)
+        .add_case("browser favorites", 122)
+        .add_case("browser forward", 123)
+        .add_case("browser home", 124)
+        .add_case("browser refresh", 125)
+        .add_case("browser search", 126)
+        .add_case("browser stop", 127)
+        .add_case("eject", 128)
+        .add_case("launch app 1", 129)
+        .add_case("launch app 2", 130)
+        .add_case("launch mail", 131)
+        .add_case("media play pause", 132)
+        .add_case("media select", 133)
+        .add_case("media stop", 134)
+        .add_case("media track next", 135)
+        .add_case("media track previous", 136)
+        .add_case("power", 137)
+        .add_case("sleep", 138)
+        .add_case("audio volume down", 139)
+        .add_case("audio volume mute", 140)
+        .add_case("audio volume up", 141)
+        .add_case("wake up", 142)
+        .add_case("hyper", 143)
+        .add_case("super", 144)
+        .add_case("turbo", 145)
+        .add_case("abort", 146)
+        .add_case("resume", 147)
+        .add_case("suspend", 148)
+        .add_case("again", 149)
+        .add_case("copy", 150)
+        .add_case("cut", 151)
+        .add_case("find", 152)
+        .add_case("open", 153)
+        .add_case("paste", 154)
+        .add_case("props", 155)
+        .add_case("select", 156)
+        .add_case("undo", 157)
+        .add_case("hiragana", 158)
+        .add_case("katakana", 159)
+        .add_case("unidentified", 160)
+        .add_case("f1", 161)
+        .add_case("f2", 162)
+        .add_case("f3", 163)
+        .add_case("f4", 164)
+        .add_case("f5", 165)
+        .add_case("f6", 166)
+        .add_case("f7", 167)
+        .add_case("f8", 168)
+        .add_case("f9", 169)
+        .add_case("f10", 170)
+        .add_case("f11", 171)
+        .add_case("f12", 172)
+        .add_case("f13", 173)
+        .add_case("f14", 174)
+        .add_case("f15", 175)
+        .add_case("f16", 176)
+        .add_case("f17", 177)
+        .add_case("f18", 178)
+        .add_case("f19", 179)
+        .add_case("f20", 180)
+        .add_case("f21", 181)
+        .add_case("f22", 182)
+        .add_case("f23", 183)
+        .add_case("f24", 184)
+        .add_case("f25", 185)
+        .add_case("f26", 186)
+        .add_case("f27", 187)
+        .add_case("f28", 188)
+        .add_case("f29", 189)
+        .add_case("f30", 190)
+        .add_case("f31", 191)
+        .add_case("f32", 192)
+        .add_case("f33", 193)
+        .add_case("f34", 194)
+        .add_case("f35", 195)
+        .add_case("brightness down", 196)
+        .add_case("brightness up", 197)
+        .add_case("display toggle int ext", 198)
+        .add_case("keyboard layout select", 199)
+        .add_case("launch assistant", 200)
+        .add_case("launch control panel", 201)
+        .add_case("launch screen saver", 202)
+        .add_case("mail forward", 203)
+        .add_case("mail reply", 204)
+        .add_case("mail send", 205)
+        .add_case("media fast forward", 206)
+        .add_case("media pause", 207)
+        .add_case("media play", 208)
+        .add_case("media record", 209)
+        .add_case("media rewind", 210)
+        .add_case("microphone mute toggle", 211)
+        .add_case("privacy screen toggle", 212)
+        .add_case("keyboard backlight toggle", 213)
+        .add_case("select task", 214)
+        .add_case("show all windows", 215)
+        .add_case("zoom toggle", 216)
+        .build();
+
     builder
-        .event("mouse_button", 1)
-        .field("button", U32)
+        .add_event("mouse button", 1)
+        .enum_field("button", mouse_button_enum)
         .field("down", Bool)
+        .field("x", U32)
+        .field("y", U32)
+        .field("is touch", Bool);
+
+    builder
+        .add_event("mouse motion", 2)
         .field("x", U32)
         .field("y", U32);
 
     builder
-        .event("mouse_motion", 2)
-        .field("x", U32)
-        .field("y", U32);
-
-    builder
-        .event("key", 3)
+        .add_event("key", 3)
         .field("down", Bool)
-        .field("scancode", U32);
+        .enum_field("named key", named_key_enum)
+        .enum_field("physical key", physical_key_enum)
+        .field("text length", U8)
+        .bytes_field("text", 32);
 
-    builder.event("quit", 4);
+    builder.add_event("quit", 4);
 
-    builder.event("window_resized", 5);
-    builder.event("gl_resized", 6);
-
-    builder.event("text_input", 7).field("c", U8);
+    builder.add_event("window resized", 5);
+    builder.add_event("gl resized", 6);
 
     // This value must be incremented when an event is added or changed,
-    // then event's id must be changed to this value:
-    // 7
+    // then event's id must be changed to this new value:
+    // 6
 
-    builder.events()
+    builder
+}
+
+pub fn events() -> Vec<Event> {
+    build().events()
+}
+
+pub fn enums() -> Vec<Enum> {
+    build().enums()
 }

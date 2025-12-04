@@ -1,4 +1,4 @@
-pub mod events;
+pub mod events_encoder;
 mod interface;
 
 pub use webrogue_gfxstream::Decoder as GFXStreamDecoder;

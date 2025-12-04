@@ -6,7 +6,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use webrogue_gfx_winit::{ProxiedWinitBuilder, WinitProxy};
+use webrogue_gfx_winit::{ProxiedWinitBuilder, WindowRegistry, WinitProxy};
 use webrogue_wrapp::{IVFSBuilder, RealVFSBuilder};
 use winit::{
     application::ApplicationHandler,
@@ -21,6 +21,7 @@ struct ServerConfigImpl {
     storage_path: std::path::PathBuf,
     proxy_container: Arc<Mutex<Option<WinitProxy>>>,
     event_loop_proxy: EventLoopProxy,
+    window_registry: WindowRegistry,
 }
 
 impl crate::server::ServerConfig for ServerConfigImpl {
@@ -31,7 +32,8 @@ impl crate::server::ServerConfig for ServerConfigImpl {
     fn run(&self, mut vfs_builder: RealVFSBuilder) -> anyhow::Result<()> {
         let config = vfs_builder.config()?.clone();
         let vfs = vfs_builder.into_vfs()?;
-        let (builder, proxy) = ProxiedWinitBuilder::new(self.event_loop_proxy.clone());
+        let (builder, proxy) =
+            ProxiedWinitBuilder::new(self.event_loop_proxy.clone(), self.window_registry.clone());
         *self.proxy_container.lock().unwrap() = Some(proxy);
         let persistent_dir = self.storage_path.join("persistent");
 
@@ -55,6 +57,7 @@ pub struct App {
     should_quit: Arc<AtomicBool>,
     storage_path: std::path::PathBuf,
     proxy_container: Arc<Mutex<Option<WinitProxy>>>,
+    window_registry: WindowRegistry,
 }
 
 impl App {
@@ -68,6 +71,7 @@ impl App {
             should_quit: Arc::new(AtomicBool::new(false)),
             storage_path,
             proxy_container: Arc::new(Mutex::new(None)),
+            window_registry: WindowRegistry::new(),
         }
     }
 }
@@ -88,6 +92,7 @@ impl ApplicationHandler for App {
                 storage_path: self.storage_path.clone(),
                 proxy_container: self.proxy_container.clone(),
                 event_loop_proxy: event_loop.create_proxy(),
+                window_registry: self.window_registry.clone(),
             }),
             |internal| WinitMailbox::new(event_loop_proxy, internal),
         )

@@ -6,14 +6,17 @@ use winit::{
     window::WindowId,
 };
 
-use crate::{mailbox::Mailbox, WinitSystem, WinitWindow};
+use crate::{mailbox::Mailbox, window_registry::WindowRegistry, WinitSystem, WinitWindow};
 
 pub struct ProxiedWinitBuilder {
     proxy: WinitProxy,
 }
 
 impl ProxiedWinitBuilder {
-    pub fn new(event_loop_proxy: EventLoopProxy) -> (Self, WinitProxy) {
+    pub fn new(
+        event_loop_proxy: EventLoopProxy,
+        window_registry: WindowRegistry,
+    ) -> (Self, WinitProxy) {
         let mailbox = Mailbox {
             event_loop_proxy,
             requests: Arc::new(Mutex::new(Vec::new())),
@@ -22,6 +25,7 @@ impl ProxiedWinitBuilder {
             internal: Arc::new(Mutex::new(WinitProxyInternal {
                 mailbox,
                 on_hide: None,
+                window_registry,
             })),
         };
         (
@@ -40,6 +44,7 @@ impl ProxiedWinitBuilder {
 struct WinitProxyInternal {
     mailbox: Mailbox,
     on_hide: Option<Box<dyn Fn() + Send + Sync + 'static>>,
+    window_registry: WindowRegistry,
 }
 
 #[derive(Clone)]
@@ -67,9 +72,18 @@ impl WinitProxy {
     pub fn window_event(
         &self,
         _event_loop: &dyn ActiveEventLoop,
-        _window_id: WindowId,
-        _event: WindowEvent,
+        window_id: WindowId,
+        event: WindowEvent,
     ) {
+        if let Some(window) = self
+            .internal
+            .lock()
+            .unwrap()
+            .window_registry
+            .get_window(window_id)
+        {
+            window.on_event(event);
+        }
     }
 }
 
@@ -78,8 +92,11 @@ impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for ProxiedWinitBuilder {
     where
         Output: Send + 'static,
     {
-        let mailbox = self.proxy.internal.lock().unwrap().mailbox.clone();
-        let system = WinitSystem::new(mailbox);
+        let proxy = self.proxy.internal.lock().unwrap();
+        let mailbox = proxy.mailbox.clone();
+        let system = WinitSystem::new(mailbox, proxy.window_registry.clone());
+        drop(proxy);
+
         body_fn(system)
     }
 }

@@ -21,7 +21,6 @@ pub trait IBuilder<System: ISystem<Window>, Window: IWindow> {
 
 pub trait ISystem<Window: IWindow> {
     fn make_window(&self) -> Window;
-    fn poll(&self, events_buffer: &mut Vec<u8>);
     fn pump(&self);
     fn make_gfxstream_decoder(&self) -> webrogue_gfxstream::Decoder;
     fn vk_extensions(&self) -> Vec<String>;
@@ -30,6 +29,7 @@ pub trait IWindow {
     fn get_size(&self) -> (u32, u32);
     fn get_gl_size(&self) -> (u32, u32);
     fn make_vk_surface(&self, vk_instance: *mut ()) -> Option<*mut ()>;
+    fn poll(&self, events_buffer: &mut Vec<u8>);
 }
 
 pub struct Interface<System: ISystem<Window>, Window: IWindow> {
@@ -151,8 +151,13 @@ impl<System: ISystem<Window> + 'static, Window: IWindow> webrogue_gfx::WebrogueG
 
     fn poll(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_len: wiggle::GuestPtr<GuestSize>) {
         let mut event_buf = self.event_buf.lock().unwrap();
+        event_buf.clear();
+
         self.system.pump();
-        self.system.poll(&mut event_buf);
+        for (_window_id, window) in self.windows.lock().unwrap().iter() {
+            window.poll(&mut event_buf);
+        }
+
         let result = event_buf.len() as u32;
         let _ = mem.write(out_len, result);
     }

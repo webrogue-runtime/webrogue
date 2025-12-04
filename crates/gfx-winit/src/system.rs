@@ -10,12 +10,16 @@ use ash::{
 };
 use winit::window::WindowAttributes;
 
-use crate::{mailbox::Mailbox, vulkan_library::load_vulkan_entry, WinitWindow};
+use crate::{
+    mailbox::Mailbox, vulkan_library::load_vulkan_entry, window::WinitWindowInternal,
+    window_registry::WindowRegistry, WinitWindow,
+};
 
 pub struct WinitSystem {
     pub(crate) mailbox: Mailbox,
     pub(crate) gfxstream_system: std::sync::Mutex<Option<Arc<webrogue_gfx::GFXStreamSystem>>>,
     pub(crate) vulkan_entry: Option<Arc<Entry>>,
+    pub(crate) window_registry: WindowRegistry,
 }
 
 impl Drop for WinitSystem {
@@ -26,12 +30,13 @@ impl Drop for WinitSystem {
 }
 
 impl WinitSystem {
-    pub(crate) fn new(mailbox: Mailbox) -> Self {
+    pub(crate) fn new(mailbox: Mailbox, window_registry: WindowRegistry) -> Self {
         let vulkan_entry = load_vulkan_entry();
         Self {
             mailbox,
             gfxstream_system: Mutex::new(None),
             vulkan_entry: vulkan_entry.and_then(|entry| Some(Arc::new(entry))),
+            window_registry,
         }
     }
 }
@@ -46,14 +51,20 @@ impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
             )
         });
 
-        WinitWindow {
+        let window_id = window.id();
+
+        let internal = Arc::new(WinitWindowInternal {
             window,
             mailbox: self.mailbox.clone(),
             vulkan_entry: self.vulkan_entry.clone(),
-        }
-    }
+            events_buffer: Mutex::new(Vec::new()),
+        });
 
-    fn poll(&self, _events_buffer: &mut Vec<u8>) {}
+        self.window_registry
+            .add_window(window_id, Arc::downgrade(&internal));
+
+        WinitWindow { internal }
+    }
 
     fn make_gfxstream_decoder(&self) -> webrogue_gfx::GFXStreamDecoder {
         let gfxstream_system = {

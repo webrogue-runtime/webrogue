@@ -8,7 +8,9 @@ use winit::{
     window::WindowId,
 };
 
-use crate::{ProxiedWinitBuilder, WinitProxy, WinitSystem, WinitWindow};
+use crate::{
+    window_registry::WindowRegistry, ProxiedWinitBuilder, WinitProxy, WinitSystem, WinitWindow,
+};
 
 struct App<BodyFn: FnOnce(WinitSystem) -> () + Send + 'static> {
     pub body_fn: Option<BodyFn>,
@@ -97,7 +99,8 @@ impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for SimpleWinitBuilder {
         let app = App {
             body_fn: Some(wrapped_body_fn),
             create_system_fn: Some(Box::new(|event_loop_proxy| {
-                let (mut builder, mailbox) = ProxiedWinitBuilder::new(event_loop_proxy);
+                let (mut builder, mailbox) =
+                    ProxiedWinitBuilder::new(event_loop_proxy, WindowRegistry::new());
                 if let Some(on_hide) = self.on_hide {
                     builder = builder.with_on_hide(on_hide);
                 }

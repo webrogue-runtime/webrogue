@@ -342,3 +342,35 @@ jobs:
         tag: ${{ github.ref_name }}
         commit: ${{ github.ref }}
         makeLatest: true
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-linux-x86_64-glibc
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          webrogue-cli-linux-x86_64.tar.gz
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-windows-x86_64
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          webrogue-cli-windows-x86_64.zip
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-macOS-arm64
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          webrogue-cli-macos-arm64.tar.gz
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-macOS-x86_64
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          webrogue-cli-macos-x86_64.tar.gz
