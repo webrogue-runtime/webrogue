@@ -189,6 +189,10 @@ opt-level = 3
 opt-level = 3
 codegen-units = 1
 
+[profile.dev.package.wasmtime-internal-cranelift]
+opt-level = 3
+codegen-units = 1
+
 [patch.crates-io]
 zstd-safe = { path = "external/zstd-rs/zstd-safe" }
 zstd = { path = "external/zstd-rs" }
