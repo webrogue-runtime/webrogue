@@ -1,6 +1,6 @@
 use crate::WinitMailbox;
 use dpi::{PhysicalPosition, PhysicalSize};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 #[cfg(target_os = "linux")]
 use std::sync::{
     atomic::{AtomicBool, Ordering},

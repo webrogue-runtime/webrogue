@@ -107,6 +107,7 @@ wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
 wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
 wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
 wiggle-generate = { path = "external/wasmtime/crates/wiggle/generate", default-features = false }
+wasmtime-wasi-threads = { path = "external/wasmtime/crates/wasi-threads" }
 
 image = { version = "0.25", default-features = false }
 imageproc = { version = "0.25", default-features = false }
@@ -158,7 +159,8 @@ base64 = { version = "0.22.1" }
 tokio-tungstenite = { version = "*" }
 futures-util = { version = "0.3" }
 uuid = { version = "^1.8", default-features = false }
-blake3  = { version = "1.8.2" }
+blake3 = { version = "1.8.2" }
+async-trait = { version = "0.1.89" }
 
 reqwest = { version = "0.12" }
 zip-extract = { version = "0.4.1" }

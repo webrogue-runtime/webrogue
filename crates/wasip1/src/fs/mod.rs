@@ -154,7 +154,7 @@ impl<
     }
 }
 
-#[wiggle::async_trait]
+#[async_trait::async_trait]
 impl<
         FilePosition: webrogue_wrapp::IFilePosition + 'static,
         FileReader: webrogue_wrapp::IFileReader + 'static,
@@ -376,7 +376,7 @@ impl<FileReader: webrogue_wrapp::IFileReader, FilePosition: webrogue_wrapp::IFil
     }
 }
 
-#[wiggle::async_trait]
+#[async_trait::async_trait]
 impl<
         FileReader: webrogue_wrapp::IFileReader + 'static,
         FilePosition: webrogue_wrapp::IFilePosition + 'static,

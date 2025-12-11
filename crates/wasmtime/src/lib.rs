@@ -1,5 +1,7 @@
 mod threads;
 
+use std::sync::Arc;
+
 pub use webrogue_wrapp::{
     IVFSBuilder, RealVFSBuilder, RealVFSHandle, WrappVFSBuilder, WrappVFSHandle,
 };
@@ -8,6 +10,7 @@ pub use webrogue_wrapp::{
 struct State<System: webrogue_gfx::ISystem<Window>, Window: webrogue_gfx::IWindow> {
     pub preview1_ctx: Option<wasi_common::WasiCtx>,
     pub wasi_threads_ctx: Option<std::sync::Arc<crate::threads::WasiThreadsCtx<Self>>>,
+    // pub wasi_threads_ctx: Option<Arc<wasmtime_wasi_threads::WasiThreadsCtx<Self>>>,
     pub gfx: Option<webrogue_gfx::Interface<System, Window>>,
 }
 
@@ -80,6 +83,7 @@ pub fn run_jit<
     use anyhow::Context;
 
     let mut config = wasmtime::Config::new();
+    config.shared_memory(true);
     #[cfg(feature = "cache")]
     if let Some(cache_config) = cache_config {
         config.cache(Some(wasmtime::Cache::from_file(Some(&cache_config))?));
@@ -162,6 +166,7 @@ pub fn run_aot<
     persistent_dir: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
+    config.shared_memory(true);
     // config.async_support(true);
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
     let epoch_interruption = false;
@@ -210,7 +215,6 @@ fn run_module<
     store.data_mut().wasi_threads_ctx = Some(std::sync::Arc::new(
         crate::threads::WasiThreadsCtx::new(epoch_interruption),
     ));
-
     bindings::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
         state.preview1_ctx.as_mut().unwrap()
     })?;
@@ -244,12 +248,18 @@ fn run_module<
     crate::threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
         host.wasi_threads_ctx.as_ref().unwrap()
     })?;
+    // wasmtime_wasi_threads::add_to_linker(&mut linker, &mut store, &module, |host| {
+    //     host.wasi_threads_ctx.as_ref().unwrap()
+    // })?;
     let linker = std::sync::Arc::new(linker);
     store.data().wasi_threads_ctx.as_ref().unwrap().fill(
         module.clone(),
         linker.clone(),
         engine.weak(),
     )?;
+    // store.data_mut().wasi_threads_ctx = Some(std::sync::Arc::new(
+    //     wasmtime_wasi_threads::WasiThreadsCtx::new(module.clone(), linker.clone())?,
+    // ));
 
     store.data_mut().preview1_ctx = Some(webrogue_wasip1::make_ctx(
         handle,

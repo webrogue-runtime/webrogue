@@ -12,3 +12,4 @@ anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
 wasi-common = { workspace = true, default-features = false, features = ["sync"] }
 wiggle = { workspace = true, default-features = false }
+async-trait = { workspace = true }
