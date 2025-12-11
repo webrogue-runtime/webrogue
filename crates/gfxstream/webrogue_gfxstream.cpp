@@ -1,16 +1,15 @@
 #include <memory>
 #include <stdlib.h>
-#include "gfxstream/host/BackendCallbacks.h"
-#include "VkDecoderContext.h"
-#include "VkDecoder.h"
+#include "gfxstream/host/backend_callbacks.h"
+#include "vk_decoder_context.h"
+#include "vk_decoder.h"
 #include "snapshot/LazySnapshotObj.h"
-#include "RenderThreadInfoVk.h"
+#include "render_thread_info_vk.h"
 #include "goldfish_vk_dispatch.h"
-#include "Features.h"
-#include "VkCommonOperations.h"
-#include "VkDecoderGlobalState.h"
-#include "VulkanBoxedHandles.h"
-#include "gfxstream/Metrics.h"
+#include "features.h"
+#include "vk_common_operations.h"
+#include "vk_decoder_global_state.h"
+#include "vulkan_boxed_handles.h"
 #include <cstring>
 #include <vector>
 #include "gfxstream/host/iostream.h"
@@ -141,36 +140,29 @@ class WebrogueOutputStream : public gfxstream::IOStream {
 
 typedef void *(*get_proc_func_t)(const char *name, void *userData);
 
-class MetricsLoggerImpl: public gfxstream::base::MetricsLogger {
-  void logMetricEvent(gfxstream::base::MetricEventType eventType) override {}
-  void setCrashAnnotation(const char* key, const char* value) override {}
-};
-
-static std::unique_ptr<gfxstream::vk::VulkanDispatch> sVulkanDispatch = nullptr;
+static std::unique_ptr<gfxstream::host::vk::VulkanDispatch> sVulkanDispatch = nullptr;
 static get_proc_func_t sVkGetProc = nullptr;
 static void* sVkGetProcUserdata = nullptr;
-static std::unique_ptr<gfxstream::vk::VkEmulation> sEmulationVk = nullptr; // TODO fix this leakage
-static std::unique_ptr<gfxstream::ProcessResources> sProcessResources = nullptr;
+static std::unique_ptr<gfxstream::host::vk::VkEmulation> sEmulationVk = nullptr; // TODO fix this leakage
+static std::unique_ptr<gfxstream::host::ProcessResources> sProcessResources = nullptr;
  
 class GFXStreamDecoder {
 public:
   std::unique_ptr<WebrogueOutputStream> webrogue_output_stream;
   std::unique_ptr<gfxstream::host::GfxApiLogger> gfxLogger;
-  std::unique_ptr<gfxstream::base::MetricsLogger> metricsLogger;
   std::atomic_bool m_shouldExit{false};
-  gfxstream::vk::VkDecoder vkDec;
+  gfxstream::host::vk::VkDecoder vkDec;
   
 
   GFXStreamDecoder() {
     // set_emugl_address_space_device_control_ops
-    if(!gfxstream::vk::RenderThreadInfoVk::get()) {
+    if(!gfxstream::host::vk::RenderThreadInfoVk::get()) {
       static int ctx_id = 1; // TODO sync
-      auto tinfo = new gfxstream::vk::RenderThreadInfoVk(); // TODO fix this leakage
+      auto tinfo = new gfxstream::host::vk::RenderThreadInfoVk(); // TODO fix this leakage
       tinfo->ctx_id = ctx_id++;
     }
     webrogue_output_stream = std::make_unique<WebrogueOutputStream>(16);
     gfxLogger = std::make_unique<gfxstream::host::GfxApiLogger>();
-    metricsLogger = gfxstream::base::CreateMetricsLogger();
   }
 };
 
@@ -181,7 +173,7 @@ void webrogue_gfxstream_ffi_create_global_state(void *get_proc, void* userdata) 
 
   gfxstream::host::SetGfxstreamLogLevel(gfxstream::host::LogLevel::kWarning);
   
-  gfxstream::vk::VulkanDispatch* m_vkDispatch = gfxstream::vk::vkDispatch(false);
+  gfxstream::host::vk::VulkanDispatch* m_vkDispatch = gfxstream::host::vk::vkDispatch(false);
   gfxstream::host::BackendCallbacks callbacks{
             .registerProcessCleanupCallback =
                 [](void* key, uint64_t contextId, std::function<void()> callback) {
@@ -246,9 +238,9 @@ void webrogue_gfxstream_ffi_create_global_state(void *get_proc, void* userdata) 
   // ResourceTracker::streamFeatureBits |= VULKAN_STREAM_FEATURE_QUEUE_SUBMIT_WITH_COMMANDS_BIT;
                                                 //  gfxstream::host::BackendCallbacks callbacks,
                                                 //  gfxstream::host::FeatureSet features
-  sEmulationVk = gfxstream::vk::VkEmulation::create(m_vkDispatch, callbacks, features);
-  sProcessResources = std::unique_ptr(gfxstream::ProcessResources::create());
-  gfxstream::vk::VkDecoderGlobalState::initialize(sEmulationVk.get());
+  sEmulationVk = gfxstream::host::vk::VkEmulation::create(m_vkDispatch, callbacks, features);
+  sProcessResources = std::unique_ptr(gfxstream::host::ProcessResources::create());
+  gfxstream::host::vk::VkDecoderGlobalState::initialize(sEmulationVk.get());
 }
 
 void webrogue_gfxstream_ffi_destroy_global_state() {
@@ -269,11 +261,9 @@ void webrogue_gfxstream_ffi_commit_buffer(void *raw_decoder_ptr, void const* buf
   GFXStreamDecoder *thread = (GFXStreamDecoder *)raw_decoder_ptr;
   WebrogueOutputStream *stream = thread->webrogue_output_stream.get();
 
-  gfxstream::vk::VkDecoderContext context = {
+  gfxstream::host::vk::VkDecoderContext context = {
     .processName = "Webrogue",
     .gfxApiLogger = thread->gfxLogger.get(),
-    .healthMonitor = nullptr,
-    .metricsLogger = thread->metricsLogger.get(),
     .shouldExit = &(thread->m_shouldExit),
   };
   if(stream->getIncompleteCommitSize()) {
@@ -315,12 +305,12 @@ void webrogue_gfxstream_ffi_ret_buffer_read(void *raw_decoder_ptr, void* buf, ui
 }
 void* webrogue_gfxstream_ffi_unbox_vk_instance(uint64_t vk_instance) {
   VkInstance instance = (VkInstance)vk_instance;
-  return gfxstream::vk::unbox_VkInstance(instance);
+  return gfxstream::host::vk::unbox_VkInstance(instance);
 }
 uint64_t webrogue_gfxstream_ffi_box_vk_surface(void *vk_surface) {
   VkSurfaceKHR guest_vk_surface = (VkSurfaceKHR)vk_surface;
-  guest_vk_surface = gfxstream::vk::new_boxed_non_dispatchable_VkSurfaceKHR(guest_vk_surface);
-  gfxstream::vk::DefaultHandleMapping().mapHandles_VkSurfaceKHR(&guest_vk_surface, 1);
+  guest_vk_surface = gfxstream::host::vk::new_boxed_non_dispatchable_VkSurfaceKHR(guest_vk_surface);
+  gfxstream::host::vk::DefaultHandleMapping().mapHandles_VkSurfaceKHR(&guest_vk_surface, 1);
   return (uint64_t)guest_vk_surface;
 }
 void webrogue_gfxstream_ffi_register_blob(
@@ -329,7 +319,7 @@ void webrogue_gfxstream_ffi_register_blob(
   uint64_t size,
   uint64_t id
 ) {
-  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  auto state = gfxstream::host::vk::VkDecoderGlobalState::get();
   state->registerWebrogueBlob(buf, size, id);
 }
 void webrogue_gfxstream_ffi_set_extensions(
@@ -341,7 +331,7 @@ void webrogue_gfxstream_ffi_set_extensions(
   for(int i = 0; i < count; i++) {
     extension.push_back(std::string(raw_extensions[i]));
   }
-  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  auto state = gfxstream::host::vk::VkDecoderGlobalState::get();
   state->setWebrogueExtensions(extension);
 }
 void webrogue_gfxstream_ffi_set_presentation_callback(
@@ -349,7 +339,7 @@ void webrogue_gfxstream_ffi_set_presentation_callback(
   void (*callback)(void*),
   void* userdata
 ) {
-  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  auto state = gfxstream::host::vk::VkDecoderGlobalState::get();
   state->setPresentCallback(callback, userdata);
 }
 void webrogue_gfxstream_ffi_shadow_blob_copy(
@@ -359,14 +349,14 @@ void webrogue_gfxstream_ffi_shadow_blob_copy(
   uint64_t size,
   uint32_t direction
 ) {
-  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  auto state = gfxstream::host::vk::VkDecoderGlobalState::get();
   state->copyWebrogueShadowBlob(blob_id, data, blob_offset, size, direction);
 }
 
 void webrogue_gfxstream_ffi_set_register_shadow_blob_callback(
   void (*callback)(void*, uint64_t, uint64_t)
 ) {
-  auto state = gfxstream::vk::VkDecoderGlobalState::get();
+  auto state = gfxstream::host::vk::VkDecoderGlobalState::get();
   state->setWebrogueRegisterBlobCallback(callback);
 }
 }
@@ -381,11 +371,12 @@ static void* sVulkanDispatchDlSym(void* lib, const char* sym) {
 }
 
 namespace gfxstream {
+namespace host {
 namespace vk {
-gfxstream::vk::VulkanDispatch* vkDispatch(bool forTesting) {
+gfxstream::host::vk::VulkanDispatch* vkDispatch(bool forTesting) {
   if(!sVulkanDispatch) {
-    sVulkanDispatch = std::make_unique<gfxstream::vk::VulkanDispatch>();
-    gfxstream::vk::init_vulkan_dispatch_from_system_loader(sVulkanDispatchDlOpen, sVulkanDispatchDlSym, sVulkanDispatch.get());
+    sVulkanDispatch = std::make_unique<gfxstream::host::vk::VulkanDispatch>();
+    gfxstream::host::vk::init_vulkan_dispatch_from_system_loader(sVulkanDispatchDlOpen, sVulkanDispatchDlSym, sVulkanDispatch.get());
   }
   return sVulkanDispatch.get();
 }
@@ -393,6 +384,7 @@ gfxstream::vk::VulkanDispatch* vkDispatch(bool forTesting) {
 bool vkDispatchValid(const VulkanDispatch* vk) {
   return vk->vkEnumerateInstanceExtensionProperties != nullptr ||
          vk->vkGetInstanceProcAddr != nullptr || vk->vkGetDeviceProcAddr != nullptr;
+}
 }
 }
 }

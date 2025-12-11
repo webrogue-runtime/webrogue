@@ -78,23 +78,25 @@ fn main() {
         let mut sources = vec![
             "$WEBROGUE/webrogue_gfxstream.cpp",
             // host/vulkan
-            "external/gfxstream/host/vulkan/VkDecoder.cpp",
-            "external/gfxstream/host/vulkan/VulkanStream.cpp",
-            "external/gfxstream/host/vulkan/VulkanHandleMapping.cpp",
-            "external/gfxstream/host/vulkan/VulkanBoxedHandles.cpp",
-            "external/gfxstream/host/vulkan/VkDecoderGlobalState.cpp",
-            "external/gfxstream/host/vulkan/RenderThreadInfoVk.cpp",
-            "external/gfxstream/host/vulkan/DebugUtilsHelper.cpp",
-            "external/gfxstream/host/vulkan/DeviceOpTracker.cpp",
-            "external/gfxstream/host/vulkan/VkCommonOperations.cpp",
-            "external/gfxstream/host/vulkan/DeviceLostHelper.cpp",
-            "external/gfxstream/host/vulkan/VkEmulatedPhysicalDeviceQueue.cpp",
-            "external/gfxstream/host/vulkan/VkEmulatedPhysicalDeviceMemory.cpp",
-            "external/gfxstream/host/vulkan/VkDecoderSnapshot.cpp",
-            "external/gfxstream/host/vulkan/VkReconstruction.cpp",
-            "external/gfxstream/host/vulkan/SwapChainStateVk.cpp",
-            "external/gfxstream/host/vulkan/DependencyGraph.cpp",
-            "external/gfxstream/host/vulkan/VkUtils.cpp",
+            "external/gfxstream/host/vulkan/vk_decoder.cpp",
+            "external/gfxstream/host/vulkan/vulkan_stream.cpp",
+            "external/gfxstream/host/vulkan/vulkan_handle_mapping.cpp",
+            "external/gfxstream/host/vulkan/vulkan_boxed_handles.cpp",
+            "external/gfxstream/host/vulkan/vk_decoder_global_state.cpp",
+            "external/gfxstream/host/vulkan/render_thread_info_vk.cpp",
+            "external/gfxstream/host/vulkan/debug_utils_helper.cpp",
+            "external/gfxstream/host/vulkan/device_op_tracker.cpp",
+            "external/gfxstream/host/vulkan/vk_common_operations.cpp",
+            "external/gfxstream/host/vulkan/device_lost_helper.cpp",
+            "external/gfxstream/host/vulkan/vk_emulated_physical_device_queue.cpp",
+            "external/gfxstream/host/vulkan/vk_emulated_physical_device_memory.cpp",
+            "external/gfxstream/host/vulkan/vk_decoder_snapshot.cpp",
+            "external/gfxstream/host/vulkan/vk_reconstruction.cpp",
+            "external/gfxstream/host/vulkan/swap_chain_state_vk.cpp",
+            "external/gfxstream/host/vulkan/dependency_graph.cpp",
+            "external/gfxstream/host/vulkan/vk_utils.cpp",
+            "external/gfxstream/host/vulkan/vk_format_utils.cpp",
+            "external/gfxstream/host/vulkan/external_memory.cpp",
             // host/vulkan/cereal/common
             "external/gfxstream/host/vulkan/cereal/common/goldfish_vk_dispatch.cpp",
             "external/gfxstream/host/vulkan/cereal/common/goldfish_vk_transform.cpp",
@@ -103,23 +105,24 @@ fn main() {
             "external/gfxstream/host/vulkan/cereal/common/goldfish_vk_deepcopy.cpp",
             "external/gfxstream/host/vulkan/cereal/common/goldfish_vk_marshaling.cpp",
             // host/vulkan/emulated_textures
-            "external/gfxstream/host/vulkan/emulated_textures/GpuDecompressionPipeline.cpp",
-            "external/gfxstream/host/vulkan/emulated_textures/AstcTexture.cpp",
-            "external/gfxstream/host/vulkan/emulated_textures/CompressedImageInfo.cpp",
+            "external/gfxstream/host/vulkan/emulated_textures/gpu_decompression_pipeline.cpp",
+            "external/gfxstream/host/vulkan/emulated_textures/astc_texture.cpp",
+            "external/gfxstream/host/vulkan/emulated_textures/compressed_image_info.cpp",
             // host/compressed_textures
-            "external/gfxstream/host/compressed_textures/AstcCpuDecompressorNoOp.cpp",
+            "external/gfxstream/host/compressed_textures/astc_cpu_decompressor_noop.cpp",
             // host/features
-            "external/gfxstream/host/features/Features.cpp",
-            // host/backend
-            "external/gfxstream/host/backend/external_object_manager.cpp",
-            "external/gfxstream/host/backend/vm_operations.cpp",
-            "external/gfxstream/host/backend/graphics_driver_lock.cpp",
-            "external/gfxstream/host/backend/stream_utils.cpp",
+            "external/gfxstream/host/features/features.cpp",
+            // host/common
+            "external/gfxstream/host/common/external_object_manager.cpp",
+            "external/gfxstream/host/common/vm_operations.cpp",
+            "external/gfxstream/host/common/graphics_driver_lock.cpp",
+            "external/gfxstream/host/common/stream_utils.cpp",
+            
             // host/health
-            "external/gfxstream/host/health/HealthMonitor.cpp",
-            "external/gfxstream/host/health/TestClock.cpp",
+            // "external/gfxstream/host/health/HealthMonitor.cpp",
+            // "external/gfxstream/host/health/TestClock.cpp",
             // host/metrics
-            "external/gfxstream/host/metrics/Metrics.cpp",
+            // "external/gfxstream/host/metrics/Metrics.cpp",
             // common/base
             "external/gfxstream/common/base/UdmabufCreator_stub.cpp",
             "external/gfxstream/common/base/System.cpp",
@@ -162,31 +165,24 @@ fn main() {
         }
 
         let includes = [
+            ".",
             "host",
+            "host/common",
+            "host/common/include",
             "host/vulkan",
             "host/vulkan/cereal",
             "host/vulkan/cereal/common",
             "host/features/include",
-            "host/gl/gl-host-common/include",
             "host/features/include/gfxstream/host",
             "host/tracing/include",
-            "host/backend/include",
-            "common/vulkan/include",
             "common/utils/include",
-            "include",
-            "utils/include",
-            "third-party/renderdoc/include",
-            "third-party/glm/include",
             "host/compressed_textures/include",
-            "host/health/include",
             "common/base/include",
-            "host/metrics/include",
             "common/logging/include",
             "host/decoder_common/include",
             "third_party/vulkan/include",
             "host/include",
             "host/iostream/include",
-            "third_party/glm/include",
             "third_party/glm/include",
             "host/renderdoc/include",
             "third_party/renderdoc/include",
@@ -200,6 +196,9 @@ fn main() {
             let mut path = gfx_src_dir.clone();
             for part in rel_path.split('/') {
                 path.push(part);
+            }
+            if !path.exists() {
+                panic!("{} ({}) does not exists", path.display(), rel_path);
             }
             build.include(path);
         }
