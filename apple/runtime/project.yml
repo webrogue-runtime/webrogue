@@ -36,74 +36,66 @@ targets:
     platform: [macOS, iOS]
     sources:
     - ../../crates/gfxstream/webrogue_gfxstream.cpp
-    - ../../external/gfxstream/host/vulkan/VkDecoder.cpp
-    - ../../external/gfxstream/host/vulkan/VulkanStream.cpp
-    - ../../external/gfxstream/host/vulkan/VulkanHandleMapping.cpp
-    - ../../external/gfxstream/host/vulkan/VulkanBoxedHandles.cpp
-    - ../../external/gfxstream/host/vulkan/VkDecoderGlobalState.cpp
-    - ../../external/gfxstream/host/vulkan/RenderThreadInfoVk.cpp
-    - ../../external/gfxstream/host/vulkan/DebugUtilsHelper.cpp
-    - ../../external/gfxstream/host/vulkan/DeviceOpTracker.cpp
-    - ../../external/gfxstream/host/vulkan/VkCommonOperations.cpp
-    - ../../external/gfxstream/host/vulkan/DeviceLostHelper.cpp
-    - ../../external/gfxstream/host/vulkan/VkEmulatedPhysicalDeviceQueue.cpp
-    - ../../external/gfxstream/host/vulkan/VkEmulatedPhysicalDeviceMemory.cpp
-    - ../../external/gfxstream/host/vulkan/VkDecoderSnapshot.cpp
-    - ../../external/gfxstream/host/vulkan/VkReconstruction.cpp
-    - ../../external/gfxstream/host/vulkan/SwapChainStateVk.cpp
-    - ../../external/gfxstream/host/vulkan/DependencyGraph.cpp
-    - ../../external/gfxstream/host/vulkan/VkUtils.cpp
+    - ../../external/gfxstream/host/vulkan/vk_decoder.cpp
+    - ../../external/gfxstream/host/vulkan/vulkan_stream.cpp
+    - ../../external/gfxstream/host/vulkan/vulkan_handle_mapping.cpp
+    - ../../external/gfxstream/host/vulkan/vulkan_boxed_handles.cpp
+    - ../../external/gfxstream/host/vulkan/vk_decoder_global_state.cpp
+    - ../../external/gfxstream/host/vulkan/render_thread_info_vk.cpp
+    - ../../external/gfxstream/host/vulkan/debug_utils_helper.cpp
+    - ../../external/gfxstream/host/vulkan/device_op_tracker.cpp
+    - ../../external/gfxstream/host/vulkan/vk_common_operations.cpp
+    - ../../external/gfxstream/host/vulkan/device_lost_helper.cpp
+    - ../../external/gfxstream/host/vulkan/vk_emulated_physical_device_queue.cpp
+    - ../../external/gfxstream/host/vulkan/vk_emulated_physical_device_memory.cpp
+    - ../../external/gfxstream/host/vulkan/vk_decoder_snapshot.cpp
+    - ../../external/gfxstream/host/vulkan/vk_reconstruction.cpp
+    - ../../external/gfxstream/host/vulkan/swap_chain_state_vk.cpp
+    - ../../external/gfxstream/host/vulkan/dependency_graph.cpp
+    - ../../external/gfxstream/host/vulkan/vk_utils.cpp
+    - ../../external/gfxstream/host/vulkan/vk_format_utils.cpp
+    - ../../external/gfxstream/host/vulkan/external_memory.cpp
     - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_dispatch.cpp
     - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_transform.cpp
     - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_extension_structs.cpp
     - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_reserved_marshaling.cpp
     - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_deepcopy.cpp
     - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_marshaling.cpp
-    - ../../external/gfxstream/host/vulkan/emulated_textures/GpuDecompressionPipeline.cpp
-    - ../../external/gfxstream/host/vulkan/emulated_textures/AstcTexture.cpp
-    - ../../external/gfxstream/host/vulkan/emulated_textures/CompressedImageInfo.cpp
-    - ../../external/gfxstream/host/compressed_textures/AstcCpuDecompressorNoOp.cpp
-    - ../../external/gfxstream/host/features/Features.cpp
-    - ../../external/gfxstream/host/backend/external_object_manager.cpp
-    - ../../external/gfxstream/host/backend/vm_operations.cpp
-    - ../../external/gfxstream/host/backend/graphics_driver_lock.cpp
-    - ../../external/gfxstream/host/health/HealthMonitor.cpp
-    - ../../external/gfxstream/host/metrics/Metrics.cpp
+    - ../../external/gfxstream/host/vulkan/emulated_textures/gpu_decompression_pipeline.cpp
+    - ../../external/gfxstream/host/vulkan/emulated_textures/astc_texture.cpp
+    - ../../external/gfxstream/host/vulkan/emulated_textures/compressed_image_info.cpp
+    - ../../external/gfxstream/host/compressed_textures/astc_cpu_decompressor_noop.cpp
+    - ../../external/gfxstream/host/features/features.cpp
+    - ../../external/gfxstream/host/common/external_object_manager.cpp
+    - ../../external/gfxstream/host/common/vm_operations.cpp
+    - ../../external/gfxstream/host/common/graphics_driver_lock.cpp
     - ../../external/gfxstream/common/base/UdmabufCreator_stub.cpp
     - ../../external/gfxstream/common/base/System.cpp
     - ../../external/gfxstream/common/logging/logging.cpp
     - ../../external/gfxstream/common/base/Thread_pthread.cpp
-    - ../../external/gfxstream/host/backend/stream_utils.cpp
+    - ../../external/gfxstream/host/common/stream_utils.cpp
     - ../../external/gfxstream/common/base/system-native-mac.mm
-    - ../../external/gfxstream/host/health/TestClock.cpp
     settings:
       base:
         HEADER_SEARCH_PATHS:
+        - "$(SRCROOT)/../../external/gfxstream"
         - "$(SRCROOT)/../../external/gfxstream/host"
+        - "$(SRCROOT)/../../external/gfxstream/host/common"
+        - "$(SRCROOT)/../../external/gfxstream/host/common/include"
         - "$(SRCROOT)/../../external/gfxstream/host/vulkan"
         - "$(SRCROOT)/../../external/gfxstream/host/vulkan/cereal"
         - "$(SRCROOT)/../../external/gfxstream/host/vulkan/cereal/common"
         - "$(SRCROOT)/../../external/gfxstream/host/features/include"
-        - "$(SRCROOT)/../../external/gfxstream/host/gl/gl-host-common/include"
         - "$(SRCROOT)/../../external/gfxstream/host/features/include/gfxstream/host"
         - "$(SRCROOT)/../../external/gfxstream/host/tracing/include"
-        - "$(SRCROOT)/../../external/gfxstream/host/backend/include"
-        - "$(SRCROOT)/../../external/gfxstream/common/vulkan/include"
         - "$(SRCROOT)/../../external/gfxstream/common/utils/include"
-        - "$(SRCROOT)/../../external/gfxstream/include"
-        - "$(SRCROOT)/../../external/gfxstream/utils/include"
-        - "$(SRCROOT)/../../external/gfxstream/third-party/renderdoc/include"
-        - "$(SRCROOT)/../../external/gfxstream/third-party/glm/include"
         - "$(SRCROOT)/../../external/gfxstream/host/compressed_textures/include"
-        - "$(SRCROOT)/../../external/gfxstream/host/health/include"
         - "$(SRCROOT)/../../external/gfxstream/common/base/include"
-        - "$(SRCROOT)/../../external/gfxstream/host/metrics/include"
         - "$(SRCROOT)/../../external/gfxstream/common/logging/include"
         - "$(SRCROOT)/../../external/gfxstream/host/decoder_common/include"
         - "$(SRCROOT)/../../external/gfxstream/third_party/vulkan/include"
         - "$(SRCROOT)/../../external/gfxstream/host/include"
         - "$(SRCROOT)/../../external/gfxstream/host/iostream/include"
-        - "$(SRCROOT)/../../external/gfxstream/third_party/glm/include"
         - "$(SRCROOT)/../../external/gfxstream/third_party/glm/include"
         - "$(SRCROOT)/../../external/gfxstream/host/renderdoc/include"
         - "$(SRCROOT)/../../external/gfxstream/third_party/renderdoc/include"

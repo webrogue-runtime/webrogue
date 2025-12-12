@@ -1,4 +1,3 @@
-#include <memory>
 #include <stdlib.h>
 #include "gfxstream/host/backend_callbacks.h"
 #include "vk_decoder_context.h"
