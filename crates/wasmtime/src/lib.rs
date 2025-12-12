@@ -9,7 +9,7 @@ pub use webrogue_wrapp::{
 // #[derive(Clone)]
 struct State<System: webrogue_gfx::ISystem<Window>, Window: webrogue_gfx::IWindow> {
     pub preview1_ctx: Option<wasi_common::WasiCtx>,
-    pub wasi_threads_ctx: Option<std::sync::Arc<crate::threads::WasiThreadsCtx<Self>>>,
+    pub wasi_threads_ctx: Option<Arc<crate::threads::WasiThreadsCtx<Self>>>,
     // pub wasi_threads_ctx: Option<Arc<wasmtime_wasi_threads::WasiThreadsCtx<Self>>>,
     pub gfx: Option<webrogue_gfx::Interface<System, Window>>,
 }
@@ -171,7 +171,7 @@ pub fn run_aot<
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
     let epoch_interruption = false;
     config.epoch_interruption(epoch_interruption);
-    config.with_custom_code_memory(Some(std::sync::Arc::new(StaticCodeMemory {})));
+    config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
     let engine = wasmtime::Engine::new(&config)?;
     let module = unsafe {
         wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
@@ -212,7 +212,7 @@ fn run_module<
     };
     let mut store = wasmtime::Store::new(&engine, state);
 
-    store.data_mut().wasi_threads_ctx = Some(std::sync::Arc::new(
+    store.data_mut().wasi_threads_ctx = Some(Arc::new(
         crate::threads::WasiThreadsCtx::new(epoch_interruption),
     ));
     bindings::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
@@ -251,13 +251,13 @@ fn run_module<
     // wasmtime_wasi_threads::add_to_linker(&mut linker, &mut store, &module, |host| {
     //     host.wasi_threads_ctx.as_ref().unwrap()
     // })?;
-    let linker = std::sync::Arc::new(linker);
+    let linker = Arc::new(linker);
     store.data().wasi_threads_ctx.as_ref().unwrap().fill(
         module.clone(),
         linker.clone(),
         engine.weak(),
     )?;
-    // store.data_mut().wasi_threads_ctx = Some(std::sync::Arc::new(
+    // store.data_mut().wasi_threads_ctx = Some(Arc::new(
     //     wasmtime_wasi_threads::WasiThreadsCtx::new(module.clone(), linker.clone())?,
     // ));
 
