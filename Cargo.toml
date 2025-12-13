@@ -186,7 +186,7 @@ strip = "debuginfo"
 
 [profile.dev.package.cranelift-codegen]
 opt-level = 3
-# codegen-units = 1
+codegen-units = 1
 
 [profile.dev.package.gimli]
 opt-level = 3

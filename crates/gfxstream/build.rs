@@ -188,6 +188,7 @@ fn main() {
             "host/snapshot/include",
             "third_party/astc-encoder/Source",
             "third_party/opengl/include",
+            "third_party/android/include",
         ];
 
         for rel_path in includes {

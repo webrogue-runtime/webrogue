@@ -102,6 +102,7 @@ targets:
         - "$(SRCROOT)/../../external/gfxstream/host/snapshot/include"
         - "$(SRCROOT)/../../external/gfxstream/third_party/astc-encoder/Source"
         - "$(SRCROOT)/../../external/gfxstream/third_party/opengl/include"
+        - "$(SRCROOT)/../../external/gfxstream/third_party/android/include"
         CLANG_CXX_LANGUAGE_STANDARD:
         - "gnu++20"
         GCC_PREPROCESSOR_DEFINITIONS:
