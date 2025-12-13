@@ -54,8 +54,12 @@ fn main() {
             .flag_if_supported("-Wno-unused-parameter")
             .flag_if_supported("-Wno-attributes")
             .cpp(true)
-            .static_crt(true)
             .std("c++20");
+        
+        // Only use static_crt on Windows
+        if _os == "windows" {
+            build.static_crt(true);
+        }
 
         match _os.as_str() {
             "windows" => {
@@ -141,11 +145,6 @@ fn main() {
             sources.push("external/gfxstream/common/base/StringFormat.cpp");
         }
 
-        if _os == "linux" {
-            sources.push("external/gfxstream/host/backend/stream_utils.cpp");
-            sources.push("external/gfxstream/host/health/TestClock.cpp");
-        }
-
         for source in sources.iter() {
             let mut parts = source.split('/');
             let mut path = match parts.next().unwrap() {
@@ -173,7 +172,6 @@ fn main() {
             "host/vulkan/cereal",
             "host/vulkan/cereal/common",
             "host/features/include",
-            "host/features/include/gfxstream/host",
             "host/tracing/include",
             "common/utils/include",
             "host/compressed_textures/include",
@@ -202,8 +200,6 @@ fn main() {
             }
             build.include(path);
         }
-
-        build.static_crt(true);
 
         build
             .define("VK_GFXSTREAM_STRUCTURE_TYPE_EXT", None)

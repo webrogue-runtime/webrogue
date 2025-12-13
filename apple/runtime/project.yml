@@ -86,7 +86,6 @@ targets:
         - "$(SRCROOT)/../../external/gfxstream/host/vulkan/cereal"
         - "$(SRCROOT)/../../external/gfxstream/host/vulkan/cereal/common"
         - "$(SRCROOT)/../../external/gfxstream/host/features/include"
-        - "$(SRCROOT)/../../external/gfxstream/host/features/include/gfxstream/host"
         - "$(SRCROOT)/../../external/gfxstream/host/tracing/include"
         - "$(SRCROOT)/../../external/gfxstream/common/utils/include"
         - "$(SRCROOT)/../../external/gfxstream/host/compressed_textures/include"

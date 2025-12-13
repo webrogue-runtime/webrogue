@@ -5,7 +5,7 @@
 #include "snapshot/LazySnapshotObj.h"
 #include "render_thread_info_vk.h"
 #include "goldfish_vk_dispatch.h"
-#include "features.h"
+#include "gfxstream/host/features.h"
 #include "vk_common_operations.h"
 #include "vk_decoder_global_state.h"
 #include "vulkan_boxed_handles.h"
