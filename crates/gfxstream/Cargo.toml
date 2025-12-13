@@ -14,7 +14,7 @@ lazy_static = { workspace = true }
 
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { workspace = true, default-features = false, features = ["Win32_System_Memory", "Win32_System_SystemInformation", "Win32_System_Kernel"] }
+windows-sys = { workspace = true, default-features = false, features = ["Win32_System_Memory", "Win32_System_SystemInformation", "Win32_System_Kernel", "Win32_System_Diagnostics_Debug"] }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true, default-features = false, features = ["mm", "param"]}
