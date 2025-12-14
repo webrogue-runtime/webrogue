@@ -1,6 +1,11 @@
-CMDLINE_TOOLS_VERSION=linux-11076708_latest
-NDK_VERSION=27.3.13750724
-ANDROID_API_VERSION=28
+# Detect OS and set appropriate command line tools version
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    CMDLINE_TOOLS_VERSION=mac-13114758_latest
+else
+    CMDLINE_TOOLS_VERSION=linux-13114758_latest
+fi
+NDK_VERSION=29.0.14206865
+ANDROID_API_VERSION=30
 
 if test -z $ANDROID_SDK_ROOT
 then

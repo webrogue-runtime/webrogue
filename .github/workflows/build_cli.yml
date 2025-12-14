@@ -76,7 +76,7 @@ jobs:
   
     - name: Build AOT artifacts
       run: |
-        sh android/runtime/build_native_code.sh release
+        sh android/runtime/build_native_code.sh aot
         sh android/template/build_template.sh
 
     - uses: actions/upload-artifact@v4
