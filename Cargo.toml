@@ -184,6 +184,10 @@ codegen-units = 1
 opt-level = 3
 strip = "debuginfo"
 
+[profile.profiling]
+inherits = "release"
+debug = true
+
 [profile.dev.package.cranelift-codegen]
 opt-level = 3
 codegen-units = 1

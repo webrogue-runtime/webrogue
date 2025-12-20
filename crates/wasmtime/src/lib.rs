@@ -84,6 +84,7 @@ pub fn run_jit<
 
     let mut config = wasmtime::Config::new();
     config.shared_memory(true);
+    config.wasm_exceptions(true);
     #[cfg(feature = "cache")]
     if let Some(cache_config) = cache_config {
         config.cache(Some(wasmtime::Cache::from_file(Some(&cache_config))?));
@@ -103,8 +104,6 @@ pub fn run_jit<
         config.cranelift_opt_level(wasmtime::OptLevel::None);
         config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
     }
-
-    // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
 
     let epoch_interruption = false;
     config.epoch_interruption(epoch_interruption);
@@ -212,9 +211,9 @@ fn run_module<
     };
     let mut store = wasmtime::Store::new(&engine, state);
 
-    store.data_mut().wasi_threads_ctx = Some(Arc::new(
-        crate::threads::WasiThreadsCtx::new(epoch_interruption),
-    ));
+    store.data_mut().wasi_threads_ctx = Some(Arc::new(crate::threads::WasiThreadsCtx::new(
+        epoch_interruption,
+    )));
     bindings::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
         state.preview1_ctx.as_mut().unwrap()
     })?;
