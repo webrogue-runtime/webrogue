@@ -23,7 +23,7 @@ pub fn encode_event(
         // WindowEvent::DragLeft { position } => todo!(),
         // WindowEvent::Focused(_) => todo!(),
         WindowEvent::KeyboardInput {
-            device_id,
+            device_id: _,
             event,
             is_synthetic,
         } => {
