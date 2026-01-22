@@ -1,4 +1,7 @@
 mod builder;
+mod dev;
+
+pub use dev::make_dev_root;
 
 use std::sync::{Arc, Mutex, Weak};
 

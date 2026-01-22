@@ -13,3 +13,8 @@ webrogue-wrapp = { workspace = true }
 wasi-common = { workspace = true, default-features = false, features = ["sync"] }
 wiggle = { workspace = true, default-features = false }
 async-trait = { workspace = true }
+rustix = { workspace = true, default-features = false, features = ["pipe"] }
+
+
+[dev-dependencies]
+rand = { workspace = true, default-features = true, features = ["small_rng"] }

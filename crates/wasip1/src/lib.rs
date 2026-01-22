@@ -46,6 +46,8 @@ pub fn make_ctx<
         }
     };
 
+    wasi_ctx.push_preopened_dir(fs::make_dev_root(), "/dev")?;
+
     if let Some(env) = &config.env {
         for (key, value) in env.iter() {
             wasi_ctx.push_env(key, value)?;
