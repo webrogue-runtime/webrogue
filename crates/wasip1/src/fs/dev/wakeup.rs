@@ -2,26 +2,33 @@ use wasi_common::{file::FileType, ErrorExt as _, WasiFile};
 
 #[cfg(unix)]
 mod unix {
-    use std::os::fd::{AsFd, OwnedFd};
+    use std::os::fd::AsFd;
 
-    use rustix::io::{self, Errno};
     use wasi_common::ErrorExt as _;
 
     pub struct File {
-        read_fd: OwnedFd,
-        write_fd: OwnedFd,
+        read_fd: std::os::fd::OwnedFd,
+        write_fd: std::os::fd::OwnedFd,
     }
 
     impl File {
         pub fn new() -> Result<Self, wasi_common::Error> {
-            use rustix::pipe::{pipe_with, PipeFlags};
-
-            let (read_fd, write_fd) = pipe_with(PipeFlags::NONBLOCK | PipeFlags::CLOEXEC)
-                .map_err(|_err| wasi_common::Error::not_supported())?;
+            // let (read_fd, write_fd) = rustix::pipe::pipe_with(rustix::pipe::PipeFlags::NONBLOCK | rustix::pipe::PipeFlags::CLOEXEC)
+            //     .map_err(|_err| wasi_common::Error::not_supported())?;
+            let (read_fd, write_fd) =
+                rustix::pipe::pipe().map_err(|_err| wasi_common::Error::not_supported())?;
+            for fd in [read_fd.as_fd(), read_fd.as_fd()] {
+                rustix::io::fcntl_setfd(fd, rustix::io::FdFlags::CLOEXEC)
+                    .map_err(|_err| wasi_common::Error::not_supported())?;
+                rustix::io::ioctl_fionbio(fd, true)
+                    .map_err(|_err| wasi_common::Error::not_supported())?;
+            }
             Ok(Self { read_fd, write_fd })
         }
 
-        pub(super) fn acknowledge(&self) -> io::Result<()> {
+        pub(super) fn acknowledge(&self) -> rustix::io::Result<()> {
+            use rustix::io::Errno;
+
             let mut buf = [0u8; 8];
             loop {
                 match rustix::io::read(self.read_fd.as_fd(), &mut buf) {
@@ -36,7 +43,8 @@ mod unix {
             }
         }
 
-        pub(super) fn signal(&self) -> io::Result<()> {
+        pub(super) fn signal(&self) -> rustix::io::Result<()> {
+            use rustix::io::Errno;
             const LEN: usize = 1;
             loop {
                 match rustix::io::write(self.write_fd.as_fd(), &[1u8; LEN]) {
@@ -137,6 +145,19 @@ mod tests {
         thread,
     };
 
+    #[cfg(unix)]
+    fn wait(wakeup: &Arc<File>) {
+        use rustix::event::{poll, PollFd, PollFlags};
+
+        let fd = PollFd::from_borrowed_fd(wakeup.pollable(), PollFlags::IN);
+        let a = poll(&mut [fd], None).unwrap();
+        assert_eq!(a, 1);
+    }
+
+    fn invoke_iters() -> u32 {
+        1 + rand::thread_rng().gen::<u32>() % 10
+    }
+
     #[test]
     fn blocks() {
         let wakeup = Arc::new(File::new().unwrap());
@@ -145,20 +166,7 @@ mod tests {
         let thrd_counter = counter.clone();
         let (tx, rx) = mpsc::channel::<()>();
 
-        #[cfg(unix)]
-        fn wait(wakeup: &Arc<File>) {
-            use rustix::event::{poll, PollFd, PollFlags};
-
-            let fd = PollFd::from_borrowed_fd(wakeup.pollable(), PollFlags::IN);
-            let a = poll(&mut [fd], None).unwrap();
-            assert_eq!(a, 1);
-        }
-
         const ITERS: usize = 10000;
-
-        fn invoke_iters() -> u32 {
-            1 + rand::thread_rng().gen::<u32>() % 10
-        }
 
         let thread = thread::spawn(move || {
             for i in 0..ITERS {
@@ -179,6 +187,41 @@ mod tests {
                 wakeup.acknowledge().unwrap();
             }
             tx.send(()).unwrap();
+        }
+
+        thread.join().unwrap();
+    }
+
+    #[test]
+    fn many_signals() {
+        let wakeup = Arc::new(File::new().unwrap());
+        let thrd_wakeup = wakeup.clone();
+        let counter = Arc::new(AtomicUsize::new(0));
+        let thrd_counter = counter.clone();
+        let (tx, rx) = mpsc::channel::<()>();
+        let (tx2, rx2) = mpsc::channel::<()>();
+
+        const ITERS: usize = 10000;
+
+        let thread = thread::spawn(move || {
+            for i in 0..ITERS {
+                assert_eq!(thrd_counter.fetch_add(1, Ordering::SeqCst), 0 + i * 2);
+                // TODO figure out why invoking signal() multiple times without acknowledge()
+                // inbetween has a small chance to cause data race on Linux.
+                for _ in 0..invoke_iters() {
+                    thrd_wakeup.signal().unwrap();
+                }
+                tx.send(()).unwrap();
+                rx2.recv().unwrap();
+            }
+        });
+
+        for i in 0..ITERS {
+            wait(&wakeup);
+            rx.recv().unwrap();
+            assert_eq!(counter.fetch_add(1, Ordering::SeqCst), 1 + i * 2);
+            wakeup.acknowledge().unwrap();
+            tx2.send(()).unwrap();
         }
 
         thread.join().unwrap();
