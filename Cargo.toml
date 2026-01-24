@@ -89,7 +89,6 @@ webrogue-hub-client = { path = "crates/hub-client" }
 webrogue-hub-client-openapi = { path = "crates/hub-client/openapi", default-features=false }
 webrogue-icons = { path = "crates/icons" }
 webrogue-gfx = { path = "crates/gfx" }
-webrogue-gfx-sdl = { path = "crates/gfx-sdl" }
 webrogue-gfx-winit = { path = "crates/gfx-winit" }
 # webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
 webrogue-gfxstream = { path = "crates/gfxstream" }
