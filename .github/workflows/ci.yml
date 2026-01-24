@@ -37,12 +37,7 @@ jobs:
 
     - name: Cargo test
       run: |
-        cargo test --workspace \
-          --exclude webrogue-hub-client-openapi \
-          --exclude webrogue-launcher-dev \
-          --exclude webrogue-launcher \
-          --exclude webrogue-android-launcher \
-          --exclude webrogue-wrapp-reader
+        cargo test --workspace --exclude webrogue-hub-client-openapi --exclude webrogue-launcher-dev --exclude webrogue-launcher --exclude webrogue-android-launcher --exclude webrogue-wrapp-reader
 
   macos:
     runs-on: macos-latest
