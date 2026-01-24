@@ -36,6 +36,7 @@ jobs:
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - name: Cargo test
+      shell: cmd
       run: |
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
         REM gfxstream doesn't seem to support MSVC
