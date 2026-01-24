@@ -42,7 +42,7 @@ impl OutgoingDebugConnection {
         };
         let peer_connection = Arc::new(api.new_peer_connection(config).await?);
         let data_channel = peer_connection.create_data_channel("data", None).await?;
-        let (done_tx, mut done_rx) = tokio::sync::mpsc::channel::<()>(1);
+        // let (done_tx, mut done_rx) = tokio::sync::mpsc::channel::<()>(1);
         peer_connection.on_peer_connection_state_change(Box::new(
             move |s: RTCPeerConnectionState| {
                 println!("Peer Connection State has changed: {s}");
@@ -52,7 +52,7 @@ impl OutgoingDebugConnection {
                     // Use webrtc.PeerConnectionStateDisconnected if you are interested in detecting faster timeout.
                     // Note that the PeerConnection may come back from PeerConnectionStateDisconnected.
                     println!("Peer Connection has gone to failed exiting");
-                    let _ = done_tx.try_send(());
+                    // let _ = done_tx.try_send(());
                 }
 
                 Box::pin(async {})

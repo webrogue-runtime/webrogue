@@ -16,9 +16,9 @@ impl Guest for WRAPPReader {
                     File::open(i.path)?,
                 )?)?)
             } else {
-                Ok(extract_config(webrogue_wrapp::RealVFSBuilder::from_config_path(
-                    i.path,
-                )?)?)
+                Ok(extract_config(
+                    webrogue_wrapp::RealVFSBuilder::from_config_path(i.path)?,
+                )?)
             }
         })();
         return result.map_err(|e| e.to_string());

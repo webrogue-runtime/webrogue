@@ -163,8 +163,10 @@ fn translate_named_key(
         WinitKey::Shift => Shift,
         WinitKey::Symbol => Symbol,
         WinitKey::SymbolLock => SymbolLock,
-        WinitKey::Hyper => Hyper,
-        WinitKey::Super => Super,
+        #[allow(deprecated)]
+        WinitKey::Hyper => Meta,
+        #[allow(deprecated)]
+        WinitKey::Super => Meta,
         WinitKey::Enter => Enter,
         WinitKey::Tab => Tab,
         WinitKey::ArrowDown => ArrowDown,
@@ -611,9 +613,12 @@ fn translate_physical_key(
             KeyCode::AudioVolumeMute => AudioVolumeMute,
             KeyCode::AudioVolumeUp => AudioVolumeUp,
             KeyCode::WakeUp => WakeUp,
-            KeyCode::Hyper => Hyper,
-            KeyCode::Super => Super,
-            KeyCode::Turbo => Turbo,
+            #[allow(deprecated)]
+            KeyCode::Hyper => MetaLeft,
+            #[allow(deprecated)]
+            KeyCode::Super => MetaLeft,
+            #[allow(deprecated)]
+            KeyCode::Turbo => MetaLeft,
             KeyCode::Abort => Abort,
             KeyCode::Resume => Resume,
             KeyCode::Suspend => Suspend,
