@@ -22,7 +22,8 @@ jobs:
           --exclude webrogue-launcher-dev \
           --exclude webrogue-launcher \
           --exclude webrogue-android-launcher \
-          --exclude webrogue-wrapp-reader
+          --exclude webrogue-wrapp-reader \
+          --exclude webrogue-aot-data
 
   windows:
     runs-on: windows-latest
@@ -41,7 +42,7 @@ jobs:
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
         REM gfxstream doesn't seem to support MSVC
         set CXX=clang-cl
-        cargo test --workspace --exclude webrogue-hub-client-openapi --exclude webrogue-launcher-dev --exclude webrogue-launcher --exclude webrogue-android-launcher --exclude webrogue-wrapp-reader
+        cargo test --workspace --exclude webrogue-hub-client-openapi --exclude webrogue-launcher-dev --exclude webrogue-launcher --exclude webrogue-android-launcher --exclude webrogue-wrapp-reader --exclude webrogue-aot-data
 
   macos:
     runs-on: macos-latest
@@ -61,4 +62,5 @@ jobs:
           --exclude webrogue-launcher-dev \
           --exclude webrogue-launcher \
           --exclude webrogue-android-launcher \
-          --exclude webrogue-wrapp-reader
+          --exclude webrogue-wrapp-reader \
+          --exclude webrogue-aot-data
