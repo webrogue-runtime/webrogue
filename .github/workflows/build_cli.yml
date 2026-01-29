@@ -1,12 +1,7 @@
 name:  Build Webrogue CLI utility
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - 'v*.*.*'
-  workflow_dispatch:
+  workflow_call:
 
 jobs:
   linux_artifacts:
@@ -194,34 +189,6 @@ jobs:
         if-no-files-found: error
         path: target/x86_64-apple-darwin/cli/webrogue
 
-  # macos-lipo-cli:
-  #   needs: [macos-arm64, macos-x86_64]
-  #   runs-on: macos-latest
-
-  #   steps:
-  #   - uses: actions/checkout@v4
-
-  #   - uses: actions/download-artifact@v4
-  #     with: 
-  #       name: CLI-macOS-arm64-raw
-  #       path: webrogue-cli-arm64
-
-  #   - uses: actions/download-artifact@v4
-  #     with: 
-  #       name: CLI-macOS-x86_64-raw
-  #       path: webrogue-cli-x86_64
-  
-  #   - name: Lipo
-  #     run: |
-  #       lipo -create webrogue-cli-x86_64/webrogue webrogue-cli-arm64/webrogue -output webrogue
-
-  #   - uses: actions/upload-artifact@v4
-  #     with:
-  #       name: CLI-macOS-raw
-  #       retention-days: 1
-  #       if-no-files-found: error
-  #       path: webrogue
-
   windows-x86_64-cli:
     runs-on: windows-2025
 
@@ -247,130 +214,3 @@ jobs:
         retention-days: 1
         if-no-files-found: error
         path: target/x86_64-pc-windows-msvc/cli/webrogue.exe
-
-
-  release:
-    needs: [linux_artifacts, windows_artifacts, android_artifacts, apple_artifacts, linux-x86_64-glibc-cli, macos-arm64-cli, macos-x86_64-cli, windows-x86_64-cli]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: Artifacts-Linux
-        path: aot_artifacts
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: Artifacts-Windows
-        path: aot_artifacts
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: Artifacts-Android
-        path: aot_artifacts
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: Artifacts-Apple
-        path: aot_artifacts
-
-    - name: Archive artifacts
-      run: |
-        cd aot_artifacts && zip -r ../aot_artifacts.zip android_gradle x86_64-linux-gnu x86_64-windows-msvc && cd ..
-        cd aot_artifacts && zip -r ../aot_artifacts_macos.zip apple_xcode android_gradle x86_64-linux-gnu x86_64-windows-msvc && cd ..
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: CLI-linux-x86_64-glibc-raw
-        path: webrogue_linux_x86_64_glibc_raw
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: CLI-macOS-arm64-raw
-        path: webrogue_macos_arm64_raw
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: CLI-macOS-x86_64-raw
-        path: webrogue_macos_x86_64_raw
-
-    - uses: actions/download-artifact@v4
-      with: 
-        name: CLI-windows-x86_64-raw
-        path: webrogue_windows_x86_64_raw
-  
-    - name: Append artifacts
-      run: |
-        mkdir webrogue-cli-linux-x86_64
-        python3 append_artifacts.py webrogue_linux_x86_64_glibc_raw/webrogue aot_artifacts.zip webrogue-cli-linux-x86_64/webrogue
-        chmod +x webrogue-cli-linux-x86_64/webrogue
-        tar czf webrogue-cli-linux-x86_64.tar.gz webrogue-cli-linux-x86_64/
-
-        mkdir webrogue-cli-windows-x86_64
-        python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-x86_64/webrogue.exe
-        curl -L https://github.com/webrogue-runtime/angle-builder/releases/download/latest_build/windows_x64.zip -o windows_x64.zip
-        unzip -j windows_x64.zip -d webrogue-cli-windows-x86_64/
-        zip -r webrogue-cli-windows-x86_64.zip webrogue-cli-windows-x86_64/
-
-        mkdir webrogue-cli-macos-arm64
-        python3 append_artifacts.py webrogue_macos_arm64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-arm64/webrogue
-        chmod +x webrogue-cli-macos-arm64/webrogue
-        curl -L https://github.com/webrogue-runtime/angle-builder/releases/download/latest_build/macos_arm64.zip -o macos_arm64.zip
-        unzip -j macos_arm64.zip -d webrogue-cli-macos-arm64/
-        tar czf webrogue-cli-macos-arm64.tar.gz webrogue-cli-macos-arm64/
-
-        mkdir webrogue-cli-macos-x86_64
-        python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-x86_64/webrogue
-        chmod +x webrogue-cli-macos-x86_64/webrogue
-        curl -L https://github.com/webrogue-runtime/angle-builder/releases/download/latest_build/macos_x64.zip -o macos_x64.zip
-        unzip -j macos_x64.zip -d webrogue-cli-macos-x86_64/
-        tar czf webrogue-cli-macos-x86_64.tar.gz webrogue-cli-macos-x86_64/
-
-    - uses: ncipollo/release-action@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        artifacts: |
-          webrogue-cli-linux-x86_64.tar.gz
-          webrogue-cli-windows-x86_64.zip
-          webrogue-cli-macos-arm64.tar.gz
-          webrogue-cli-macos-x86_64.tar.gz
-        name: Release ${{ github.ref_name }}
-        tag: ${{ github.ref_name }}
-        commit: ${{ github.ref }}
-        makeLatest: true
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: CLI-linux-x86_64-glibc
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-linux-x86_64.tar.gz
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: CLI-windows-x86_64
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-windows-x86_64.zip
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: CLI-macOS-arm64
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-macos-arm64.tar.gz
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: CLI-macOS-x86_64
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-macos-x86_64.tar.gz

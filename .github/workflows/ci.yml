@@ -1,8 +1,6 @@
 name: Webrogue CI
 
-on:
-  push:
-
+on: [push, pull_request]
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -64,3 +62,6 @@ jobs:
           --exclude webrogue-android-launcher \
           --exclude webrogue-wrapp-reader \
           --exclude webrogue-aot-data
+
+  build_cli:
+    uses: ./.github/workflows/build_cli.yml
