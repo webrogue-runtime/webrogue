@@ -71,7 +71,7 @@ fn android_main(app: android_activity::AndroidApp) {
 
     let data_dir = app.internal_data_path().unwrap();
 
-    let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::default();
+    let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::default()?;
     gfx_builder = gfx_builder.with_event_loop(event_loop);
     // Currently there are no means to recreate surfaces
     // destroyed on [onStop]: https://developer.android.com/reference/android/app/Activity#onStop()

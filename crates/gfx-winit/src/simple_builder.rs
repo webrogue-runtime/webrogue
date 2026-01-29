@@ -66,16 +66,24 @@ impl<BodyFn: FnOnce(WinitSystem) -> () + Send + 'static> ApplicationHandler for 
     }
 }
 
-#[derive(Default)]
 pub struct SimpleWinitBuilder {
-    event_loop: Option<EventLoop>,
+    event_loop: EventLoop,
     on_hide: Option<Box<dyn Fn() + Send + Sync + 'static>>,
 }
 
 impl SimpleWinitBuilder {
-    pub fn with_event_loop(mut self, event_loop: EventLoop) -> Self {
-        self.event_loop = Some(event_loop);
-        self
+    pub fn with_event_loop(event_loop: EventLoop) -> Self {
+        Self {
+            event_loop,
+            on_hide: None,
+        }
+    }
+
+    pub fn default() -> anyhow::Result<Self> {
+        Ok(Self {
+            event_loop: EventLoop::new()?,
+            on_hide: Default::default(),
+        })
     }
 
     pub fn with_on_hide(mut self, on_hide: Box<dyn Fn() + Send + Sync + 'static>) -> Self {
@@ -89,7 +97,6 @@ impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for SimpleWinitBuilder {
     where
         Output: Send + 'static,
     {
-        let event_loop = self.event_loop.unwrap_or_else(|| EventLoop::new().unwrap());
         let output = Arc::new(Mutex::new(None));
         let cloned_output = output.clone();
         let wrapped_body_fn = move |system| {
@@ -108,7 +115,7 @@ impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for SimpleWinitBuilder {
             })),
             proxy: None,
         };
-        event_loop.run_app(app).unwrap();
+        self.event_loop.run_app(app).unwrap();
         let output = output.lock().unwrap().as_mut().unwrap().take();
         output.unwrap()
     }
