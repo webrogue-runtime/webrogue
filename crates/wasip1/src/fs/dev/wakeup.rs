@@ -69,23 +69,46 @@ pub use unix::File;
 
 #[cfg(windows)]
 mod windows {
-    pub struct File {}
+    use std::{
+        os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle},
+        ptr::{null, null_mut},
+    };
+    
+        use windows_sys::Win32::System::Threading::{CreateEventA, ResetEvent, SetEvent};
+
+    pub struct File {
+        handle: OwnedHandle,
+    }
 
     impl File {
         pub fn new() -> Result<Self, wasi_common::Error> {
-            unimplemented!()
+            let handle = unsafe {
+                CreateEventA(null(), 1, 0, null())
+            };
+            assert!(handle != null_mut());
+            Ok(Self {
+                handle: unsafe { OwnedHandle::from_raw_handle(handle) },
+            })
         }
 
         pub(super) fn acknowledge(&self) -> Result<(), ()> {
-            unimplemented!()
+            unsafe {
+                ResetEvent(self.handle.as_raw_handle());
+            }
+            Ok(())
         }
 
         pub(super) fn signal(&self) -> Result<(), ()> {
-            unimplemented!()
+            unsafe {
+               SetEvent(self.handle.as_raw_handle());
+            }
+            Ok(())
         }
 
         pub(super) fn pollable(&self) -> io_extras::os::windows::RawHandleOrSocket {
-            unimplemented!()
+            io_extras::os::windows::RawHandleOrSocket::unowned_from_raw_handle(
+                self.handle.as_raw_handle(),
+            )
         }
     }
 }
@@ -152,6 +175,16 @@ mod tests {
         let fd = PollFd::from_borrowed_fd(wakeup.pollable(), PollFlags::IN);
         let a = poll(&mut [fd], None).unwrap();
         assert_eq!(a, 1);
+    }
+
+    #[cfg(windows)]
+    fn wait(wakeup: &Arc<File>) {
+        use windows_sys::Win32::System::Threading::{WaitForSingleObject, INFINITE};
+
+        let handle = wakeup.pollable();
+        unsafe {
+            WaitForSingleObject(handle.as_raw_handle().unwrap(), INFINITE);
+        }
     }
 
     fn invoke_iters() -> u32 {
