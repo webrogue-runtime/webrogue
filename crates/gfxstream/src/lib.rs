@@ -17,8 +17,8 @@ pub struct System {}
 
 impl System {
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // conflicts with "unnecessary `unsafe` block" warning, maybe clippy bug
-    pub fn new(vk_lib: Arc<ash::Entry>) -> Self {
-        let symbol: ash::vk::PFN_vkGetInstanceProcAddr = vk_lib.static_fn().get_instance_proc_addr;
+    pub fn new(vk_lib: Arc<Entry>) -> Self {
+        let symbol: PFN_vkGetInstanceProcAddr = vk_lib.static_fn().get_instance_proc_addr;
         let get_proc_address = Box::leak(Box::new(symbol)); // TODO fix this 8 bytes per process leakage cz rust is safe and all
 
         unsafe {
@@ -159,6 +159,6 @@ extern "C" fn get_vk_proc(sym: *const std::ffi::c_char, userdata: *const ()) -> 
     let result = unsafe { (*vk_get_instance_proc_addr)(Instance::null(), sym) };
     match result {
         Some(result) => result as _,
-        None => std::ptr::null(),
+        None => null(),
     }
 }

@@ -1,11 +1,9 @@
 use std::{
     ffi::CStr,
-    ptr::null,
     sync::{Arc, Mutex},
 };
 
 use ash::{
-    vk::{Instance, PFN_vkGetInstanceProcAddr},
     Entry,
 };
 use winit::window::WindowAttributes;
