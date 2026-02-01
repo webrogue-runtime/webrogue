@@ -4,3 +4,6 @@ target
 /aot_artifacts*
 .webrogue
 /.cache
+/aot
+/aot.exe
+/vk_swiftshader.dll

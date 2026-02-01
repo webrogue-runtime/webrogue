@@ -49,6 +49,17 @@ impl Artifacts {
         Ok(result)
     }
 
+    pub fn extract<P: AsRef<std::path::Path>>(
+        &mut self,
+        out_path: P,
+        file: &str,
+    ) -> anyhow::Result<()> {
+        self.inner
+            .extract(out_path.as_ref(), file)
+            .with_context(|| format!("Unable to extract {} from archive", file))?;
+        Ok(())
+    }
+
     // pub fn extract<P: AsRef<std::path::Path>>(
     //     &mut self,
     //     output_path: P,

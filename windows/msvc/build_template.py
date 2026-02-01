@@ -3,6 +3,8 @@
 
 import os
 import subprocess
+import requests
+import zipfile
 
 template_dir = os.path.dirname(os.path.realpath(__file__))
 repo_dir = os.path.dirname(os.path.dirname(template_dir))
@@ -199,6 +201,13 @@ for object_batch_to_remove in batched(objects_to_remove, 128):
         cwd=str(template_dir),
     ).check_returncode()
 
+if not os.path.exists(os.path.join(template_dir, "swiftshader")):
+    os.makedirs(os.path.join(template_dir, "swiftshader"))
+if not os.path.exists(os.path.join(template_dir, "swiftshader", "x64.zip")):
+    response = requests.get("https://github.com/webrogue-runtime/swiftshader-builder/releases/download/latest_build/windows_x64.zip")
+    with open(os.path.join(template_dir, "swiftshader", "x64.zip"), "bw") as destination:
+        destination.write(response.content)
+
 webrogue_aot_lib_out_path = os.path.join(out_dir, "webrogue_aot_lib.lib")
 if os.path.exists(webrogue_aot_lib_out_path):
     os.remove(webrogue_aot_lib_out_path)
@@ -206,3 +215,6 @@ os.rename(
     webrogue_aot_lib_path,
     webrogue_aot_lib_out_path,
 )
+with zipfile.ZipFile(os.path.join(template_dir, "swiftshader", "x64.zip"), "r") as zip_ref:
+    with open(os.path.join(out_dir, "vk_swiftshader.dll"), "wb") as destination:
+        destination.write(zip_ref.read("x64/vk_swiftshader.dll"))
