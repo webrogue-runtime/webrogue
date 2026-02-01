@@ -7275,6 +7275,7 @@ name = "webrogue-gfx"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "ash",
  "webrogue-events-macro",
  "webrogue-gfxstream",
  "wiggle",
@@ -7295,6 +7296,7 @@ dependencies = [
 name = "webrogue-gfxstream"
 version = "0.1.0"
 dependencies = [
+ "ash",
  "cc",
  "cfg_aliases",
  "cmake",

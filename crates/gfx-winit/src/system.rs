@@ -11,8 +11,11 @@ use ash::{
 use winit::window::WindowAttributes;
 
 use crate::{
-    mailbox::Mailbox, vulkan_library::load_vulkan_entry, window::WinitWindowInternal,
-    window_registry::WindowRegistry, WinitWindow,
+    mailbox::Mailbox,
+    vulkan_library::{filter_vulkan_library, load_vulkan_entry},
+    window::WinitWindowInternal,
+    window_registry::WindowRegistry,
+    WinitWindow,
 };
 
 pub struct WinitSystem {
@@ -31,7 +34,9 @@ impl Drop for WinitSystem {
 
 impl WinitSystem {
     pub(crate) fn new(mailbox: Mailbox, window_registry: WindowRegistry) -> Self {
-        let vulkan_entry = load_vulkan_entry();
+        let vulkan_entry = load_vulkan_entry()
+            .and_then(filter_vulkan_library)
+            .or_else(|| webrogue_gfx::swiftshader::load().and_then(filter_vulkan_library));
         Self {
             mailbox,
             gfxstream_system: Mutex::new(None),
@@ -73,17 +78,8 @@ impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
             if let Some(gfxstream_system) = owned_gfxstream_system.as_ref() {
                 gfxstream_system.clone()
             } else {
-                let symbol: PFN_vkGetInstanceProcAddr = self
-                    .vulkan_entry
-                    .clone()
-                    .unwrap()
-                    .static_fn()
-                    .get_instance_proc_addr;
-                let get_proc_address = Box::leak(Box::new(symbol)); // TODO fix this 8 bytes per process leakage cz rust is safe and all
-
                 let gfxstream_system = Arc::new(webrogue_gfx::GFXStreamSystem::new(
-                    get_vk_proc,
-                    get_proc_address as *const _ as *const (),
+                    self.vulkan_entry.clone().unwrap(),
                 ));
 
                 owned_gfxstream_system.replace(gfxstream_system.clone());
@@ -119,18 +115,4 @@ impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
     }
 
     fn pump(&self) {}
-}
-
-extern "C" fn get_vk_proc(sym: *const std::ffi::c_char, userdata: *const ()) -> *const () {
-    let vk_get_instance_proc_addr = userdata as *const PFN_vkGetInstanceProcAddr;
-
-    let str = unsafe { std::ffi::CStr::from_ptr(sym) };
-    if str.to_str().unwrap() == "vkGetInstanceProcAddr" {
-        return (unsafe { *vk_get_instance_proc_addr }) as *const ();
-    }
-    let result = unsafe { (*vk_get_instance_proc_addr)(Instance::null(), sym) };
-    match result {
-        Some(result) => result as _,
-        None => null(),
-    }
 }

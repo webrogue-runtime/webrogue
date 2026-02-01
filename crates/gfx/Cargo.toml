@@ -10,3 +10,4 @@ anyhow = { workspace = true }
 webrogue-gfxstream = { workspace = true }
 webrogue-events-macro = { workspace = true }
 wiggle = { workspace = true, default-features = false }
+ash = { workspace = true, features = ["std", "loaded"], default-features = false }

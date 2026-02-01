@@ -57,3 +57,22 @@ pub fn load_vulkan_entry() -> Option<Entry> {
         return unsafe { Entry::load().ok() };
     }
 }
+
+fn is_valid(entry: &Entry) -> bool {
+    let create_info = ash::vk::InstanceCreateInfo::default();
+    let instance = unsafe { entry.create_instance(&create_info, None) };
+    if let Ok(instance) = instance {
+        unsafe { instance.destroy_instance(None) };
+        true
+    } else {
+        false
+    }
+}
+
+pub fn filter_vulkan_library(entry: Entry) -> Option<Entry> {
+    if is_valid(&entry) {
+        Some(entry)
+    } else {
+        None
+    }
+}

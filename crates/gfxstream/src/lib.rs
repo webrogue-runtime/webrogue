@@ -1,25 +1,34 @@
 use std::{
     ffi::CString,
     mem::transmute,
+    ptr::null,
     str::FromStr,
     sync::{Arc, Mutex},
 };
 
 mod ffi;
 pub mod shadow_blob;
+use ash::{
+    vk::{Instance, PFN_vkGetInstanceProcAddr},
+    Entry,
+};
 
-pub struct System {
-}
+pub struct System {}
 
 impl System {
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // conflicts with "unnecessary `unsafe` block" warning, maybe clippy bug
-    pub fn new(
-        get_proc: extern "C" fn(sym: *const std::ffi::c_char, userdata: *const ()) -> *const (),
-        userdata: *const (),
-    ) -> Self {
-        unsafe { ffi::webrogue_gfxstream_ffi_create_global_state(get_proc as *const (), userdata) };
+    pub fn new(vk_lib: Arc<ash::Entry>) -> Self {
+        let symbol: ash::vk::PFN_vkGetInstanceProcAddr = vk_lib.static_fn().get_instance_proc_addr;
+        let get_proc_address = Box::leak(Box::new(symbol)); // TODO fix this 8 bytes per process leakage cz rust is safe and all
+
+        unsafe {
+            ffi::webrogue_gfxstream_ffi_create_global_state(
+                get_vk_proc as *const (),
+                get_proc_address as *const _ as *const (),
+            )
+        };
         shadow_blob::init();
-        Self { }
+        Self {}
     }
 }
 
@@ -137,5 +146,19 @@ impl Drop for Decoder {
         unsafe {
             ffi::webrogue_gfxstream_ffi_destroy_decoder(self.raw_decoder_ptr);
         }
+    }
+}
+
+extern "C" fn get_vk_proc(sym: *const std::ffi::c_char, userdata: *const ()) -> *const () {
+    let vk_get_instance_proc_addr = userdata as *const PFN_vkGetInstanceProcAddr;
+
+    let str = unsafe { std::ffi::CStr::from_ptr(sym) };
+    if str.to_str().unwrap() == "vkGetInstanceProcAddr" {
+        return (unsafe { *vk_get_instance_proc_addr }) as *const ();
+    }
+    let result = unsafe { (*vk_get_instance_proc_addr)(Instance::null(), sym) };
+    match result {
+        Some(result) => result as _,
+        None => std::ptr::null(),
     }
 }

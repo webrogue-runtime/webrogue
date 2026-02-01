@@ -1,5 +1,6 @@
 pub mod events_encoder;
 mod interface;
+pub mod swiftshader;
 
 pub use webrogue_gfxstream::Decoder as GFXStreamDecoder;
 pub use webrogue_gfxstream::System as GFXStreamSystem;
