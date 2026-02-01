@@ -117,7 +117,6 @@ targets:
     platform: macOS
     sources:
     - macos/launcher
-    - common
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: macos/launcher/launcher.entitlements
@@ -186,7 +185,6 @@ targets:
     platform: iOS
     sources:
     - ios/launcher
-    - common
     settings:
       base:
         INFOPLIST_FILE: ios/launcher/Info.plist
@@ -266,7 +264,7 @@ targets:
     - sdk: AVFoundation.framework
     - sdk: AudioToolbox.framework
     - sdk: IOSurface.framework
-    - framework: external/MoltenVK/MoltenVK/static/MoltenVK.xcframework
+    - framework: external/MoltenVK/RepackedVK.xcframework
     - sdk: libc++.tbd
     - sdk: libc++abi.tbd
     preBuildScripts:

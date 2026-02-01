@@ -6,3 +6,5 @@
 /external/macos_fat.zip
 /webrogue.xcodeproj
 *.xcbkptlist
+/external/RepackedVK.xcframework/*
+!/external/RepackedVK.xcframework/Info.plist
