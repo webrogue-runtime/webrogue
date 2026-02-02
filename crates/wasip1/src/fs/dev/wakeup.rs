@@ -159,7 +159,6 @@ impl WasiFile for File {
 #[cfg(test)]
 mod tests {
     use crate::fs::dev::wakeup::File;
-    use rand::Rng;
     use std::{
         sync::{
             atomic::{AtomicUsize, Ordering},
@@ -188,7 +187,7 @@ mod tests {
     }
 
     fn invoke_iters() -> u32 {
-        1 + rand::thread_rng().gen::<u32>() % 10
+        1 + rand::random::<u32>() % 10
     }
 
     #[test]

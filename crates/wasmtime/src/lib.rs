@@ -34,11 +34,11 @@ impl wasmtime::CustomCodeMemory for StaticCodeMemory {
         1
     }
 
-    fn publish_executable(&self, _ptr: *const u8, _len: usize) -> anyhow::Result<()> {
+    fn publish_executable(&self, _ptr: *const u8, _len: usize) -> wasmtime::Result<()> {
         Ok(())
     }
 
-    fn unpublish_executable(&self, _ptr: *const u8, _len: usize) -> anyhow::Result<()> {
+    fn unpublish_executable(&self, _ptr: *const u8, _len: usize) -> wasmtime::Result<()> {
         Ok(())
     }
 }
@@ -166,6 +166,7 @@ pub fn run_aot<
 ) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
     config.shared_memory(true);
+    config.memory_may_move(false);
     // config.async_support(true);
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };
     let epoch_interruption = false;

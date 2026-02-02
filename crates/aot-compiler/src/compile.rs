@@ -19,6 +19,7 @@ pub fn compile_wrapp_to_object(
     config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Disable);
     config.generate_address_map(false);
     config.epoch_interruption(false);
+    config.memory_may_move(false);
     if let Some(cache) = cache {
         config.cache(Some(Cache::from_file(Some(cache))?));
     }

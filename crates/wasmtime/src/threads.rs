@@ -58,7 +58,7 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
         let shared_memories = self.shared_memories.clone();
         let epoch_interruption = self.epoch_interruption;
         builder.spawn(move || {
-            let result: Result<anyhow::Result<()>, Box<dyn std::any::Any + Send>> =
+            let result: Result<wasmtime::Result<()>, Box<dyn std::any::Any + Send>> =
                 std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     let mut store = wasmtime::Store::new(instance_pre.module().engine(), host);
                     if epoch_interruption {
