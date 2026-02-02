@@ -193,11 +193,11 @@ mod mem_ops {
         Some(unsafe { (*siginfo).si_addr() } as *const ())
     }
 
-    fn get_page_size() -> usize {
+    pub fn get_page_size() -> usize {
         rustix::param::page_size()
     }
 
-    fn mprotect(
+    pub fn mprotect(
         base_page_addr: usize,
         page_size: usize,
         pages: usize,
