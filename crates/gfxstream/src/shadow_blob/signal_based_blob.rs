@@ -20,7 +20,7 @@ impl Storage {
     fn new() -> Self {
         Self {
             pages: BTreeMap::new(),
-            page_size: super::get_page_size(),
+            page_size: mem_ops::get_page_size(),
             loaded_pages: Vec::new(),
         }
     }
@@ -68,7 +68,7 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     }
     assert!(blob_id != 0);
     unsafe {
-        super::mprotect(base_page_addr, page_size, matching_pages, true, true);
+        mem_ops::mprotect(base_page_addr, page_size, matching_pages, true, true);
 
         crate::ffi::webrogue_gfxstream_ffi_shadow_blob_copy(
             blob_id,
@@ -95,7 +95,7 @@ pub fn flush_all() {
 
         // TODO collect multiple pages
         unsafe {
-            super::mprotect(loaded_page_addr, page_size, 1, true, false);
+            mem_ops::mprotect(loaded_page_addr, page_size, 1, true, false);
 
             crate::ffi::webrogue_gfxstream_ffi_shadow_blob_copy(
                 page.blob_id,
@@ -105,7 +105,7 @@ pub fn flush_all() {
                 1,
             );
 
-            super::mprotect(loaded_page_addr, page_size, 1, false, false);
+            mem_ops::mprotect(loaded_page_addr, page_size, 1, false, false);
         };
     }
 }
@@ -116,7 +116,7 @@ extern "C" fn register_blob(ptr: *const (), len: u64, blob_id: u64) {
     let mut storage = static_storage.lock().unwrap();
     let page_size = storage.page_size;
 
-    super::mprotect(blob_ptr, page_size, len / page_size, false, false);
+    mem_ops::mprotect(blob_ptr, page_size, len / page_size, false, false);
     assert!(len % storage.page_size == 0);
     for page_index in 0..(len / storage.page_size) {
         let page_ptr = blob_ptr + storage.page_size * page_index;
