@@ -3,7 +3,7 @@ use std::io::Write as _;
 fn write_icon_image(
     icon_image: &image::DynamicImage,
     size: u32,
-    build_dir: &std::path::PathBuf,
+    build_dir: &std::path::Path,
     dir: &str,
     name: &str,
 ) -> Result<(), anyhow::Error> {
@@ -24,7 +24,7 @@ fn write_icon_image(
 }
 
 pub fn generate_icons(
-    build_dir: &std::path::PathBuf,
+    build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> anyhow::Result<()> {
     println!("Generating icons...");

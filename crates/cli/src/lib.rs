@@ -68,7 +68,7 @@ pub fn main() -> anyhow::Result<()> {
                 let handle = builder.into_vfs()?;
 
                 webrogue_wasmtime::run_jit(
-                    SimpleWinitBuilder::default()?,
+                    SimpleWinitBuilder::with_default_event_loop()?,
                     handle.clone(),
                     &config,
                     &persistent_path,
@@ -85,7 +85,7 @@ pub fn main() -> anyhow::Result<()> {
                     .join("persistent");
 
                 webrogue_wasmtime::run_jit(
-                    SimpleWinitBuilder::default()?,
+                    SimpleWinitBuilder::with_default_event_loop()?,
                     handle.clone(),
                     handle.config(),
                     &persistent_path,

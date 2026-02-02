@@ -16,9 +16,9 @@ pub struct WrappVFSHandle {
     pub(super) file_index: Arc<file_index::WrappFileIndex>,
 }
 
-impl crate::IVFSHandle<file_index::WrappFilePosition, file_reader::WrappVFSFileReader>
-    for WrappVFSHandle
-{
+impl crate::IVFSHandle for WrappVFSHandle {
+    type FilePosition = file_index::WrappFilePosition;
+    type FileReader = file_reader::WrappVFSFileReader;
     fn get_index(&self) -> &std::collections::HashMap<String, file_index::WrappFilePosition> {
         &self.file_index.file_positions
     }

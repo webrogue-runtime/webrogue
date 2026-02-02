@@ -112,10 +112,10 @@ impl OutgoingDebugConnection {
 
         self.data_channel
             .send(
-                &DebugOutgoingMessage::Request(DebugRequest {
+                &DebugOutgoingMessage::Request(Box::new(DebugRequest {
                     request_id,
                     body: request,
-                })
+                }))
                 .to_bytes()?
                 .into(),
             )
@@ -125,7 +125,11 @@ impl OutgoingDebugConnection {
 
     pub async fn command(&self, command: DebugCommand) -> anyhow::Result<()> {
         self.data_channel
-            .send(&DebugOutgoingMessage::Command(command).to_bytes()?.into())
+            .send(
+                &DebugOutgoingMessage::Command(Box::new(command))
+                    .to_bytes()?
+                    .into(),
+            )
             .await?;
         Ok(())
     }

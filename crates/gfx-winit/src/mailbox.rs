@@ -2,10 +2,12 @@ use std::sync::{Arc, Mutex};
 
 use winit::event_loop::{ActiveEventLoop, EventLoopProxy};
 
+type RequestedFn = Box<dyn FnOnce(&dyn ActiveEventLoop) + Send>;
+
 #[derive(Clone)]
 pub(crate) struct Mailbox {
     pub event_loop_proxy: EventLoopProxy,
-    pub requests: Arc<Mutex<Vec<Box<dyn FnOnce(&dyn ActiveEventLoop) + Send>>>>,
+    pub requests: Arc<Mutex<Vec<RequestedFn>>>,
 }
 
 impl Mailbox {

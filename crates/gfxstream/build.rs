@@ -55,7 +55,7 @@ fn main() {
             .flag_if_supported("-Wno-attributes")
             .cpp(true)
             .std("c++20");
-        
+
         // Only use static_crt on Windows
         if _os == "windows" {
             build.static_crt(true);
@@ -121,7 +121,6 @@ fn main() {
             "external/gfxstream/host/common/vm_operations.cpp",
             "external/gfxstream/host/common/graphics_driver_lock.cpp",
             "external/gfxstream/host/common/stream_utils.cpp",
-            
             // host/health
             // "external/gfxstream/host/health/HealthMonitor.cpp",
             // "external/gfxstream/host/health/TestClock.cpp",

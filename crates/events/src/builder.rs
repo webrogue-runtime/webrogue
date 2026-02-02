@@ -91,7 +91,7 @@ impl EventBuilder<'_> {
             field.offset = self.event.size;
             self.event.size += field.ty.size();
         }
-        self.event.size = ((self.event.size + 3) / 4) * 4;
+        self.event.size = self.event.size.div_ceil(4) * 4;
     }
 }
 

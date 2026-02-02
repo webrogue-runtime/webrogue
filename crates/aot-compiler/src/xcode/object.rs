@@ -2,8 +2,8 @@ use super::types::Destination;
 
 pub fn compile(
     destination: Destination,
-    wrapp_path: &std::path::PathBuf,
-    build_dir: &std::path::PathBuf,
+    wrapp_path: &std::path::Path,
+    build_dir: &std::path::Path,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     let aot_dir = build_dir.join("aot");
@@ -28,7 +28,7 @@ pub fn compile(
                 false,
             )?;
         }
-        Destination::IOS => {
+        Destination::Ios => {
             println!("Compiling AOT object for AArch64 iOS...");
             crate::compile::compile_wrapp_to_object(
                 wrapp_path,

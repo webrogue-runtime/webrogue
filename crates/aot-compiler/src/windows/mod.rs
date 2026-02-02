@@ -43,7 +43,7 @@ pub fn build(
         .open(output_file_path)?;
 
     let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
-    if webrogue_wrapp::is_path_a_wrapp(&wrapp_file_path).with_context(|| {
+    if webrogue_wrapp::is_path_a_wrapp(wrapp_file_path).with_context(|| {
         format!(
             "Unable to determine file type for {}",
             wrapp_file_path.display()
@@ -78,21 +78,21 @@ pub fn build(
 
 fn link_windows_msvc(
     object_file_path: &crate::utils::TemporalFile,
-    output_file_path: &std::path::PathBuf,
+    output_file_path: &std::path::Path,
     artifacts: &mut crate::utils::Artifacts,
-    build_dir: &std::path::PathBuf,
+    build_dir: &std::path::Path,
     is_console: bool,
 ) -> anyhow::Result<()> {
     use crate::utils::path_to_arg;
 
     let obj = if is_console { "console.obj" } else { "gui.obj" };
-    let obj_tmp = artifacts.extract_tmp(&build_dir, &format!("x86_64-windows-msvc/{}", obj))?;
+    let obj_tmp = artifacts.extract_tmp(build_dir, &format!("x86_64-windows-msvc/{}", obj))?;
     let webrogue_aot_lib_tmp =
-        artifacts.extract_tmp(&build_dir, "x86_64-windows-msvc/webrogue_aot_lib.lib")?;
+        artifacts.extract_tmp(build_dir, "x86_64-windows-msvc/webrogue_aot_lib.lib")?;
 
     crate::utils::lld!(
         "lld-link",
-        format!("-out:{}", path_to_arg(&output_file_path)?),
+        format!("-out:{}", path_to_arg(output_file_path)?),
         "-nologo",
         "-machine:x64",
         object_file_path,

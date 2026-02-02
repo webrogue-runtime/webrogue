@@ -53,13 +53,13 @@ pub fn compress_buffer(input: Vec<u8>, output: &mut impl std::io::Write) -> anyh
             .compress_stream(&mut zstd_output_buf, &mut zstd_input_buf)
             .unwrap();
         compressed += zstd_output_buf.as_slice().len();
-        output.write_all(&zstd_output_buf.as_slice())?;
+        output.write_all(zstd_output_buf.as_slice())?;
     }
     loop {
         let mut zstd_output_buf = zstd_safe::OutBuffer::around(&mut out_buffer);
         let result = cstream.end_stream(&mut zstd_output_buf).unwrap();
         compressed += zstd_output_buf.as_slice().len();
-        output.write_all(&zstd_output_buf.as_slice())?;
+        output.write_all(zstd_output_buf.as_slice())?;
         if result == 0 {
             break;
         }

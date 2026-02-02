@@ -23,7 +23,7 @@ extern "C" fn webrogue_aot_windows() {
         .join("persistent");
 
     webrogue_wasmtime::run_aot_builder(
-        webrogue_gfx_winit::SimpleWinitBuilder::default().unwrap(),
+        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop().unwrap(),
         builder,
         &persistent_path,
     )
@@ -56,7 +56,7 @@ extern "C" fn webrogue_aot_linux() {
         .join("persistent");
 
     webrogue_wasmtime::run_aot_builder(
-        webrogue_gfx_winit::SimpleWinitBuilder::default().unwrap(),
+        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop().unwrap(),
         builder,
         &persistent_path,
     )

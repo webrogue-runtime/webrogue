@@ -7,17 +7,17 @@ use anyhow::Context as _;
 #[derive(Clone, Debug)]
 pub enum LibC {
     GLibC,
-    MUSL,
+    Musl,
 }
 impl clap::ValueEnum for LibC {
     fn value_variants<'a>() -> &'a [Self] {
-        &[Self::GLibC, Self::MUSL]
+        &[Self::GLibC, Self::Musl]
     }
 
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         match self {
             Self::GLibC => Some(clap::builder::PossibleValue::new("glibc")),
-            Self::MUSL => Some(clap::builder::PossibleValue::new("musl")),
+            Self::Musl => Some(clap::builder::PossibleValue::new("musl")),
         }
     }
 }
@@ -44,7 +44,7 @@ pub fn build_linux(
             println!("Linking native binary...");
             link::link_glibc(&object_file, output_file_path)?;
         }
-        LibC::MUSL => {
+        LibC::Musl => {
             println!("Compiling AOT object...");
             crate::compile::compile_wrapp_to_object(
                 wrapp_file_path,
@@ -70,7 +70,7 @@ pub fn build_linux(
 
     let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
 
-    if webrogue_wrapp::is_path_a_wrapp(&wrapp_file_path).with_context(|| {
+    if webrogue_wrapp::is_path_a_wrapp(wrapp_file_path).with_context(|| {
         format!(
             "Unable to determine file type for {}",
             wrapp_file_path.display()
@@ -81,13 +81,15 @@ pub fn build_linux(
         )?)
         .write(&mut output_file)?;
     } else {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(wrapp_file_path)?)
-            .write(&mut output_file)?;
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(
+            wrapp_file_path,
+        )?)
+        .write(&mut output_file)?;
     }
     let new_size = output_file.seek(std::io::SeekFrom::End(0))?;
 
-    let wrapp_size = new_size - original_size;
-    output_file.write_all(&(wrapp_size as u64).to_le_bytes())?;
+    let wrapp_size: u64 = new_size - original_size;
+    output_file.write_all(&wrapp_size.to_le_bytes())?;
 
     anyhow::Ok(())
 }

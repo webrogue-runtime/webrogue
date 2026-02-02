@@ -23,7 +23,7 @@ impl ValueEnum for Configuration {
 #[derive(Clone, Copy)]
 pub enum Destination {
     MacOS,
-    IOS,
+    Ios,
     IOSSim,
 }
 

@@ -1,11 +1,11 @@
 use crate::WinitMailbox;
 use dpi::{PhysicalPosition, PhysicalSize};
-use std::sync::{Arc, Mutex};
 #[cfg(target_os = "linux")]
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+use std::sync::{Arc, Mutex};
 use webrogue_gfx_winit::{ProxiedWinitBuilder, WindowRegistry, WinitProxy};
 use webrogue_wrapp::{IVFSBuilder, RealVFSBuilder};
 use winit::{

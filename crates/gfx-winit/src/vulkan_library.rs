@@ -28,7 +28,7 @@ fn get_path() -> Option<PathBuf> {
             return Some(path);
         }
     }
-    return None;
+    None
 }
 
 #[cfg(feature = "static-vk")]
@@ -52,9 +52,9 @@ pub fn load_vulkan_entry() -> Option<Entry> {
 
     #[cfg(not(feature = "static-vk"))]
     if let Some(path) = get_path() {
-        return unsafe { Entry::load_from(path).ok() };
+        unsafe { Entry::load_from(path).ok() }
     } else {
-        return unsafe { Entry::load().ok() };
+        unsafe { Entry::load().ok() }
     }
 }
 

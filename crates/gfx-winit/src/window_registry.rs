@@ -12,6 +12,12 @@ pub struct WindowRegistry {
     windows: Arc<Mutex<BTreeMap<WindowId, Weak<WinitWindowInternal>>>>,
 }
 
+impl Default for WindowRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WindowRegistry {
     pub fn new() -> Self {
         Self {
@@ -29,6 +35,6 @@ impl WindowRegistry {
             .unwrap()
             .get(&id)
             .and_then(|weak| weak.upgrade())
-            .and_then(|arc| Some(WinitWindow { internal: arc }))
+            .map(|arc| WinitWindow { internal: arc })
     }
 }

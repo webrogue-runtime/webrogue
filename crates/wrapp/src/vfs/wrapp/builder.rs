@@ -7,7 +7,7 @@ pub struct WrappVFSBuilder {
 
 impl WrappVFSBuilder {
     pub fn from_file_path<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Self> {
-        let context = format!("Couldn't open {}", path.as_ref().display().to_string());
+        let context = format!("Couldn't open {}", path.as_ref().display());
         Ok(Self::new(std::fs::File::open(path).context(context)?))
     }
 
@@ -52,13 +52,8 @@ impl WrappVFSBuilder {
     }
 }
 
-impl
-    crate::vfs::IVFSBuilder<
-        crate::vfs::wrapp::file_index::WrappFilePosition,
-        crate::vfs::wrapp::file_reader::WrappVFSFileReader,
-        crate::WrappVFSHandle,
-    > for WrappVFSBuilder
-{
+impl crate::vfs::IVFSBuilder for WrappVFSBuilder {
+    type VFSHandle = crate::WrappVFSHandle;
     fn into_vfs(mut self) -> anyhow::Result<crate::WrappVFSHandle> {
         let offset = self.preamble()?.offset;
         let config = self.preamble()?.config.clone();
@@ -83,10 +78,9 @@ impl
 
     fn get_uncompressed(&mut self, name: &str) -> anyhow::Result<Option<Vec<u8>>> {
         let _ = self.preamble()?;
-        Ok(self
-            .preamble
+        self.preamble
             .as_mut()
             .unwrap()
-            .get_uncompressed(name, &mut self.reader)?)
+            .get_uncompressed(name, &mut self.reader)
     }
 }

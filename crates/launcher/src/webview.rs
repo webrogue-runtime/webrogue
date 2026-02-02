@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use anyhow;
 use bytes::Bytes;
 use futures_util::stream::TryStreamExt;
 use http::{Method, Request, Uri};
@@ -73,7 +72,7 @@ pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
         .with_ipc_handler(move |request| {
             let mailbox_2 = mailbox_1.clone();
             let mut local_router = router1.clone();
-            let _ = RUNTIME.spawn(async move {
+            RUNTIME.spawn(async move {
                 #[derive(serde::Serialize)]
                 struct IPCResponse {
                     id: u64,

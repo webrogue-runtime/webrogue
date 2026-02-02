@@ -3,7 +3,7 @@ use std::io::BufRead as _;
 use webrogue_wrapp::IVFSBuilder as _;
 
 pub fn build(
-    build_dir: &std::path::PathBuf,
+    build_dir: &std::path::Path,
     configuration: Configuration,
     destination: Destination,
     wrapp_builder: &mut webrogue_wrapp::WrappVFSBuilder,
@@ -15,7 +15,7 @@ pub fn build(
     };
     let scheme_destination_name = match destination {
         Destination::MacOS => "MacOS",
-        Destination::IOS | Destination::IOSSim => "iOS",
+        Destination::Ios | Destination::IOSSim => "iOS",
     };
 
     println!("Building Xcode project...");
@@ -34,7 +34,7 @@ pub fn build(
             .arg(configuration_name);
         match destination {
             Destination::MacOS => {}
-            Destination::IOS => {
+            Destination::Ios => {
                 command.arg("-destination").arg("generic/platform=iOS");
             }
             Destination::IOSSim => {
@@ -61,8 +61,7 @@ pub fn build(
         .stdout
         .lines()
         .map(|l| l.unwrap().trim_start().to_owned())
-        .filter(|line| line.find("BUILD_DIR = ") == Some(0))
-        .next()
+        .find(|line| line.find("BUILD_DIR = ") == Some(0))
         .ok_or_else(|| anyhow::anyhow!("BUILD_DIR value not found in xcodebuild output"))?
         .strip_prefix("BUILD_DIR = ")
         .unwrap()
@@ -72,7 +71,7 @@ pub fn build(
 
     let product_dir_name = match destination {
         Destination::MacOS => configuration_name.to_owned(),
-        Destination::IOS => configuration_name.to_owned() + "-iphoneos",
+        Destination::Ios => configuration_name.to_owned() + "-iphoneos",
         Destination::IOSSim => configuration_name.to_owned() + "-iphonesimulator",
     };
 
@@ -108,7 +107,7 @@ pub fn build(
 
     let pretty_destination_name = match destination {
         Destination::MacOS => "macOS",
-        Destination::IOS => "iOS",
+        Destination::Ios => "iOS",
         Destination::IOSSim => "iOS Simulator",
     };
 

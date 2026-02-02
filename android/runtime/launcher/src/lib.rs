@@ -140,7 +140,7 @@ fn build_webview(
     event_loop: &EventLoopWindowTarget<()>,
     event_loop_proxy: EventLoopProxy<()>,
 ) -> anyhow::Result<(WebView, TaoMailbox)> {
-    let window = WindowBuilder::new().build(&event_loop)?;
+    let window = WindowBuilder::new().build(event_loop)?;
 
     let dir = ANDROID_CACHE_DIR.lock().unwrap().clone();
     Ok(webrogue_launcher::build_webview(
@@ -148,7 +148,7 @@ fn build_webview(
         false,
         Arc::new(ServerConfigImpl {
             storage_path: dir
-                .unwrap_or_else(|| std::env::temp_dir())
+                .unwrap_or_else(std::env::temp_dir)
                 .join("server_storage"),
         }),
         |internal| TaoMailbox {

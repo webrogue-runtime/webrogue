@@ -171,7 +171,7 @@ impl State {
         if actual_hash != hash {
             return Ok(true);
         }
-        return Ok(false);
+        Ok(false)
     }
 
     fn constructed_wrapp_dir(&self) -> anyhow::Result<PathBuf> {
@@ -218,7 +218,7 @@ impl IncomingDebugConnection {
             ..Default::default()
         };
         let peer_connection = Arc::new(api.new_peer_connection(config).await?);
-        let (done_tx, mut done_rx) = tokio::sync::mpsc::channel::<()>(1);
+        let (done_tx, mut _done_rx) = tokio::sync::mpsc::channel::<()>(1);
         let state = Arc::new(State::new(server_config));
         peer_connection.on_peer_connection_state_change(Box::new(
             move |s: RTCPeerConnectionState| {
@@ -273,7 +273,7 @@ impl IncomingDebugConnection {
                     let s3 = s2.clone();
                     let d2 = Arc::clone(&d1);
                     Box::pin(async move {
-                        let result: anyhow::Result<()> = (async || {
+                        let result: anyhow::Result<()> = async {
                             let message = DebugOutgoingMessage::from_bytes(&msg.data)?;
                             match message {
                                 DebugOutgoingMessage::Request(request) => {
@@ -285,11 +285,11 @@ impl IncomingDebugConnection {
                                     d2.send(&response.to_bytes()?.into()).await?;
                                 }
                                 DebugOutgoingMessage::Command(command) => {
-                                    s3.precess_command(command).await?;
+                                    s3.precess_command(*command).await?;
                                 }
                             };
                             Ok(())
-                        })()
+                        }
                         .await;
                         if let Err(err) = result {
                             println!("{}", err);

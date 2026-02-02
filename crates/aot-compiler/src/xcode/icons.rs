@@ -1,5 +1,5 @@
 pub fn build(
-    build_dir: &std::path::PathBuf,
+    build_dir: &std::path::Path,
     wrapp_builder: &mut webrogue_wrapp::WrappVFSBuilder,
     old_stamp: Option<&webrogue_icons::IconsData>,
 ) -> anyhow::Result<webrogue_icons::IconsData> {

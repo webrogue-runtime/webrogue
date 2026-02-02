@@ -1,14 +1,10 @@
 mod fs;
 mod stdout;
 
-pub fn make_ctx<
-    FilePosition: webrogue_wrapp::IFilePosition + 'static,
-    FileReader: webrogue_wrapp::IFileReader + 'static,
-    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader> + 'static,
->(
+pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
     handle: VFSHandle,
     config: &webrogue_wrapp::config::Config,
-    persistent_dir: &std::path::PathBuf,
+    persistent_dir: &std::path::Path,
 ) -> anyhow::Result<wasi_common::WasiCtx> {
     let mut builder = wasi_common::sync::WasiCtxBuilder::new();
     builder.inherit_stdio();

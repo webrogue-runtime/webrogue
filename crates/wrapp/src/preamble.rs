@@ -14,12 +14,12 @@ pub fn is_a_wrapp(readable: &mut (impl std::io::Read + std::io::Seek)) -> anyhow
     };
     readable.seek(std::io::SeekFrom::Start(0))?;
     readable.read_exact(&mut magic)?;
-    return Ok(magic == *b"WRAPP\0");
+    Ok(magic == *b"WRAPP\0")
 }
 
 pub fn is_path_a_wrapp<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<bool> {
     let mut file = std::fs::File::open(path)?;
-    Ok(is_a_wrapp(&mut file)?)
+    is_a_wrapp(&mut file)
 }
 
 impl Preamble {
@@ -34,8 +34,10 @@ impl Preamble {
         let mut read_total = 0;
         'read_loop: loop {
             let to_read = 128;
-            preamble_content
-                .extend(std::iter::repeat(0).take(read_total + to_read - preamble_content.len()));
+            preamble_content.extend(std::iter::repeat_n(
+                0,
+                read_total + to_read - preamble_content.len(),
+            ));
             let read = readable.read(&mut preamble_content.as_mut_slice()[read_total..])?;
             read_total += read;
             for (offset, byte) in preamble_content[(read_total - read)..].iter().enumerate() {

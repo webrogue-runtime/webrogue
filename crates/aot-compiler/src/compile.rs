@@ -5,8 +5,8 @@ use wasmtime::Cache;
 use webrogue_wrapp::{IVFSBuilder as _, IVFSHandle as _};
 
 pub fn compile_wrapp_to_object(
-    wrapp_file_path: &std::path::PathBuf,
-    object_file_path: &std::path::PathBuf,
+    wrapp_file_path: &std::path::Path,
+    object_file_path: &std::path::Path,
     target: crate::Target,
     cache: Option<&std::path::PathBuf>,
     is_pic: bool,
@@ -31,7 +31,7 @@ pub fn compile_wrapp_to_object(
     let engine = wasmtime::Engine::new(&config)?;
 
     let mut wasm_binary = Vec::new();
-    if webrogue_wrapp::is_path_a_wrapp(&wrapp_file_path).with_context(|| {
+    if webrogue_wrapp::is_path_a_wrapp(wrapp_file_path).with_context(|| {
         format!(
             "Unable to determine file type for {}",
             wrapp_file_path.display()
@@ -60,7 +60,7 @@ pub fn compile_wrapp_to_object(
     let mut main_data = Vec::new();
     main_data.extend_from_slice(&(cwasm.len() as u64).to_le_bytes());
     main_data.extend_from_slice(&(cwasm_info.max_alignment as u64).to_le_bytes());
-    main_data.extend_from_slice(&vec![0u8].repeat(cwasm_info.max_alignment as usize - 16));
+    main_data.extend_from_slice(&[0u8].repeat(cwasm_info.max_alignment as usize - 16));
     main_data.extend_from_slice(&cwasm);
 
     let main_symbol = obj.add_symbol(object::write::Symbol {
@@ -86,7 +86,7 @@ pub fn compile_wrapp_to_object(
         cwasm_info.max_alignment,
     );
 
-    let mut writer = std::io::BufWriter::new(std::fs::File::create(&object_file_path)?);
+    let mut writer = std::io::BufWriter::new(std::fs::File::create(object_file_path)?);
     writer.write_all(&obj.write()?)?;
     std::io::Write::flush(&mut writer)?;
 

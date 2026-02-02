@@ -2,6 +2,7 @@ mod gradle;
 mod link;
 pub use link::link;
 
+#[allow(clippy::too_many_arguments)]
 pub fn build(
     wrapp_path: &std::path::PathBuf,
     build_dir: &std::path::PathBuf,
@@ -38,9 +39,7 @@ pub fn build(
     };
     let sdk_env = if let Some(sdk) = sdk {
         Some(sdk)
-    } else if std::env::var("ANDROID_SDK_ROOT").is_ok() {
-        None
-    } else if std::env::var("ANDROID_HOME").is_ok() {
+    } else if std::env::var("ANDROID_SDK_ROOT").is_ok() || std::env::var("ANDROID_HOME").is_ok() {
         None
     } else {
         let not_found_error =

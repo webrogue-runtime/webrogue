@@ -3,9 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use ash::{
-    Entry,
-};
+use ash::Entry;
 use winit::window::WindowAttributes;
 
 use crate::{
@@ -38,13 +36,15 @@ impl WinitSystem {
         Self {
             mailbox,
             gfxstream_system: Mutex::new(None),
-            vulkan_entry: vulkan_entry.and_then(|entry| Some(Arc::new(entry))),
+            vulkan_entry: vulkan_entry.map(Arc::new),
             window_registry,
         }
     }
 }
 
-impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
+impl webrogue_gfx::ISystem for WinitSystem {
+    type Window = WinitWindow;
+
     fn make_window(&self) -> WinitWindow {
         let window = self.mailbox.execute(|event_loop| {
             let window = Arc::new(
@@ -101,10 +101,7 @@ impl webrogue_gfx::ISystem<WinitWindow> for WinitSystem {
                 extensions
                     .iter()
                     .map(|extension| unsafe {
-                        CStr::from_ptr(extension.clone())
-                            .to_str()
-                            .unwrap()
-                            .to_owned()
+                        CStr::from_ptr(*extension).to_str().unwrap().to_owned()
                     })
                     .collect::<Vec<_>>()
             })

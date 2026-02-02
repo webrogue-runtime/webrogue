@@ -21,16 +21,11 @@ impl Guest for WRAPPReader {
                 )?)
             }
         })();
-        return result.map_err(|e| e.to_string());
+        result.map_err(|e| e.to_string())
     }
 }
 
-fn extract_config<
-    FilePosition: webrogue_wrapp::IFilePosition,
-    FileReader: webrogue_wrapp::IFileReader,
-    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-    VFSBuilder: webrogue_wrapp::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
->(
+fn extract_config<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     mut builder: VFSBuilder,
 ) -> anyhow::Result<vscode::example::types::Output> {
     let config = builder.config()?.clone();

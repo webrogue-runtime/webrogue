@@ -20,6 +20,7 @@ fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
     }
 }
 
+#[allow(clippy::missing_safety_doc)]
 #[no_mangle]
 pub unsafe extern "C" fn webrogue_macos_main(wrapp_path: *const i8, persistent_path: *const i8) {
     let wrapp_path = std::ffi::CStr::from_ptr(wrapp_path as *const _)

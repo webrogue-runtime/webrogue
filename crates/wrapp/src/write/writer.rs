@@ -1,34 +1,17 @@
 use std::io::Write as _;
 
-pub struct WRAPPWriter<
-    FilePosition: crate::IFilePosition,
-    FileReader: crate::IFileReader,
-    VFSHandle: crate::IVFSHandle<FilePosition, FileReader>,
-    VFSBuilder: crate::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
-> {
+use crate::{IVFSBuilder, IVFSHandle};
+
+pub struct WRAPPWriter<VFSBuilder: crate::IVFSBuilder> {
     vfs_builder: VFSBuilder,
-
     keep_wasm: bool,
-
-    _position: std::marker::PhantomData<FilePosition>,
-    _reader: std::marker::PhantomData<FileReader>,
-    _handle: std::marker::PhantomData<VFSHandle>,
 }
 
-impl<
-        FilePosition: crate::IFilePosition,
-        FileReader: crate::IFileReader,
-        VFSHandle: crate::IVFSHandle<FilePosition, FileReader>,
-        VFSBuilder: crate::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
-    > WRAPPWriter<FilePosition, FileReader, VFSHandle, VFSBuilder>
-{
+impl<VFSBuilder: crate::IVFSBuilder> WRAPPWriter<VFSBuilder> {
     pub fn new(vfs_builder: VFSBuilder) -> Self {
         Self {
             vfs_builder,
             keep_wasm: false,
-            _handle: std::marker::PhantomData,
-            _position: std::marker::PhantomData,
-            _reader: std::marker::PhantomData,
         }
     }
 
@@ -77,9 +60,13 @@ impl<
 
         let vfs = self.vfs_builder.into_vfs()?;
 
-        let mut positions_to_archive: Vec<(FilePosition, String)> = Vec::new();
+        let mut positions_to_archive: Vec<(
+            <<VFSBuilder as IVFSBuilder>::VFSHandle as IVFSHandle>::FilePosition,
+            String,
+        )> = Vec::new();
 
         for (path, position) in vfs.get_index().iter() {
+            #[allow(clippy::single_match)]
             match path.as_str() {
                 "/app/main.wasm" => {
                     if !self.keep_wasm {
@@ -93,7 +80,7 @@ impl<
 
         super::compress::compress_files(
             positions_to_archive,
-            |position| Ok(vfs.open_pos(position)?),
+            |position| vfs.open_pos(position),
             writer,
         )?;
 

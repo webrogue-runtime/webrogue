@@ -9,12 +9,7 @@ pub struct IconsData {
 }
 
 impl IconsData {
-    pub fn from_vfs_builder<
-        FilePosition: webrogue_wrapp::IFilePosition,
-        FileReader: webrogue_wrapp::IFileReader,
-        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-        VFSBuilder: webrogue_wrapp::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
-    >(
+    pub fn from_vfs_builder<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
         wrapp_builder: &mut VFSBuilder,
     ) -> anyhow::Result<Self> {
         let icons_config = wrapp_builder
@@ -75,8 +70,8 @@ impl IconsData {
             let absolute_inset = 100;
 
             let target_size = 1024 - 2 * absolute_inset;
-            let target_size = ((target_size as f32) * (1.0 - self.config.normal.inset)) as u32;
-            target_size
+
+            ((target_size as f32) * (1.0 - self.config.normal.inset)) as u32
         };
         let size = 1024;
         let corner_radius = 184;

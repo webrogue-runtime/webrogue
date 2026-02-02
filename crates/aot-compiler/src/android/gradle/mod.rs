@@ -15,16 +15,12 @@ pub enum Signing {
     },
 }
 
-fn build_using_vfs<
-    FilePosition: webrogue_wrapp::IFilePosition,
-    FileReader: webrogue_wrapp::IFileReader,
-    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-    VFSBuilder: webrogue_wrapp::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
->(
+#[allow(clippy::too_many_arguments)]
+fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
     sdk_env: Option<&std::path::PathBuf>,
     java_home_env: Option<&std::path::PathBuf>,
-    container_path: &std::path::PathBuf,
+    container_path: &std::path::Path,
     build_dir: &std::path::PathBuf,
     signing: Signing,
     debug: bool,
@@ -35,7 +31,7 @@ fn build_using_vfs<
     let mut artifacts =
         crate::utils::Artifacts::new().with_context(|| "Error opening artifacts library")?;
     let template_id = artifacts.get_data("android_gradle/template_id")?;
-    let mut old_stamp = read_stamp(&build_dir).ok();
+    let mut old_stamp = read_stamp(build_dir).ok();
 
     if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id) {
         old_stamp = None;
@@ -64,14 +60,14 @@ fn build_using_vfs<
         .write(&mut std::fs::File::create(assets_path.join("aot.swrapp"))?)?;
 
     let icons_stamp = icons::build(
-        &build_dir,
+        build_dir,
         &mut vfs_builder,
         old_stamp.as_ref().map(|stamp| &stamp.icons),
     )?;
 
     println!("Compiling AOT object...");
     crate::compile::compile_wrapp_to_object(
-        &container_path,
+        container_path,
         object_file.path(),
         crate::Target::ARM64LinuxAndroid,
         cache,
@@ -218,11 +214,12 @@ fn build_using_vfs<
         icons: icons_stamp,
     };
     if old_stamp.as_ref() != Some(&new_stamp) {
-        write_stamp(new_stamp, &build_dir)?;
+        write_stamp(new_stamp, build_dir)?;
     }
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn build(
     sdk_env: Option<&std::path::PathBuf>,
     java_home_env: Option<&std::path::PathBuf>,
@@ -233,7 +230,7 @@ pub fn build(
     output: Option<std::path::PathBuf>,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
-    if webrogue_wrapp::is_path_a_wrapp(&container_path).with_context(|| {
+    if webrogue_wrapp::is_path_a_wrapp(container_path).with_context(|| {
         format!(
             "Unable to determine file type for {}",
             container_path.display()
@@ -265,14 +262,14 @@ pub fn build(
     }
 }
 
-fn read_stamp(build_dir: &std::path::PathBuf) -> anyhow::Result<types::Stamp> {
+fn read_stamp(build_dir: &std::path::Path) -> anyhow::Result<types::Stamp> {
     let mut buff = [0u8; 128];
     let file = std::fs::File::open(build_dir.join(".wrstamp"))?;
     let (result, _) = postcard::from_io((file, &mut buff))?;
     Ok(result)
 }
 
-fn write_stamp(stamp: types::Stamp, build_dir: &std::path::PathBuf) -> anyhow::Result<()> {
+fn write_stamp(stamp: types::Stamp, build_dir: &std::path::Path) -> anyhow::Result<()> {
     let file = std::fs::File::create(build_dir.join(".wrstamp"))?;
     postcard::to_io(&stamp, file)?;
     Ok(())

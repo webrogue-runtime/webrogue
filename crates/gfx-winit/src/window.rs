@@ -53,11 +53,9 @@ impl webrogue_gfx::IWindow for WinitWindow {
 
             let instance = ash::vk::Instance::from_raw(vk_instance);
 
-            let Some(entry) = vulkan_entry.clone() else {
-                return None;
-            };
+            let entry = vulkan_entry.clone()?;
 
-            let instance = unsafe { ash::Instance::load(&entry.static_fn(), instance) };
+            let instance = unsafe { ash::Instance::load(entry.static_fn(), instance) };
 
             let surface = unsafe {
                 ash_window::create_surface(&entry, &instance, display_handle, window_handle, None)
@@ -66,7 +64,7 @@ impl webrogue_gfx::IWindow for WinitWindow {
             Some(surface.as_raw())
         });
 
-        raw_surface.and_then(|raw_surface| Some(raw_surface as *mut ()))
+        raw_surface.map(|raw_surface| raw_surface as *mut ())
     }
 
     fn poll(&self, events_buffer: &mut Vec<u8>) {

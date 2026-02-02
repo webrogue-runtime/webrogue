@@ -41,12 +41,13 @@ impl Drop for System {
 pub struct Decoder {
     _system: Arc<System>,
     raw_decoder_ptr: *const (),
+    #[allow(clippy::type_complexity)]
     presentation_callback: Mutex<Option<Box<Box<dyn Fn()>>>>,
 }
 
 unsafe impl Send for Decoder {}
 
-impl<'a> Decoder {
+impl Decoder {
     pub fn new(system: Arc<System>) -> Self {
         let raw_decoder_ptr = unsafe { ffi::webrogue_gfxstream_ffi_create_decoder() };
         Self {
@@ -79,6 +80,7 @@ impl<'a> Decoder {
         };
     }
 
+    #[allow(clippy::missing_safety_doc)]
     pub unsafe fn register_blob(&self, buf: &[std::cell::UnsafeCell<u8>], id: u64) {
         // crate::shadow_blob::register_blob(buf.as_ptr() as *mut std::ffi::c_void, buf.len());
         unsafe {
@@ -96,6 +98,7 @@ impl<'a> Decoder {
         unsafe { ffi::webrogue_gfxstream_ffi_unbox_vk_instance(vk_instance) }
     }
 
+    #[allow(clippy::not_unsafe_ptr_arg_deref)] // yet another clippy bug
     pub fn box_vk_surface(&self, vk_surface: *mut ()) -> u64 {
         unsafe { ffi::webrogue_gfxstream_ffi_box_vk_surface(vk_surface) }
     }

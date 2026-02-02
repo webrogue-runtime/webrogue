@@ -1,7 +1,7 @@
 use std::io::Write as _;
 
 pub fn generate_icons(
-    build_dir: &std::path::PathBuf,
+    build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> anyhow::Result<()> {
     println!("Generating icons...");
@@ -18,7 +18,7 @@ pub fn generate_icons(
 }
 
 fn generate_macos_icons(
-    build_dir: &std::path::PathBuf,
+    build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> Result<(), anyhow::Error> {
     let combined_image = icons_data.macos_image()?;
@@ -36,7 +36,7 @@ fn generate_macos_icons(
 }
 
 fn write_macos_icon(
-    build_dir: &std::path::PathBuf,
+    build_dir: &std::path::Path,
     icon_image: &image::DynamicImage,
     size: u32,
     suffix: &str,
@@ -55,7 +55,7 @@ fn write_macos_icon(
 }
 
 fn generate_ios_icons(
-    build_dir: &std::path::PathBuf,
+    build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> anyhow::Result<()> {
     let combined_image = icons_data.combined_image(1024)?;

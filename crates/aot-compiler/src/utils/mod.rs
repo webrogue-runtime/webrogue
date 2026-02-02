@@ -1,5 +1,7 @@
 mod artifacts;
 pub mod icons;
+use std::fmt::Display;
+
 pub use artifacts::*;
 
 pub(crate) fn _run_lld(_args: Vec<String>) -> anyhow::Result<()> {
@@ -53,9 +55,15 @@ impl TemporalFile {
     pub fn as_arg(&self) -> anyhow::Result<String> {
         crate::utils::path_to_arg(self.path.clone())
     }
+}
 
-    pub fn to_string(&self) -> String {
-        self.path().clone().as_os_str().to_str().unwrap().to_owned()
+impl Display for TemporalFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.path().clone().as_os_str().to_str().unwrap().to_owned()
+        )
     }
 }
 

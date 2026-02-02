@@ -36,7 +36,7 @@ pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
     let mut artifacts = crate::utils::Artifacts::new()?;
     let template_id = artifacts.get_data("apple_xcode/template_id")?;
 
-    let mut old_stamp = read_stamp(&args.build_dir).ok();
+    let mut old_stamp = read_stamp(args.build_dir).ok();
 
     if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id) {
         old_stamp = None;
@@ -48,7 +48,7 @@ pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
         artifacts.extract_dir(args.build_dir, "apple_xcode/template")?;
     }
 
-    let mut wrapp_builder = webrogue_wrapp::WrappVFSBuilder::from_file_path(&args.wrapp_path)?;
+    let mut wrapp_builder = webrogue_wrapp::WrappVFSBuilder::from_file_path(args.wrapp_path)?;
     let wrapp_config = wrapp_builder.config()?.clone();
 
     {
@@ -74,7 +74,7 @@ WEBROGUE_APPLICATION_VERSION = {}
     }
 
     let icons_stamp = icons::build(
-        &args.build_dir,
+        args.build_dir,
         &mut wrapp_builder,
         old_stamp.as_ref().map(|stamp| &stamp.icons),
     )?;
@@ -84,35 +84,37 @@ WEBROGUE_APPLICATION_VERSION = {}
     if !aot_dir.exists() {
         std::fs::create_dir(&aot_dir)?;
     }
-    if webrogue_wrapp::is_path_a_wrapp(&args.wrapp_path).with_context(|| {
+    if webrogue_wrapp::is_path_a_wrapp(args.wrapp_path).with_context(|| {
         format!(
             "Unable to determine file type for {}",
             args.wrapp_path.display()
         )
     })? {
         webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::WrappVFSBuilder::from_file_path(
-            &args.wrapp_path,
+            args.wrapp_path,
         )?)
         .write(&mut std::fs::File::create(
             args.build_dir.join("aot.swrapp"),
         )?)?;
     } else {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(&args.wrapp_path)?)
-            .write(&mut std::fs::File::create(
-                args.build_dir.join("aot.swrapp"),
-            )?)?;
+        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(
+            args.wrapp_path,
+        )?)
+        .write(&mut std::fs::File::create(
+            args.build_dir.join("aot.swrapp"),
+        )?)?;
     }
 
     match command {
         XcodeCommands::Macos { config } => {
             object::compile(
                 types::Destination::MacOS,
-                &args.wrapp_path,
-                &args.build_dir,
+                args.wrapp_path,
+                args.build_dir,
                 args.cache,
             )?;
             build::build(
-                &args.build_dir,
+                args.build_dir,
                 config.unwrap_or(types::Configuration::Debug),
                 types::Destination::MacOS,
                 &mut wrapp_builder,
@@ -122,11 +124,11 @@ WEBROGUE_APPLICATION_VERSION = {}
             let destination = if *simulator {
                 types::Destination::IOSSim
             } else {
-                types::Destination::IOS
+                types::Destination::Ios
             };
-            object::compile(destination, &args.wrapp_path, &args.build_dir, args.cache)?;
+            object::compile(destination, args.wrapp_path, args.build_dir, args.cache)?;
             build::build(
-                &args.build_dir,
+                args.build_dir,
                 config.unwrap_or(types::Configuration::ReleaseLocal),
                 destination,
                 &mut wrapp_builder,
@@ -135,20 +137,20 @@ WEBROGUE_APPLICATION_VERSION = {}
         XcodeCommands::Project {} => {
             object::compile(
                 types::Destination::MacOS,
-                &args.wrapp_path,
-                &args.build_dir,
+                args.wrapp_path,
+                args.build_dir,
                 args.cache,
             )?;
             object::compile(
-                types::Destination::IOS,
-                &args.wrapp_path,
-                &args.build_dir,
+                types::Destination::Ios,
+                args.wrapp_path,
+                args.build_dir,
                 args.cache,
             )?;
             object::compile(
                 types::Destination::IOSSim,
-                &args.wrapp_path,
-                &args.build_dir,
+                args.wrapp_path,
+                args.build_dir,
                 args.cache,
             )?;
             println!(
@@ -163,20 +165,20 @@ WEBROGUE_APPLICATION_VERSION = {}
         icons: icons_stamp,
     };
     if old_stamp.as_ref() != Some(&new_stamp) {
-        write_stamp(new_stamp, &args.build_dir)?;
+        write_stamp(new_stamp, args.build_dir)?;
     }
 
     Ok(())
 }
 
-fn read_stamp(build_dir: &std::path::PathBuf) -> anyhow::Result<types::Stamp> {
+fn read_stamp(build_dir: &std::path::Path) -> anyhow::Result<types::Stamp> {
     let mut buff = [0u8; 128];
     let file = std::fs::File::open(build_dir.join(".wrstamp"))?;
     let (result, _) = postcard::from_io((file, &mut buff))?;
     Ok(result)
 }
 
-fn write_stamp(stamp: types::Stamp, build_dir: &std::path::PathBuf) -> anyhow::Result<()> {
+fn write_stamp(stamp: types::Stamp, build_dir: &std::path::Path) -> anyhow::Result<()> {
     let file = std::fs::File::create(build_dir.join(".wrstamp"))?;
     postcard::to_io(&stamp, file)?;
     Ok(())

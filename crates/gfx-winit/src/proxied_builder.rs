@@ -6,7 +6,7 @@ use winit::{
     window::WindowId,
 };
 
-use crate::{mailbox::Mailbox, window_registry::WindowRegistry, WinitSystem, WinitWindow};
+use crate::{mailbox::Mailbox, window_registry::WindowRegistry, WinitSystem};
 
 pub struct ProxiedWinitBuilder {
     proxy: WinitProxy,
@@ -87,7 +87,9 @@ impl WinitProxy {
     }
 }
 
-impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for ProxiedWinitBuilder {
+impl webrogue_gfx::IBuilder for ProxiedWinitBuilder {
+    type System = WinitSystem;
+
     fn run<Output>(self, body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static) -> Output
     where
         Output: Send + 'static,

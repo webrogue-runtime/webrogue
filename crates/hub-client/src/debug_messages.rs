@@ -1,7 +1,7 @@
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugOutgoingMessage {
-    Request(DebugRequest),
-    Command(DebugCommand),
+    Request(Box<DebugRequest>),
+    Command(Box<DebugCommand>),
 }
 
 impl DebugOutgoingMessage {

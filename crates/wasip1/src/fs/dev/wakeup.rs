@@ -73,8 +73,8 @@ mod windows {
         os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle},
         ptr::{null, null_mut},
     };
-    
-        use windows_sys::Win32::System::Threading::{CreateEventA, ResetEvent, SetEvent};
+
+    use windows_sys::Win32::System::Threading::{CreateEventA, ResetEvent, SetEvent};
 
     pub struct File {
         handle: OwnedHandle,
@@ -82,9 +82,7 @@ mod windows {
 
     impl File {
         pub fn new() -> Result<Self, wasi_common::Error> {
-            let handle = unsafe {
-                CreateEventA(null(), 1, 0, null())
-            };
+            let handle = unsafe { CreateEventA(null(), 1, 0, null()) };
             assert!(handle != null_mut());
             Ok(Self {
                 handle: unsafe { OwnedHandle::from_raw_handle(handle) },
@@ -100,7 +98,7 @@ mod windows {
 
         pub(super) fn signal(&self) -> Result<(), ()> {
             unsafe {
-               SetEvent(self.handle.as_raw_handle());
+                SetEvent(self.handle.as_raw_handle());
             }
             Ok(())
         }
@@ -128,12 +126,12 @@ impl WasiFile for File {
 
     #[cfg(unix)]
     fn pollable(&self) -> Option<rustix::fd::BorrowedFd<'_>> {
-        Some(File::pollable(&self))
+        Some(File::pollable(self))
     }
 
     #[cfg(windows)]
     fn pollable(&self) -> Option<io_extras::os::windows::RawHandleOrSocket> {
-        Some(File::pollable(&self))
+        Some(File::pollable(self))
     }
 
     async fn read_vectored<'a>(

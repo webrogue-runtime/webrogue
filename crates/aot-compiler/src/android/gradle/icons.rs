@@ -1,10 +1,5 @@
-pub fn build<
-    FilePosition: webrogue_wrapp::IFilePosition,
-    FileReader: webrogue_wrapp::IFileReader,
-    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-    VFSBuilder: webrogue_wrapp::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
->(
-    build_dir: &std::path::PathBuf,
+pub fn build<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
+    build_dir: &std::path::Path,
     vfs_builder: &mut VFSBuilder,
     old_stamp: Option<&webrogue_icons::IconsData>,
 ) -> anyhow::Result<webrogue_icons::IconsData> {

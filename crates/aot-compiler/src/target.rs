@@ -20,11 +20,11 @@ impl Target {
     pub fn from_name(name: &str) -> anyhow::Result<Self> {
         Self::all_cases()
             .find(|target| target.name() == name)
-            .and_then(|target| Some(*target))
+            .copied()
             .ok_or_else(|| {
                 anyhow::anyhow!(
                     "Target {} is not supported by webrogue-aot-compiler. Supported targets are:\n{}", 
-                    name, 
+                    name,
                     Target::all_cases()
                         .map(|target| format!("\t{}", target.name()))
                         .collect::<Vec<_>>()

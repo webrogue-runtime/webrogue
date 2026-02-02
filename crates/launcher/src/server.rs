@@ -70,13 +70,7 @@ impl webrogue_launcher_server_openapi::apis::default::Default<anyhow::Error> for
         _cookies: &CookieJar,
         body: &Sdp,
     ) -> Result<MakePeerConnectionResponse, anyhow::Error> {
-        let result = self
-            .inner
-            .lock()
-            .await
-            .make_peer_connection(body)
-            .await
-            .map_err(|e| e)?;
+        let result = self.inner.lock().await.make_peer_connection(body).await?;
 
         return Ok(MakePeerConnectionResponse::Status200_SuccessfullyMadePeerConnection(result));
     }

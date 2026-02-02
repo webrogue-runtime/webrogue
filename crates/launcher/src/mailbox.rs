@@ -33,7 +33,14 @@ where
 
 #[derive(Clone)]
 pub struct MailboxInternal {
+    #[allow(clippy::type_complexity)]
     requests: Arc<Mutex<Vec<Box<dyn FnOnce(&WebView) + Send>>>>,
+}
+
+impl Default for MailboxInternal {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MailboxInternal {

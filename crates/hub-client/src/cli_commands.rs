@@ -7,8 +7,10 @@ use crate::{
 };
 use clap::Subcommand;
 use futures_util::{stream::StreamExt as _, SinkExt};
+use std::io::Read;
 use std::str::FromStr as _;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
+use webrogue_wrapp::IVFSHandle;
 use webrtc::peer_connection::sdp::session_description::RTCSessionDescription;
 
 #[derive(Subcommand, Debug, Clone)]
@@ -49,9 +51,9 @@ impl CLICommand {
 }
 
 async fn debug(
-    wrapp_path: &std::path::PathBuf,
-    device_id: &String,
-    api_key: &String,
+    wrapp_path: &std::path::Path,
+    device_id: &str,
+    api_key: &str,
 ) -> Result<(), anyhow::Error> {
     let mut connection = OutgoingDebugConnection::new().await?;
 
@@ -86,12 +88,7 @@ async fn debug(
     Ok(())
 }
 
-async fn send_wrapp<
-    FilePosition: webrogue_wrapp::IFilePosition,
-    FileReader: webrogue_wrapp::IFileReader,
-    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-    VFSBuilder: webrogue_wrapp::IVFSBuilder<FilePosition, FileReader, VFSHandle>,
->(
+async fn send_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     mut vfs_builder: VFSBuilder,
     connection: &mut OutgoingDebugConnection,
 ) -> anyhow::Result<()> {
@@ -163,8 +160,8 @@ async fn send_wrapp<
 }
 
 async fn get_debug_sdp_answer(
-    device_id: &String,
-    api_key: &String,
+    device_id: &str,
+    api_key: &str,
     sdp_offer: String,
 ) -> Result<webrogue_hub_client_openapi::models::DebugIncomingWsMessage, anyhow::Error> {
     let (ws_stream, _) = connect_async(format!(
@@ -175,7 +172,7 @@ async fn get_debug_sdp_answer(
     let (mut write, mut read) = ws_stream.split();
     let outgoing_message = serde_json::to_string(
         &webrogue_hub_client_openapi::models::DebugOutgoingWsMessage::new(
-            uuid::Uuid::from_str(&device_id)?,
+            uuid::Uuid::from_str(device_id)?,
             sdp_offer,
         ),
     )?;

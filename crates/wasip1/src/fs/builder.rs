@@ -1,18 +1,11 @@
-pub struct Dir<
-    FilePosition: webrogue_wrapp::IFilePosition,
-    FileReader: webrogue_wrapp::IFileReader,
-    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-> {
-    pub dirs: std::collections::BTreeMap<String, Dir<FilePosition, FileReader, VFSHandle>>,
-    pub files: std::collections::BTreeMap<String, File<FilePosition, FileReader, VFSHandle>>,
+use webrogue_wrapp::IVFSHandle;
+
+pub struct Dir<VFSHandle: webrogue_wrapp::IVFSHandle> {
+    pub dirs: std::collections::BTreeMap<String, Dir<VFSHandle>>,
+    pub files: std::collections::BTreeMap<String, File<VFSHandle>>,
 }
 
-impl<
-        FilePosition: webrogue_wrapp::IFilePosition,
-        FileReader: webrogue_wrapp::IFileReader,
-        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-    > Dir<FilePosition, FileReader, VFSHandle>
-{
+impl<VFSHandle: webrogue_wrapp::IVFSHandle> Dir<VFSHandle> {
     pub fn root(handle: VFSHandle) -> Self {
         let mut result = Self::empty();
         for (path, position) in handle.get_index() {
@@ -42,7 +35,7 @@ impl<
     fn insert_file_position(
         &mut self,
         filename: &str,
-        position: FilePosition,
+        position: <VFSHandle as IVFSHandle>::FilePosition,
         parts: &[&str],
         wrapp: &VFSHandle,
     ) {
@@ -64,27 +57,13 @@ impl<
     }
 }
 
-pub struct File<
-    FilePosition: webrogue_wrapp::IFilePosition,
-    FileReader: webrogue_wrapp::IFileReader,
-    VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-> {
+pub struct File<VFSHandle: webrogue_wrapp::IVFSHandle> {
     pub handle: VFSHandle,
-    pub position: FilePosition,
-    _file_reader: std::marker::PhantomData<FileReader>,
+    pub position: VFSHandle::FilePosition,
 }
 
-impl<
-        FilePosition: webrogue_wrapp::IFilePosition,
-        FileReader: webrogue_wrapp::IFileReader,
-        VFSHandle: webrogue_wrapp::IVFSHandle<FilePosition, FileReader>,
-    > File<FilePosition, FileReader, VFSHandle>
-{
-    pub fn new(handle: VFSHandle, position: FilePosition) -> Self {
-        Self {
-            handle,
-            position,
-            _file_reader: std::marker::PhantomData,
-        }
+impl<VFSHandle: webrogue_wrapp::IVFSHandle> File<VFSHandle> {
+    pub fn new(handle: VFSHandle, position: VFSHandle::FilePosition) -> Self {
+        Self { handle, position }
     }
 }

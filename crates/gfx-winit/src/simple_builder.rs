@@ -8,19 +8,18 @@ use winit::{
     window::WindowId,
 };
 
-use crate::{
-    window_registry::WindowRegistry, ProxiedWinitBuilder, WinitProxy, WinitSystem, WinitWindow,
-};
+use crate::{window_registry::WindowRegistry, ProxiedWinitBuilder, WinitProxy, WinitSystem};
 
-struct App<BodyFn: FnOnce(WinitSystem) -> () + Send + 'static> {
+type CreateSystemFn =
+    Box<dyn FnOnce(EventLoopProxy) -> (ProxiedWinitBuilder, WinitProxy) + Send + 'static>;
+
+struct App<BodyFn: FnOnce(WinitSystem) + Send + 'static> {
     pub body_fn: Option<BodyFn>,
-    pub create_system_fn: Option<
-        Box<dyn FnOnce(EventLoopProxy) -> (ProxiedWinitBuilder, WinitProxy) + Send + 'static>,
-    >,
+    pub create_system_fn: Option<CreateSystemFn>,
     pub proxy: Option<WinitProxy>,
 }
 
-impl<BodyFn: FnOnce(WinitSystem) -> () + Send + 'static> ApplicationHandler for App<BodyFn> {
+impl<BodyFn: FnOnce(WinitSystem) + Send + 'static> ApplicationHandler for App<BodyFn> {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         let Some(body_fn) = self.body_fn.take() else {
             return;
@@ -35,7 +34,7 @@ impl<BodyFn: FnOnce(WinitSystem) -> () + Send + 'static> ApplicationHandler for 
             .spawn(move || {
                 builder.run(|winit_system| {
                     let mailbox = winit_system.mailbox.clone();
-                    let _ = body_fn(winit_system);
+                    body_fn(winit_system);
                     mailbox.execute(|event_loop| event_loop.exit());
                 })
             })
@@ -79,7 +78,7 @@ impl SimpleWinitBuilder {
         }
     }
 
-    pub fn default() -> anyhow::Result<Self> {
+    pub fn with_default_event_loop() -> anyhow::Result<Self> {
         Ok(Self {
             event_loop: EventLoop::new()?,
             on_hide: Default::default(),
@@ -92,7 +91,9 @@ impl SimpleWinitBuilder {
     }
 }
 
-impl webrogue_gfx::IBuilder<WinitSystem, WinitWindow> for SimpleWinitBuilder {
+impl webrogue_gfx::IBuilder for SimpleWinitBuilder {
+    type System = WinitSystem;
+
     fn run<Output>(self, body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static) -> Output
     where
         Output: Send + 'static,

@@ -46,7 +46,10 @@ pub struct RealVFS {
 #[derive(Clone)]
 pub struct RealVFSHandle(std::sync::Arc<RealVFS>);
 
-impl crate::IVFSHandle<RealFilePosition, RealFileReader> for RealVFSHandle {
+impl crate::IVFSHandle for RealVFSHandle {
+    type FilePosition = RealFilePosition;
+    type FileReader = RealFileReader;
+
     fn get_index(&self) -> &std::collections::HashMap<String, RealFilePosition> {
         &self.0.paths
     }
@@ -175,14 +178,14 @@ impl RealVFSBuilder {
     }
 }
 
-impl crate::IVFSBuilder<RealFilePosition, RealFileReader, RealVFSHandle> for RealVFSBuilder {
+impl crate::IVFSBuilder for RealVFSBuilder {
+    type VFSHandle = RealVFSHandle;
+
     fn into_vfs(self) -> anyhow::Result<RealVFSHandle> {
-        return Ok(RealVFSHandle {
-            0: Arc::new(RealVFS {
-                config: self.config,
-                paths: self.paths,
-            }),
-        });
+        Ok(RealVFSHandle(Arc::new(RealVFS {
+            config: self.config,
+            paths: self.paths,
+        })))
     }
 
     fn config(&mut self) -> anyhow::Result<&crate::config::Config> {

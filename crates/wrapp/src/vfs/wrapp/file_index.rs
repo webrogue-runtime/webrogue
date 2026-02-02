@@ -45,8 +45,7 @@ impl<'a> Reader<'a> {
             .seekable
             .get_frame_decompressed_size(self.current_frame);
         let index_to_write_to = self.buffer.len();
-        self.buffer
-            .extend(std::iter::repeat(0).take(new_chunk_size));
+        self.buffer.extend(std::iter::repeat_n(0, new_chunk_size));
         self.seekable
             .decompress_frame(&mut self.buffer[index_to_write_to..], self.current_frame);
         self.current_frame += 1;
