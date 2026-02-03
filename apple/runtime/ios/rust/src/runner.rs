@@ -4,9 +4,9 @@ fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
     let builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(wrapp_path)?;
 
     return webrogue_wasmtime::run_aot_builder(
-        webrogue_gfx_winit::SimpleWinitBuilder::default()?,
+        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?,
         builder,
-        &persistent_path.into(),
+        &std::path::PathBuf::from(persistent_path),
     );
 }
 
