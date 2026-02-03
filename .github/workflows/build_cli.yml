@@ -62,7 +62,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm external/zstd-rs examples
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs examples
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - name: Setup Rust
@@ -123,7 +123,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm external/zstd-rs
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - name: Build
@@ -145,7 +145,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm external/zstd-rs
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - name: Setup Rust
@@ -171,7 +171,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm external/zstd-rs
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - name: Setup Rust
@@ -197,7 +197,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/llvm external/zstd-rs
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - name: Build
