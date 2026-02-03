@@ -27,6 +27,7 @@ fn main() {
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
     println!("cargo:rustc-link-lib=static={}", lib_name);
     if target_os == "linux" {
+        println!("cargo:rustc-link-lib=dylib=bsd");
         println!("cargo:rustc-link-lib=dylib=stdc++");
     } else if target_os == "macos" {
         println!("cargo:rustc-link-lib=dylib=c++");
