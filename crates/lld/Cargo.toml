@@ -6,10 +6,10 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-build-llvm = []
+link-llvm = []
 
 [dependencies]
 anyhow = { workspace = true }
 
 [build-dependencies]
-cmake = { workspace = true }
+reqwest = { workspace = true, features = ["blocking"] }

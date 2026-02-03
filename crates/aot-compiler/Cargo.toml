@@ -7,7 +7,7 @@ edition.workspace = true
 
 [features]
 default = []
-llvm = ["dep:webrogue-lld", "webrogue-lld/build-llvm"]
+llvm = ["dep:webrogue-lld", "webrogue-lld/link-llvm"]
 appended_artifacts = []
 
 [dependencies]
