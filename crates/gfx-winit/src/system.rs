@@ -62,6 +62,7 @@ impl webrogue_gfx::ISystem for WinitSystem {
             mailbox: self.mailbox.clone(),
             vulkan_entry: self.vulkan_entry.clone(),
             events_buffer: Mutex::new(Vec::new()),
+            cpu_surface_data: Mutex::new(None)
         });
 
         self.window_registry

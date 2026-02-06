@@ -1,8 +1,18 @@
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::{
+    fs::File,
+    io::Read as _,
+    sync::{atomic::AtomicUsize, Arc},
+};
+
+const BEGIN_GENERATED_CODE_SEP: &str = "// BEGIN GENERATED CODE";
+const END_GENERATED_CODE_SEP: &str = "// END GENERATED CODE";
 
 pub struct CodeWriter {
     buf: Vec<u8>,
+    after_generated: Vec<u8>,
     indent_storage: IndentStorage,
+    original_content: Vec<u8>,
+    path: std::path::PathBuf,
 }
 
 #[derive(Clone)]
@@ -21,13 +31,32 @@ impl IndentStorage {
 }
 
 impl CodeWriter {
-    pub fn new() -> Self {
-        CodeWriter {
-            buf: Vec::new(),
+    pub fn new(path: std::path::PathBuf) -> anyhow::Result<Self> {
+        let mut original_content = vec![];
+        File::open(&path)
+            .unwrap()
+            .read_to_end(&mut original_content)
+            .unwrap();
+
+        let original_content_string = String::from_utf8(original_content.clone())?;
+        let (before_generated, the_rest) = original_content_string
+            .split_once(BEGIN_GENERATED_CODE_SEP)
+            .unwrap();
+        let (_, after_generated) = the_rest.split_once(END_GENERATED_CODE_SEP).unwrap();
+
+        Ok(CodeWriter {
+            buf: (before_generated.to_owned() + BEGIN_GENERATED_CODE_SEP + "\n")
+                .as_bytes()
+                .to_vec(),
+            after_generated: (END_GENERATED_CODE_SEP.to_owned() + after_generated)
+                .as_bytes()
+                .to_vec(),
             indent_storage: IndentStorage {
                 indent: Arc::new(AtomicUsize::new(0)),
             },
-        }
+            original_content,
+            path,
+        })
     }
 
     pub fn indent_storage(&self) -> IndentStorage {
@@ -46,19 +75,17 @@ impl CodeWriter {
         anyhow::Ok(())
     }
 
-    pub fn write_to_file(&mut self, path: &std::path::Path) -> anyhow::Result<()> {
-        let mut file = std::fs::OpenOptions::new().read(true).open(path)?;
-        let mut old_content = Vec::new();
-        std::io::Read::read_to_end(&mut file, &mut old_content)?;
-        if old_content == self.buf {
+    pub fn write_to_file(mut self) -> anyhow::Result<()> {
+        let mut content = self.buf;
+        content.append(&mut self.after_generated);
+        if content == self.original_content {
             return Ok(());
         }
-        drop(file);
         let mut file = std::fs::OpenOptions::new()
             .write(true)
             .truncate(true)
-            .open(path)?;
-        std::io::Write::write_all(&mut file, &self.buf)?;
+            .open(self.path)?;
+        std::io::Write::write_all(&mut file, &content)?;
         Ok(())
     }
 }

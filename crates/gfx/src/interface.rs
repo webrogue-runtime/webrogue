@@ -8,6 +8,7 @@ use types::VkObject as GuestVkObject;
 use types::WindowHandle as GuestWindowHandle;
 use types::WindowSize as GuestWindowSize;
 
+use std::cell::UnsafeCell;
 use std::rc::Rc;
 use std::{
     collections::BTreeMap,
@@ -34,6 +35,7 @@ pub trait IWindow {
     fn get_gl_size(&self) -> (u32, u32);
     fn make_vk_surface(&self, vk_instance: *mut ()) -> Option<*mut ()>;
     fn poll(&self, events_buffer: &mut Vec<u8>);
+    fn present_pixels(&self, pixels: &[UnsafeCell<u32>]) -> Result<(), ()>;
 }
 
 pub struct Interface<System: ISystem> {
@@ -192,7 +194,9 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         out_vk_surface: wiggle::GuestPtr<GuestVkObject>,
     ) {
         let Some(window) = self.get_window(window) else {
-            todo!();
+            let _ = mem.write(out_vk_surface, 0);
+            assert!(false);
+            return;
         };
 
         let gfxstream_decoder = self.get_gfxstream_decoder();
@@ -202,7 +206,9 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
             let vk_surface = gfxstream_decoder.box_vk_surface(vk_surface);
             let _ = mem.write(out_vk_surface, vk_surface);
         } else {
-            todo!();
+            let _ = mem.write(out_vk_surface, 0);
+            assert!(false);
+            return;
         }
     }
 
@@ -222,10 +228,54 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
             }
         };
         if slice.len() != size as usize {
+            assert!(false);
             return;
         }
         // register_blob will store buf and pass it to vulkan driver for later use
         unsafe { self.get_gfxstream_decoder().register_blob(slice, blob_id) };
+    }
+
+    fn present_pixels(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        window: GuestWindowHandle,
+        buff: wiggle::GuestPtr<u8>,
+        len: GuestSize,
+        out_error: wiggle::GuestPtr<u8>,
+    ) -> () {
+        let result: Result<(), u8> = (|| {
+            let Some(window) = self.get_window(window) else {
+                return Err(1);
+            };
+            let pixels = match mem {
+                wiggle::GuestMemory::Unshared(_) => unimplemented!(),
+                wiggle::GuestMemory::Shared(unsafe_cells) => {
+                    let offset = buff.offset() as usize;
+                    let size = len as usize;
+                    &unsafe_cells[offset..][..size]
+                }
+            };
+            let (prefix, pixels, suffix) = unsafe { pixels.align_to::<UnsafeCell<u32>>() };
+
+            // If there is a prefix or suffix, the slice wasn't perfectly aligned
+            // to the u32 boundary or the length wasn't a multiple of 4.
+            if !prefix.is_empty() || !suffix.is_empty() {
+                return Err(1);
+            }
+            let result = window.present_pixels(pixels);
+            // assert_eq!(result, Ok(()));
+            result.map_err(|_| 3)?;
+            Ok(())
+        })();
+        // assert_eq!(result, Ok(()));
+        match result {
+            Ok(_) => {
+                let _ = mem.write(out_error, 0);
+            }
+            Err(error_code) => {
+                let _ = mem.write(out_error, error_code);
+            }
+        }
     }
 }
 

@@ -8,7 +8,8 @@ pub enum Commands {
         wrapp_path: std::path::PathBuf,
         /// Path where resulting executable will be placed
         out_path: std::path::PathBuf,
-        /// LibC to compile for. Defaults to glibc
+        /// LibC to compile for.
+        /// Defaults to glibc.
         #[arg(long)]
         libc: Option<crate::linux::LibC>,
     },
@@ -18,13 +19,15 @@ pub enum Commands {
         wrapp_path: std::path::PathBuf,
         /// Path where resulting project will be placed
         build_dir: std::path::PathBuf,
-        /// Path to Android SDK. If not specified, ANDROID_SDK_ROOT or ANDROID_HOME environment variable will be used
+        /// Path to Android SDK.
+        /// If not specified, ANDROID_SDK_ROOT or ANDROID_HOME environment variable will be used.
         #[arg(long, value_name = "PATH")]
         sdk: Option<std::path::PathBuf>,
-        /// Path to Java installation directory. If not specified, JAVA_HOME environment variable is used
+        /// Path to Java installation directory.
+        /// If not specified, JAVA_HOME environment variable is used.
         #[arg(long, value_name = "PATH")]
         java_home: Option<std::path::PathBuf>,
-        /// Path to release signing keystore
+        /// Path to release signing keystore.
         ///
         /// Hint: keystore can be generated using following command:
         ///     keytool -genkeypair -keyalg RSA -keystore <PATH>.jks -alias <ALIAS> -validity 3650
@@ -54,24 +57,16 @@ pub enum Commands {
         out_path: std::path::PathBuf,
         /// Use console app's entry point.
         /// It allow stdin/stdout/stderr to work, but opens console window upon launch.
+        /// It also makes cmd pop up on launch, so this option is not recommended.
         #[arg(long)]
         console: bool,
-    },
-    /// Compile object file.
-    /// This commands is intended be invoked from other build systems
-    Object {
-        wrapp_path: std::path::PathBuf,
-        out_path: std::path::PathBuf,
-        target: String,
-        #[arg(short, long)]
-        pic: bool,
-    },
-    /// Compile shared library
-    /// This commands is intended be invoked from other build systems
-    AndroidSo {
-        wrapp_path: std::path::PathBuf,
-        out_path: std::path::PathBuf,
-        target: String,
+        /// Don't add vk_swiftshader.dll.
+        /// SwiftShader is used as a fallback renderer on system that have no Vulkan drivers installed.
+        /// Webrogue places SwiftShader in the same directory resulting executable is in.
+        /// It's recommended to keep SwiftShader in most cases, but you can use this option to skip this 
+        /// step, so you app will fail to start if hardware-accelerated rendering is unavailable.
+        #[arg(long)]
+        no_swiftshader: bool,
     },
     /// Xcode-related commands
     Xcode {
@@ -81,6 +76,21 @@ pub enum Commands {
         build_dir: std::path::PathBuf,
         #[command(subcommand)]
         commands: crate::xcode::XcodeCommands,
+    },
+    /// An internal command.
+    /// You probably need `android` command instead
+    AndroidSo {
+        wrapp_path: std::path::PathBuf,
+        out_path: std::path::PathBuf,
+        target: String,
+    },
+    /// An internal command
+    Object {
+        wrapp_path: std::path::PathBuf,
+        out_path: std::path::PathBuf,
+        target: String,
+        #[arg(short, long)]
+        pic: bool,
     },
 }
 
@@ -159,7 +169,8 @@ impl Commands {
                 wrapp_path,
                 out_path,
                 console,
-            } => crate::windows::build(wrapp_path, out_path, *console, cache)?,
+                no_swiftshader,
+            } => crate::windows::build(wrapp_path, out_path, *console, cache, !no_swiftshader)?,
             Commands::Xcode {
                 wrapp_path,
                 build_dir,

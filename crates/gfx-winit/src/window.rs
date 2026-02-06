@@ -1,15 +1,26 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    num::NonZero,
+    sync::{Arc, Mutex},
+};
 
 use ash::Entry;
+use softbuffer::SoftBufferError;
 use winit::{event::WindowEvent, window::Window};
 
 use crate::{events::encode_event, mailbox::Mailbox};
+
+pub struct CPUSurfaceData {
+    // pub(crate) window: Arc<Box<dyn Window>>,
+    // pub(crate) context: softbuffer::Context<Arc<Box<dyn Window>>>,
+    pub(crate) surface: Mutex<softbuffer::Surface<Arc<Box<dyn Window>>, Arc<Box<dyn Window>>>>,
+}
 
 pub struct WinitWindowInternal {
     pub(crate) window: Arc<Box<dyn Window>>,
     pub(crate) mailbox: Mailbox,
     pub(crate) vulkan_entry: Option<Arc<Entry>>,
     pub(crate) events_buffer: Mutex<Vec<u8>>,
+    pub(crate) cpu_surface_data: Mutex<Option<Arc<CPUSurfaceData>>>,
 }
 
 pub struct WinitWindow {
@@ -69,6 +80,55 @@ impl webrogue_gfx::IWindow for WinitWindow {
 
     fn poll(&self, events_buffer: &mut Vec<u8>) {
         events_buffer.append(&mut self.internal.events_buffer.lock().unwrap());
+    }
+
+    fn present_pixels(&self, pixels: &[std::cell::UnsafeCell<u32>]) -> Result<(), ()> {
+        fn void_err(err: SoftBufferError) {
+            eprintln!("{}", err.to_string());
+            assert!(false);
+        }
+
+        let pixels_slice =
+            unsafe { std::slice::from_raw_parts(pixels.as_ptr() as *const u32, pixels.len()) };
+
+        self.internal.mailbox.execute(move |_| {
+            let mut lock = self.internal.cpu_surface_data.lock().unwrap();
+
+            let cpu_surface_data = match lock.clone() {
+                Some(cpu_surface_data) => cpu_surface_data.clone(),
+                None => {
+                    let context =
+                        softbuffer::Context::new(self.internal.window.clone()).map_err(void_err)?;
+
+                    let surface = softbuffer::Surface::new(&context, self.internal.window.clone())
+                        .map_err(void_err)?;
+                    let cpu_surface_data = Arc::new(CPUSurfaceData {
+                        // context,
+                        surface: Mutex::new(surface),
+                    });
+                    let _ = lock.insert(cpu_surface_data.clone());
+                    cpu_surface_data
+                }
+            };
+
+            let mut surface = cpu_surface_data.surface.lock().unwrap();
+
+            let win_size = self.get_gl_size();
+            let Some(win_size) = NonZero::new(win_size.0).zip(NonZero::new(win_size.1)) else {
+                return Err(());
+            };
+            surface.resize(win_size.0, win_size.1).map_err(void_err)?;
+            let mut buffer = surface.buffer_mut().map_err(void_err)?;
+            if buffer.len() != pixels_slice.len() {
+                return Err(());
+            }
+
+            buffer.copy_from_slice(pixels_slice);
+
+            buffer.present().map_err(void_err)?;
+
+            Ok(())
+        })
     }
 }
 

@@ -12,6 +12,7 @@ static-vk = []
 anyhow = { workspace = true }
 webrogue-gfx = { workspace = true }
 winit = { workspace = true, default-features = true }
+softbuffer = { workspace = true, default-features = true }
 
 ash = { workspace = true, features = ["std", "loaded"], default-features = false }
 ash-window = { workspace = true }

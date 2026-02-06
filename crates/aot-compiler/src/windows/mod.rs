@@ -7,6 +7,7 @@ pub fn build(
     output_file_path: &std::path::PathBuf,
     is_console: bool,
     cache: Option<&std::path::PathBuf>,
+    with_swiftshader: bool,
 ) -> anyhow::Result<()> {
     let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
 
@@ -63,13 +64,15 @@ pub fn build(
 
     let wrapp_size = new_size - original_size;
     output_file.write_all(&wrapp_size.to_le_bytes())?;
-    artifacts.extract(
-        std::path::absolute(output_file_path)?
-            .parent()
-            .ok_or_else(|| anyhow::anyhow!("Path error"))?
-            .join("vk_swiftshader.dll"),
-        "x86_64-windows-msvc/vk_swiftshader.dll",
-    )?;
+    if with_swiftshader {
+        artifacts.extract(
+            std::path::absolute(output_file_path)?
+                .parent()
+                .ok_or_else(|| anyhow::anyhow!("Path error"))?
+                .join("vk_swiftshader.dll"),
+            "x86_64-windows-msvc/vk_swiftshader.dll",
+        )?;
+    }
     // println!("Generating stripped WRAPP file...");
     // webrogue_wrapp::strip(wrapp_file_path, std::fs::File::create(stripped_wrapp_path)?)?;
 
