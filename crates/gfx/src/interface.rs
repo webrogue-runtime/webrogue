@@ -186,6 +186,11 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         let _ = mem.write(out_window, new_window_id);
     }
 
+    fn destroy_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>, window: GuestWindowHandle) {
+        let mut windows = self.windows.lock().unwrap();
+        windows.remove(&window);
+    }
+
     fn make_vk_surface(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
