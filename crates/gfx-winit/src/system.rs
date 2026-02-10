@@ -8,7 +8,7 @@ use winit::window::WindowAttributes;
 
 use crate::{
     mailbox::Mailbox,
-    vulkan_library::{filter_vulkan_library, load_vulkan_entry},
+    vulkan_library::load_vulkan_entry,
     window::WinitWindowInternal,
     window_registry::WindowRegistry,
     WinitWindow,
@@ -24,19 +24,17 @@ pub struct WinitSystem {
 impl Drop for WinitSystem {
     fn drop(&mut self) {
         // gfxstream must be deinitialized before sdl unloads vulkan library
-        *self.gfxstream_system.lock().unwrap() = None;
+        self.gfxstream_system.lock().unwrap().take();
     }
 }
 
 impl WinitSystem {
     pub(crate) fn new(mailbox: Mailbox, window_registry: WindowRegistry) -> Self {
-        let vulkan_entry = load_vulkan_entry()
-            .and_then(filter_vulkan_library)
-            .or_else(|| webrogue_gfx::swiftshader::load().and_then(filter_vulkan_library));
+        let vulkan_entry = load_vulkan_entry();
         Self {
             mailbox,
             gfxstream_system: Mutex::new(None),
-            vulkan_entry: vulkan_entry.map(Arc::new),
+            vulkan_entry: Some(Arc::new(vulkan_entry)),
             window_registry,
         }
     }
@@ -62,7 +60,7 @@ impl webrogue_gfx::ISystem for WinitSystem {
             mailbox: self.mailbox.clone(),
             vulkan_entry: self.vulkan_entry.clone(),
             events_buffer: Mutex::new(Vec::new()),
-            cpu_surface_data: Mutex::new(None)
+            cpu_surface_data: Mutex::new(None),
         });
 
         self.window_registry

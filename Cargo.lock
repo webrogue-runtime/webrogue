@@ -7770,6 +7770,7 @@ dependencies = [
  "ash-window",
  "softbuffer",
  "webrogue-gfx",
+ "windows",
  "winit",
 ]
 
