@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [lib]
-crate-type=["staticlib", "lib", "cdylib"]
+crate-type=["lib"]
 
 [features]
 _build = ["dep:cc"]
