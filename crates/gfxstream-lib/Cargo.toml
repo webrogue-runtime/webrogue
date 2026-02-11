@@ -1,0 +1,17 @@
+[package]
+name = "webrogue-gfxstream-lib"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type=["staticlib", "lib", "cdylib"]
+
+[features]
+_build = ["dep:cc"]
+impl = ["_build"]
+stub = ["_build"]
+
+[build-dependencies]
+cc = { workspace = true, optional = true }

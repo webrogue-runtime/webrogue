@@ -23,7 +23,6 @@ subprocess.run(
         "--manifest-path=../../crates/aot-lib/Cargo.toml",
         "--target-dir=./target",
         "--target=x86_64-pc-windows-msvc",
-        "--features=build-gfxstream-cc",
         "--profile",
         "aot",
     ],

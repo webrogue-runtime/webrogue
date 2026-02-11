@@ -53,6 +53,7 @@ members = [
   "crates/gfx",
   "crates/gfx-winit",
   "crates/gfxstream",
+  "crates/gfxstream-lib",
   "crates/hub-client",
   "crates/hub-client/openapi",
   "crates/icons",
@@ -90,6 +91,7 @@ webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-winit = { path = "crates/gfx-winit" }
 # webrogue-gfx-fallback = { path = "crates/gfx-fallback" }
 webrogue-gfxstream = { path = "crates/gfxstream" }
+webrogue-gfxstream-lib  = { path = "crates/gfxstream-lib" }
 webrogue-lld = { path = "crates/lld" }
 webrogue-wasip1 = { path = "crates/wasip1" }
 webrogue-wrapp = { path = "crates/wrapp" }

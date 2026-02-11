@@ -6,12 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [lib]
-# crate-type=["cdylib"]
 crate-type=["staticlib"]
-
-[features]
-build-gfxstream-cc = ["webrogue-gfxstream/cc"]
-
 
 [dependencies]
 webrogue-wasmtime = { workspace = true, features = ["aot"] }

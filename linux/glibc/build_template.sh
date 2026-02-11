@@ -6,17 +6,26 @@ rm -rf "$OUT_DIR"
 
 export NUM_JOBS=$(nproc)
 
-# rustup target add x86_64-unknown-linux-gnu
-cargo build --manifest-path=../crates/aot-lib/Cargo.toml --target-dir=./target --target=x86_64-unknown-linux-gnu --features=build-gfxstream-cc --profile aot
-
+CARGO_FLAGS="--target-dir=./target --target=x86_64-unknown-linux-gnu --profile aot"
 mkdir -p "$OUT_DIR"
+# rustup target add x86_64-unknown-linux-gnu
+
+
+cargo build --manifest-path=../crates/aot-lib/Cargo.toml $CARGO_FLAGS
 cp target/x86_64-unknown-linux-gnu/aot/libwebrogue_aot_lib.a "$OUT_DIR"
+
+for GFXSTREAM_LIB_TYPE in stub impl
+do
+    cargo build --manifest-path=../crates/gfxstream-lib/Cargo.toml --features=$GFXSTREAM_LIB_TYPE $CARGO_FLAGS
+    cp target/x86_64-unknown-linux-gnu/aot/libwebrogue_gfxstream_lib.rlib  "$OUT_DIR/libwebrogue_gfxstream_lib_$GFXSTREAM_LIB_TYPE.a"
+done
 
 clang main.c -nostdlib -c -o main.o
 
 
 rm -f process_dump*
-# strace -s 1000 -o process_dump -ff clang++ \
+# strace -s 1000 -o process_dump -ff \
+# clang++ \
 #     main.o \
 #     ../aot_artifacts/x86_64-linux-gnu/libwebrogue_aot_lib.a \
 #     empty.gnu.o \
@@ -92,26 +101,30 @@ rm main.o
 #     --no-as-needed \
 #     "$OUT_DIR/crtn.o"
 
-ld.lld \
-    --hash-style=gnu \
-    --build-id \
-    --eh-frame-hdr \
-    -m elf_x86_64 \
-    -dynamic-linker /lib64/ld-linux-x86-64.so.2 \
-    -o aot \
-    "$OUT_DIR/crt1.o" \
-    "$OUT_DIR/crti.o" \
-    "$OUT_DIR/crtbegin.o" \
-    "$OUT_DIR/libwebrogue_aot_lib.a" \
-    "empty.gnu.o" \
-    "$OUT_DIR/libm.so.6" \
-    "$OUT_DIR/libpthread.so" \
-    "$OUT_DIR/libdl.so" \
-    "$OUT_DIR/libgcc_s.so.1" \
-    "$OUT_DIR/libgcc.a" \
-    "$OUT_DIR/libc.so.6" \
-    "$OUT_DIR/libc_nonshared.a" \
-    "$OUT_DIR/crtend.o" \
-    "$OUT_DIR/crtn.o"
+for GFXSTREAM_LIB_TYPE in stub impl
+do
+    ld.lld \
+        --hash-style=gnu \
+        --build-id \
+        --eh-frame-hdr \
+        -m elf_x86_64 \
+        -dynamic-linker /lib64/ld-linux-x86-64.so.2 \
+        -o aot \
+        "$OUT_DIR/crt1.o" \
+        "$OUT_DIR/crti.o" \
+        "$OUT_DIR/crtbegin.o" \
+        "$OUT_DIR/libwebrogue_aot_lib.a" \
+        "$OUT_DIR/libwebrogue_gfxstream_lib_$GFXSTREAM_LIB_TYPE.a" \
+        "empty.gnu.o" \
+        "$OUT_DIR/libm.so.6" \
+        "$OUT_DIR/libpthread.so" \
+        "$OUT_DIR/libdl.so" \
+        "$OUT_DIR/libgcc_s.so.1" \
+        "$OUT_DIR/libgcc.a" \
+        "$OUT_DIR/libc.so.6" \
+        "$OUT_DIR/libc_nonshared.a" \
+        "$OUT_DIR/crtend.o" \
+        "$OUT_DIR/crtn.o"
 
-rm aot
+    rm aot
+done

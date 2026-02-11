@@ -358,6 +358,8 @@ void webrogue_gfxstream_ffi_set_register_shadow_blob_callback(
   auto state = gfxstream::host::vk::VkDecoderGlobalState::get();
   state->setWebrogueRegisterBlobCallback(callback);
 }
+
+void webrogue_gfxstream_stub_fn() {}
 }
 
 static void* sVulkanDispatchDlOpen() {

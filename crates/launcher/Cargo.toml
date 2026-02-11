@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-winit = ["dep:winit", "dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-gfxstream"]
+winit = ["dep:winit", "dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-gfxstream", "webrogue-gfxstream/lib-impl"]
 
 [dependencies]
 wry = { workspace = true, default-features = true }
@@ -35,7 +35,7 @@ blake3 = { workspace = true }
 webrogue-wrapp = { workspace = true }
 webrogue-wasmtime = { workspace = true, features = ["jit"], optional = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
-webrogue-gfxstream = { workspace = true, features = ["cc"], optional = true }
+webrogue-gfxstream = { workspace = true, optional = true }
 
 
 [target.'cfg(target_os = "linux")'.dependencies]

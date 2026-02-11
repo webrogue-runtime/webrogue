@@ -6,8 +6,8 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-launcher = ["webrogue-wasmtime/jit", "dep:jni", "dep:serde_json"]
-runner = ["webrogue-wasmtime/aot"]
+launcher = ["webrogue-wasmtime/jit", "dep:jni", "dep:serde_json", "webrogue-gfxstream/lib-impl"]
+runner = ["webrogue-wasmtime/aot", "webrogue-gfxstream/lib-impl"]
 
 [lib]
 name = "webrogue"
@@ -17,7 +17,7 @@ crate-type = ["cdylib"]
 anyhow = { workspace = true }
 webrogue-wasmtime = { workspace = true }
 winit = { workspace = true }
-webrogue-gfxstream = { workspace = true, features = ["cc"] }
+webrogue-gfxstream = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
 jni = { version = "0.21", optional = true }
 serde_json = { workspace = true, optional = true }

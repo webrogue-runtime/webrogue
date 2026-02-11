@@ -4,6 +4,8 @@ use std::io::{Seek, Write};
 
 use anyhow::Context as _;
 
+use crate::utils::extract_config;
+
 #[derive(Clone, Debug)]
 pub enum LibC {
     GLibC,
@@ -29,6 +31,8 @@ pub fn build_linux(
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
+    let config = extract_config(wrapp_file_path)?;
+    let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
     match libc {
         LibC::GLibC => {
             println!("Compiling AOT object...");
@@ -42,7 +46,7 @@ pub fn build_linux(
             )?;
 
             println!("Linking native binary...");
-            link::link_glibc(&object_file, output_file_path)?;
+            link::link_glibc(&object_file, output_file_path, vulkan)?;
         }
         LibC::Musl => {
             println!("Compiling AOT object...");
@@ -56,7 +60,7 @@ pub fn build_linux(
             )?;
 
             println!("Linking native binary...");
-            link::link_musl(&object_file, output_file_path)?;
+            link::link_musl(&object_file, output_file_path, vulkan)?;
         }
     }
 

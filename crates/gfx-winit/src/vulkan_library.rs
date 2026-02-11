@@ -1,6 +1,5 @@
 use ash::Entry;
 
-use std::collections::HashSet;
 #[cfg(not(feature = "static-vk"))]
 use std::path::PathBuf;
 

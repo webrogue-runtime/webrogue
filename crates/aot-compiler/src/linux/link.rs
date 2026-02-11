@@ -3,6 +3,7 @@
 pub fn link_musl(
     object_file: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
+    vulkan: bool,
 ) -> anyhow::Result<()> {
     anyhow::bail!("musl libc is temporary disabled");
 
@@ -20,6 +21,14 @@ pub fn link_musl(
         artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/libwebrogue_aot_lib.a")?;
     let crtend_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crtend.o")?;
     let crtn_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crtn.o")?;
+    let gfxstream_lib = artifacts.extract_tmp(
+        &build_dir,
+        if vulkan {
+            "x86_64-linux-musl/libwebrogue_gfxstream_lib_impl.a"
+        } else {
+            "x86_64-linux-musl/libwebrogue_gfxstream_lib_stub.a"
+        },
+    )?;
 
     crate::utils::lld!(
         "ld.lld",
@@ -40,8 +49,9 @@ pub fn link_musl(
         crt1_tmp.as_arg()?,
         crti_tmp.as_arg()?,
         crtbegin_tmp.as_arg()?,
-        "--as-needed",
+        "--no-as-needed",
         libwebrogue_aot_lib_tmp.as_arg()?,
+        gfxstream_lib.as_arg()?,
         object_file,
         crtend_tmp.as_arg()?,
         crtn_tmp.as_arg()?,
@@ -51,6 +61,7 @@ pub fn link_musl(
 pub fn link_glibc(
     object_file: &crate::utils::TemporalFile,
     output_file_path: &std::path::PathBuf,
+    vulkan: bool,
 ) -> anyhow::Result<()> {
     let mut artifacts = crate::utils::Artifacts::new()?;
     let build_dir = object_file
@@ -77,6 +88,15 @@ pub fn link_glibc(
     let crtend_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtend.o")?;
     let crtn_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-gnu/crtn.o")?;
 
+    let gfxstream_lib = artifacts.extract_tmp(
+        &build_dir,
+        if vulkan {
+            "x86_64-linux-gnu/libwebrogue_gfxstream_lib_impl.a"
+        } else {
+            "x86_64-linux-gnu/libwebrogue_gfxstream_lib_stub.a"
+        },
+    )?;
+
     crate::utils::lld!(
         "ld.lld",
         "--hash-style=gnu",
@@ -94,6 +114,7 @@ pub fn link_glibc(
         crti_tmp.as_arg()?,
         crtbegin_tmp.as_arg()?,
         libwebrogue_aot_lib_tmp.as_arg()?,
+        gfxstream_lib.as_arg()?,
         object_file,
         libm_tmp.as_arg()?,
         libpthread_tmp.as_arg()?,
