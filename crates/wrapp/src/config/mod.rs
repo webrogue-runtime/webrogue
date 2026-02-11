@@ -77,8 +77,11 @@ pub struct GraphicsApiConfig {
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum Requirement {
+    #[serde(rename = "unneeded")]
     Unneeded,
+    #[serde(rename = "optional")]
     Optional,
+    #[serde(rename = "required")]
     Required,
 }
 
