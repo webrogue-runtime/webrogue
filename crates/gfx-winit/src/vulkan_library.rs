@@ -77,27 +77,28 @@ fn filter_vulkan_library(entry: Entry) -> Option<Entry> {
     }
 }
 
-pub fn load_vulkan_entry() -> Entry {
+pub fn load_vulkan_entry(required: bool) -> Option<Entry> {
     loop {
         let result = load_normal_vulkan_entry()
             .and_then(filter_vulkan_library)
             .or_else(|| webrogue_gfx::swiftshader::load().and_then(filter_vulkan_library));
-        if let Some(result) = result {
+        if result.is_some() {
             return result;
-        }
+        };
 
-        #[cfg(windows)]
-        {
-            use windows::{
-                core::PCWSTR,
-                Win32::UI::WindowsAndMessaging::{
-                    MessageBoxW, IDRETRY, MB_ICONERROR, MB_RETRYCANCEL, MB_TASKMODAL,
-                },
-            };
+        if required {
+            #[cfg(windows)]
+            {
+                use windows::{
+                    core::PCWSTR,
+                    Win32::UI::WindowsAndMessaging::{
+                        MessageBoxW, IDRETRY, MB_ICONERROR, MB_RETRYCANCEL, MB_TASKMODAL,
+                    },
+                };
 
-            let mut title = "Vulkan Driver Not Found".encode_utf16().collect::<Vec<_>>();
-            title.push(0);
-            let mut message = r"
+                let mut title = "Vulkan Driver Not Found".encode_utf16().collect::<Vec<_>>();
+                title.push(0);
+                let mut message = r"
 This application requires a Vulkan-compatable graphics driver to run. To resolve this, try the folowing options one by one
 
 1. If you are an application developer, you can bundle vk_swiftshader.dll with you executable to provide fallback driver.
@@ -106,24 +107,24 @@ This application requires a Vulkan-compatable graphics driver to run. To resolve
 
 Retry after resolving the issue, or Cancel to close this application. 
 ".trim().encode_utf16().collect::<Vec<_>>();
-            // 3. If you have unsupported hardware or run inside of a VM, try installing OpenCL™, OpenGL®, and Vulkan® Compatibility Pack from Microsoft Store.
+                // 3. If you have unsupported hardware or run inside of a VM, try installing OpenCL™, OpenGL®, and Vulkan® Compatibility Pack from Microsoft Store.
 
-            message.push(0);
+                message.push(0);
 
-            let result = unsafe {
-                MessageBoxW(
-                    None,
-                    PCWSTR(message.as_ptr()),
-                    PCWSTR(title.as_ptr()),
-                    MB_RETRYCANCEL | MB_ICONERROR | MB_TASKMODAL,
-                )
-            };
-            if result == IDRETRY {
-                continue;
+                let result = unsafe {
+                    MessageBoxW(
+                        None,
+                        PCWSTR(message.as_ptr()),
+                        PCWSTR(title.as_ptr()),
+                        MB_RETRYCANCEL | MB_ICONERROR | MB_TASKMODAL,
+                    )
+                };
+                if result == IDRETRY {
+                    continue;
+                }
             }
         }
 
-        eprintln!("Vulkan not found! Exitting");
-        std::process::exit(1);
+        return None;
     }
 }

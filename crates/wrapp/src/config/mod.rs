@@ -77,8 +77,8 @@ pub struct GraphicsApiConfig {
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum Requirement {
-    #[serde(rename = "unneeded")]
-    Unneeded,
+    #[serde(rename = "disabled")]
+    Disabled,
     #[serde(rename = "optional")]
     Optional,
     #[serde(rename = "required")]
@@ -88,7 +88,7 @@ pub enum Requirement {
 impl Requirement {
     pub fn to_bool_option(&self) -> Option<bool> {
         match self {
-            Requirement::Unneeded => Some(false),
+            Requirement::Disabled => Some(false),
             Requirement::Optional => None,
             Requirement::Required => Some(true),
         }

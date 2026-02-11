@@ -229,22 +229,25 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         persistent_dir,
     )?);
 
-    gfx_builder.run(move |system| -> anyhow::Result<()> {
-        webrogue_gfx::run(system, |gfx| -> anyhow::Result<()> {
-            store.data_mut().gfx = Some(gfx);
+    gfx_builder.run(
+        move |system| -> anyhow::Result<()> {
+            webrogue_gfx::run(system, |gfx| -> anyhow::Result<()> {
+                store.data_mut().gfx = Some(gfx);
 
-            let pre = linker.instantiate_pre(&module)?;
+                let pre = linker.instantiate_pre(&module)?;
 
-            let instance = pre.instantiate(&mut store)?;
-            let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
-            let call_result = func.call(&mut store, ());
-            if epoch_interruption {
-                store.data().wasi_threads_ctx.as_ref().unwrap().stop();
-            }
-            call_result?;
-            Ok(())
-        })
-    })?;
+                let instance = pre.instantiate(&mut store)?;
+                let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
+                let call_result = func.call(&mut store, ());
+                if epoch_interruption {
+                    store.data().wasi_threads_ctx.as_ref().unwrap().stop();
+                }
+                call_result?;
+                Ok(())
+            })
+        },
+        wrapp_config.vulkan_requirement().to_bool_option(),
+    )??;
 
     Ok(())
 }

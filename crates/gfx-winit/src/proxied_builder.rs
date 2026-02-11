@@ -90,15 +90,19 @@ impl WinitProxy {
 impl webrogue_gfx::IBuilder for ProxiedWinitBuilder {
     type System = WinitSystem;
 
-    fn run<Output>(self, body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static) -> Output
+    fn run<Output>(
+        self,
+        body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static,
+        vulkan_requirement: Option<bool>,
+    ) -> anyhow::Result<Output>
     where
         Output: Send + 'static,
     {
         let proxy = self.proxy.internal.lock().unwrap();
         let mailbox = proxy.mailbox.clone();
-        let system = WinitSystem::new(mailbox, proxy.window_registry.clone());
+        let system = WinitSystem::new(mailbox, proxy.window_registry.clone(), vulkan_requirement)?;
         drop(proxy);
 
-        body_fn(system)
+        Ok(body_fn(system))
     }
 }

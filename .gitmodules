@@ -1,6 +1,3 @@
-[submodule "examples"]
-	path = examples
-	url = https://github.com/webrogue-runtime/webrogue-examples.git
 [submodule "external/gfxstream"]
 	path = external/gfxstream
 	url = https://github.com/webrogue-runtime/gfxstream.git

@@ -60,6 +60,10 @@ impl Decoder {
         }
     }
 
+    pub fn is_stub() -> bool {
+        unsafe { ffi::webrogue_gfxstream_is_impl() == 0 }
+    }
+
     pub fn commit(&self, buf: &[u8]) {
         // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();

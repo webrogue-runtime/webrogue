@@ -7,11 +7,8 @@ use ash::Entry;
 use winit::window::WindowAttributes;
 
 use crate::{
-    mailbox::Mailbox,
-    vulkan_library::load_vulkan_entry,
-    window::WinitWindowInternal,
-    window_registry::WindowRegistry,
-    WinitWindow,
+    mailbox::Mailbox, vulkan_library::load_vulkan_entry, window::WinitWindowInternal,
+    window_registry::WindowRegistry, WinitWindow,
 };
 
 pub struct WinitSystem {
@@ -29,14 +26,28 @@ impl Drop for WinitSystem {
 }
 
 impl WinitSystem {
-    pub(crate) fn new(mailbox: Mailbox, window_registry: WindowRegistry) -> Self {
-        let vulkan_entry = load_vulkan_entry();
-        Self {
+    pub(crate) fn new(
+        mailbox: Mailbox,
+        window_registry: WindowRegistry,
+        vulkan_requirement: Option<bool>,
+    ) -> anyhow::Result<Self> {
+        let vulkan_entry =
+            if vulkan_requirement == Some(false) || webrogue_gfx::GFXStreamDecoder::is_stub() {
+                None
+            } else {
+                load_vulkan_entry(vulkan_requirement == Some(true))
+            };
+        if vulkan_entry.is_none() && vulkan_requirement == Some(true) {
+            anyhow::bail!(
+                "Vulkan is required by this application, but no compatible Vulkan driver found"
+            )
+        }
+        Ok(Self {
             mailbox,
             gfxstream_system: Mutex::new(None),
-            vulkan_entry: Some(Arc::new(vulkan_entry)),
+            vulkan_entry: vulkan_entry.map(Arc::new),
             window_registry,
-        }
+        })
     }
 }
 
@@ -69,21 +80,22 @@ impl webrogue_gfx::ISystem for WinitSystem {
         WinitWindow { internal }
     }
 
-    fn make_gfxstream_decoder(&self) -> webrogue_gfx::GFXStreamDecoder {
+    fn make_gfxstream_decoder(&self) -> Option<webrogue_gfx::GFXStreamDecoder> {
+        let Some(vulkan_entry) = self.vulkan_entry.clone() else {
+            return None;
+        };
         let gfxstream_system = {
             let mut owned_gfxstream_system = self.gfxstream_system.lock().unwrap();
             if let Some(gfxstream_system) = owned_gfxstream_system.as_ref() {
                 gfxstream_system.clone()
             } else {
-                let gfxstream_system = Arc::new(webrogue_gfx::GFXStreamSystem::new(
-                    self.vulkan_entry.clone().unwrap(),
-                ));
+                let gfxstream_system = Arc::new(webrogue_gfx::GFXStreamSystem::new(vulkan_entry));
 
                 owned_gfxstream_system.replace(gfxstream_system.clone());
                 gfxstream_system
             }
         };
-        webrogue_gfx::GFXStreamDecoder::new(gfxstream_system)
+        Some(webrogue_gfx::GFXStreamDecoder::new(gfxstream_system))
     }
 
     #[allow(unreachable_code)]

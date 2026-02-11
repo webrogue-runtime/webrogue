@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-gfxstream", "webrogue-gfxstream/lib-stub", "dep:webrogue-wrapp"]
+run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-gfxstream", "webrogue-gfxstream/lib-impl", "dep:webrogue-wrapp"]
 compile = ["dep:webrogue-aot-compiler"]
 pack = ["dep:webrogue-wrapp"]
 hub = ["dep:webrogue-hub-client"]

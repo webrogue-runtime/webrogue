@@ -18,7 +18,11 @@ use std::{
 pub trait IBuilder {
     type System: ISystem + 'static;
 
-    fn run<Output>(self, body_fn: impl FnOnce(Self::System) -> Output + Send + 'static) -> Output
+    fn run<Output>(
+        self,
+        body_fn: impl FnOnce(Self::System) -> Output + Send + 'static,
+        vulkan_requirement: Option<bool>,
+    ) -> anyhow::Result<Output>
     where
         Output: Send + 'static;
 }
@@ -27,7 +31,7 @@ pub trait ISystem {
     type Window: IWindow + 'static;
     fn make_window(&self) -> Self::Window;
     fn pump(&self);
-    fn make_gfxstream_decoder(&self) -> webrogue_gfxstream::Decoder;
+    fn make_gfxstream_decoder(&self) -> Option<webrogue_gfxstream::Decoder>;
     fn vk_extensions(&self) -> Vec<String>;
 }
 pub trait IWindow {
@@ -94,6 +98,28 @@ impl<System: ISystem> Drop for Interface<System> {
 }
 
 impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> {
+    // Window manipulation
+
+    fn make_window(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        out_window: wiggle::GuestPtr<GuestWindowHandle>,
+    ) {
+        let mut windows = self.windows.lock().unwrap();
+
+        // TODO make something better
+        let new_window_id = (windows.len() + 1) as GuestWindowHandle;
+        assert!(!windows.contains_key(&new_window_id));
+
+        windows.insert(new_window_id, Arc::new(self.system.make_window()));
+        let _ = mem.write(out_window, new_window_id);
+    }
+
+    fn destroy_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>, window: GuestWindowHandle) {
+        let mut windows = self.windows.lock().unwrap();
+        windows.remove(&window);
+    }
+
     fn get_window_size(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
@@ -124,34 +150,7 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         let _ = mem.write(out_height, size.1);
     }
 
-    fn commit_buffer(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        buf: wiggle::GuestPtr<u8>,
-        len: GuestSize,
-    ) {
-        if !mem.is_shared_memory() {
-            unimplemented!()
-        }
-        let Ok(b) = mem.as_cow(buf.as_array(len)) else {
-            return;
-        };
-        self.get_gfxstream_decoder().commit(&b);
-    }
-
-    fn ret_buffer_read(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        buf: wiggle::GuestPtr<u8>,
-        len: GuestSize,
-    ) {
-        let buffer = {
-            let mut buffer = vec![0u8; len as usize];
-            self.get_gfxstream_decoder().read(&mut buffer);
-            buffer
-        };
-        let _ = mem.copy_from_slice(&buffer, buf.as_array(len));
-    }
+    // Events
 
     fn poll(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_len: wiggle::GuestPtr<GuestSize>) {
         let mut event_buf = self.event_buf.lock().unwrap();
@@ -171,25 +170,7 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         let _ = mem.copy_from_slice(&event_buf, buf.as_array(event_buf.len() as u32));
     }
 
-    fn make_window(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        out_window: wiggle::GuestPtr<GuestWindowHandle>,
-    ) {
-        let mut windows = self.windows.lock().unwrap();
-
-        // TODO make something better
-        let new_window_id = (windows.len() + 1) as GuestWindowHandle;
-        assert!(!windows.contains_key(&new_window_id));
-
-        windows.insert(new_window_id, Arc::new(self.system.make_window()));
-        let _ = mem.write(out_window, new_window_id);
-    }
-
-    fn destroy_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>, window: GuestWindowHandle) {
-        let mut windows = self.windows.lock().unwrap();
-        windows.remove(&window);
-    }
+    // Vulkan
 
     fn make_vk_surface(
         &mut self,
@@ -203,18 +184,55 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
             assert!(false);
             return;
         };
+        let Some(decoder) = self.get_gfxstream_decoder() else {
+            return;
+        };
 
-        let gfxstream_decoder = self.get_gfxstream_decoder();
-        let vk_instance = gfxstream_decoder.unbox_vk_instance(vk_instance);
+        let vk_instance = decoder.unbox_vk_instance(vk_instance);
         let vk_surface = window.make_vk_surface(vk_instance);
         if let Some(vk_surface) = vk_surface {
-            let vk_surface = gfxstream_decoder.box_vk_surface(vk_surface);
+            let vk_surface = decoder.box_vk_surface(vk_surface);
             let _ = mem.write(out_vk_surface, vk_surface);
         } else {
             let _ = mem.write(out_vk_surface, 0);
             assert!(false);
             return;
         }
+    }
+
+    fn commit_buffer(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        buf: wiggle::GuestPtr<u8>,
+        len: GuestSize,
+    ) {
+        if !mem.is_shared_memory() {
+            unimplemented!()
+        }
+        let Ok(b) = mem.as_cow(buf.as_array(len)) else {
+            return;
+        };
+        let Some(decoder) = self.get_gfxstream_decoder() else {
+            return;
+        };
+        decoder.commit(&b);
+    }
+
+    fn ret_buffer_read(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        buf: wiggle::GuestPtr<u8>,
+        len: GuestSize,
+    ) {
+        let Some(decoder) = self.get_gfxstream_decoder() else {
+            return;
+        };
+        let buffer = {
+            let mut buffer = vec![0u8; len as usize];
+            decoder.read(&mut buffer);
+            buffer
+        };
+        let _ = mem.copy_from_slice(&buffer, buf.as_array(len));
     }
 
     fn vk_register_blob(
@@ -224,6 +242,9 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         size: u64,
         buf: wiggle::GuestPtr<u8>,
     ) {
+        let Some(decoder) = self.get_gfxstream_decoder() else {
+            return;
+        };
         let slice = match mem {
             wiggle::GuestMemory::Unshared(_) => unimplemented!(),
             wiggle::GuestMemory::Shared(unsafe_cells) => {
@@ -237,8 +258,23 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
             return;
         }
         // register_blob will store buf and pass it to vulkan driver for later use
-        unsafe { self.get_gfxstream_decoder().register_blob(slice, blob_id) };
+        unsafe { decoder.register_blob(slice, blob_id) };
     }
+
+    fn check_vk(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        out_error: wiggle::GuestPtr<u8>,
+    ) -> () {
+        let ret = if self.get_gfxstream_decoder().is_some() {
+            1
+        } else {
+            0
+        };
+        let _ = mem.write(out_error, ret);
+    }
+
+    // CPU rendering
 
     fn present_pixels(
         &mut self,
@@ -289,12 +325,15 @@ impl<System: ISystem + 'static> Interface<System> {
         self.windows.lock().unwrap().get(&window_handle).cloned()
     }
 
-    fn get_gfxstream_decoder(&self) -> Rc<webrogue_gfxstream::Decoder> {
+    fn get_gfxstream_decoder(&self) -> Option<Rc<webrogue_gfxstream::Decoder>> {
         let mut stored_rc = self.gfxstream_decoder.lock().unwrap();
         if let Some(stored_rc) = stored_rc.as_ref() {
-            stored_rc.clone()
+            Some(stored_rc.clone())
         } else {
-            let rc = Rc::new(System::make_gfxstream_decoder(&self.system));
+            let Some(decoder) = System::make_gfxstream_decoder(&self.system) else {
+                return None;
+            };
+            let rc = Rc::new(decoder);
             rc.set_extensions(self.system.vk_extensions());
             let cloned_system = self.system.clone();
             rc.set_presentation_callback(Box::new(move || {
@@ -302,7 +341,7 @@ impl<System: ISystem + 'static> Interface<System> {
             }));
 
             stored_rc.replace(rc.clone());
-            rc
+            Some(rc)
         }
     }
 }

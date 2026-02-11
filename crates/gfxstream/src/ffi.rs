@@ -46,4 +46,5 @@ extern "C" {
     pub fn webrogue_gfxstream_ffi_set_register_shadow_blob_callback(
         callback: unsafe extern "C" fn(*const (), u64, u64),
     );
+    pub fn webrogue_gfxstream_is_impl() -> u8;
 }

@@ -13,15 +13,24 @@ use crate::{window_registry::WindowRegistry, ProxiedWinitBuilder, WinitProxy, Wi
 type CreateSystemFn =
     Box<dyn FnOnce(EventLoopProxy) -> (ProxiedWinitBuilder, WinitProxy) + Send + 'static>;
 
-struct App<BodyFn: FnOnce(WinitSystem) + Send + 'static> {
+type BodyFn = Box<dyn FnOnce(WinitSystem) + Send + 'static>;
+
+type SetErrorFN = Box<dyn FnOnce(anyhow::Error) + Send + 'static>;
+
+struct App {
     pub body_fn: Option<BodyFn>,
+    pub set_error_fn: Option<SetErrorFN>,
     pub create_system_fn: Option<CreateSystemFn>,
     pub proxy: Option<WinitProxy>,
+    pub vulkan_requirement: Option<bool>,
 }
 
-impl<BodyFn: FnOnce(WinitSystem) + Send + 'static> ApplicationHandler for App<BodyFn> {
+impl ApplicationHandler for App {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         let Some(body_fn) = self.body_fn.take() else {
+            return;
+        };
+        let Some(set_error_fn) = self.set_error_fn.take() else {
             return;
         };
         let Some(create_system_fn) = self.create_system_fn.take() else {
@@ -29,14 +38,21 @@ impl<BodyFn: FnOnce(WinitSystem) + Send + 'static> ApplicationHandler for App<Bo
         };
         let (builder, proxy) = create_system_fn(event_loop.create_proxy());
         self.proxy = Some(proxy);
+        let vulkan_requirement = self.vulkan_requirement;
         std::thread::Builder::new()
             .name("wasi-thread-main".to_owned())
             .spawn(move || {
-                builder.run(|winit_system| {
-                    let mailbox = winit_system.mailbox.clone();
-                    body_fn(winit_system);
-                    mailbox.execute(|event_loop| event_loop.exit());
-                })
+                let result = builder.run(
+                    |winit_system| {
+                        let mailbox = winit_system.mailbox.clone();
+                        body_fn(winit_system);
+                        mailbox.execute(|event_loop| event_loop.exit());
+                    },
+                    vulkan_requirement,
+                );
+                if let Err(error) = result {
+                    set_error_fn(error);
+                }
             })
             .unwrap();
     }
@@ -94,18 +110,28 @@ impl SimpleWinitBuilder {
 impl webrogue_gfx::IBuilder for SimpleWinitBuilder {
     type System = WinitSystem;
 
-    fn run<Output>(self, body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static) -> Output
+    fn run<Output>(
+        self,
+        body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static,
+        vulkan_requirement: Option<bool>,
+    ) -> anyhow::Result<Output>
     where
         Output: Send + 'static,
     {
-        let output = Arc::new(Mutex::new(None));
+        let output: Arc<Mutex<Option<Option<anyhow::Result<Output>>>>> = Arc::new(Mutex::new(None));
         let cloned_output = output.clone();
+        let cloned_output2 = output.clone();
         let wrapped_body_fn = move |system| {
             let result = body_fn(system);
-            let _ = cloned_output.lock().unwrap().insert(Some(result));
+            let _ = cloned_output.lock().unwrap().insert(Some(Ok(result)));
+        };
+        let set_error_fn = move |error| {
+            let _ = cloned_output2.lock().unwrap().insert(Some(Err(error)));
         };
         let app = App {
-            body_fn: Some(wrapped_body_fn),
+            body_fn: Some(Box::new(wrapped_body_fn)),
+            set_error_fn: Some(Box::new(set_error_fn)),
+            vulkan_requirement,
             create_system_fn: Some(Box::new(|event_loop_proxy| {
                 let (mut builder, mailbox) =
                     ProxiedWinitBuilder::new(event_loop_proxy, WindowRegistry::new());

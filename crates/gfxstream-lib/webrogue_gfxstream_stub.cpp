@@ -71,3 +71,7 @@ void webrogue_gfxstream_ffi_set_register_shadow_blob_callback(
 
 void webrogue_gfxstream_stub_fn() {}
 }
+
+uint8_t webrogue_gfxstream_is_impl() {
+  return 0;
+}
