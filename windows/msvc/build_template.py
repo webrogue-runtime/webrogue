@@ -16,6 +16,10 @@ vc_tools_install_dir = os.environ["VCToolsInstallDir"]
 # gfxstream doesn't seem to support MSVC
 os.environ["CXX"] = "clang-cl"
 
+out_dir = os.path.join(repo_dir, "aot_artifacts", "x86_64-windows-msvc")
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
+
 subprocess.run(
     [
         "cargo",
@@ -23,15 +27,39 @@ subprocess.run(
         "--manifest-path=../../crates/aot-lib/Cargo.toml",
         "--target-dir=./target",
         "--target=x86_64-pc-windows-msvc",
-        "--profile",
-        "aot",
+        "--profile=aot",
     ],
     cwd=str(template_dir),
 ).check_returncode()
 
-out_dir = os.path.join(repo_dir, "aot_artifacts", "x86_64-windows-msvc")
-if not os.path.exists(out_dir):
-    os.makedirs(out_dir)
+for gfxstream_type in ["impl", "stub"]:
+    subprocess.run(
+        [
+            "cargo",
+            "build",
+            "--manifest-path=../../crates/gfxstream-lib/Cargo.toml",
+            "--target-dir=./target",
+            f"--features={gfxstream_type}",
+            "--target=x86_64-pc-windows-msvc",
+            "--profile=aot",
+        ],
+        cwd=str(template_dir),
+    ).check_returncode()
+    os.rename(
+        os.path.join(
+            template_dir,
+            "target",
+            "x86_64-pc-windows-msvc",
+            "aot",
+            "libwebrogue_gfxstream_lib.rlib",
+        ),
+        os.path.join(
+            out_dir,
+            f"webrogue_gfxstream_lib_{gfxstream_type}.a",
+        ),
+    )
+
+gfxstream_lib_impl = os.path.join(out_dir, "webrogue_gfxstream_lib_impl.a")
 
 for win_type in ["gui", "console"]:
     subprocess.run(
@@ -139,30 +167,35 @@ lib_content = lib_content_result.stdout.decode()
 
 lld_outputs: list[str] = []
 
-for win_type in ["gui", "console"]:
-    obj_out_path = os.path.join(out_dir, f"{win_type}.obj")
-    exe_path = os.path.join(template_dir, "aot.exe")
-    # Collect verbose information to preform tree-shaking of resulting static archives
-    lld_content_result = subprocess.run(
-        [
-            "lld-link",
-            f"-out:{exe_path}",
-            "-nologo",
-            "-machine:x64",
-            os.path.join(template_dir, "empty.obj"),
-            obj_out_path,
-            webrogue_aot_lib_path,
-            "/nodefaultlib",
-            "/threads:1",
-            "/verbose",
-        ],
-        stderr=subprocess.PIPE,
-        cwd=str(template_dir),
-    )
-    if lld_content_result.returncode:
-        print(lld_content_result.stderr.decode())
-        quit()
-    lld_outputs.append(lld_content_result.stderr.decode())
+for gfxstream_type in ["impl", "stub"]:
+    for win_type in ["gui", "console"]:
+        obj_out_path = os.path.join(out_dir, f"{win_type}.obj")
+        exe_path = os.path.join(template_dir, "aot.exe")
+        # Collect verbose information to preform tree-shaking of resulting static archives
+        lld_content_result = subprocess.run(
+            [
+                "lld-link",
+                f"-out:{exe_path}",
+                "-nologo",
+                "-machine:x64",
+                os.path.join(template_dir, "empty.obj"),
+                obj_out_path,
+                webrogue_aot_lib_path,
+                os.path.join(
+                    out_dir,
+                    f"webrogue_gfxstream_lib_{gfxstream_type}.a",
+                ),
+                "/nodefaultlib",
+                "/threads:1",
+                "/verbose",
+            ],
+            stderr=subprocess.PIPE,
+            cwd=str(template_dir),
+        )
+        if lld_content_result.returncode:
+            print(lld_content_result.stderr.decode())
+            quit()
+        lld_outputs.append(lld_content_result.stderr.decode())
 
 prefix_str_1 = "lld-link: Loaded webrogue_aot_lib.lib("
 prefix_str_2 = "lld-link: Reading webrogue_aot_lib.lib("

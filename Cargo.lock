@@ -7706,6 +7706,7 @@ dependencies = [
  "webrogue-gfx-winit",
  "webrogue-gfxstream",
  "webrogue-wasmtime",
+ "windows",
 ]
 
 [[package]]
