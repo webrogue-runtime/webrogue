@@ -2,7 +2,7 @@ mod artifacts;
 pub mod icons;
 use anyhow::Context as _;
 pub use artifacts::*;
-use std::fmt::Display;
+use std::{fmt::Display, fs::File};
 
 pub(crate) fn _run_lld(_args: Vec<String>) -> anyhow::Result<()> {
     #[cfg(feature = "llvm")]
@@ -47,6 +47,13 @@ impl TemporalFile {
         Ok(Self {
             path: dir_path.join(format!("{}.tmp", name,)),
         })
+    }
+
+    pub fn create_file(&self) -> anyhow::Result<File> {
+        if self.path().exists() {
+            std::fs::remove_file(self.path())?;
+        }
+        Ok(File::create_new(self.path())?)
     }
 
     pub fn path(&self) -> &std::path::PathBuf {

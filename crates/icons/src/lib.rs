@@ -1,8 +1,9 @@
 pub mod android;
 mod utils;
+pub mod windows;
 pub mod xcode;
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Clone)]
 pub struct IconsData {
     pub config: webrogue_wrapp::config::icons::Icons,
     pub normal_icon_bytes: Option<Vec<u8>>,

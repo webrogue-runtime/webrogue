@@ -162,6 +162,7 @@ async-trait = { version = "0.1.89" }
 rand = { version = "0.9", default-features = false }
 io-extras = "0.18.4"
 softbuffer = "0.4.8"
+ico = "0.5.0"
 
 reqwest = { version = "0.13" }
 zip-extract = { version = "0.4.1" }

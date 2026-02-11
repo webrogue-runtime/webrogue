@@ -21,4 +21,4 @@ object = { workspace = true, default-features = false, features = ['read_core', 
 wasmtime-environ = { workspace = true, default-features = false }
 postcard = { workspace = true, default-features = false, features = ['alloc'] }
 serde = { workspace = true, features = ['derive'] }
-zip  = { workspace = true, default-features = false, features = ['deflate'] }
+zip = { workspace = true, default-features = false, features = ['deflate'] }

@@ -15,3 +15,4 @@ imageproc = { workspace = true, default-features = false, features = ["rayon"] }
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
+ico = { workspace = true }

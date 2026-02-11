@@ -2,7 +2,7 @@ use std::io::{Seek as _, Write as _};
 
 use anyhow::Context as _;
 
-use crate::utils::extract_config;
+use crate::utils::TemporalFile;
 
 pub fn build(
     wrapp_file_path: &std::path::PathBuf,
@@ -11,7 +11,43 @@ pub fn build(
     cache: Option<&std::path::PathBuf>,
     with_swiftshader: bool,
 ) -> anyhow::Result<()> {
-    let config = extract_config(wrapp_file_path)?;
+    if webrogue_wrapp::is_path_a_wrapp(wrapp_file_path).with_context(|| {
+        format!(
+            "Unable to determine file type for {}",
+            wrapp_file_path.display()
+        )
+    })? {
+        build_using_vfs(
+            || webrogue_wrapp::WrappVFSBuilder::from_file_path(wrapp_file_path),
+            wrapp_file_path,
+            output_file_path,
+            is_console,
+            cache,
+            with_swiftshader,
+        )
+    } else {
+        build_using_vfs(
+            || webrogue_wrapp::RealVFSBuilder::from_config_path(wrapp_file_path),
+            wrapp_file_path,
+            output_file_path,
+            is_console,
+            cache,
+            with_swiftshader,
+        )
+    }
+}
+
+fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
+    vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
+    wrapp_file_path: &std::path::PathBuf,
+    output_file_path: &std::path::PathBuf,
+    is_console: bool,
+    cache: Option<&std::path::PathBuf>,
+    with_swiftshader: bool,
+) -> anyhow::Result<()> {
+    let mut vfs_builder = vfs_builder_factory()?;
+    let config = vfs_builder.config()?.clone();
+    let icons_config = webrogue_icons::IconsData::from_vfs_builder(&mut vfs_builder)?;
     let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
     let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
 
@@ -31,12 +67,17 @@ pub fn build(
         .ok_or_else(|| anyhow::anyhow!("Path error"))?
         .to_path_buf();
 
+    println!("Generating icon...");
+    let res_tmp = TemporalFile::for_tmp(&build_dir, "resources.res".to_string())?;
+    webrogue_icons::windows::generate_res(icons_config.clone(), &mut res_tmp.create_file()?)?;
+
     println!("Linking native binary...");
     link_windows_msvc(
         &object_file,
         output_file_path,
         &mut artifacts,
         &build_dir,
+        res_tmp.path(),
         is_console,
         vulkan,
     )?;
@@ -49,22 +90,9 @@ pub fn build(
         .open(output_file_path)?;
 
     let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
-    if webrogue_wrapp::is_path_a_wrapp(wrapp_file_path).with_context(|| {
-        format!(
-            "Unable to determine file type for {}",
-            wrapp_file_path.display()
-        )
-    })? {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::WrappVFSBuilder::from_file_path(
-            wrapp_file_path,
-        )?)
-        .write(&mut output_file)?;
-    } else {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(
-            wrapp_file_path,
-        )?)
-        .write(&mut output_file)?;
-    }
+
+    webrogue_wrapp::WRAPPWriter::new(vfs_builder).write(&mut output_file)?;
+
     let new_size = output_file.seek(std::io::SeekFrom::End(0))?;
 
     let wrapp_size = new_size - original_size;
@@ -78,8 +106,6 @@ pub fn build(
             "x86_64-windows-msvc/vk_swiftshader.dll",
         )?;
     }
-    // println!("Generating stripped WRAPP file...");
-    // webrogue_wrapp::strip(wrapp_file_path, std::fs::File::create(stripped_wrapp_path)?)?;
 
     anyhow::Ok(())
 }
@@ -89,6 +115,7 @@ fn link_windows_msvc(
     output_file_path: &std::path::Path,
     artifacts: &mut crate::utils::Artifacts,
     build_dir: &std::path::Path,
+    res_tmp: &std::path::Path,
     is_console: bool,
     vulkan: bool,
 ) -> anyhow::Result<()> {
@@ -113,6 +140,7 @@ fn link_windows_msvc(
         "-nologo",
         "-machine:x64",
         object_file_path,
+        path_to_arg(res_tmp)?,
         obj_tmp.as_arg()?,
         webrogue_aot_lib_tmp.as_arg()?,
         gfxstream_lib_tmp.as_arg()?,
