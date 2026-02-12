@@ -7715,10 +7715,6 @@ dependencies = [
 [[package]]
 name = "webrogue-aot-data"
 version = "0.1.0"
-dependencies = [
- "cc",
- "webrogue-aot-compiler",
-]
 
 [[package]]
 name = "webrogue-aot-lib"

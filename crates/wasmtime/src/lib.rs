@@ -135,6 +135,7 @@ pub fn run_aot<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSH
 ) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
     config.shared_memory(true);
+    config.wasm_exceptions(true);
     config.memory_may_move(false);
     // config.async_support(true);
     // unsafe { config.cranelift_flag_enable("use_colocated_libcalls") };

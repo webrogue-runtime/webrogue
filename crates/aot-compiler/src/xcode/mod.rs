@@ -1,7 +1,7 @@
 use anyhow::Context as _;
 use clap::Subcommand;
 use std::io::Write as _;
-use webrogue_wrapp::IVFSBuilder as _;
+use webrogue_wrapp::config::Requirement;
 
 mod build;
 mod icons;
@@ -33,25 +33,73 @@ pub struct XcodeArgs<'a> {
 }
 
 pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
+    let wrapp_path = args.wrapp_path.clone();
+    if webrogue_wrapp::is_path_a_wrapp(&wrapp_path)
+        .with_context(|| format!("Unable to determine file type for {}", wrapp_path.display()))?
+    {
+        run_using_vfs(
+            || webrogue_wrapp::WrappVFSBuilder::from_file_path(&wrapp_path),
+            args,
+            command,
+        )
+    } else {
+        run_using_vfs(
+            || webrogue_wrapp::RealVFSBuilder::from_config_path(&wrapp_path),
+            args,
+            command,
+        )
+    }
+}
+
+fn run_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
+    vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
+    args: XcodeArgs,
+    command: &XcodeCommands,
+) -> anyhow::Result<()> {
+    let mut vfs_builder = vfs_builder_factory()?;
+    let wrapp_config = vfs_builder.config()?.clone();
+
     let mut artifacts = crate::utils::Artifacts::new()?;
     let template_id = artifacts.get_data("apple_xcode/template_id")?;
 
     let mut old_stamp = read_stamp(args.build_dir).ok();
+    let old_config = old_stamp.as_ref().map(|stamp| &stamp.config);
 
-    if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id) {
+    let is_simulator_supported = wrapp_config.vulkan_requirement() != Requirement::Required; // Vulkan is currently unsupported on iOS Simulator
+
+    if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id)
+        || old_config != Some(&wrapp_config)
+    {
         old_stamp = None;
-        println!("(Re)creating Xcode project...");
+        println!("(Re)generating Xcode project...");
         if args.build_dir.exists() {
             anyhow::ensure!(args.build_dir.is_dir(), "build_dir can't be a file");
             std::fs::remove_dir_all(args.build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
         }
         artifacts.extract_dir(args.build_dir, "apple_xcode/template")?;
-    }
 
-    let mut wrapp_builder = webrogue_wrapp::WrappVFSBuilder::from_file_path(args.wrapp_path)?;
-    let wrapp_config = wrapp_builder.config()?.clone();
+        for platform in ["macos", "iphoneos", "iphonesimulator"] {
+            let is_vulkan_needed = wrapp_config
+                .vulkan_requirement()
+                .to_bool_option()
+                .unwrap_or(platform != "iphonesimulator");
 
-    {
+            let bin_dir = args.build_dir.join("bin").join(platform);
+            let impl_lib_name = "libGFXStreamImpl.a";
+            let stub_lib_name = "libGFXStreamStub.a";
+            let (used_lib_name, unused_lib_name) = if is_vulkan_needed {
+                (impl_lib_name, stub_lib_name)
+            } else {
+                (stub_lib_name, impl_lib_name)
+            };
+            std::fs::rename(bin_dir.join(used_lib_name), bin_dir.join("libGFXStream.a"))?;
+            std::fs::remove_file(bin_dir.join(unused_lib_name))?;
+        }
+
+        if !is_simulator_supported {
+            std::fs::remove_dir_all(args.build_dir.join("bin").join("iphonesimulator"))?;
+        }
+
         let mut id_parts = wrapp_config
             .id
             .split(".")
@@ -75,7 +123,7 @@ WEBROGUE_APPLICATION_VERSION = {}
 
     let icons_stamp = icons::build(
         args.build_dir,
-        &mut wrapp_builder,
+        &mut vfs_builder,
         old_stamp.as_ref().map(|stamp| &stamp.icons),
     )?;
 
@@ -84,26 +132,9 @@ WEBROGUE_APPLICATION_VERSION = {}
     if !aot_dir.exists() {
         std::fs::create_dir(&aot_dir)?;
     }
-    if webrogue_wrapp::is_path_a_wrapp(args.wrapp_path).with_context(|| {
-        format!(
-            "Unable to determine file type for {}",
-            args.wrapp_path.display()
-        )
-    })? {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::WrappVFSBuilder::from_file_path(
-            args.wrapp_path,
-        )?)
-        .write(&mut std::fs::File::create(
-            args.build_dir.join("aot.swrapp"),
-        )?)?;
-    } else {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(
-            args.wrapp_path,
-        )?)
-        .write(&mut std::fs::File::create(
-            args.build_dir.join("aot.swrapp"),
-        )?)?;
-    }
+    webrogue_wrapp::WRAPPWriter::new(vfs_builder_factory()?).write(&mut std::fs::File::create(
+        args.build_dir.join("aot.swrapp"),
+    )?)?;
 
     match command {
         XcodeCommands::Macos { config } => {
@@ -117,11 +148,14 @@ WEBROGUE_APPLICATION_VERSION = {}
                 args.build_dir,
                 config.unwrap_or(types::Configuration::Debug),
                 types::Destination::MacOS,
-                &mut wrapp_builder,
+                &mut vfs_builder,
             )?;
         }
         XcodeCommands::Ios { simulator, config } => {
             let destination = if *simulator {
+                if !is_simulator_supported {
+                    anyhow::bail!("Vulkan is currently unsupported on iOS Simulator");
+                }
                 types::Destination::IOSSim
             } else {
                 types::Destination::Ios
@@ -131,7 +165,7 @@ WEBROGUE_APPLICATION_VERSION = {}
                 args.build_dir,
                 config.unwrap_or(types::Configuration::ReleaseLocal),
                 destination,
-                &mut wrapp_builder,
+                &mut vfs_builder,
             )?;
         }
         XcodeCommands::Project {} => {
@@ -147,12 +181,17 @@ WEBROGUE_APPLICATION_VERSION = {}
                 args.build_dir,
                 args.cache,
             )?;
-            object::compile(
-                types::Destination::IOSSim,
-                args.wrapp_path,
-                args.build_dir,
-                args.cache,
-            )?;
+            if is_simulator_supported {
+                object::compile(
+                    types::Destination::IOSSim,
+                    args.wrapp_path,
+                    args.build_dir,
+                    args.cache,
+                )?;
+            } else {
+                eprintln!("warning: Vulkan is currently unsupported on iOS Simulator");
+            }
+
             println!(
                 "Xcode project saved to {}",
                 args.build_dir.join("webrogue.xcodeproj").display()
@@ -163,6 +202,7 @@ WEBROGUE_APPLICATION_VERSION = {}
     let new_stamp: types::Stamp = types::Stamp {
         template_id,
         icons: icons_stamp,
+        config: wrapp_config,
     };
     if old_stamp.as_ref() != Some(&new_stamp) {
         write_stamp(new_stamp, args.build_dir)?;

@@ -1,4 +1,5 @@
 use clap::ValueEnum;
+use webrogue_wrapp::config::Config;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Configuration {
@@ -31,4 +32,5 @@ pub enum Destination {
 pub struct Stamp {
     pub template_id: Vec<u8>,
     pub icons: webrogue_icons::IconsData,
+    pub config: Config,
 }

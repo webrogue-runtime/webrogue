@@ -1,6 +1,6 @@
 pub fn build(
     build_dir: &std::path::Path,
-    wrapp_builder: &mut webrogue_wrapp::WrappVFSBuilder,
+    wrapp_builder: &mut impl webrogue_wrapp::IVFSBuilder,
     old_stamp: Option<&webrogue_icons::IconsData>,
 ) -> anyhow::Result<webrogue_icons::IconsData> {
     let new_stamp = webrogue_icons::IconsData::from_vfs_builder(wrapp_builder)?;

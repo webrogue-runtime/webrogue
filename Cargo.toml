@@ -13,7 +13,7 @@ path = "main.rs"
 doc = false
 
 [features]
-default = ["run", "compile", "pack", "hub"]
+default = ["run", "compile", "pack", "hub", "llvm"]
 full = ["run", "compile", "pack", "hub", "appended_artifacts", "llvm"]
 
 run = ["webrogue-cli/run"]

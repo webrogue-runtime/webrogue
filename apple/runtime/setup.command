@@ -3,7 +3,7 @@ set -ex
 
 sh scripts/download_moltenvk.sh
 
-WRAPP_PATH=../../examples/empty/empty.wrapp
+WRAPP_PATH=../../webrogue-sdk/examples/empty/empty.wrapp
 
 if test -f $WRAPP_PATH
 then

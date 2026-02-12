@@ -1,6 +1,6 @@
 pub mod icons;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct Config {
     pub name: String,
     pub id: String,
@@ -33,7 +33,7 @@ impl Config {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct FilesystemConfig {
     pub resources: Option<Vec<FilesystemResourceConfig>>,
     pub persistent: Option<Vec<FilesystemPersistentConfig>>,
@@ -52,13 +52,13 @@ impl FilesystemConfig {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct FilesystemResourceConfig {
     pub real_path: String,
     pub mapped_path: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct FilesystemPersistentConfig {
     pub name: String,
     pub mapped_path: String,
@@ -69,13 +69,13 @@ impl FilesystemPersistentConfig {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub struct GraphicsApiConfig {
     pub cpu_rendering: Option<Requirement>,
     pub vulkan: Option<Requirement>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub enum Requirement {
     #[serde(rename = "disabled")]
     Disabled,

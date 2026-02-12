@@ -15,7 +15,7 @@ clap = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 webrogue-lld = { workspace = true, optional = true }
 webrogue-icons = { workspace = true, features = ['rayon'] }
-wasmtime = { workspace = true, default-features = false, features = ["cranelift", "all-arch", "threads", "parallel-compilation", "cache", "anyhow"] }
+wasmtime = { workspace = true, default-features = false, features = ["cranelift", "all-arch", "threads", "parallel-compilation", "cache", "anyhow", "gc-drc"] }
 webrogue-wrapp = { workspace = true, features = ["write"] }
 object = { workspace = true, default-features = false, features = ['read_core', 'write_core', 'elf', 'macho', 'coff'] }
 wasmtime-environ = { workspace = true, default-features = false }

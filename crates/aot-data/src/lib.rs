@@ -1,6 +1,5 @@
 extern "C" {
     static WEBROGUE_AOT: u8;
-    // static WASMER_METADATA_WR_AOT_SIZE: usize;
 }
 
 pub fn aot_data() -> &'static [u8] {

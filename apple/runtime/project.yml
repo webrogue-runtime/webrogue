@@ -31,11 +31,11 @@ settings:
 options:
   createIntermediateGroups: true
 targets:
-  GFXStream:
+  GFXStreamImpl:
     type: library.static
     platform: [macOS, iOS]
     sources:
-    - ../../crates/gfxstream/webrogue_gfxstream.cpp
+    - ../../crates/gfxstream-lib/webrogue_gfxstream_impl.cpp
     - ../../external/gfxstream/host/vulkan/vk_decoder.cpp
     - ../../external/gfxstream/host/vulkan/vulkan_stream.cpp
     - ../../external/gfxstream/host/vulkan/vulkan_handle_mapping.cpp
@@ -112,6 +112,15 @@ targets:
         OTHER_CPLUSPLUSFLAGS:
         - "$(OTHER_CFLAGS)"
         - "-Wno-return-type-c-linkage"
+  GFXStreamStub:
+    type: library.static
+    platform: [macOS, iOS]
+    sources:
+    - ../../crates/gfxstream-lib/webrogue_gfxstream_stub.cpp
+    settings:
+      base:
+        CLANG_CXX_LANGUAGE_STANDARD:
+        - "gnu++20"
   Launcher:
     type: application
     platform: macOS
@@ -157,7 +166,7 @@ targets:
         ENABLE_HARDENED_RUNTIME: true
     dependencies:
     - target: Cargo_macos_runtime
-    - target: GFXStream_macOS
+    - target: GFXStreamImpl_macOS
     - sdk: Quartz.framework
     - sdk: Metal.framework
     - sdk: IOKit.framework
@@ -201,7 +210,7 @@ targets:
         INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen.storyboard
     dependencies:
     - target: Cargo_iOS_launcher
-    - target: GFXStream_iOS
+    - target: GFXStreamImpl_iOS
     # SDL deps
     - sdk: UIKit.framework
     - sdk: QuartzCore.framework
@@ -248,7 +257,7 @@ targets:
     dependencies:
     - target: Cargo_iOS_runner
     - target: runnerlib
-    - target: GFXStream_iOS
+    - target: GFXStreamImpl_iOS
     - sdk: UIKit.framework
     - sdk: QuartzCore.framework
     - sdk: Metal.framework
@@ -326,7 +335,7 @@ targets:
         ENABLE_HARDENED_RUNTIME: true
     dependencies:
     - target: Cargo_macos_runner
-    - target: GFXStream_macOS
+    - target: GFXStreamImpl_macOS
     - sdk: Quartz.framework
     - sdk: Metal.framework
     - sdk: IOKit.framework

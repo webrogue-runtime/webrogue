@@ -146,6 +146,7 @@ targets:
     - sdk: AudioToolbox.framework
     - sdk: IOSurface.framework
     - framework: bin/MoltenVK.xcframework
+      embed: false
     - sdk: libc++.tbd
     - sdk: libc++abi.tbd
     preBuildScripts:
