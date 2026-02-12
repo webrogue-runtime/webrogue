@@ -5,69 +5,96 @@ pub fn generate_icons(
     icons_data: &crate::IconsData,
 ) -> anyhow::Result<()> {
     println!("Generating icons...");
-    let mut reader = image::ImageReader::new(std::io::Cursor::new(
-        icons_data
-            .normal_icon_bytes
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("No icon file found in uncompressed WRAPP section"))?,
-    ));
-    reader.set_format(image::ImageFormat::Png);
-    generate_macos_icons(build_dir, icons_data)?;
-    generate_ios_icons(build_dir, icons_data)?;
+
+    generate_icon(build_dir, icons_data)?;
+    generate_ios_splash_screen(build_dir, icons_data)?;
+
     Ok(())
 }
 
-fn generate_macos_icons(
+fn generate_icon(
     build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> Result<(), anyhow::Error> {
-    let combined_image = icons_data.macos_image()?;
-    write_macos_icon(build_dir, &combined_image, 16, "16x16")?;
-    write_macos_icon(build_dir, &combined_image, 32, "16x16@2x")?;
-    write_macos_icon(build_dir, &combined_image, 32, "32x32")?;
-    write_macos_icon(build_dir, &combined_image, 64, "32x32@2x")?;
-    write_macos_icon(build_dir, &combined_image, 128, "128x128")?;
-    write_macos_icon(build_dir, &combined_image, 256, "128x128@2x")?;
-    write_macos_icon(build_dir, &combined_image, 256, "256x256")?;
-    write_macos_icon(build_dir, &combined_image, 512, "256x256@2x")?;
-    write_macos_icon(build_dir, &combined_image, 512, "512x512")?;
-    write_macos_icon(build_dir, &combined_image, 1024, "512x512@2x")?;
-    Ok(())
-}
-
-fn write_macos_icon(
-    build_dir: &std::path::Path,
-    icon_image: &image::DynamicImage,
-    size: u32,
-    suffix: &str,
-) -> anyhow::Result<()> {
-    icon_image
-        .clone()
-        .resize(size, size, image::imageops::FilterType::Lanczos3)
+    std::fs::create_dir_all(build_dir.join("AppIcon.icon").join("Assets"))?;
+    icons_data
+        .foreground_image()?
+        .resize(1024, 1024, image::imageops::FilterType::Lanczos3)
         .write_with_encoder(image::codecs::png::PngEncoder::new(std::fs::File::create(
             build_dir
-                .join("macos")
-                .join("Assets.xcassets")
-                .join("AppIcon.appiconset")
-                .join(format!("icon_{}.png", suffix)),
+                .join("AppIcon.icon")
+                .join("Assets")
+                .join("icon.png"),
         )?))?;
+    let mut splash_screen_color_file =
+        std::fs::File::create(build_dir.join("AppIcon.icon").join("icon.json"))?;
+    splash_screen_color_file.write_fmt(format_args!(
+        r#"{{
+  "fill-specializations" : [
+    {{
+      "value" : "system-light"
+    }},
+    {{
+      "appearance" : "dark",
+      "value" : "system-dark"
+    }}
+  ],
+  "groups" : [
+    {{
+      "blend-mode-specializations" : [
+        {{
+          "appearance" : "tinted",
+          "value" : "normal"
+        }}
+      ],
+      "blur-material" : null,
+      "hidden" : false,
+      "layers" : [
+        {{
+          "glass" : false,
+          "hidden" : false,
+          "image-name" : "icon.png",
+          "name" : "icon",
+          "position" : {{
+            "scale" : {},
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }}
+        }}
+      ],
+      "lighting" : "individual",
+      "shadow" : {{
+        "kind" : "neutral",
+        "opacity" : 0.5
+      }},
+      "specular" : false,
+      "translucency" : {{
+        "enabled" : false,
+        "value" : 0.5
+      }}
+    }}
+  ],
+  "supported-platforms" : {{
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }}
+}}
+
+"#,
+        (1.0 - icons_data.config.normal.inset)
+    ))?;
     Ok(())
 }
 
-fn generate_ios_icons(
+fn generate_ios_splash_screen(
     build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> anyhow::Result<()> {
     let combined_image = icons_data.combined_image(1024)?;
-    combined_image.write_with_encoder(image::codecs::png::PngEncoder::new(
-        std::fs::File::create(
-            build_dir
-                .join("ios")
-                .join("Assets.xcassets")
-                .join("AppIcon.appiconset")
-                .join("ios1024.png"),
-        )?,
-    ))?;
     combined_image.write_with_encoder(image::codecs::png::PngEncoder::new(
         std::fs::File::create(
             build_dir

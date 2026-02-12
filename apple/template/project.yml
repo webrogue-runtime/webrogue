@@ -37,9 +37,9 @@ targets:
     platform: macOS
     sources:
     - macos/main.m
-    - macos/Assets.xcassets
     - aot.swrapp
     - aot.xcconfig
+    - AppIcon.icon
     configFiles:
       Debug: aot.xcconfig
       Release: aot.xcconfig
@@ -108,6 +108,7 @@ targets:
     - ios/main.m
     - aot.swrapp
     - aot.xcconfig
+    - AppIcon.icon
     configFiles:
       Debug: aot.xcconfig
       Release: aot.xcconfig
@@ -124,6 +125,7 @@ targets:
         - "-lGFXStream"
         - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
+        INFOPLIST_KEY_CFBundleDisplayName: $(WEBROGUE_APPLICATION_NAME)
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"

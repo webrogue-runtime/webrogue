@@ -1,6 +1,6 @@
 use anyhow::Context as _;
 use clap::Subcommand;
-use std::io::Write as _;
+use std::{fs::File, io::Write as _};
 use webrogue_wrapp::config::Requirement;
 
 mod build;
@@ -51,6 +51,8 @@ pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
     }
 }
 
+const NO_VULKAN_ON_SIM_ERROR: &str = "Vulkan is currently unsupported on iOS Simulator";
+
 fn run_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
     args: XcodeArgs,
@@ -65,7 +67,7 @@ fn run_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     let mut old_stamp = read_stamp(args.build_dir).ok();
     let old_config = old_stamp.as_ref().map(|stamp| &stamp.config);
 
-    let is_simulator_supported = wrapp_config.vulkan_requirement() != Requirement::Required; // Vulkan is currently unsupported on iOS Simulator
+    let is_simulator_supported = wrapp_config.vulkan_requirement() != Requirement::Required;
 
     if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id)
         || old_config != Some(&wrapp_config)
@@ -98,6 +100,8 @@ fn run_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
 
         if !is_simulator_supported {
             std::fs::remove_dir_all(args.build_dir.join("bin").join("iphonesimulator"))?;
+            File::create(args.build_dir.join("bin").join("iphonesimulator"))?
+                .write_all(NO_VULKAN_ON_SIM_ERROR.as_bytes())?;
         }
 
         let mut id_parts = wrapp_config
@@ -154,7 +158,7 @@ WEBROGUE_APPLICATION_VERSION = {}
         XcodeCommands::Ios { simulator, config } => {
             let destination = if *simulator {
                 if !is_simulator_supported {
-                    anyhow::bail!("Vulkan is currently unsupported on iOS Simulator");
+                    anyhow::bail!(NO_VULKAN_ON_SIM_ERROR);
                 }
                 types::Destination::IOSSim
             } else {
@@ -189,7 +193,7 @@ WEBROGUE_APPLICATION_VERSION = {}
                     args.cache,
                 )?;
             } else {
-                eprintln!("warning: Vulkan is currently unsupported on iOS Simulator");
+                eprintln!("warning: {}", NO_VULKAN_ON_SIM_ERROR);
             }
 
             println!(

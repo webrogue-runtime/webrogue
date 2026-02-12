@@ -87,6 +87,9 @@ cp runtime/ios/runner/main.m template/ios/main.m
 cp runtime/ios/runner/Info.plist template/ios/Info.plist
 cp runtime/ios/runner/ios.entitlements template/ios/ios.entitlements
 cp -r runtime/external/MoltenVK/MoltenVK/static/MoltenVK.xcframework template/bin/MoltenVK.xcframework
+
+rm -rf template/AppIcon.icon
+cp -r runtime/AppIcon.icon template/AppIcon.icon
 # apple/template
 cd template
 xcodegen

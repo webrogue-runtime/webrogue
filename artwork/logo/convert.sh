@@ -96,43 +96,7 @@ ofsize 51 | to_png_transparent 128 microsoft_marketplace_logo.png
 # ofsize 64 | margin -5 | to_png_transparent 50 ../../platforms/Windows/Images/StoreLogo.png
 # ofsize 64 | margin  1 | to_png_transparent_wide 620 300 ../../platforms/Windows/Images/Wide310x150Logo.png #620x300
 
-# For MacOS
-macos_ico() {
-    SIZE=$1
-    STROKE_WIDTH=$2
-    FILENAME=$3
-
-    MACOS_ICO_DIR=../../apple/runtime/macos/launcher/Assets.xcassets/AppIcon.appiconset
-    ofsize 32 | stroke_width $STROKE_WIDTH | to_png_transparent $SIZE $MACOS_ICO_DIR/$FILENAME.foreground.png
-    MIN_POS=$(expr 100 '*' $SIZE / 1024)
-    MAX_POS=$(expr 924 '*' $SIZE / 1024)
-    CORNER_RADIUS=$(expr 184 '*' $SIZE / 1024)
-    # rounded rectangle(background)
-    rpngconvert -size $SIZE'x'$SIZE xc:transparent -fill white -draw "roundrectangle $MIN_POS,$MIN_POS $MAX_POS,$MAX_POS $CORNER_RADIUS,$CORNER_RADIUS" $MACOS_ICO_DIR/$FILENAME.background.png
-    # merge foreground and background
-    rpngconvert -background none $MACOS_ICO_DIR/$FILENAME.background.png $MACOS_ICO_DIR/$FILENAME.foreground.png -layers flatten -resize $SIZE'x'$SIZE $MACOS_ICO_DIR/$FILENAME.png
-    rm $MACOS_ICO_DIR/$FILENAME.background.png $MACOS_ICO_DIR/$FILENAME.foreground.png
-}
-macos_document_ico() {
-    SIZE=$1
-    STROKE_WIDTH=$2
-    FILENAME=$3
-
-    MACOS_ICO_DIR=../../apple/runtime/macos/launcher/Assets.xcassets/DocumentIcon.iconset
-    ofsize 51 | stroke_width $STROKE_WIDTH | to_png_transparent $SIZE $MACOS_ICO_DIR/$FILENAME.png
-}
-for flavor in macos_ico macos_document_ico; do
-    $flavor 16      3   icon_16x16
-    $flavor 32      3   icon_16x16@2x
-    $flavor 32      2   icon_32x32
-    $flavor 64      2   icon_32x32@2x
-    $flavor 128     1.5 icon_128x128
-    $flavor 256     1.5 icon_128x128@2x
-    $flavor 256     1.5 icon_256x256
-    $flavor 512     1.5 icon_256x256@2x
-    $flavor 512     1.5 icon_512x512
-    $flavor 1024    1.5 icon_512x512@2x
-done
-# For iOS
-ofsize 40 | to_png_white 1024 ../../apple/runtime/ios/launcher/Assets.xcassets/AppIcon.appiconset/ios1024.png
-ofsize 48 | to_png_transparent 1024 ../../apple/runtime/ios/launcher/Document.png
+# For XCode
+ofsize 44 | to_png_transparent 1024 ../../apple/runtime/AppIcon.icon/Assets/icon_normal.png
+ofsize 44 | parse_colors | outer_fill_color 000000 | inner_fill_color ffffff | stroke_color ffffff | default_colors | to_png_transparent 1024 ../../apple/runtime/AppIcon.icon/Assets/icon_dark.png
+ofsize 44 | parse_colors | outer_fill_color ffffff80 | inner_fill_color ffffff | stroke_color ffffff | default_colors | to_png_transparent 1024 ../../apple/runtime/AppIcon.icon/Assets/icon_mono.png

@@ -13,15 +13,12 @@ bin/macos/libMoltenVK.dylib
 bin/macos/libGFXStreamImpl.a
 bin/macos/libGFXStreamStub.a
 bin/macos/libwebrogue_macos.a
-ios/Assets.xcassets/AppIcon.appiconset/Contents.json
 ios/Assets.xcassets/Contents.json
 ios/Assets.xcassets/SplashScreen.imageset/Contents.json
 ios/Info.plist
 ios/LaunchScreen.storyboard
 ios/ios.entitlements
 ios/main.m
-macos/Assets.xcassets/AppIcon.appiconset/Contents.json
-macos/Assets.xcassets/Contents.json
 macos/main.m
 macos/runner.entitlements
 scripts/copy_bin.sh
