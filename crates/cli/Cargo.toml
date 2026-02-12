@@ -23,3 +23,6 @@ webrogue-gfxstream = { workspace = true, optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }
 webrogue-wrapp = { workspace = true, features = ["write"], optional = true }
 webrogue-hub-client = { workspace = true, optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+webrogue-gfx-winit = { workspace = true, features = ["static-vk"], optional = true }

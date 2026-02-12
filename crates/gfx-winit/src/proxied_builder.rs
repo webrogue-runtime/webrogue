@@ -85,6 +85,10 @@ impl WinitProxy {
             window.on_event(event);
         }
     }
+
+    pub(crate) fn get_mailbox(&self) -> Mailbox {
+        self.internal.lock().unwrap().mailbox.clone()
+    }
 }
 
 impl webrogue_gfx::IBuilder for ProxiedWinitBuilder {

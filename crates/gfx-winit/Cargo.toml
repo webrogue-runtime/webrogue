@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-static-vk = []
+static-vk = ["dep:reqwest", "dep:tar"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -19,3 +19,7 @@ ash-window = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }
+
+[build-dependencies]
+reqwest = { workspace = true, features = ["blocking"], optional = true }
+tar = { workspace = true, optional = true }

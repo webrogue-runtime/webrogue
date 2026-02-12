@@ -37,6 +37,7 @@ impl ApplicationHandler for App {
             return;
         };
         let (builder, proxy) = create_system_fn(event_loop.create_proxy());
+        let error_mailbox = proxy.get_mailbox();
         self.proxy = Some(proxy);
         let vulkan_requirement = self.vulkan_requirement;
         std::thread::Builder::new()
@@ -52,6 +53,7 @@ impl ApplicationHandler for App {
                 );
                 if let Err(error) = result {
                     set_error_fn(error);
+                    error_mailbox.execute(|event_loop| event_loop.exit());
                 }
             })
             .unwrap();
