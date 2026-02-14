@@ -1,9 +1,8 @@
 # Detect OS and set appropriate command line tools version
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    CMDLINE_TOOLS_VERSION=mac-13114758_latest
-else
-    CMDLINE_TOOLS_VERSION=linux-13114758_latest
-fi
+case "$OSTYPE" in
+    darwin*) CMDLINE_TOOLS_VERSION=mac-13114758_latest ;;
+    *) CMDLINE_TOOLS_VERSION=linux-13114758_latest ;;
+esac
 NDK_VERSION=29.0.14206865
 ANDROID_API_VERSION=30
 
