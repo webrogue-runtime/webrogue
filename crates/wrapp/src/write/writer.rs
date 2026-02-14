@@ -1,5 +1,7 @@
 use std::io::Write as _;
 
+use anyhow::Context;
+
 use crate::{IVFSBuilder, IVFSHandle};
 
 pub struct WRAPPWriter<VFSBuilder: crate::IVFSBuilder> {
@@ -30,7 +32,11 @@ impl<VFSBuilder: crate::IVFSBuilder> WRAPPWriter<VFSBuilder> {
         preamble_data.write_all(b"\0")?;
         let mut uncompressed_data: Vec<u8> = Vec::new();
 
-        if let Some(icon_data) = self.vfs_builder.get_uncompressed("normal_icon")? {
+        if let Some(icon_data) = self
+            .vfs_builder
+            .get_uncompressed("normal_icon")
+            .context("Unable to read normal_icon")?
+        {
             let icon_image = image::ImageReader::new(std::io::Cursor::new(icon_data))
                 .with_guessed_format()?
                 .decode()?;
