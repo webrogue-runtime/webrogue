@@ -5,36 +5,43 @@ use std::sync::{Arc, Mutex};
 
 use wasmtime::AsContextMut;
 
-pub struct WasiThreadsCtx<T> {
+use crate::{
+    gfx_init_params::{AsyncFuncRunner, AsyncFuncRunnerParams},
+    thread::WasmThreadRegistry,
+};
+
+pub struct WasiThreadsCtx<T: 'static> {
     instance_pre: Mutex<Option<Arc<wasmtime::InstancePre<T>>>>,
     tid: std::sync::atomic::AtomicI32,
-    engine: Mutex<Option<wasmtime::EngineWeak>>,
+    thread_registry: WasmThreadRegistry,
     shared_memories: Arc<Mutex<Vec<wasmtime::SharedMemory>>>,
-    epoch_interruption: bool,
+    async_func_runner: Option<AsyncFuncRunner<T>>,
 }
 
 const WASI_ENTRY_POINT: &str = "wasi_thread_start";
 
 impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
-    pub fn new(epoch_interruption: bool) -> Self {
-        let tid = std::sync::atomic::AtomicI32::new(0);
+    pub fn new(
+        thread_registry: WasmThreadRegistry,
+        async_func_runner: Option<AsyncFuncRunner<T>>,
+    ) -> Self {
+        let tid = std::sync::atomic::AtomicI32::new(1);
         Self {
             instance_pre: Mutex::new(None),
             tid,
-            engine: Mutex::new(None),
+            thread_registry,
             shared_memories: Arc::new(Mutex::new(Vec::new())),
-            epoch_interruption,
+            async_func_runner,
         }
     }
+
     pub fn fill(
         &self,
         module: wasmtime::Module,
         linker: Arc<wasmtime::Linker<T>>,
-        engine: wasmtime::EngineWeak,
     ) -> anyhow::Result<()> {
         let instance_pre = Arc::new(linker.instantiate_pre(&module)?);
         *self.instance_pre.lock().unwrap() = Some(instance_pre);
-        *self.engine.lock().unwrap() = Some(engine);
         Ok(())
     }
 
@@ -53,53 +60,93 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
         }
         let wasi_thread_id = wasi_thread_id.unwrap();
 
-        let builder = std::thread::Builder::new().name(format!("wasi-thread-{wasi_thread_id}"));
-        let engine = self.engine.lock().unwrap().as_ref().unwrap().clone();
         let shared_memories = self.shared_memories.clone();
-        let epoch_interruption = self.epoch_interruption;
-        builder.spawn(move || {
-            let result: Result<wasmtime::Result<()>, Box<dyn std::any::Any + Send>> =
-                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    let mut store = wasmtime::Store::new(instance_pre.module().engine(), host);
-                    if epoch_interruption {
-                        store.epoch_deadline_trap();
-                        store.set_epoch_deadline(1);
-                    }
-                    let instance = instance_pre.instantiate(&mut store)?;
-                    let thread_entry_point = instance
-                        .get_typed_func::<(i32, i32), ()>(&mut store, WASI_ENTRY_POINT)
-                        .unwrap();
-                    let res =
-                        thread_entry_point.call(&mut store, (wasi_thread_id, thread_start_arg));
-                    match res {
-                        Ok(_) => Ok(()),
-                        Err(e) => Err(e),
-                    }
-                }));
+        let async_func_runner = self.async_func_runner.clone();
+        let thread_registry = self.thread_registry.clone();
 
-            match result {
-                Err(e) => {
-                    eprintln!("wasi-thread-{wasi_thread_id} panicked: {e:?}");
-                    stop_all_threads(engine, shared_memories, epoch_interruption);
-                }
-                Ok(result) => {
-                    if let Err(e) = result {
-                        eprintln!("wasi-thread-{wasi_thread_id} finished with error: {e:?}");
-                        stop_all_threads(engine, shared_memories, epoch_interruption)
+        let _ = std::thread::Builder::new()
+            .name(format!("wasi-thread-{wasi_thread_id}"))
+            .spawn(move || {
+                let result: Result<anyhow::Result<()>, Box<dyn std::any::Any + Send>> =
+                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        let mut store = wasmtime::Store::new(instance_pre.module().engine(), host);
+                        let thread = thread_registry.make_thread(store.engine().weak());
+
+                        {
+                            let thread = thread.clone();
+                            store.epoch_deadline_callback(move |_| {
+                                thread.on_epoch_update_deadline()
+                            });
+                            store.set_epoch_deadline(1);
+                        }
+
+                        let res = if let Some(async_func_runner) = async_func_runner {
+                            async_func_runner(
+                                AsyncFuncRunnerParams {
+                                    store,
+                                    thread: thread.clone(),
+                                },
+                                Box::new(move |mut store| {
+                                    Box::pin(async move {
+                                        let instance = instance_pre.instantiate(&mut store)?;
+                                        let thread_entry_point = instance
+                                            .get_typed_func::<(i32, i32), ()>(
+                                                &mut store,
+                                                WASI_ENTRY_POINT,
+                                            )
+                                            .unwrap();
+                                        thread_entry_point
+                                            .call_async(
+                                                &mut store,
+                                                (wasi_thread_id, thread_start_arg),
+                                            )
+                                            .await?;
+                                        Ok(())
+                                    })
+                                }),
+                            )
+                            .map(|_| ())
+                        } else {
+                            let instance = instance_pre.instantiate(&mut store)?;
+                            let thread_entry_point = instance
+                                .get_typed_func::<(i32, i32), ()>(&mut store, WASI_ENTRY_POINT)
+                                .unwrap();
+                            thread_entry_point
+                                .call(&mut store, (wasi_thread_id, thread_start_arg))
+                                .map_err(|err| anyhow::anyhow!(err))
+                        };
+                        match res {
+                            Ok(_) => Ok(()),
+                            Err(e) => Err(e),
+                        }
+                    }));
+
+                match result {
+                    Err(e) => {
+                        eprintln!("wasi-thread-{wasi_thread_id} panicked: {e:?}");
+                        todo!()
+                        // stop_all_threads(engine, shared_memories, epoch_interruption);
+                    }
+                    Ok(result) => {
+                        if let Err(e) = result {
+                            eprintln!("wasi-thread-{wasi_thread_id} finished with error: {e:?}");
+                            todo!()
+                            // stop_all_threads(engine, shared_memories, epoch_interruption)
+                        }
                     }
                 }
-            }
-        })?;
+            });
 
         Ok(wasi_thread_id)
     }
 
     pub fn stop(&self) {
-        stop_all_threads(
-            self.engine.lock().unwrap().as_ref().unwrap().clone(),
-            self.shared_memories.clone(),
-            self.epoch_interruption,
-        )
+        todo!()
+        // stop_all_threads(
+        //     self.engine.lock().unwrap().as_ref().unwrap().clone(),
+        //     self.shared_memories.clone(),
+        //     self.epoch_interruption,
+        // )
     }
 
     fn next_thread_id(&self) -> Option<i32> {
@@ -141,12 +188,9 @@ pub fn add_to_linker_sync<T: Clone + Send + 'static>(
     linker: &mut wasmtime::Linker<T>,
     store: &mut wasmtime::Store<T>,
     module: &wasmtime::Module,
+    // async_func_runner: Option<Arc<dyn Fn(wasmtime::Store<T>) + Send + Sync>>,
     get_cx: impl Fn(&mut T) -> &WasiThreadsCtx<T> + Send + Sync + Copy + 'static,
 ) -> anyhow::Result<()> {
-    if get_cx(store.data_mut()).epoch_interruption {
-        store.epoch_deadline_trap();
-        store.set_epoch_deadline(1);
-    }
     linker.func_wrap(
         "wasi",
         "thread-spawn",

@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-gfxstream", "webrogue-gfxstream/lib-impl", "dep:webrogue-wrapp"]
+run = ["dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-gfx", "dep:webrogue-gfxstream", "webrogue-gfxstream/lib-impl", "dep:webrogue-wrapp", "dep:webrogue-debugger", "dep:tokio"]
 compile = ["dep:webrogue-aot-compiler"]
 pack = ["dep:webrogue-wrapp"]
 hub = ["dep:webrogue-hub-client"]
@@ -17,12 +17,15 @@ appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 
-webrogue-wasmtime = { workspace = true, features = ["jit", "cache"], optional = true }
+webrogue-wasmtime = { workspace = true, features = ["jit", "cache", "async"], optional = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
+webrogue-gfx = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }
 webrogue-wrapp = { workspace = true, features = ["write"], optional = true }
 webrogue-hub-client = { workspace = true, optional = true }
+webrogue-debugger = { workspace = true, optional = true }
+tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"], optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 webrogue-gfx-winit = { workspace = true, features = ["static-vk"], optional = true }

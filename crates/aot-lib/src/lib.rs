@@ -28,11 +28,11 @@ extern "C" fn webrogue_aot_windows() {
             .expect("dirs::data_dir returned None")
             .join(builder.config().unwrap().id.clone().replace('.', "-"))
             .join("persistent");
-
-        webrogue_wasmtime::run_aot_builder(
-            webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop().unwrap(),
+        webrogue_wasmtime::Runtime::new(&persistent_path).run_aot_builder(
+            webrogue_wasmtime::GFXInitParams::new(
+                webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop().unwrap(),
+            ),
             builder,
-            &persistent_path,
         )
     })();
 
@@ -89,10 +89,12 @@ extern "C" fn webrogue_aot_linux() {
         .join(builder.config().unwrap().id.clone().replace('.', "-"))
         .join("persistent");
 
-    webrogue_wasmtime::run_aot_builder(
-        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop().unwrap(),
-        builder,
-        &persistent_path,
-    )
-    .unwrap();
+    webrogue_wasmtime::Runtime::new(&persistent_path)
+        .run_aot_builder(
+            webrogue_wasmtime::GFXInitParams::new(
+                webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop().unwrap(),
+            ),
+            builder,
+        )
+        .unwrap();
 }
