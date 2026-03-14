@@ -24,6 +24,9 @@ impl Runtime {
         wasmtime_config.shared_memory(true);
         wasmtime_config.wasm_exceptions(true);
         wasmtime_config.memory_may_move(false);
+        // #[cfg(feature = "jit")]
+        // wasmtime_config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass);
+        // wasmtime_config.parallel_compilation(false); // TODO remove
 
         Runtime {
             persistent_dir: persistent_dir.to_path_buf(),

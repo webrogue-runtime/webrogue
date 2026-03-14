@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     num::NonZero,
 };
 
@@ -20,6 +20,7 @@ use crate::{
 pub(crate) struct Wasm32Target {
     receiver: tokio::sync::mpsc::UnboundedReceiver<DebuggerLoopMessage>,
     threads: BTreeMap<i32, ThreadInfo>,
+    breakpoints: BTreeMap<u64, BTreeSet<u32>>,
 }
 
 pub(crate) enum HandleMessageResult {
@@ -126,39 +127,31 @@ impl Wasm32Target {
         Some(self.threads.get(&(tid.get() as i32))?.0.lock().unwrap())
     }
 
-    fn edit_breakpoint(
-        &mut self,
-        addr: u64,
-        enabled: bool,
-    ) -> Result<bool, TargetError<anyhow::Error>> {
-        let Some(wasm_addr) = WasmAddr::from_raw(addr) else {
-            return Ok(false);
-        };
-
-        if wasm_addr.addr_type() != gdbstub_arch::wasm::addr::WasmAddrType::Object {
-            return Ok(false);
-        }
-
+    fn edit_breakpoint(&mut self) -> Result<bool, TargetError<anyhow::Error>> {
         let mut is_ok = true;
-
         for thread_info in self.threads.values() {
             let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
-            thread_info
-                .0
-                .lock()
-                .unwrap()
-                .thread_sender
-                .send(ThreadMessage::EditBreakpoint(EditBreakpointMessage {
-                    module: wasm_addr.module_index(),
-                    offset: wasm_addr.offset() as usize,
-                    enabled,
-                    sender,
-                }))
-                .map_err(|_| TargetError::NonFatal)?;
-            let response = tokio::runtime::Handle::current()
+            let send_result =
+                thread_info
+                    .0
+                    .lock()
+                    .unwrap()
+                    .thread_sender
+                    .send(ThreadMessage::EditBreakpoint(EditBreakpointMessage {
+                        breakpoints: self.breakpoints.clone(),
+                        sender,
+                    }));
+            if send_result.is_err() {
+                // Thread finished or died. Ignoring
+                continue;
+            }
+            is_ok &= tokio::runtime::Handle::current()
                 .block_on(receiver.recv())
-                .ok_or(TargetError::NonFatal)?;
-            is_ok &= response;
+                .ok_or_else(|| {
+                    TargetError::Fatal(anyhow::anyhow!(
+                        "An error occurred while setting a breakpoint"
+                    ))
+                })?;
         }
 
         Ok(is_ok)
@@ -180,6 +173,7 @@ pub(crate) fn create_wasm32_target() -> (Wasm32Target, DebuggerLoopProxy) {
     let target = Wasm32Target {
         receiver,
         threads: Default::default(),
+        breakpoints: BTreeMap::new(),
     };
     let proxy = DebuggerLoopProxy { sender };
     (target, proxy)
@@ -275,7 +269,33 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         addr: <Self::Arch as gdbstub::arch::Arch>::Usize,
         _kind: <Self::Arch as gdbstub::arch::Arch>::BreakpointKind,
     ) -> gdbstub::target::TargetResult<bool, Self> {
-        self.edit_breakpoint(addr, true)
+        let Some(wasm_addr) = WasmAddr::from_raw(addr) else {
+            return Ok(false);
+        };
+
+        if wasm_addr.addr_type() != gdbstub_arch::wasm::addr::WasmAddrType::Object {
+            return Ok(false);
+        }
+
+        let module_index = wasm_addr.module_index() as u64;
+        let pc = wasm_addr.offset();
+
+        let old_breakpoints = self.breakpoints.clone();
+
+        if let Some(breakpoints) = self.breakpoints.get_mut(&module_index) {
+            breakpoints.insert(pc);
+        } else {
+            let mut breakpoints = BTreeSet::new();
+            breakpoints.insert(pc);
+            self.breakpoints.insert(module_index, breakpoints);
+        }
+
+        let is_ok = self.edit_breakpoint()?;
+        if !is_ok {
+            self.breakpoints = old_breakpoints;
+            self.edit_breakpoint()?;
+        }
+        Ok(is_ok)
     }
 
     fn remove_sw_breakpoint(
@@ -283,7 +303,26 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         addr: <Self::Arch as gdbstub::arch::Arch>::Usize,
         _kind: <Self::Arch as gdbstub::arch::Arch>::BreakpointKind,
     ) -> gdbstub::target::TargetResult<bool, Self> {
-        self.edit_breakpoint(addr, false)
+        let Some(wasm_addr) = WasmAddr::from_raw(addr) else {
+            return Ok(false);
+        };
+
+        if wasm_addr.addr_type() != gdbstub_arch::wasm::addr::WasmAddrType::Object {
+            return Ok(false);
+        }
+
+        let module_index = wasm_addr.module_index() as u64;
+        let pc = wasm_addr.offset();
+
+        let Some(breakpoints) = self.breakpoints.get_mut(&module_index) else {
+            return Ok(true);
+        };
+        if !breakpoints.remove(&pc) {
+            return Ok(true);
+        }
+
+        self.edit_breakpoint()?;
+        Ok(true)
     }
 }
 

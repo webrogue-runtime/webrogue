@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, BTreeSet};
+
 use crate::thread_info::ThreadInfo;
 
 #[derive(Clone)]
@@ -57,8 +59,6 @@ pub struct ReadWasmMessage {
 }
 
 pub struct EditBreakpointMessage {
-    pub module: u32,
-    pub offset: usize,
-    pub enabled: bool,
+    pub breakpoints: BTreeMap<u64, BTreeSet<u32>>, // (module, offset)
     pub sender: tokio::sync::mpsc::UnboundedSender<bool>,
 }

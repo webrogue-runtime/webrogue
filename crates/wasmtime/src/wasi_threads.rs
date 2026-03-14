@@ -46,6 +46,7 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
     }
 
     pub fn spawn(&self, host: T, thread_start_arg: i32) -> anyhow::Result<i32> {
+        return Ok(42); // todo remove
         let instance_pre = self.instance_pre.lock().unwrap().as_ref().unwrap().clone();
         if !has_entry_point(instance_pre.module()) {
             return Ok(-1);
@@ -88,7 +89,10 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
                                 },
                                 Box::new(move |mut store| {
                                     Box::pin(async move {
-                                        let instance = instance_pre.instantiate(&mut store)?;
+                                        let instance = instance_pre
+                                            .instantiate_async(&mut store)
+                                            .await
+                                            .unwrap();
                                         let thread_entry_point = instance
                                             .get_typed_func::<(i32, i32), ()>(
                                                 &mut store,
@@ -115,6 +119,7 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
                                 .call(&mut store, (wasi_thread_id, thread_start_arg))
                                 .map_err(|err| anyhow::anyhow!(err))
                         };
+                        res.as_ref().unwrap();
                         match res {
                             Ok(_) => Ok(()),
                             Err(e) => Err(e),

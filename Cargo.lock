@@ -7855,7 +7855,6 @@ dependencies = [
  "futures-util",
  "gdbstub",
  "gdbstub_arch",
- "num-traits",
  "tokio",
  "wasmtime",
  "wasmtime-internal-debugger",

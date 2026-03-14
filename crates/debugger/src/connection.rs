@@ -1,4 +1,4 @@
-use std::pin::Pin;
+use std::{future::Future, pin::Pin};
 
 pub use tokio::io::AsyncRead;
 use tokio::io::{AsyncWrite, AsyncWriteExt as _};
@@ -8,8 +8,8 @@ pub trait PacketSender {
     async fn send(&mut self, data: &[u8]) -> anyhow::Result<()>;
 }
 
-pub type BoxedPacketSender = Box<dyn PacketSender + Send>;
 pub type BoxedPacketReceiver = Pin<Box<dyn AsyncRead + Send>>;
+pub type BoxedPacketSender = Box<dyn PacketSender + Send>;
 
 #[async_trait::async_trait]
 impl<T: AsyncWrite + Send + Unpin> PacketSender for T {
@@ -18,6 +18,12 @@ impl<T: AsyncWrite + Send + Unpin> PacketSender for T {
         Ok(())
     }
 }
+
+pub type ConnectionFactory = Box<
+    dyn FnOnce() -> Pin<
+        Box<dyn Future<Output = anyhow::Result<(BoxedPacketReceiver, BoxedPacketSender)>>>,
+    >,
+>;
 
 pub(crate) struct Connection {
     sender: BoxedPacketSender,
@@ -74,12 +80,17 @@ impl gdbstub::conn::Connection for Connection {
     }
 }
 
-pub async fn tokio_tcp_connection(
-    port: u16,
-) -> anyhow::Result<(BoxedPacketReceiver, BoxedPacketSender)> {
-    let tcp_listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
-    let (tcp_stream, _addr) = tcp_listener.accept().await?;
-    let (read, write) = tcp_stream.into_split();
-
-    Ok((Box::pin(read), Box::new(write)))
+pub fn tokio_tcp_connection(port: u16) -> ConnectionFactory {
+    Box::new(move || {
+        Box::pin(async move {
+            eprintln!("Awaiting incoming GDB Remote connection on port {port}");
+            let tcp_listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
+            let (tcp_stream, _addr) = tcp_listener.accept().await?;
+            eprintln!("GDB Remote connection accepted!");
+            let (read, write) = tcp_stream.into_split();
+            let rx: BoxedPacketReceiver = Box::pin(read);
+            let tx: BoxedPacketSender = Box::new(write);
+            anyhow::Ok((rx, tx))
+        })
+    })
 }

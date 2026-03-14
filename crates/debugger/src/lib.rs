@@ -16,12 +16,13 @@ pub use handler::EventHandler;
 pub use state::State;
 use webrogue_wasmtime::WasmThread;
 
+use crate::connection::ConnectionFactory;
+
 pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send + 'static>(
     rt_handle: tokio::runtime::Handle,
     runtime: webrogue_wasmtime::Runtime,
     mut gfx_init_params: webrogue_wasmtime::GFXInitParams<GFXBuilder>,
-    receiver: BoxedPacketReceiver,
-    sender: BoxedPacketSender,
+    connection_factory: ConnectionFactory,
     func: impl FnOnce(webrogue_wasmtime::Runtime, webrogue_wasmtime::GFXInitParams<GFXBuilder>) -> T
         + Send
         + 'static,
@@ -39,6 +40,7 @@ pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send 
 
     let wasi_main_join_handle = rt_handle.spawn_blocking(|| func(runtime, gfx_init_params));
     target.wait_for_first_step().await?;
+    let (receiver, sender) = connection_factory().await?;
     rt_handle
         .spawn_blocking(|| gdb_stub_loop::run(receiver, sender, target))
         .await??;

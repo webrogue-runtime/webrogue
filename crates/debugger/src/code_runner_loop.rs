@@ -1,9 +1,10 @@
 use std::{
     cmp::min,
+    collections::{BTreeMap, BTreeSet},
     sync::{Arc, Mutex},
 };
 
-use wasmtime::AsContextMut as _;
+use wasmtime::{AsContext, AsContextMut as _};
 use webrogue_wasmtime::WasmThread;
 
 use crate::{
@@ -213,31 +214,61 @@ pub fn runner<T: Send + 'static>(
                                 })
                                 .await??;
                         }
-                        Some(ThreadMessage::EditBreakpoint(message)) => {
+                        Some(ThreadMessage::EditBreakpoint(mut message)) => {
                             debugger
                                 .with_store(move |mut store| -> anyhow::Result<()> {
                                     let modules = store.as_context_mut().debug_all_modules();
 
-                                    let mut is_ok = false;
-                                    for module in modules {
-                                        if module.debug_index_in_engine() as u32 != message.module {
-                                            continue;
+                                    let mut breakpoints_per_stores: BTreeMap<u64, BTreeSet<u32>> =
+                                        BTreeMap::new();
+                                    for breakpoint in store.as_context().breakpoints().unwrap() {
+                                        if let Some(breakpoints) = breakpoints_per_stores
+                                            .get_mut(&breakpoint.module.debug_index_in_engine())
+                                        {
+                                            breakpoints.insert(breakpoint.pc);
+                                        } else {
+                                            let mut breakpoints = BTreeSet::new();
+                                            breakpoints.insert(breakpoint.pc);
+                                            breakpoints_per_stores.insert(
+                                                breakpoint.module.debug_index_in_engine(),
+                                                breakpoints,
+                                            );
                                         }
+                                    }
+
+                                    let mut is_ok = true;
+
+                                    for module in modules {
+                                        let module_id = module.debug_index_in_engine();
+                                        let current_breakpoints = breakpoints_per_stores
+                                            .remove(&module_id)
+                                            .unwrap_or_default();
+                                        let needed_breakpoints = message
+                                            .breakpoints
+                                            .remove(&module_id)
+                                            .unwrap_or_default();
+
                                         let mut edit_breakpoint =
                                             store.as_context_mut().edit_breakpoints().unwrap();
 
-                                        if message.enabled {
-                                            edit_breakpoint.remove_breakpoint(
-                                                &module,
-                                                message.offset as u32,
-                                            )?;
-                                        } else {
-                                            edit_breakpoint
-                                                .add_breakpoint(&module, message.offset as u32)?;
+                                        for breakpoint in
+                                            needed_breakpoints.difference(&current_breakpoints)
+                                        {
+                                            // set is_ok to false if can't add a breakpoint
+                                            is_ok &= edit_breakpoint
+                                                .add_breakpoint(&module, *breakpoint)
+                                                .is_ok();
                                         }
-
-                                        is_ok = true;
+                                        for breakpoint in
+                                            current_breakpoints.difference(&needed_breakpoints)
+                                        {
+                                            edit_breakpoint
+                                                .remove_breakpoint(&module, *breakpoint)
+                                                .expect("Can't remove a breakpoint");
+                                        }
                                     }
+
+                                    is_ok &= message.breakpoints.is_empty();
 
                                     message.sender.send(is_ok)?;
 

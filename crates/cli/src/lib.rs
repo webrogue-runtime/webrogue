@@ -71,7 +71,7 @@ fn run_builder(
         runtime.jit_cache_config(cache);
     }
 
-    runtime.jit_optimized(optimized);
+    runtime.jit_optimized(gdb_port.is_none());
 
     let gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
 
@@ -83,21 +83,16 @@ fn run_builder(
                 webrogue_wasmtime::GFXInitParams::new(webrogue_gfx::ChildBuilder::new(gfx_system));
 
             if let Some(gdb_port) = gdb_port {
-                tokio::runtime::Builder::new_multi_thread()
+                tokio::runtime::Builder::new_current_thread()
                     .enable_io()
                     .build()?
                     .block_on((async move || -> anyhow::Result<()> {
                         let rt_handle = tokio::runtime::Handle::current();
-                        eprintln!("Awaiting incoming GDB Remote connection on port {gdb_port}");
-                        let (receiver, sender) =
-                            webrogue_debugger::tokio_tcp_connection(gdb_port).await?;
-                        eprintln!("GDB Remote connection accepted!");
                         webrogue_debugger::debug(
                             rt_handle,
                             runtime,
                             gfx_init_params,
-                            receiver,
-                            sender,
+                            webrogue_debugger::tokio_tcp_connection(gdb_port),
                             move |runtime, gfx_init_params| -> anyhow::Result<()> {
                                 runtime.run_jit(gfx_init_params, handle, &config)?;
                                 Ok(())
