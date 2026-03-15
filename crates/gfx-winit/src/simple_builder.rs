@@ -41,7 +41,7 @@ impl ApplicationHandler for App {
         self.proxy = Some(proxy);
         let vulkan_requirement = self.vulkan_requirement;
         std::thread::Builder::new()
-            .name("wasi-thread-main".to_owned())
+            .name("wasi-main".to_owned())
             .spawn(move || {
                 let result = builder.run(
                     |winit_system| {

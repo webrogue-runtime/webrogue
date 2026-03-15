@@ -1,6 +1,9 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    num::NonZeroI32,
+};
 
-use crate::thread_info::ThreadInfo;
+use crate::thread_info::{StoppedThread, ThreadInfo};
 
 #[derive(Clone)]
 pub struct DebuggerLoopProxy {
@@ -24,12 +27,13 @@ impl DebuggerLoopProxy {
 pub enum DebuggerLoopMessage {
     RegisterThread(ThreadInfo),
     ThreadStopped(ThreadStopInfo),
-    Finished,
+    ThreadFinished(NonZeroI32),
 }
 
 pub struct ThreadStopInfo {
-    pub tid: i32,
+    pub tid: NonZeroI32,
     pub is_step: bool,
+    pub stopped_thread: StoppedThread,
 }
 
 pub enum ThreadMessage {

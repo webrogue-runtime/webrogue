@@ -27,16 +27,10 @@ pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send 
         + Send
         + 'static,
 ) -> anyhow::Result<T> {
-    let rt_handle_clone = rt_handle.clone();
-
     let (mut target, target_proxy) = gdb_stub_target::create_wasm32_target();
 
     let threads: Arc<Mutex<Vec<WasmThread>>> = Arc::default();
-    gfx_init_params.async_func_runner(code_runner_loop::runner(
-        rt_handle_clone,
-        target_proxy,
-        threads.clone(),
-    ));
+    gfx_init_params.async_func_runner(code_runner_loop::runner(target_proxy, threads.clone()));
 
     let wasi_main_join_handle = rt_handle.spawn_blocking(|| func(runtime, gfx_init_params));
     target.wait_for_first_step().await?;

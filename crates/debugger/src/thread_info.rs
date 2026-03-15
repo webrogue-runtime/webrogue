@@ -1,42 +1,39 @@
-use std::sync::{Arc, Mutex};
+use std::num::NonZeroI32;
 
 use gdbstub_arch::wasm::addr::WasmAddr;
 use webrogue_wasmtime::WasmThread;
 
 use crate::communication::ThreadMessage;
 
-#[derive(Clone)]
-pub struct ThreadInfo(pub Arc<Mutex<ThreadInfoInner>>);
+pub struct ThreadInfo {
+    pub tid: NonZeroI32,
+    pub wasm_thread: WasmThread,
+    pub is_resume_action_step: bool,
+    pub stopped: Option<StoppedThread>,
+    pub is_main: bool,
+}
 
 impl ThreadInfo {
-    pub fn new(
-        thread: WasmThread,
-        thread_sender: tokio::sync::mpsc::UnboundedSender<ThreadMessage>,
-    ) -> Self {
-        let tid = thread.tid();
-        Self(Arc::new(Mutex::new(ThreadInfoInner {
+    pub fn new(wasm_thread: WasmThread, is_main: bool) -> Self {
+        let tid = wasm_thread.tid();
+        Self {
             tid,
-            thread,
-            wasm_call_stack: Vec::new(),
+            wasm_thread,
             is_resume_action_step: false,
-            thread_sender,
-            module_addresses: Vec::new(),
-            memory_addresses: Vec::new(),
-        })))
+            stopped: None,
+            is_main,
+        }
     }
 }
 
-pub struct ThreadInfoInner {
-    pub tid: i32,
-    pub thread: WasmThread,
+pub struct StoppedThread {
     pub wasm_call_stack: Vec<Frame>,
-    pub is_resume_action_step: bool,
-    pub thread_sender: tokio::sync::mpsc::UnboundedSender<ThreadMessage>,
+    pub sender: tokio::sync::mpsc::UnboundedSender<ThreadMessage>,
     pub module_addresses: Vec<(u32, usize)>, // (id, size)
     pub memory_addresses: Vec<(u32, usize)>, // (id, size)
 }
 
-impl ThreadInfoInner {
+impl StoppedThread {
     pub fn regs(&self) -> Option<gdbstub_arch::wasm::reg::WasmRegisters> {
         let frame = self.wasm_call_stack.first()?;
         Some(gdbstub_arch::wasm::reg::WasmRegisters {

@@ -39,7 +39,7 @@ impl crate::server::ServerConfig for ServerConfigImpl {
         let persistent_dir = self.storage_path.join("persistent");
 
         let _ = std::thread::Builder::new()
-            .name("wasi-thread-main".to_owned())
+            .name("wasi-main".to_owned())
             .spawn(move || {
                 let _ = webrogue_wasmtime::Runtime::new(&persistent_dir).run_jit(
                     GFXInitParams::new(builder),

@@ -1,7 +1,7 @@
 use std::{
     cmp::min,
     collections::{BTreeMap, BTreeSet},
-    sync::{Arc, Mutex},
+    sync::{atomic::AtomicBool, Arc, Mutex},
 };
 
 use wasmtime::{AsContext, AsContextMut as _};
@@ -9,50 +9,53 @@ use webrogue_wasmtime::WasmThread;
 
 use crate::{
     communication::{DebuggerLoopMessage, DebuggerLoopProxy, ThreadMessage, ThreadStopInfo},
-    thread_info::{Frame, ThreadInfo},
+    thread_info::{Frame, StoppedThread, ThreadInfo},
 };
 
 pub fn runner<T: Send + 'static>(
-    rt_handle_clone: tokio::runtime::Handle,
     target_proxy: DebuggerLoopProxy,
     threads: Arc<Mutex<Vec<WasmThread>>>,
 ) -> webrogue_wasmtime::AsyncFuncRunner<T> {
+    let is_main_thread_arc = Arc::new(AtomicBool::new(true));
     Arc::new(move |params, func| {
-        rt_handle_clone.block_on((async || {
-            let target_proxy = target_proxy.clone();
-            let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
-            let thread = params.thread;
-            threads.clone().lock().unwrap().push(thread.clone());
-            let thread_info = ThreadInfo::new(thread.clone(), sender);
-            target_proxy.send(DebuggerLoopMessage::RegisterThread(thread_info.clone()))?;
-            let mut debugger =
-                wasmtime_internal_debugger::Debugger::new(params.store, move |store| {
-                    Box::pin(async {
-                        func(store)
-                            .await
-                            .map_err(|err| wasmtime::Error::from_anyhow(err))
-                    })
-                });
-            let mut doing_step = false;
-            'exec_loop: loop {
-                let run_result = debugger.run().await?;
-                match run_result {
-                    wasmtime_internal_debugger::DebugRunResult::Finished => break 'exec_loop,
-                    wasmtime_internal_debugger::DebugRunResult::HostcallError => todo!(),
-                    wasmtime_internal_debugger::DebugRunResult::EpochYield => {}
-                    wasmtime_internal_debugger::DebugRunResult::CaughtExceptionThrown(
-                        _owned_rooted,
-                    ) => todo!(),
-                    wasmtime_internal_debugger::DebugRunResult::UncaughtExceptionThrown(
-                        _owned_rooted,
-                    ) => todo!(),
-                    wasmtime_internal_debugger::DebugRunResult::Trap(_trap) => todo!(),
-                    wasmtime_internal_debugger::DebugRunResult::Breakpoint => {}
-                };
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on((async || {
+                let target_proxy = target_proxy.clone();
+                let thread = params.thread;
+                threads.clone().lock().unwrap().push(thread.clone());
+                let thread_info = ThreadInfo::new(
+                    thread.clone(),
+                    is_main_thread_arc.fetch_and(false, std::sync::atomic::Ordering::SeqCst),
+                );
+                target_proxy.send(DebuggerLoopMessage::RegisterThread(thread_info))?;
+                let mut debugger =
+                    wasmtime_internal_debugger::Debugger::new(params.store, move |store| {
+                        Box::pin(async {
+                            func(store)
+                                .await
+                                .map_err(|err| wasmtime::Error::from_anyhow(err))
+                        })
+                    });
+                let mut doing_step = false;
+                'exec_loop: loop {
+                    let run_result = debugger.run().await?;
+                    match run_result {
+                        wasmtime_internal_debugger::DebugRunResult::Finished => break 'exec_loop,
+                        wasmtime_internal_debugger::DebugRunResult::HostcallError => todo!(),
+                        wasmtime_internal_debugger::DebugRunResult::EpochYield => {}
+                        wasmtime_internal_debugger::DebugRunResult::CaughtExceptionThrown(
+                            _owned_rooted,
+                        ) => todo!(),
+                        wasmtime_internal_debugger::DebugRunResult::UncaughtExceptionThrown(
+                            _owned_rooted,
+                        ) => todo!(),
+                        wasmtime_internal_debugger::DebugRunResult::Trap(_trap) => todo!(),
+                        wasmtime_internal_debugger::DebugRunResult::Breakpoint => {}
+                    };
 
-                {
-                    let thread_info = thread_info.clone();
-                    debugger
+                    let (wasm_call_stack, memory_addresses, module_addresses) = debugger
                         .with_store(move |mut store| -> anyhow::Result<_> {
                             let mut maybe_frame = Some(store.debug_exit_frames().next().unwrap());
                             let mut wasm_call_stack = Vec::new();
@@ -96,9 +99,7 @@ pub fn runner<T: Send + 'static>(
                                 }
                                 maybe_frame = frame.parent(&mut store)?;
                             }
-                            let mut thread_info = thread_info.0.lock().unwrap();
-                            thread_info.wasm_call_stack = wasm_call_stack;
-                            thread_info.memory_addresses = get_memories(&mut store)
+                            let memory_addresses = get_memories(&mut store)
                                 .into_iter()
                                 .map(|(id, memory)| {
                                     let size = match memory {
@@ -113,7 +114,7 @@ pub fn runner<T: Send + 'static>(
                                 })
                                 .collect();
 
-                            thread_info.module_addresses = store
+                            let module_addresses = store
                                 .debug_all_modules()
                                 .into_iter()
                                 .map(|module| {
@@ -122,169 +123,181 @@ pub fn runner<T: Send + 'static>(
                                 })
                                 .collect();
 
-                            Ok(())
+                            Ok((wasm_call_stack, memory_addresses, module_addresses))
                         })
                         .await??;
-                }
 
-                target_proxy.send(DebuggerLoopMessage::ThreadStopped(ThreadStopInfo {
-                    tid: thread.tid(),
-                    is_step: doing_step,
-                }))?;
+                    let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
 
-                'recv_loop: loop {
-                    match receiver.recv().await {
-                        Some(ThreadMessage::Resume(message)) => {
-                            doing_step = message.is_step;
-                            debugger
-                                .with_store(move |store| -> anyhow::Result<()> {
-                                    store
-                                        .edit_breakpoints()
-                                        .ok_or_else(|| {
-                                            anyhow::anyhow!("Breakpoints are not configured")
-                                        })?
-                                        .single_step(message.is_step)?;
-                                    Ok(())
-                                })
-                                .await??;
-                            continue 'exec_loop;
-                        }
-                        Some(ThreadMessage::ReadMemory(message)) => {
-                            debugger
-                                .with_store(move |mut store| -> anyhow::Result<()> {
-                                    let memories = get_memories(&mut store);
+                    target_proxy.send(DebuggerLoopMessage::ThreadStopped(ThreadStopInfo {
+                        tid: thread.tid(),
+                        is_step: doing_step,
+                        stopped_thread: StoppedThread {
+                            wasm_call_stack,
+                            sender,
+                            module_addresses,
+                            memory_addresses,
+                        },
+                    }))?;
 
-                                    let Some(memory) = memories
-                                        .iter()
-                                        .find(|(id, _)| *id == message.module)
-                                        .or_else(|| {
-                                            if memories.len() == 1 {
-                                                memories.first()
+                    loop {
+                        match receiver.recv().await {
+                            Some(ThreadMessage::Resume(message)) => {
+                                doing_step = message.is_step;
+                                debugger
+                                    .with_store(move |store| -> anyhow::Result<()> {
+                                        store
+                                            .edit_breakpoints()
+                                            .ok_or_else(|| {
+                                                anyhow::anyhow!("Breakpoints are not configured")
+                                            })?
+                                            .single_step(message.is_step)?;
+                                        Ok(())
+                                    })
+                                    .await??;
+                                continue 'exec_loop;
+                            }
+                            Some(ThreadMessage::ReadMemory(message)) => {
+                                debugger
+                                    .with_store(move |mut store| -> anyhow::Result<()> {
+                                        let memories = get_memories(&mut store);
+
+                                        let Some(memory) = memories
+                                            .iter()
+                                            .find(|(id, _)| *id == message.module)
+                                            .or_else(|| {
+                                                if memories.len() == 1 {
+                                                    memories.first()
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .map(|(_, memory)| memory)
+                                        else {
+                                            return Ok(());
+                                        };
+
+                                        let data = match memory {
+                                            Memory::Shared(shared_memory) => get_safe_range(
+                                                shared_memory.data(),
+                                                message.offset,
+                                                message.size,
+                                            )
+                                            .iter()
+                                            .map(|a| unsafe { *a.get() })
+                                            .collect(),
+                                            Memory::Unshared(memory) => get_safe_range(
+                                                memory.data(store.as_context_mut()),
+                                                message.offset,
+                                                message.size,
+                                            )
+                                            .to_vec(),
+                                        };
+                                        message.sender.send(data)?;
+                                        Ok(())
+                                    })
+                                    .await??;
+                            }
+                            Some(ThreadMessage::ReadWasm(message)) => {
+                                debugger
+                                    .with_store(move |store| -> anyhow::Result<()> {
+                                        let modules = store.debug_all_modules();
+
+                                        let Some(module) = modules.iter().find(|module| {
+                                            (module.debug_index_in_engine() as u32)
+                                                == message.module
+                                        }) else {
+                                            return Ok(());
+                                        };
+
+                                        let data = get_safe_range(
+                                            module.debug_bytecode().unwrap(),
+                                            message.offset,
+                                            message.size,
+                                        );
+
+                                        message.sender.send(data.to_vec())?;
+
+                                        Ok(())
+                                    })
+                                    .await??;
+                            }
+                            Some(ThreadMessage::EditBreakpoint(mut message)) => {
+                                debugger
+                                    .with_store(move |mut store| -> anyhow::Result<()> {
+                                        let modules = store.as_context_mut().debug_all_modules();
+
+                                        let mut breakpoints_per_stores: BTreeMap<
+                                            u64,
+                                            BTreeSet<u32>,
+                                        > = BTreeMap::new();
+                                        for breakpoint in store.as_context().breakpoints().unwrap()
+                                        {
+                                            if let Some(breakpoints) = breakpoints_per_stores
+                                                .get_mut(&breakpoint.module.debug_index_in_engine())
+                                            {
+                                                breakpoints.insert(breakpoint.pc);
                                             } else {
-                                                None
+                                                let mut breakpoints = BTreeSet::new();
+                                                breakpoints.insert(breakpoint.pc);
+                                                breakpoints_per_stores.insert(
+                                                    breakpoint.module.debug_index_in_engine(),
+                                                    breakpoints,
+                                                );
                                             }
-                                        })
-                                        .map(|(_, memory)| memory)
-                                    else {
-                                        return Ok(());
-                                    };
-
-                                    let data = match memory {
-                                        Memory::Shared(shared_memory) => get_safe_range(
-                                            shared_memory.data(),
-                                            message.offset,
-                                            message.size,
-                                        )
-                                        .iter()
-                                        .map(|a| unsafe { *a.get() })
-                                        .collect(),
-                                        Memory::Unshared(memory) => get_safe_range(
-                                            memory.data(store.as_context_mut()),
-                                            message.offset,
-                                            message.size,
-                                        )
-                                        .to_vec(),
-                                    };
-                                    message.sender.send(data)?;
-                                    Ok(())
-                                })
-                                .await??;
-                            continue 'recv_loop;
-                        }
-                        Some(ThreadMessage::ReadWasm(message)) => {
-                            debugger
-                                .with_store(move |store| -> anyhow::Result<()> {
-                                    let modules = store.debug_all_modules();
-
-                                    let Some(module) = modules.iter().find(|module| {
-                                        (module.debug_index_in_engine() as u32) == message.module
-                                    }) else {
-                                        return Ok(());
-                                    };
-
-                                    let data = get_safe_range(
-                                        module.debug_bytecode().unwrap(),
-                                        message.offset,
-                                        message.size,
-                                    );
-
-                                    message.sender.send(data.to_vec())?;
-
-                                    Ok(())
-                                })
-                                .await??;
-                        }
-                        Some(ThreadMessage::EditBreakpoint(mut message)) => {
-                            debugger
-                                .with_store(move |mut store| -> anyhow::Result<()> {
-                                    let modules = store.as_context_mut().debug_all_modules();
-
-                                    let mut breakpoints_per_stores: BTreeMap<u64, BTreeSet<u32>> =
-                                        BTreeMap::new();
-                                    for breakpoint in store.as_context().breakpoints().unwrap() {
-                                        if let Some(breakpoints) = breakpoints_per_stores
-                                            .get_mut(&breakpoint.module.debug_index_in_engine())
-                                        {
-                                            breakpoints.insert(breakpoint.pc);
-                                        } else {
-                                            let mut breakpoints = BTreeSet::new();
-                                            breakpoints.insert(breakpoint.pc);
-                                            breakpoints_per_stores.insert(
-                                                breakpoint.module.debug_index_in_engine(),
-                                                breakpoints,
-                                            );
                                         }
-                                    }
 
-                                    let mut is_ok = true;
+                                        let mut is_ok = true;
 
-                                    for module in modules {
-                                        let module_id = module.debug_index_in_engine();
-                                        let current_breakpoints = breakpoints_per_stores
-                                            .remove(&module_id)
-                                            .unwrap_or_default();
-                                        let needed_breakpoints = message
-                                            .breakpoints
-                                            .remove(&module_id)
-                                            .unwrap_or_default();
+                                        for module in modules {
+                                            let module_id = module.debug_index_in_engine();
+                                            let current_breakpoints = breakpoints_per_stores
+                                                .remove(&module_id)
+                                                .unwrap_or_default();
+                                            let needed_breakpoints = message
+                                                .breakpoints
+                                                .remove(&module_id)
+                                                .unwrap_or_default();
 
-                                        let mut edit_breakpoint =
-                                            store.as_context_mut().edit_breakpoints().unwrap();
+                                            let mut edit_breakpoint =
+                                                store.as_context_mut().edit_breakpoints().unwrap();
 
-                                        for breakpoint in
-                                            needed_breakpoints.difference(&current_breakpoints)
-                                        {
-                                            // set is_ok to false if can't add a breakpoint
-                                            is_ok &= edit_breakpoint
-                                                .add_breakpoint(&module, *breakpoint)
-                                                .is_ok();
+                                            for breakpoint in
+                                                needed_breakpoints.difference(&current_breakpoints)
+                                            {
+                                                // set is_ok to false if can't add a breakpoint
+                                                is_ok &= edit_breakpoint
+                                                    .add_breakpoint(&module, *breakpoint)
+                                                    .is_ok();
+                                            }
+                                            for breakpoint in
+                                                current_breakpoints.difference(&needed_breakpoints)
+                                            {
+                                                edit_breakpoint
+                                                    .remove_breakpoint(&module, *breakpoint)
+                                                    .expect("Can't remove a breakpoint");
+                                            }
                                         }
-                                        for breakpoint in
-                                            current_breakpoints.difference(&needed_breakpoints)
-                                        {
-                                            edit_breakpoint
-                                                .remove_breakpoint(&module, *breakpoint)
-                                                .expect("Can't remove a breakpoint");
-                                        }
-                                    }
 
-                                    is_ok &= message.breakpoints.is_empty();
+                                        is_ok &= message.breakpoints.is_empty();
 
-                                    message.sender.send(is_ok)?;
+                                        message.sender.send(is_ok)?;
 
-                                    Ok(())
-                                })
-                                .await??;
-                        }
-                        None | Some(ThreadMessage::Kill) => {
-                            anyhow::bail!("Debugger disconnected")
+                                        Ok(())
+                                    })
+                                    .await??;
+                            }
+                            Some(ThreadMessage::Kill) => {
+                                anyhow::bail!("Debugger disconnected")
+                            }
+                            None => panic!(),
                         }
                     }
                 }
-            }
-            debugger.finish().await?;
-            Ok(())
-        })())
+                target_proxy.send(DebuggerLoopMessage::ThreadFinished(thread.tid()))?;
+                debugger.finish().await?;
+                Ok(())
+            })())
     })
 }
 

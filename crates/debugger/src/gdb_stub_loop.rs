@@ -5,7 +5,7 @@ use tokio::io::AsyncReadExt as _;
 use crate::{
     communication::DebuggerLoopMessage,
     connection::Connection,
-    gdb_stub_target::{HandleMessageResult, Wasm32Target},
+    gdb_stub_target::{StopReason, Wasm32Target},
     BoxedPacketReceiver, BoxedPacketSender,
 };
 
@@ -24,16 +24,16 @@ pub fn run(
         match state_machine {
             Idle(mut gdb) => {
                 gdb.borrow_conn().flush()?;
-                let byte = receive_byte(&mut receiver)?;
-                std::io::stderr().flush().unwrap();
+                let byte = receive_byte_sync(&mut receiver)?;
                 state_machine = gdb.incoming_data(&mut target, byte)?;
             }
             Running(mut gdb) => {
                 gdb.borrow_conn().flush()?;
-                let select_result = receive_message_or_byte(&mut target, &mut receiver)?;
+                let select_result = select(&mut target, &mut receiver)?;
                 match select_result {
-                    SelectResult::Message(message) => match target.handle_message(message)? {
-                        Some(HandleMessageResult::CodeStopped(reason, registers)) => {
+                    SelectResult::Stop(stop_reason) => match stop_reason {
+                        StopReason::Paused(reason, registers) => {
+                            target.ensure_all_threads_are_paused()?;
                             if let Some(registers) = registers {
                                 let pc_bytes = registers.pc.to_le_bytes();
                                 let mut regs = core::iter::once((
@@ -46,10 +46,9 @@ pub fn run(
                                 state_machine = gdb.report_stop(&mut target, reason)?;
                             };
                         }
-                        Some(HandleMessageResult::Finished) => {
+                        StopReason::Finished => {
                             break;
                         }
-                        None => state_machine = gdb.into(),
                     },
                     SelectResult::IncomingData(byte) => {
                         state_machine = gdb.incoming_data(&mut target, byte)?;
@@ -57,8 +56,14 @@ pub fn run(
                 }
             }
             CtrlCInterrupt(gdb) => {
-                let (reason, _registers) = target.interrupt_all_thread()?;
-                state_machine = gdb.interrupt_handled(&mut target, Some(reason))?;
+                let stop_reason = target.pause_a_thread()?;
+                match stop_reason {
+                    StopReason::Paused(stop_reason, _registers) => {
+                        target.ensure_all_threads_are_paused()?;
+                        state_machine = gdb.interrupt_handled(&mut target, Some(stop_reason))?;
+                    }
+                    StopReason::Finished => break,
+                };
             }
             Disconnected(_gdb) => break,
         }
@@ -66,25 +71,30 @@ pub fn run(
     Ok(())
 }
 
-fn receive_byte(receiver: &mut BoxedPacketReceiver) -> anyhow::Result<u8> {
-    let byte = tokio::runtime::Handle::current().block_on(async { receiver.read_u8().await })?;
+async fn receive_byte(receiver: &mut BoxedPacketReceiver) -> anyhow::Result<u8> {
+    let byte = receiver.read_u8().await?;
     eprint!("{}", byte as char);
+    std::io::stderr().flush().unwrap();
     Ok(byte)
 }
 
+fn receive_byte_sync(receiver: &mut BoxedPacketReceiver) -> anyhow::Result<u8> {
+    tokio::runtime::Handle::current().block_on(async { receive_byte(receiver).await })
+}
+
 enum SelectResult {
-    Message(DebuggerLoopMessage),
+    Stop(StopReason),
     IncomingData(u8),
 }
 
-fn receive_message_or_byte(
+fn select(
     target: &mut Wasm32Target,
     receiver: &mut BoxedPacketReceiver,
 ) -> anyhow::Result<SelectResult> {
     Ok(tokio::runtime::Handle::current().block_on(async {
         tokio::select! {
-            message =  target.receive_message() => anyhow::Ok(SelectResult::Message(message?)),
-            byte = receiver.read_u8() => anyhow::Ok(SelectResult::IncomingData(byte?)),
+            reason = target.wain_for_a_stop() => anyhow::Ok(SelectResult::Stop(reason?)),
+            byte = receive_byte(receiver) => anyhow::Ok(SelectResult::IncomingData(byte?)),
         }
     })?)
 }

@@ -3,11 +3,16 @@ use std::{
     sync::Arc,
 };
 
+use anyhow::Context;
 use wasmtime::AsContextMut;
 
 #[cfg(any(feature = "jit", feature = "aot"))]
 use crate::GFXInitParams;
-use crate::{gfx_init_params::AsyncFuncRunnerParams, state::State, thread::WasmThreadRegistry};
+use crate::{
+    gfx_init_params::AsyncFuncRunnerParams,
+    state::State,
+    thread::{StopReason, WasmThreadRegistry},
+};
 
 pub struct Runtime {
     persistent_dir: PathBuf,
@@ -24,9 +29,9 @@ impl Runtime {
         wasmtime_config.shared_memory(true);
         wasmtime_config.wasm_exceptions(true);
         wasmtime_config.memory_may_move(false);
-        // #[cfg(feature = "jit")]
-        // wasmtime_config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass);
-        // wasmtime_config.parallel_compilation(false); // TODO remove
+        #[cfg(feature = "jit")]
+        wasmtime_config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass);
+        wasmtime_config.parallel_compilation(false); // TODO remove
 
         Runtime {
             persistent_dir: persistent_dir.to_path_buf(),
@@ -78,8 +83,7 @@ impl Runtime {
 
         self.wasmtime_config
             .wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
-        self.wasmtime_config
-            .epoch_interruption(gfx_init_params.async_func_runner.is_some());
+        self.wasmtime_config.epoch_interruption(true);
 
         #[cfg(feature = "cache")]
         if let Some(cache_config) = self.jit_cache_config {
@@ -154,6 +158,7 @@ impl Runtime {
         self.wasmtime_config.with_custom_code_memory(Some(Arc::new(
             crate::static_code_memory::StaticCodeMemory {},
         )));
+        self.wasmtime_config.epoch_interruption(false);
         let engine = wasmtime::Engine::new(&self.wasmtime_config)?;
         let module = unsafe {
             wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
@@ -323,8 +328,20 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
                     // };
                     result.map_err(|err| anyhow::anyhow!(err))
                 };
-                call_result?;
-                Ok(())
+                let tid = main_thread.tid();
+                thread_registry.remove_thread(main_thread);
+                thread_registry.stop_all_threads(
+                    call_result
+                        .err()
+                        .map(|error| StopReason::ThreadError(tid, error))
+                        .unwrap_or(StopReason::MainFinished),
+                );
+                match thread_registry.wait_for_all_threads_to_stop() {
+                    StopReason::MainFinished => Ok(()),
+                    StopReason::ThreadError(tid, error) => {
+                        Err(error).context(format!("An error occurred in WASI thread #{tid}"))
+                    }
+                }
             })
         },
         wrapp_config.vulkan_requirement().to_bool_option(),

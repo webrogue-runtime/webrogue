@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
-    num::NonZero,
+    num::{NonZero, NonZeroI32},
 };
 
 use gdbstub::target::{
@@ -14,129 +14,135 @@ use crate::{
         DebuggerLoopMessage, DebuggerLoopProxy, EditBreakpointMessage, ReadMemoryMessage,
         ReadWasmMessage, ResumeMessage, ThreadMessage,
     },
-    thread_info::ThreadInfo,
+    thread_info::{Frame, ThreadInfo},
 };
 
-pub(crate) struct Wasm32Target {
-    receiver: tokio::sync::mpsc::UnboundedReceiver<DebuggerLoopMessage>,
-    threads: BTreeMap<i32, ThreadInfo>,
-    breakpoints: BTreeMap<u64, BTreeSet<u32>>,
-}
-
-pub(crate) enum HandleMessageResult {
-    CodeStopped(
+pub(crate) enum StopReason {
+    Paused(
         gdbstub::stub::MultiThreadStopReason<u64>,
         Option<gdbstub_arch::wasm::reg::WasmRegisters>,
     ),
     Finished,
 }
 
+pub(crate) struct Wasm32Target {
+    receiver: tokio::sync::mpsc::UnboundedReceiver<DebuggerLoopMessage>,
+    threads: BTreeMap<NonZeroI32, ThreadInfo>,
+    breakpoints: BTreeMap<u64, BTreeSet<u32>>,
+}
+
 impl Wasm32Target {
-    pub(crate) async fn wait_for_first_step(
-        &mut self,
-    ) -> anyhow::Result<(
-        gdbstub::stub::MultiThreadStopReason<u64>,
-        Option<gdbstub_arch::wasm::reg::WasmRegisters>,
-    )> {
+    pub async fn wait_for_first_step(&mut self) -> anyhow::Result<()> {
+        let message = self.receive_message().await?;
+        assert!(matches!(message, None)); // Main thread registered
+        let message = self.receive_message().await?;
+        assert!(matches!(message, Some(StopReason::Paused(_, _)))); // Breakpoint due to initial single-stepping
+        Ok(())
+    }
+
+    pub fn wain_for_a_stop_sync(&mut self) -> anyhow::Result<StopReason> {
+        tokio::runtime::Handle::current().block_on(async { self.wain_for_a_stop().await })
+    }
+
+    pub async fn wain_for_a_stop(&mut self) -> anyhow::Result<StopReason> {
         loop {
-            let message = self.receive_message().await?;
-            let handle_message_result = self.handle_message(message)?;
-            match handle_message_result {
-                Some(HandleMessageResult::CodeStopped(reason, registers)) => {
-                    return Ok((reason, registers))
-                }
-                _ => continue,
+            assert!(self.has_threads());
+            if let Some(reason) = self.receive_message().await? {
+                return Ok(reason);
             }
         }
     }
 
-    pub async fn receive_message(&mut self) -> anyhow::Result<DebuggerLoopMessage> {
-        let Some(message) = self.receiver.recv().await else {
-            // All senders has been dropped, which means that all threads exited
-            return Ok(DebuggerLoopMessage::Finished);
-        };
-        Ok(message)
+    fn has_threads(&self) -> bool {
+        self.threads.len() > 0
     }
 
-    pub(crate) fn handle_message(
-        &mut self,
-        message: DebuggerLoopMessage,
-    ) -> anyhow::Result<Option<HandleMessageResult>> {
+    fn has_running_threads(&self) -> bool {
+        self.threads.values().any(|thread| thread.stopped.is_none())
+    }
+
+    /// Safe to cancel
+    pub async fn receive_message(&mut self) -> anyhow::Result<Option<StopReason>> {
+        let Some(message) = self.receiver.recv().await else {
+            // All senders has been dropped
+            unimplemented!()
+        };
         match message {
             DebuggerLoopMessage::RegisterThread(thread_info) => {
-                let tid = thread_info.0.lock().unwrap().tid;
+                let tid = thread_info.tid;
                 self.threads.insert(tid, thread_info);
                 Ok(None)
             }
             DebuggerLoopMessage::ThreadStopped(stop_info) => {
-                let tid = NonZero::try_from(stop_info.tid as usize).unwrap();
-                let Some(thread_info) = self.get_thread_info(tid) else {
+                let tid = stop_info.tid;
+                let Some(thread_info) = self.threads.get_mut(&tid) else {
                     unimplemented!()
                 };
 
-                let registers = thread_info.regs();
+                let registers = stop_info.stopped_thread.regs();
+                thread_info.stopped = Some(stop_info.stopped_thread);
 
                 let reason = if stop_info.is_step {
-                    gdbstub::stub::MultiThreadStopReason::SignalWithThread {
-                        tid: tid,
-                        signal: gdbstub::common::Signal::SIGTRAP,
-                    }
+                    gdbstub::stub::MultiThreadStopReason::DoneStep
+                    // or maybe
+                    // gdbstub::stub::MultiThreadStopReason::SignalWithThread {
+                    //     tid: tid.try_into().unwrap(),
+                    //     signal: gdbstub::common::Signal::SIGTRAP,
+                    // }
                 } else {
                     gdbstub::stub::MultiThreadStopReason::SwBreak(NonZero::try_from(tid).unwrap())
                 };
 
-                Ok(Some(HandleMessageResult::CodeStopped(reason, registers)))
+                Ok(Some(StopReason::Paused(reason, registers)))
             }
-            DebuggerLoopMessage::Finished => Ok(Some(HandleMessageResult::Finished)),
+            DebuggerLoopMessage::ThreadFinished(tid) => {
+                let thread = self.threads.remove(&tid).unwrap();
+                if thread.is_main {
+                    Ok(Some(StopReason::Finished))
+                } else {
+                    Ok(None)
+                }
+            }
         }
     }
 
-    pub fn interrupt_all_thread(
-        &mut self,
-    ) -> anyhow::Result<(
-        gdbstub::stub::MultiThreadStopReason<u64>,
-        Option<gdbstub_arch::wasm::reg::WasmRegisters>,
-    )> {
-        assert!(self.threads.len() > 0);
-        // call async_yield only on one thread, as they all share th same Engine
-        self.threads
-            .values()
-            .next()
-            .unwrap()
-            .0
-            .lock()
-            .unwrap()
-            .thread
-            .async_yield();
-        let mut num_threads_stopped = 0;
+    pub fn pause_a_thread(&mut self) -> anyhow::Result<StopReason> {
+        assert!(self.has_running_threads());
+        let thread = self.threads.values().next().unwrap();
+        thread.wasm_thread.async_yield();
+        self.wain_for_a_stop_sync()
+    }
+
+    pub fn ensure_all_threads_are_paused(&mut self) -> anyhow::Result<()> {
+        assert!(self.has_threads());
+        if !self.has_running_threads() {
+            return Ok(());
+        }
         tokio::runtime::Handle::current().block_on(async {
-            loop {
-                let (reason, registers) = self.wait_for_first_step().await.unwrap();
-                num_threads_stopped += 1;
-                if num_threads_stopped >= self.threads.len() {
-                    return Ok((reason, registers));
-                }
+            while let Some(thread) = self
+                .threads
+                .values()
+                .find(|thread| thread.stopped.is_none())
+            {
+                thread.wasm_thread.async_yield();
+                self.receive_message().await?;
             }
+            Ok(())
         })
     }
 
-    fn get_thread_info(
-        &self,
-        tid: NonZero<usize>,
-    ) -> Option<std::sync::MutexGuard<'_, crate::thread_info::ThreadInfoInner>> {
-        Some(self.threads.get(&(tid.get() as i32))?.0.lock().unwrap())
-    }
-
     fn edit_breakpoint(&mut self) -> Result<bool, TargetError<anyhow::Error>> {
+        assert!(!self.has_running_threads());
+        // TODO ensure interrupted
         let mut is_ok = true;
-        for thread_info in self.threads.values() {
+        for thread in self.threads.values() {
             let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
             let send_result =
-                thread_info
-                    .0
-                    .lock()
+                thread
+                    .stopped
+                    .as_ref()
                     .unwrap()
-                    .thread_sender
+                    .sender
                     .send(ThreadMessage::EditBreakpoint(EditBreakpointMessage {
                         breakpoints: self.breakpoints.clone(),
                         sender,
@@ -156,14 +162,24 @@ impl Wasm32Target {
 
         Ok(is_ok)
     }
+
+    fn get_frame(&self, tid: NonZeroI32, index: usize) -> Option<&Frame> {
+        assert!(!self.has_running_threads());
+        self.threads
+            .get(&tid)
+            .and_then(|thread| thread.stopped.as_ref())
+            .and_then(|stopped_thread| stopped_thread.wasm_call_stack.get(index))
+    }
 }
 
 impl Drop for Wasm32Target {
     fn drop(&mut self) {
         for thread in self.threads.values() {
-            let thread = thread.0.lock().unwrap();
-            thread.thread.trap();
-            let _ = thread.thread_sender.send(ThreadMessage::Kill);
+            thread.wasm_thread.trap();
+            let _ = thread
+                .stopped
+                .as_ref()
+                .map(|stopped_thread| stopped_thread.sender.send(ThreadMessage::Kill));
         }
     }
 }
@@ -172,7 +188,7 @@ pub(crate) fn create_wasm32_target() -> (Wasm32Target, DebuggerLoopProxy) {
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
     let target = Wasm32Target {
         receiver,
-        threads: Default::default(),
+        threads: BTreeMap::new(),
         breakpoints: BTreeMap::new(),
     };
     let proxy = DebuggerLoopProxy { sender };
@@ -193,7 +209,7 @@ impl gdbstub::target::Target for Wasm32Target {
     }
 
     fn use_rle(&self) -> bool {
-        false
+        true
     }
 
     fn support_breakpoints(
@@ -349,15 +365,18 @@ impl gdbstub::target::ext::base::multithread::MultiThreadBase for Wasm32Target {
         data: &mut [u8],
         tid: gdbstub::common::Tid,
     ) -> TargetResult<usize, Self> {
-        let Some(thread_info) = self.get_thread_info(tid) else {
+        let Some(thread_info) = self.threads.get(&tid.try_into().unwrap()) else {
+            unimplemented!()
+        };
+        let Some(stopped_thread) = thread_info.stopped.as_ref() else {
             unimplemented!()
         };
         let wasm_addr = WasmAddr::from_raw(start_addr).ok_or(TargetError::NonFatal)?;
         match wasm_addr.addr_type() {
             gdbstub_arch::wasm::addr::WasmAddrType::Memory => {
                 let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
-                thread_info
-                    .thread_sender
+                stopped_thread
+                    .sender
                     .send(ThreadMessage::ReadMemory(ReadMemoryMessage {
                         module: wasm_addr.module_index(),
                         offset: wasm_addr.offset() as usize,
@@ -373,8 +392,8 @@ impl gdbstub::target::ext::base::multithread::MultiThreadBase for Wasm32Target {
             }
             gdbstub_arch::wasm::addr::WasmAddrType::Object => {
                 let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
-                thread_info
-                    .thread_sender
+                stopped_thread
+                    .sender
                     .send(ThreadMessage::ReadWasm(ReadWasmMessage {
                         module: wasm_addr.module_index(),
                         offset: wasm_addr.offset() as usize,
@@ -406,7 +425,7 @@ impl gdbstub::target::ext::base::multithread::MultiThreadBase for Wasm32Target {
         thread_is_active: &mut dyn FnMut(gdbstub::common::Tid),
     ) -> Result<(), Self::Error> {
         for tid in self.threads.keys() {
-            thread_is_active(NonZero::try_from(*tid as usize)?)
+            thread_is_active((*tid).try_into().unwrap())
         }
         Ok(())
     }
@@ -441,10 +460,15 @@ impl gdbstub::target::ext::base::single_register_access::SingleRegisterAccess<gd
         reg_id: <Self::Arch as gdbstub::arch::Arch>::RegId,
         buf: &mut [u8],
     ) -> TargetResult<usize, Self> {
-        let thread_info = self.get_thread_info(tid).unwrap();
+        let Some(thread_info) = self.threads.get(&tid.try_into().unwrap()) else {
+            unimplemented!()
+        };
+        let Some(stopped_thread) = thread_info.stopped.as_ref() else {
+            unimplemented!()
+        };
         match reg_id {
             WasmRegId::Pc => {
-                let bytes = thread_info.regs().unwrap().pc.to_le_bytes();
+                let bytes = stopped_thread.regs().unwrap().pc.to_le_bytes();
                 let n = bytes.len().min(buf.len());
                 buf[..n].copy_from_slice(&bytes[..n]);
                 Ok(n)
@@ -465,24 +489,27 @@ impl gdbstub::target::ext::base::single_register_access::SingleRegisterAccess<gd
 
 impl gdbstub::target::ext::base::multithread::MultiThreadResume for Wasm32Target {
     fn resume(&mut self) -> Result<(), Self::Error> {
-        for thread_info in self.threads.values() {
-            let mut thread_info = thread_info.0.lock().unwrap();
+        for thread in self.threads.values_mut() {
+            thread.wasm_thread.remove_async_yield();
+            let Some(stopped_thread) = thread.stopped.as_ref() else {
+                unimplemented!()
+            };
 
-            thread_info
-                .thread_sender
+            stopped_thread
+                .sender
                 .send(ThreadMessage::Resume(ResumeMessage {
-                    is_step: thread_info.is_resume_action_step,
+                    is_step: thread.is_resume_action_step,
                 }))
                 .unwrap();
+            thread.stopped = None;
 
-            thread_info.is_resume_action_step = false;
+            thread.is_resume_action_step = false;
         }
         Ok(())
     }
 
     fn clear_resume_actions(&mut self) -> Result<(), Self::Error> {
-        for thread_info in self.threads.values() {
-            let mut thread_info = thread_info.0.lock().unwrap();
+        for thread_info in self.threads.values_mut() {
             thread_info.is_resume_action_step = false;
         }
 
@@ -494,9 +521,10 @@ impl gdbstub::target::ext::base::multithread::MultiThreadResume for Wasm32Target
         tid: gdbstub::common::Tid,
         _signal: Option<gdbstub::common::Signal>,
     ) -> Result<(), Self::Error> {
-        if let Some(mut thread_info) = self.get_thread_info(tid) {
-            thread_info.is_resume_action_step = false;
-        }
+        let Some(thread_info) = self.threads.get_mut(&tid.try_into().unwrap()) else {
+            return Ok(());
+        };
+        thread_info.is_resume_action_step = false;
         Ok(())
     }
 
@@ -543,9 +571,10 @@ impl gdbstub::target::ext::base::multithread::MultiThreadSingleStep for Wasm32Ta
         tid: gdbstub::common::Tid,
         _signal: Option<gdbstub::common::Signal>,
     ) -> Result<(), Self::Error> {
-        if let Some(mut thread_info) = self.get_thread_info(tid) {
-            thread_info.is_resume_action_step = true;
-        }
+        let Some(thread_info) = self.threads.get_mut(&tid.try_into().unwrap()) else {
+            return Ok(());
+        };
+        thread_info.is_resume_action_step = true;
         Ok(())
     }
 }
@@ -564,7 +593,11 @@ impl<'a> gdbstub::target::ext::memory_map::MemoryMap for Wasm32Target {
 
         let mut module_addresses = BTreeMap::new();
         for thread in self.threads.values() {
-            for (id, size) in &thread.0.lock().unwrap().module_addresses {
+            let Some(stopped_thread) = thread.stopped.as_ref() else {
+                unimplemented!()
+            };
+
+            for (id, size) in &stopped_thread.module_addresses {
                 module_addresses.insert(*id, *size);
             }
         }
@@ -584,7 +617,11 @@ impl<'a> gdbstub::target::ext::memory_map::MemoryMap for Wasm32Target {
 
         let mut memory_addresses = BTreeMap::new();
         for thread in self.threads.values() {
-            for (id, size) in &thread.0.lock().unwrap().module_addresses {
+            let Some(stopped_thread) = thread.stopped.as_ref() else {
+                unimplemented!()
+            };
+
+            for (id, size) in &stopped_thread.memory_addresses {
                 memory_addresses.insert(*id, *size);
             }
         }
@@ -625,7 +662,11 @@ impl<'a> gdbstub::target::ext::libraries::Libraries for Wasm32Target {
         let mut xml = String::from("<library-list>");
         let mut addresses = BTreeMap::new();
         for thread in self.threads.values() {
-            for (id, size) in &thread.0.lock().unwrap().module_addresses {
+            let Some(stopped_thread) = thread.stopped.as_ref() else {
+                unimplemented!()
+            };
+
+            for (id, size) in &stopped_thread.module_addresses {
                 addresses.insert(*id, *size);
             }
         }
@@ -657,10 +698,16 @@ impl gdbstub::target::ext::wasm::Wasm for Wasm32Target {
         tid: gdbstub::common::Tid,
         next_pc: &mut dyn FnMut(u64),
     ) -> Result<(), Self::Error> {
-        let Some(thread_info) = self.get_thread_info(tid) else {
-            todo!()
+        assert!(!self.has_running_threads());
+        let Some(stopped_thread) = self
+            .threads
+            .get(&tid.try_into().unwrap())
+            .and_then(|thread| thread.stopped.as_ref())
+        else {
+            return Ok(());
         };
-        for frame in &thread_info.wasm_call_stack {
+
+        for frame in &stopped_thread.wasm_call_stack {
             next_pc(frame.pc.as_raw())
         }
         Ok(())
@@ -673,12 +720,8 @@ impl gdbstub::target::ext::wasm::Wasm for Wasm32Target {
         local: usize,
         buf: &mut [u8],
     ) -> Result<usize, Self::Error> {
-        let Some(thread_info) = self.get_thread_info(tid) else {
-            return Ok(0);
-        };
-        let Some(local) = thread_info
-            .wasm_call_stack
-            .get(frame)
+        let Some(local) = self
+            .get_frame(tid.try_into().unwrap(), frame)
             .and_then(|frame| frame.locals.get(local))
         else {
             return Ok(0);
@@ -693,12 +736,8 @@ impl gdbstub::target::ext::wasm::Wasm for Wasm32Target {
         index: usize,
         buf: &mut [u8],
     ) -> Result<usize, Self::Error> {
-        let Some(thread_info) = self.get_thread_info(tid) else {
-            return Ok(0);
-        };
-        let Some(var) = thread_info
-            .wasm_call_stack
-            .get(frame)
+        let Some(var) = self
+            .get_frame(tid.try_into().unwrap(), frame)
             .and_then(|frame| frame.stack.get(index))
         else {
             return Ok(0);
@@ -713,12 +752,8 @@ impl gdbstub::target::ext::wasm::Wasm for Wasm32Target {
         global: usize,
         buf: &mut [u8],
     ) -> Result<usize, Self::Error> {
-        let Some(thread_info) = self.get_thread_info(tid) else {
-            return Ok(0);
-        };
-        let Some(global) = thread_info
-            .wasm_call_stack
-            .get(frame)
+        let Some(global) = self
+            .get_frame(tid.try_into().unwrap(), frame)
             .and_then(|frame| frame.globals.get(global))
         else {
             return Ok(0);
