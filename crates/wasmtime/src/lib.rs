@@ -7,7 +7,7 @@ mod thread;
 mod wasi_threads;
 
 pub use gfx_init_params::{AsyncFuncRunner, GFXInitParams};
-pub use runtime::Runtime;
+pub use runtime::{JitProfile, Runtime};
 pub use thread::WasmThread;
 pub use webrogue_wrapp::{
     IVFSBuilder, RealVFSBuilder, RealVFSHandle, WrappVFSBuilder, WrappVFSHandle,

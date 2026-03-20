@@ -16,8 +16,8 @@ struct WasmThreadInner {
     engine: EngineWeak,
     tid: NonZeroI32,
     trap_on_epoch_deadline: AtomicBool,
-    pending_yield: AtomicBool,
     is_async: bool,
+    epoch_interruption: bool,
 }
 
 impl WasmThread {
@@ -30,18 +30,7 @@ impl WasmThread {
             return Ok(UpdateDeadline::Interrupt);
         };
         if self.0.is_async {
-            if self
-                .0
-                .pending_yield
-                .load(std::sync::atomic::Ordering::SeqCst)
-            {
-                self.0
-                    .pending_yield
-                    .store(false, std::sync::atomic::Ordering::SeqCst);
-                Ok(UpdateDeadline::Yield(1))
-            } else {
-                Ok(UpdateDeadline::Continue(1))
-            }
+            Ok(UpdateDeadline::Yield(1))
         } else {
             panic!("Epoch deadline callback executed, but neither runtime is async not stopping threads.");
             // maybe Ok(UpdateDeadline::Continue(1)) will be fine?
@@ -54,22 +43,14 @@ impl WasmThread {
 
     pub fn async_yield(&self) {
         assert!(self.0.is_async);
-        self.0
-            .pending_yield
-            .store(true, std::sync::atomic::Ordering::SeqCst);
+        assert!(self.0.epoch_interruption);
         if let Some(engine) = self.0.engine.upgrade() {
             engine.increment_epoch();
         }
     }
 
-    pub fn remove_async_yield(&self) {
-        assert!(self.0.is_async);
-        self.0
-            .pending_yield
-            .store(false, std::sync::atomic::Ordering::SeqCst);
-    }
-
     pub fn trap(&self) {
+        assert!(self.0.epoch_interruption);
         self.0
             .trap_on_epoch_deadline
             .store(true, std::sync::atomic::Ordering::SeqCst);
@@ -83,12 +64,13 @@ impl WasmThread {
 pub struct WasmThreadRegistry(Arc<Mutex<WasmThreadRegistryInner>>);
 
 impl WasmThreadRegistry {
-    pub fn new(is_async: bool) -> Self {
+    pub fn new(is_async: bool, epoch_interruption: bool) -> Self {
         Self(Arc::new(Mutex::new(WasmThreadRegistryInner {
             threads: BTreeMap::new(),
             tid_counter: AtomicI32::new(1),
             is_async,
             stop_reason: None,
+            epoch_interruption,
         })))
     }
 
@@ -113,7 +95,7 @@ impl WasmThreadRegistry {
             tid,
             trap_on_epoch_deadline: AtomicBool::new(false),
             is_async: registry.is_async,
-            pending_yield: AtomicBool::new(false),
+            epoch_interruption: registry.epoch_interruption,
         }));
         registry.threads.insert(tid, thread.clone());
         thread
@@ -126,11 +108,20 @@ impl WasmThreadRegistry {
 
     pub fn stop_all_threads(&self, reason: StopReason) {
         let mut registry = self.0.lock().unwrap();
-        if registry.stop_reason.is_none() {
-            registry.stop_reason = Some(reason);
-        }
-        for thread in registry.threads.values() {
-            thread.trap();
+        if !registry.epoch_interruption {
+            match reason {
+                StopReason::MainFinished => std::process::exit(0),
+                StopReason::ThreadError(tid, error) => {
+                    panic!("An error occurred in WASI thread #{tid}: {error}")
+                }
+            }
+        } else {
+            if registry.stop_reason.is_none() {
+                registry.stop_reason = Some(reason);
+            }
+            for thread in registry.threads.values() {
+                thread.trap();
+            }
         }
     }
 
@@ -157,6 +148,7 @@ struct WasmThreadRegistryInner {
     tid_counter: AtomicI32,
     is_async: bool,
     stop_reason: Option<StopReason>,
+    epoch_interruption: bool,
 }
 
 pub enum StopReason {

@@ -1,9 +1,9 @@
 use std::io::Write as _;
 
+use gdbstub::stub::MultiThreadStopReason;
 use tokio::io::AsyncReadExt as _;
 
 use crate::{
-    communication::DebuggerLoopMessage,
     connection::Connection,
     gdb_stub_target::{StopReason, Wasm32Target},
     BoxedPacketReceiver, BoxedPacketSender,
@@ -34,17 +34,18 @@ pub fn run(
                     SelectResult::Stop(stop_reason) => match stop_reason {
                         StopReason::Paused(reason, registers) => {
                             target.ensure_all_threads_are_paused()?;
-                            if let Some(registers) = registers {
-                                let pc_bytes = registers.pc.to_le_bytes();
-                                let mut regs = core::iter::once((
-                                    gdbstub_arch::wasm::reg::id::WasmRegId::Pc,
-                                    pc_bytes.as_slice(),
-                                ));
-                                state_machine =
-                                    gdb.report_stop_with_regs(&mut target, reason, &mut regs)?;
-                            } else {
-                                state_machine = gdb.report_stop(&mut target, reason)?;
-                            };
+                            // if let Some(registers) = registers {
+                            //     let pc_bytes = registers.pc.to_le_bytes();
+                            //     let mut regs = core::iter::once((
+                            //         gdbstub_arch::wasm::reg::id::WasmRegId::Pc,
+                            //         pc_bytes.as_slice(),
+                            //     ));
+                            //     state_machine =
+                            //         gdb.report_stop_with_regs(&mut target, reason, &mut regs)?;
+                            // } else {
+                            //     state_machine = gdb.report_stop(&mut target, reason)?;
+                            // };
+                            state_machine = gdb.report_stop(&mut target, reason)?;
                         }
                         StopReason::Finished => {
                             break;
@@ -58,11 +59,18 @@ pub fn run(
             CtrlCInterrupt(gdb) => {
                 let stop_reason = target.pause_a_thread()?;
                 match stop_reason {
-                    StopReason::Paused(stop_reason, _registers) => {
+                    Some(StopReason::Paused(stop_reason, _registers)) => {
                         target.ensure_all_threads_are_paused()?;
                         state_machine = gdb.interrupt_handled(&mut target, Some(stop_reason))?;
+                        // state_machine =
+                        //     gdb.interrupt_handled(&mut target, None::<MultiThreadStopReason<u64>>)?;
                     }
-                    StopReason::Finished => break,
+                    Some(StopReason::Finished) => break,
+                    None => {
+                        // Nothing to stop
+                        state_machine =
+                            gdb.interrupt_handled(&mut target, None::<MultiThreadStopReason<_>>)?
+                    }
                 };
             }
             Disconnected(_gdb) => break,
@@ -73,7 +81,7 @@ pub fn run(
 
 async fn receive_byte(receiver: &mut BoxedPacketReceiver) -> anyhow::Result<u8> {
     let byte = receiver.read_u8().await?;
-    eprint!("{}", byte as char);
+    // eprint!("{}", byte as char);
     std::io::stderr().flush().unwrap();
     Ok(byte)
 }

@@ -18,8 +18,6 @@ enum Cli {
         #[arg(long)]
         cache: Option<PathBuf>,
         #[arg(long)]
-        optimized: bool,
-        #[arg(long)]
         gdb_port: Option<u16>,
     },
     /// Builds native applications from WRAPP files
@@ -53,7 +51,6 @@ enum Cli {
 fn run_builder(
     mut vfs_builder: impl IVFSBuilder,
     cache: Option<PathBuf>,
-    optimized: bool,
     gdb_port: Option<u16>,
 ) -> anyhow::Result<()> {
     use webrogue_gfx::IBuilder;
@@ -71,7 +68,15 @@ fn run_builder(
         runtime.jit_cache_config(cache);
     }
 
-    runtime.jit_optimized(gdb_port.is_none());
+    runtime.jit_profile(if gdb_port.is_some() {
+        webrogue_wasmtime::JitProfile::Debug
+    } else {
+        webrogue_wasmtime::JitProfile::Debug
+    });
+
+    unsafe {
+        runtime.allow_panic();
+    }
 
     let gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
 
@@ -85,6 +90,7 @@ fn run_builder(
             if let Some(gdb_port) = gdb_port {
                 tokio::runtime::Builder::new_current_thread()
                     .enable_io()
+                    .enable_time()
                     .build()?
                     .block_on((async move || -> anyhow::Result<()> {
                         let rt_handle = tokio::runtime::Handle::current();
@@ -93,12 +99,13 @@ fn run_builder(
                             runtime,
                             gfx_init_params,
                             webrogue_debugger::tokio_tcp_connection(gdb_port),
+                            false,
                             move |runtime, gfx_init_params| -> anyhow::Result<()> {
                                 runtime.run_jit(gfx_init_params, handle, &config)?;
                                 Ok(())
                             },
                         )
-                        .await??;
+                        .await?;
                         Ok(())
                     })())?;
             } else {
@@ -120,7 +127,6 @@ pub fn main() -> anyhow::Result<()> {
         Cli::Run {
             path,
             cache,
-            optimized,
             gdb_port,
         } => {
             use anyhow::Context as _;
@@ -131,14 +137,12 @@ pub fn main() -> anyhow::Result<()> {
                 run_builder(
                     webrogue_wasmtime::WrappVFSBuilder::from_file_path(path)?,
                     cache,
-                    optimized,
                     gdb_port,
                 )?;
             } else {
                 run_builder(
                     webrogue_wasmtime::RealVFSBuilder::from_config_path(path)?,
                     cache,
-                    optimized,
                     gdb_port,
                 )?;
             }

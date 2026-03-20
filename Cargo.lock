@@ -7378,9 +7378,12 @@ dependencies = [
 name = "wasmtime-internal-debugger"
 version = "44.0.0"
 dependencies = [
+ "async-trait",
  "log",
  "tokio",
  "wasmtime",
+ "wasmtime-wasi",
+ "wasmtime-wasi-io",
 ]
 
 [[package]]

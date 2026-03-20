@@ -168,25 +168,6 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
     }
 }
 
-fn stop_all_threads(
-    engine: wasmtime::EngineWeak,
-    _shared_memories: Arc<Mutex<Vec<wasmtime::SharedMemory>>>,
-    epoch_interruption: bool,
-) {
-    if epoch_interruption {
-        if let Some(engine) = engine.upgrade() {
-            engine.increment_epoch();
-            // TODO keep notifying to prevent sequential waits from deadlocking
-            // for mem in shared_memories.lock().unwrap().iter() {
-            //     unsafe { mem..atomic_notify_all() };
-            // }
-            unimplemented!();
-        }
-    } else {
-        std::process::exit(1)
-    }
-}
-
 // TODO use remove Send constraint from T and exchange between threads using intermediate sendable object
 pub fn add_to_linker_sync<T: Clone + Send + 'static>(
     linker: &mut wasmtime::Linker<T>,

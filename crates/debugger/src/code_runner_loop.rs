@@ -25,22 +25,23 @@ pub fn runner<T: Send + 'static>(
                 let target_proxy = target_proxy.clone();
                 let thread = params.thread;
                 threads.clone().lock().unwrap().push(thread.clone());
-                let thread_info = ThreadInfo::new(
-                    thread.clone(),
-                    is_main_thread_arc.fetch_and(false, std::sync::atomic::Ordering::SeqCst),
-                );
-                target_proxy.send(DebuggerLoopMessage::RegisterThread(thread_info))?;
-                let mut debugger =
-                    wasmtime_internal_debugger::Debugger::new(params.store, move |store| {
+                let mut debuggee =
+                    wasmtime_internal_debugger::Debuggee::new(params.store, move |store| {
                         Box::pin(async {
                             func(store)
                                 .await
                                 .map_err(|err| wasmtime::Error::from_anyhow(err))
                         })
                     });
+                let thread_info = ThreadInfo::new(
+                    thread.clone(),
+                    is_main_thread_arc.fetch_and(false, std::sync::atomic::Ordering::SeqCst),
+                    debuggee.interrupt_pending().clone(),
+                );
+                target_proxy.send(DebuggerLoopMessage::RegisterThread(thread_info))?;
                 let mut doing_step = false;
                 'exec_loop: loop {
-                    let run_result = debugger.run().await?;
+                    let run_result = debuggee.run().await?;
                     match run_result {
                         wasmtime_internal_debugger::DebugRunResult::Finished => break 'exec_loop,
                         wasmtime_internal_debugger::DebugRunResult::HostcallError => todo!(),
@@ -55,7 +56,7 @@ pub fn runner<T: Send + 'static>(
                         wasmtime_internal_debugger::DebugRunResult::Breakpoint => {}
                     };
 
-                    let (wasm_call_stack, memory_addresses, module_addresses) = debugger
+                    let (wasm_call_stack, memory_addresses, module_addresses) = debuggee
                         .with_store(move |mut store| -> anyhow::Result<_> {
                             let mut maybe_frame = Some(store.debug_exit_frames().next().unwrap());
                             let mut wasm_call_stack = Vec::new();
@@ -137,6 +138,7 @@ pub fn runner<T: Send + 'static>(
                             sender,
                             module_addresses,
                             memory_addresses,
+                            resume_type: None,
                         },
                     }))?;
 
@@ -144,7 +146,7 @@ pub fn runner<T: Send + 'static>(
                         match receiver.recv().await {
                             Some(ThreadMessage::Resume(message)) => {
                                 doing_step = message.is_step;
-                                debugger
+                                debuggee
                                     .with_store(move |store| -> anyhow::Result<()> {
                                         store
                                             .edit_breakpoints()
@@ -158,7 +160,7 @@ pub fn runner<T: Send + 'static>(
                                 continue 'exec_loop;
                             }
                             Some(ThreadMessage::ReadMemory(message)) => {
-                                debugger
+                                debuggee
                                     .with_store(move |mut store| -> anyhow::Result<()> {
                                         let memories = get_memories(&mut store);
 
@@ -199,7 +201,7 @@ pub fn runner<T: Send + 'static>(
                                     .await??;
                             }
                             Some(ThreadMessage::ReadWasm(message)) => {
-                                debugger
+                                debuggee
                                     .with_store(move |store| -> anyhow::Result<()> {
                                         let modules = store.debug_all_modules();
 
@@ -223,7 +225,7 @@ pub fn runner<T: Send + 'static>(
                                     .await??;
                             }
                             Some(ThreadMessage::EditBreakpoint(mut message)) => {
-                                debugger
+                                debuggee
                                     .with_store(move |mut store| -> anyhow::Result<()> {
                                         let modules = store.as_context_mut().debug_all_modules();
 
@@ -295,7 +297,7 @@ pub fn runner<T: Send + 'static>(
                     }
                 }
                 target_proxy.send(DebuggerLoopMessage::ThreadFinished(thread.tid()))?;
-                debugger.finish().await?;
+                debuggee.finish().await?;
                 Ok(())
             })())
     })

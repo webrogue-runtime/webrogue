@@ -42,10 +42,10 @@ impl Connection {
 
     pub fn flush(&mut self) -> anyhow::Result<()> {
         if self.needs_flush {
-            eprintln!("");
-            eprintln!("-> to client");
-            eprintln!("{}", String::from_utf8_lossy(&self.buffer));
-            eprintln!("<- from client");
+            // eprintln!("");
+            // eprintln!("-> to client");
+            // eprintln!("{}", String::from_utf8_lossy(&self.buffer));
+            // eprintln!("<- from client");
 
             tokio::runtime::Handle::current()
                 .block_on(async { self.sender.send(&self.buffer).await })?;
@@ -83,8 +83,8 @@ impl gdbstub::conn::Connection for Connection {
 pub fn tokio_tcp_connection(port: u16) -> ConnectionFactory {
     Box::new(move || {
         Box::pin(async move {
-            eprintln!("Awaiting incoming GDB Remote connection on port {port}");
             let tcp_listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
+            eprintln!("Awaiting for incoming GDB Remote connection on port {port}");
             let (tcp_stream, _addr) = tcp_listener.accept().await?;
             eprintln!("GDB Remote connection accepted!");
             let (read, write) = tcp_stream.into_split();

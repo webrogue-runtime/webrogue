@@ -14,13 +14,22 @@ use crate::{
     thread::{StopReason, WasmThreadRegistry},
 };
 
+#[cfg(feature = "jit")]
+pub enum JitProfile {
+    Debug,
+    FastExecution,
+    FastCompilation,
+}
+
 pub struct Runtime {
     persistent_dir: PathBuf,
     wasmtime_config: wasmtime::Config,
     #[cfg(all(feature = "jit", feature = "cache"))]
     jit_cache_config: Option<PathBuf>,
     #[cfg(feature = "jit")]
-    jit_optimized: bool,
+    jit_profile: JitProfile,
+    #[cfg(feature = "jit")]
+    is_panic_allowed: bool,
 }
 
 impl Runtime {
@@ -29,9 +38,6 @@ impl Runtime {
         wasmtime_config.shared_memory(true);
         wasmtime_config.wasm_exceptions(true);
         wasmtime_config.memory_may_move(false);
-        #[cfg(feature = "jit")]
-        wasmtime_config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass);
-        wasmtime_config.parallel_compilation(false); // TODO remove
 
         Runtime {
             persistent_dir: persistent_dir.to_path_buf(),
@@ -39,20 +45,29 @@ impl Runtime {
             #[cfg(all(feature = "jit", feature = "cache"))]
             jit_cache_config: None,
             #[cfg(feature = "jit")]
-            jit_optimized: false,
+            jit_profile: JitProfile::FastExecution,
+            #[cfg(feature = "jit")]
+            is_panic_allowed: false,
         }
     }
 }
 
 #[cfg(feature = "jit")]
 impl Runtime {
-    pub fn jit_optimized(&mut self, value: bool) {
-        self.jit_optimized = value;
+    pub fn jit_profile(&mut self, value: JitProfile) -> &mut Self {
+        self.jit_profile = value;
+        self
     }
 
     #[cfg(feature = "cache")]
-    pub fn jit_cache_config(&mut self, value: &Path) {
+    pub fn jit_cache_config(&mut self, value: &Path) -> &mut Self {
         self.jit_cache_config = Some(value.to_path_buf());
+        self
+    }
+
+    pub unsafe fn allow_panic(&mut self) -> &mut Self {
+        self.is_panic_allowed = true;
+        self
     }
 
     pub fn run_jit_builder<
@@ -87,24 +102,46 @@ impl Runtime {
 
         #[cfg(feature = "cache")]
         if let Some(cache_config) = self.jit_cache_config {
+            let cache_config = if cache_config.is_absolute() {
+                cache_config
+            } else {
+                std::path::absolute(cache_config)?
+            };
+            std::fs::create_dir_all(&cache_config)?;
+            let mut cache = wasmtime::CacheConfig::new();
+            cache.with_directory(&cache_config);
             self.wasmtime_config
-                .cache(Some(wasmtime::Cache::from_file(Some(&cache_config))?));
+                .cache(Some(wasmtime::Cache::new(cache)?));
             // TODO config.enable_incremental_compilation(cache_store)
         }
-        if self.jit_optimized {
-            self.wasmtime_config.strategy(wasmtime::Strategy::Cranelift);
-            self.wasmtime_config.debug_info(false);
-            self.wasmtime_config
-                .cranelift_opt_level(wasmtime::OptLevel::Speed);
-            self.wasmtime_config.guest_debug(false);
-        } else {
-            self.wasmtime_config.strategy(wasmtime::Strategy::Cranelift);
-            self.wasmtime_config.debug_info(true);
-            self.wasmtime_config
-                .cranelift_opt_level(wasmtime::OptLevel::None);
-            self.wasmtime_config.guest_debug(true);
-        }
+        match &self.jit_profile {
+            JitProfile::Debug => {
+                self.wasmtime_config
+                    .cranelift_opt_level(wasmtime::OptLevel::None)
+                    .guest_debug(true)
+                    .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
+                    .compiler_inlining(false);
+            }
+            JitProfile::FastExecution => {
+                self.wasmtime_config
+                    .cranelift_opt_level(wasmtime::OptLevel::Speed)
+                    .guest_debug(false)
+                    .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
+                    .compiler_inlining(true);
+            }
+            JitProfile::FastCompilation => {
+                self.wasmtime_config
+                    .cranelift_opt_level(wasmtime::OptLevel::Speed)
+                    .guest_debug(false)
+                    .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
+                    .compiler_inlining(false);
+            }
+        };
 
+        let enable_epoch_interruption =
+            !self.is_panic_allowed || matches!(self.jit_profile, JitProfile::Debug);
+        self.wasmtime_config
+            .epoch_interruption(enable_epoch_interruption);
         let engine = wasmtime::Engine::new(&self.wasmtime_config)?;
         let mut wasm_binary = Vec::new();
         let mut file = handle
@@ -125,6 +162,7 @@ impl Runtime {
             wrapp_config,
             self.persistent_dir,
             engine,
+            enable_epoch_interruption,
             module,
         )
     }
@@ -170,6 +208,7 @@ impl Runtime {
             wrapp_config,
             self.persistent_dir,
             engine,
+            false,
             module,
         )
     }
@@ -210,6 +249,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
     wrapp_config: &webrogue_wrapp::config::Config,
     persistent_dir: PathBuf,
     engine: wasmtime::Engine,
+    epoch_interruption: bool,
     module: wasmtime::Module,
 ) -> anyhow::Result<()> {
     let mut linker: wasmtime::Linker<State<Builder::System>> = wasmtime::Linker::new(&engine);
@@ -222,7 +262,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
     let async_func_runner = gfx_init_params.async_func_runner;
     let mut store = wasmtime::Store::new(&engine, state);
 
-    let thread_registry = WasmThreadRegistry::new(async_func_runner.is_some());
+    let thread_registry = WasmThreadRegistry::new(async_func_runner.is_some(), epoch_interruption);
     let main_thread = thread_registry.make_thread(engine.weak());
 
     {
