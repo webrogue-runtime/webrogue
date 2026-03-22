@@ -41,10 +41,13 @@ pub fn runner<T: Send + 'static>(
                 target_proxy.send(DebuggerLoopMessage::RegisterThread(thread_info))?;
                 let mut doing_step = false;
                 'exec_loop: loop {
+                    let mut must_break = false;
                     let run_result = debuggee.run().await?;
                     match run_result {
                         wasmtime_internal_debugger::DebugRunResult::Finished => break 'exec_loop,
-                        wasmtime_internal_debugger::DebugRunResult::HostcallError => todo!(),
+                        wasmtime_internal_debugger::DebugRunResult::HostcallError => {
+                            must_break = true;
+                        }
                         wasmtime_internal_debugger::DebugRunResult::EpochYield => {}
                         wasmtime_internal_debugger::DebugRunResult::CaughtExceptionThrown(
                             _owned_rooted,
@@ -52,13 +55,15 @@ pub fn runner<T: Send + 'static>(
                         wasmtime_internal_debugger::DebugRunResult::UncaughtExceptionThrown(
                             _owned_rooted,
                         ) => todo!(),
-                        wasmtime_internal_debugger::DebugRunResult::Trap(_trap) => todo!(),
+                        wasmtime_internal_debugger::DebugRunResult::Trap(_trap) => {
+                            must_break = true;
+                        }
                         wasmtime_internal_debugger::DebugRunResult::Breakpoint => {}
                     };
 
                     let (wasm_call_stack, memory_addresses, module_addresses) = debuggee
                         .with_store(move |mut store| -> anyhow::Result<_> {
-                            let mut maybe_frame = Some(store.debug_exit_frames().next().unwrap());
+                            let mut maybe_frame = store.debug_exit_frames().next();
                             let mut wasm_call_stack = Vec::new();
                             while let Some(frame) = maybe_frame {
                                 let function_index_and_pc =
@@ -157,7 +162,11 @@ pub fn runner<T: Send + 'static>(
                                         Ok(())
                                     })
                                     .await??;
-                                continue 'exec_loop;
+                                if must_break {
+                                    break 'exec_loop;
+                                } else {
+                                    continue 'exec_loop;
+                                }
                             }
                             Some(ThreadMessage::ReadMemory(message)) => {
                                 debuggee

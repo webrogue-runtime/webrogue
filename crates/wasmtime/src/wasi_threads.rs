@@ -14,7 +14,6 @@ pub struct WasiThreadsCtx<T: 'static> {
     instance_pre: Mutex<Option<Arc<wasmtime::InstancePre<T>>>>,
     tid: std::sync::atomic::AtomicI32,
     thread_registry: WasmThreadRegistry,
-    shared_memories: Arc<Mutex<Vec<wasmtime::SharedMemory>>>,
     async_func_runner: Option<AsyncFuncRunner<T>>,
 }
 
@@ -30,7 +29,6 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
             instance_pre: Mutex::new(None),
             tid,
             thread_registry,
-            shared_memories: Arc::new(Mutex::new(Vec::new())),
             async_func_runner,
         }
     }
@@ -60,7 +58,6 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
         }
         let wasi_thread_id = wasi_thread_id.unwrap();
 
-        let shared_memories = self.shared_memories.clone();
         let async_func_runner = self.async_func_runner.clone();
         let thread_registry = self.thread_registry.clone();
 
@@ -195,11 +192,6 @@ pub fn add_to_linker_sync<T: Clone + Send + 'static>(
         if let Some(m) = import.ty().memory() {
             if m.is_shared() {
                 let mem = wasmtime::SharedMemory::new(module.engine(), m.clone())?;
-                get_cx(store.data_mut())
-                    .shared_memories
-                    .lock()
-                    .unwrap()
-                    .push(mem.clone());
                 linker.define(
                     store.as_context_mut(),
                     import.module(),

@@ -34,18 +34,18 @@ pub fn run(
                     SelectResult::Stop(stop_reason) => match stop_reason {
                         StopReason::Paused(reason, registers) => {
                             target.ensure_all_threads_are_paused()?;
-                            // if let Some(registers) = registers {
-                            //     let pc_bytes = registers.pc.to_le_bytes();
-                            //     let mut regs = core::iter::once((
-                            //         gdbstub_arch::wasm::reg::id::WasmRegId::Pc,
-                            //         pc_bytes.as_slice(),
-                            //     ));
-                            //     state_machine =
-                            //         gdb.report_stop_with_regs(&mut target, reason, &mut regs)?;
-                            // } else {
-                            //     state_machine = gdb.report_stop(&mut target, reason)?;
-                            // };
-                            state_machine = gdb.report_stop(&mut target, reason)?;
+                            if let Some(registers) = registers {
+                                let pc_bytes = registers.pc.to_le_bytes();
+                                let mut regs = core::iter::once((
+                                    gdbstub_arch::wasm::reg::id::WasmRegId::Pc,
+                                    pc_bytes.as_slice(),
+                                ));
+                                state_machine =
+                                    gdb.report_stop_with_regs(&mut target, reason, &mut regs)?;
+                            } else {
+                                state_machine = gdb.report_stop(&mut target, reason)?;
+                            };
+                            // state_machine = gdb.report_stop(&mut target, reason)?;
                         }
                         StopReason::Finished => {
                             break;
