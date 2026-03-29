@@ -139,15 +139,6 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
         Ok(wasi_thread_id)
     }
 
-    pub fn stop(&self) {
-        todo!()
-        // stop_all_threads(
-        //     self.engine.lock().unwrap().as_ref().unwrap().clone(),
-        //     self.shared_memories.clone(),
-        //     self.epoch_interruption,
-        // )
-    }
-
     fn next_thread_id(&self) -> Option<i32> {
         match self.tid.fetch_update(
             std::sync::atomic::Ordering::Relaxed,

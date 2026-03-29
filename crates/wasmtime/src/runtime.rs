@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::Context;
-use wasmtime::AsContextMut;
 
 #[cfg(feature = "async")]
 use crate::gfx_init_params::AsyncFuncRunnerParams;
@@ -346,6 +345,8 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
                             thread: main_thread.clone(),
                         },
                         Box::new(move |store| {
+                            use wasmtime::AsContextMut as _;
+
                             Box::pin(async move {
                                 store
                                     .edit_breakpoints()

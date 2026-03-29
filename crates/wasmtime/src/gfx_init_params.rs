@@ -1,8 +1,9 @@
-use std::{future::Future, pin::Pin, sync::Arc};
-
 #[cfg(feature = "async")]
 use crate::state::State;
+#[cfg(feature = "async")]
 use crate::thread::WasmThread;
+#[cfg(feature = "async")]
+use std::{future::Future, pin::Pin, sync::Arc};
 
 #[cfg(feature = "async")]
 pub struct AsyncFuncRunnerParams<T: 'static> {

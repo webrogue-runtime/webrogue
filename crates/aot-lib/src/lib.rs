@@ -67,34 +67,36 @@ extern "C" fn webrogue_aot_windows() {
 #[cfg(target_os = "linux")]
 #[no_mangle]
 extern "C" fn webrogue_aot_linux() {
-    use std::{io::Seek, os::unix::fs::FileExt};
-    use webrogue_wasmtime::IVFSBuilder as _;
+    let result = || -> anyhow::Result<()> {
+        use std::{io::Seek, os::unix::fs::FileExt};
+        use webrogue_wasmtime::IVFSBuilder as _;
 
-    let mut current_file = std::fs::File::open(std::env::current_exe().unwrap()).unwrap();
-    let file_size = current_file.seek(std::io::SeekFrom::End(0)).unwrap();
-    let mut wrapp_size_bytes = [0u8; 8];
-    current_file
-        .read_exact_at(&mut wrapp_size_bytes, file_size - 8)
-        .unwrap();
-    let wrapp_size = u64::from_le_bytes(wrapp_size_bytes);
+        let mut current_file = std::fs::File::open(std::env::current_exe()?)?;
+        let file_size = current_file.seek(std::io::SeekFrom::End(0))?;
+        let mut wrapp_size_bytes = [0u8; 8];
+        current_file.read_exact_at(&mut wrapp_size_bytes, file_size - 8)?;
+        let wrapp_size = u64::from_le_bytes(wrapp_size_bytes);
 
-    let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_part(
-        current_file,
-        file_size - wrapp_size - 8,
-        wrapp_size,
-    )
-    .unwrap();
-    let persistent_path = dirs::data_dir()
-        .expect("dirs::data_dir returned None")
-        .join(builder.config().unwrap().id.clone().replace('.', "-"))
-        .join("persistent");
+        let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_part(
+            current_file,
+            file_size - wrapp_size - 8,
+            wrapp_size,
+        )?;
+        let persistent_path = dirs::data_dir()
+            .ok_or_else(|| anyhow::anyhow!("dirs::data_dir returned None"))?
+            .join(builder.config()?.id.clone().replace('.', "-"))
+            .join("persistent");
 
-    webrogue_wasmtime::Runtime::new(&persistent_path)
-        .run_aot_builder(
+        webrogue_wasmtime::Runtime::new(&persistent_path).run_aot_builder(
             webrogue_wasmtime::GFXInitParams::new(
-                webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop().unwrap(),
+                webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?,
             ),
             builder,
-        )
-        .unwrap();
+        )?;
+        Ok(())
+    }();
+    if let Err(err) = result {
+        eprintln!("{err:?}");
+        std::process::exit(1);
+    }
 }
