@@ -45,20 +45,14 @@ pub fn runner<T: Send + 'static>(
                     let run_result = debuggee.run().await?;
                     match run_result {
                         wasmtime_internal_debugger::DebugRunResult::Finished => break 'exec_loop,
-                        wasmtime_internal_debugger::DebugRunResult::HostcallError => {
+                        wasmtime_internal_debugger::DebugRunResult::HostcallError
+                        | wasmtime_internal_debugger::DebugRunResult::CaughtExceptionThrown(_)
+                        | wasmtime_internal_debugger::DebugRunResult::UncaughtExceptionThrown(_)
+                        | wasmtime_internal_debugger::DebugRunResult::Trap(_) => {
                             must_break = true;
                         }
-                        wasmtime_internal_debugger::DebugRunResult::EpochYield => {}
-                        wasmtime_internal_debugger::DebugRunResult::CaughtExceptionThrown(
-                            _owned_rooted,
-                        ) => todo!(),
-                        wasmtime_internal_debugger::DebugRunResult::UncaughtExceptionThrown(
-                            _owned_rooted,
-                        ) => todo!(),
-                        wasmtime_internal_debugger::DebugRunResult::Trap(_trap) => {
-                            must_break = true;
-                        }
-                        wasmtime_internal_debugger::DebugRunResult::Breakpoint => {}
+                        wasmtime_internal_debugger::DebugRunResult::EpochYield
+                        | wasmtime_internal_debugger::DebugRunResult::Breakpoint => {}
                     };
 
                     let (wasm_call_stack, memory_addresses, module_addresses) = debuggee
@@ -285,8 +279,7 @@ pub fn runner<T: Send + 'static>(
                                                 current_breakpoints.difference(&needed_breakpoints)
                                             {
                                                 edit_breakpoint
-                                                    .remove_breakpoint(&module, *breakpoint)
-                                                    .expect("Can't remove a breakpoint");
+                                                    .remove_breakpoint(&module, *breakpoint)?;
                                             }
                                         }
 
@@ -339,7 +332,7 @@ fn get_memories<T>(store: &mut wasmtime::StoreContextMut<'_, T>) -> Vec<(u32, Me
                     mems.push((id, Memory::Shared(mem.clone())));
                     index += 1;
                     continue;
-                };
+                }
                 break;
             }
 

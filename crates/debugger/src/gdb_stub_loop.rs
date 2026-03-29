@@ -45,7 +45,6 @@ pub fn run(
                             } else {
                                 state_machine = gdb.report_stop(&mut target, reason)?;
                             };
-                            // state_machine = gdb.report_stop(&mut target, reason)?;
                         }
                         StopReason::Finished => {
                             break;
@@ -62,8 +61,6 @@ pub fn run(
                     Some(StopReason::Paused(stop_reason, _registers)) => {
                         target.ensure_all_threads_are_paused()?;
                         state_machine = gdb.interrupt_handled(&mut target, Some(stop_reason))?;
-                        // state_machine =
-                        //     gdb.interrupt_handled(&mut target, None::<MultiThreadStopReason<u64>>)?;
                     }
                     Some(StopReason::Finished) => break,
                     None => {

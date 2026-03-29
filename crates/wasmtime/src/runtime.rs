@@ -214,8 +214,6 @@ impl Runtime {
     }
 }
 
-// #[cfg(all(feature = "jit", not(feature = "aot")))]
-
 #[cfg(any(feature = "jit", feature = "aot"))]
 #[allow(unreachable_code, reason = "Not gonna fight this lint error")]
 impl Runtime {
@@ -278,7 +276,6 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
     bindings::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
         state.preview1_ctx.as_mut().unwrap()
     })?;
-    // wasi_common::sync::add_to_linker(&mut linker, |state| state.preview1_ctx.as_mut().unwrap())?;
 
     #[cfg(not(target_os = "windows"))]
     unsafe {
@@ -309,9 +306,6 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
     crate::wasi_threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
         host.wasi_threads_ctx.as_ref().unwrap()
     })?;
-    // wasmtime_wasi_threads::add_to_linker(&mut linker, &mut store, &module, |host| {
-    //     host.wasi_threads_ctx.as_ref().unwrap()
-    // })?;
     let linker = Arc::new(linker);
     store
         .data()
@@ -319,9 +313,6 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         .as_ref()
         .unwrap()
         .fill(module.clone(), linker.clone())?;
-    // store.data_mut().wasi_threads_ctx = Some(Arc::new(
-    //     wasmtime_wasi_threads::WasiThreadsCtx::new(module.clone(), linker.clone())?,
-    // ));
 
     store.data_mut().preview1_ctx = Some(webrogue_wasip1::make_ctx(
         handle,
@@ -350,23 +341,15 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
                                     .edit_breakpoints()
                                     .as_mut()
                                     .map(|edit_breakpoints| edit_breakpoints.single_step(true));
-                                let result = func.call_async(store.as_context_mut(), ()).await;
-
-                                // if epoch_interruption {
-                                //     store.data().wasi_threads_ctx.as_ref().unwrap().stop();
-                                // }
-                                result.map_err(|err| anyhow::anyhow!(err))
+                                func.call_async(store.as_context_mut(), ()).await?;
+                                Ok(())
                             })
                         }),
                     )
                     .map(|_| ())
                 } else {
-                    let result = func.call(&mut store, ());
-
-                    // if epoch_interruption {
-                    //     store.data().wasi_threads_ctx.as_ref().unwrap().stop();
-                    // };
-                    result.map_err(|err| anyhow::anyhow!(err))
+                    func.call(&mut store, ())?;
+                    Ok(())
                 };
                 let tid = main_thread.tid();
                 thread_registry.remove_thread(main_thread);

@@ -71,7 +71,7 @@ fn run_builder(
     runtime.jit_profile(if gdb_port.is_some() {
         webrogue_wasmtime::JitProfile::Debug
     } else {
-        webrogue_wasmtime::JitProfile::Debug
+        webrogue_wasmtime::JitProfile::FastCompilation
     });
 
     unsafe {
