@@ -17,11 +17,13 @@ fn main() {
     let lib_name = "webroguelld";
     let lib_dir = PathBuf::from_str(&env::var("OUT_DIR").unwrap()).unwrap();
     let lib = lib_dir.join(format!("{}{}{}", lib_prefix, lib_name, lib_suffix));
-    if !lib.exists() {
+    let download_marker = lib_dir.join("download_marker");
+    if !download_marker.exists() {
         let mut response = reqwest::blocking::get(format!("https://github.com/webrogue-runtime/webrogue-lld-builder/releases/download/latest_build/{}", target_triple)).unwrap().error_for_status().unwrap();
         response
             .copy_to(&mut std::fs::File::create(&lib).unwrap())
             .unwrap();
+        std::fs::File::create_new(download_marker).unwrap();
     }
 
     println!("cargo:rustc-link-search=native={}", lib_dir.display());

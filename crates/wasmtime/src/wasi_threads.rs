@@ -5,15 +5,15 @@ use std::sync::{Arc, Mutex};
 
 use wasmtime::AsContextMut;
 
-use crate::{
-    gfx_init_params::{AsyncFuncRunner, AsyncFuncRunnerParams},
-    thread::{StopReason, WasmThreadRegistry},
-};
+#[cfg(feature = "async")]
+use crate::gfx_init_params::{AsyncFuncRunner, AsyncFuncRunnerParams};
+use crate::thread::{StopReason, WasmThreadRegistry};
 
 pub struct WasiThreadsCtx<T: 'static> {
     instance_pre: Mutex<Option<Arc<wasmtime::InstancePre<T>>>>,
     tid: std::sync::atomic::AtomicI32,
     thread_registry: WasmThreadRegistry,
+    #[cfg(feature = "async")]
     async_func_runner: Option<AsyncFuncRunner<T>>,
 }
 
@@ -22,13 +22,14 @@ const WASI_ENTRY_POINT: &str = "wasi_thread_start";
 impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
     pub fn new(
         thread_registry: WasmThreadRegistry,
-        async_func_runner: Option<AsyncFuncRunner<T>>,
+        #[cfg(feature = "async")] async_func_runner: Option<AsyncFuncRunner<T>>,
     ) -> Self {
         let tid = std::sync::atomic::AtomicI32::new(1);
         Self {
             instance_pre: Mutex::new(None),
             tid,
             thread_registry,
+            #[cfg(feature = "async")]
             async_func_runner,
         }
     }
@@ -58,6 +59,7 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
         }
         let wasi_thread_id = wasi_thread_id.unwrap();
 
+        #[cfg(feature = "async")]
         let async_func_runner = self.async_func_runner.clone();
         let thread_registry = self.thread_registry.clone();
 
@@ -75,8 +77,9 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
 
                 let result: Result<anyhow::Result<()>, Box<dyn std::any::Any + Send>> =
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        let res = if let Some(async_func_runner) = async_func_runner {
-                            async_func_runner(
+                        #[cfg(feature = "async")]
+                        if let Some(async_func_runner) = async_func_runner {
+                            return async_func_runner(
                                 AsyncFuncRunnerParams {
                                     store,
                                     thread: thread.clone(),
@@ -103,20 +106,15 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
                                     })
                                 }),
                             )
-                            .map(|_| ())
-                        } else {
-                            let instance = instance_pre.instantiate(&mut store)?;
-                            let thread_entry_point = instance
-                                .get_typed_func::<(i32, i32), ()>(&mut store, WASI_ENTRY_POINT)
-                                .unwrap();
-                            thread_entry_point
-                                .call(&mut store, (wasi_thread_id, thread_start_arg))
-                                .map_err(|err| anyhow::anyhow!(err))
-                        };
-                        match res {
-                            Ok(_) => Ok(()),
-                            Err(e) => Err(e),
+                            .map(|_| ());
                         }
+                        let instance = instance_pre.instantiate(&mut store)?;
+                        let thread_entry_point = instance
+                            .get_typed_func::<(i32, i32), ()>(&mut store, WASI_ENTRY_POINT)
+                            .unwrap();
+                        thread_entry_point
+                            .call(&mut store, (wasi_thread_id, thread_start_arg))
+                            .map_err(|err| anyhow::anyhow!(err))
                     }));
 
                 let tid = thread.tid();

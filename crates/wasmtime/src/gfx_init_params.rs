@@ -4,11 +4,13 @@ use std::{future::Future, pin::Pin, sync::Arc};
 use crate::state::State;
 use crate::thread::WasmThread;
 
+#[cfg(feature = "async")]
 pub struct AsyncFuncRunnerParams<T: 'static> {
     pub store: wasmtime::Store<T>,
     pub thread: WasmThread,
 }
 
+#[cfg(feature = "async")]
 pub type AsyncFuncRunner<T> = Arc<
     dyn Fn(
             AsyncFuncRunnerParams<T>,
@@ -34,10 +36,12 @@ impl<Builder: webrogue_gfx::IBuilder> GFXInitParams<Builder> {
     pub fn new(builder: Builder) -> Self {
         Self {
             builder,
+            #[cfg(feature = "async")]
             async_func_runner: None,
         }
     }
 
+    #[cfg(feature = "async")]
     pub fn async_func_runner(
         &mut self,
         async_func_runner: AsyncFuncRunner<State<Builder::System>>,
@@ -45,6 +49,7 @@ impl<Builder: webrogue_gfx::IBuilder> GFXInitParams<Builder> {
         self.async_func_runner = Some(async_func_runner)
     }
 
+    #[cfg(feature = "async")]
     pub fn with_async_func_runner(
         mut self,
         async_func_runner: AsyncFuncRunner<State<Builder::System>>,
