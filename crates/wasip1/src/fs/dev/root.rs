@@ -1,7 +1,9 @@
 use wasi_common::{file::FileType, ErrorExt};
 
-use crate::fs::dev::{wakeup, DevState, IDevDir, OpenResult};
+use crate::fs::dev::{DevState, IDevDir, OpenResult};
 
+#[cfg(not(target_arch = "wasm32"))]
+use crate::fs::dev::wakeup;
 pub struct Dir {}
 
 impl IDevDir for Dir {
@@ -16,6 +18,7 @@ impl IDevDir for Dir {
         _state: &DevState,
     ) -> Result<OpenResult, wasi_common::Error> {
         match filename {
+            #[cfg(not(target_arch = "wasm32"))]
             "wakeup" => Ok(OpenResult::File(Box::new(wakeup::File::new()?))),
             _ => Err(wasi_common::Error::not_found()),
         }

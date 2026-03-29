@@ -72,9 +72,12 @@ members = [
 
   "apple/runtime/ios/rust",
   "apple/runtime/macos/rust",
+
+  "web",
 ]
 exclude = [
   "external/wasmtime",
+  "external/wasm_threads",
 ]
 
 [workspace.dependencies]
@@ -143,6 +146,7 @@ tao = { version = "0.34.5", default-features = false }
 winit = { version = "0.31.0-beta.2", default-features = false }
 winit-android = { version = "0.31.0-beta.2", default-features = false }
 winit-x11 = { version = "0.31.0-beta.2", default-features = false }
+winit-web = { version = "0.31.0-beta.2", default-features = false }
 gtk = { version = "0.18.2", default-features = false }
 dpi = { version = "*", default-features = false }
 libloading = { version = "0.8.9", default-features = false }
@@ -162,13 +166,21 @@ futures-util = { version = "0.3" }
 uuid = { version = "^1.8", default-features = false }
 blake3 = { version = "1.8.2" }
 async-trait = { version = "0.1.89" }
-rand = { version = "0.9", default-features = false }
+rand = { version = "0.10", default-features = false }
+rand_core = { version = "0.10", default-features = false }
 io-extras = "0.18.4"
 softbuffer = "0.4.8"
 ico = "0.5.0"
 tar = "0.4"
 gdbstub = "0.7.10"
 gdbstub_arch = "0.3.3"
+wasm_thread = { version = "0.3.3", default-features = false }
+wasm-bindgen = "0.2.114"
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3.91"
+parking_lot = "0.12.5"
+getrandom = { version = "0.4.2", default-features = false }
+cap-rand = { version = "3.4.5", features = ["small_rng"] }
 
 reqwest = { version = "0.13" }
 zip-extract = { version = "0.4.1" }
@@ -213,3 +225,5 @@ codegen-units = 1
 [patch.crates-io]
 zstd-safe = { path = "external/zstd-rs/zstd-safe" }
 zstd = { path = "external/zstd-rs" }
+wasm_thread = { path = "external/wasm_thread" }
+# softbuffer = { git = "https://github.com/rust-windowing/softbuffer.git", rev = "7140e44" }

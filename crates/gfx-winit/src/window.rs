@@ -3,9 +3,13 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use ash::Entry;
 use softbuffer::SoftBufferError;
-use winit::{event::WindowEvent, window::Window};
+use winit::{
+    dpi::PhysicalSize,
+    event::WindowEvent,
+    event_loop::ActiveEventLoop,
+    window::{Window, WindowId},
+};
 
 use crate::{events::encode_event, mailbox::Mailbox};
 
@@ -17,124 +21,159 @@ pub struct CPUSurfaceData {
 
 pub struct WinitWindowInternal {
     pub(crate) window: Arc<Box<dyn Window>>,
-    pub(crate) mailbox: Mailbox,
-    pub(crate) vulkan_entry: Option<Arc<Entry>>,
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) vulkan_entry: Option<Arc<ash::Entry>>,
     pub(crate) events_buffer: Mutex<Vec<u8>>,
     pub(crate) cpu_surface_data: Mutex<Option<Arc<CPUSurfaceData>>>,
 }
 
 pub struct WinitWindow {
-    pub(crate) internal: Arc<WinitWindowInternal>,
+    pub(crate) window_id: WindowId,
+    pub(crate) mailbox: Mailbox,
 }
 
 impl webrogue_gfx::IWindow for WinitWindow {
     fn get_size(&self) -> (u32, u32) {
-        let size = self
-            .internal
-            .window
-            .surface_size()
-            .to_logical(self.internal.window.scale_factor());
-        (size.width, size.height)
+        self.mailbox.execute(|_, window_registry| {
+            let Some(window) = window_registry.get_window(self.window_id) else {
+                return (0, 0);
+            };
+            let size = window
+                .window
+                .surface_size()
+                .to_logical(window.window.scale_factor());
+            (size.width, size.height)
+        })
     }
 
     fn get_gl_size(&self) -> (u32, u32) {
-        let size = self.internal.window.surface_size();
-        (size.width, size.height)
+        self.mailbox.execute(|_, window_registry| {
+            let Some(window) = window_registry.get_window(self.window_id) else {
+                return (0, 0);
+            };
+            let size = window.window.surface_size();
+            actual_physical_size(size, window.window.scale_factor())
+        })
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn make_vk_surface(&self, vk_instance: *mut ()) -> Option<*mut ()> {
         use ash::vk::Handle as _;
 
-        let vk_instance = vk_instance as u64;
+        let instance = ash::vk::Instance::from_raw(vk_instance as u64);
 
-        let window = &self.internal.window;
-        let vulkan_entry = self.internal.vulkan_entry.clone();
-        let raw_surface = self.internal.mailbox.execute(|_| {
-            let window_handle = window
-                .rwh_06_window_handle()
-                .window_handle()
-                .unwrap()
-                .as_raw();
-
-            let display_handle = window
-                .rwh_06_display_handle()
-                .display_handle()
-                .unwrap()
-                .as_raw();
-
-            let instance = ash::vk::Instance::from_raw(vk_instance);
-
-            let entry = vulkan_entry.clone()?;
-
-            let instance = unsafe { ash::Instance::load(entry.static_fn(), instance) };
-
-            let surface = unsafe {
-                ash_window::create_surface(&entry, &instance, display_handle, window_handle, None)
+        self.mailbox
+            .execute(|_, window_registry| {
+                let Some(window) = window_registry.get_window(self.window_id) else {
+                    return None;
+                };
+                let vulkan_entry = window.vulkan_entry.clone();
+                let window_handle = window
+                    .window
+                    .rwh_06_window_handle()
+                    .window_handle()
                     .unwrap()
-            };
-            Some(surface.as_raw())
-        });
+                    .as_raw();
 
-        raw_surface.map(|raw_surface| raw_surface as *mut ())
+                let display_handle = window
+                    .window
+                    .rwh_06_display_handle()
+                    .display_handle()
+                    .unwrap()
+                    .as_raw();
+
+                let entry = vulkan_entry.clone()?;
+
+                let instance = unsafe { ash::Instance::load(entry.static_fn(), instance) };
+
+                let surface = unsafe {
+                    ash_window::create_surface(
+                        &entry,
+                        &instance,
+                        display_handle,
+                        window_handle,
+                        None,
+                    )
+                    .unwrap()
+                };
+                Some(surface)
+            })
+            .map(|surface| surface.as_raw() as *mut ())
     }
 
     fn poll(&self, events_buffer: &mut Vec<u8>) {
-        events_buffer.append(&mut self.internal.events_buffer.lock().unwrap());
+        self.mailbox.execute(|_, window_registry| {
+            let Some(window) = window_registry.get_window(self.window_id) else {
+                return;
+            };
+            events_buffer.append(&mut window.events_buffer.lock().unwrap());
+        });
     }
 
-    fn present_pixels(&self, pixels: &[std::cell::UnsafeCell<u32>]) -> Result<(), ()> {
-        fn void_err(err: SoftBufferError) {
-            eprintln!("{}", err.to_string());
-            assert!(false);
-        }
-
-        let pixels_slice =
-            unsafe { std::slice::from_raw_parts(pixels.as_ptr() as *const u32, pixels.len()) };
-
-        self.internal.mailbox.execute(move |_| {
-            let mut lock = self.internal.cpu_surface_data.lock().unwrap();
-
-            let cpu_surface_data = match lock.clone() {
-                Some(cpu_surface_data) => cpu_surface_data.clone(),
-                None => {
-                    let context =
-                        softbuffer::Context::new(self.internal.window.clone()).map_err(void_err)?;
-
-                    let surface = softbuffer::Surface::new(&context, self.internal.window.clone())
-                        .map_err(void_err)?;
-                    let cpu_surface_data = Arc::new(CPUSurfaceData {
-                        // context,
-                        surface: Mutex::new(surface),
-                    });
-                    let _ = lock.insert(cpu_surface_data.clone());
-                    cpu_surface_data
+    fn present_pixels(&self, pixels: &[u32]) -> anyhow::Result<()> {
+        self.mailbox
+            .execute(move |_, window_registry| -> anyhow::Result<()> {
+                fn map_softbuffer_error(err: SoftBufferError) -> anyhow::Error {
+                    anyhow::anyhow!("{}", err.to_string())
                 }
-            };
 
-            let mut surface = cpu_surface_data.surface.lock().unwrap();
+                let Some(window) = window_registry.get_window(self.window_id) else {
+                    anyhow::bail!("Window (id = {}) not found", self.window_id.into_raw());
+                };
 
-            let win_size = self.get_gl_size();
-            let Some(win_size) = NonZero::new(win_size.0).zip(NonZero::new(win_size.1)) else {
-                return Err(());
-            };
-            surface.resize(win_size.0, win_size.1).map_err(void_err)?;
-            let mut buffer = surface.buffer_mut().map_err(void_err)?;
-            if buffer.len() != pixels_slice.len() {
-                return Err(());
-            }
+                let mut lock = window.cpu_surface_data.lock().unwrap();
 
-            buffer.copy_from_slice(pixels_slice);
+                let cpu_surface_data = match lock.clone() {
+                    Some(cpu_surface_data) => cpu_surface_data.clone(),
+                    None => {
+                        let context = softbuffer::Context::new(window.window.clone())
+                            .map_err(map_softbuffer_error)?;
 
-            buffer.present().map_err(void_err)?;
+                        let surface = softbuffer::Surface::new(&context, window.window.clone())
+                            .map_err(map_softbuffer_error)?;
+                        let cpu_surface_data = Arc::new(CPUSurfaceData {
+                            // context,
+                            surface: Mutex::new(surface),
+                        });
+                        let _ = lock.insert(cpu_surface_data.clone());
+                        cpu_surface_data
+                    }
+                };
 
-            Ok(())
-        })
+                let mut surface = cpu_surface_data.surface.lock().unwrap();
+
+                let win_size = actual_physical_size(window.window.surface_size(), window.window.scale_factor()) ;
+                let Some(win_size) =
+                    NonZero::new(win_size.0).zip(NonZero::new(win_size.1))
+                else {
+                    anyhow::bail!("Window (id = {}) has zero size", self.window_id.into_raw());
+                };
+                // TODO call resize only when needed
+                // Beware of "must set size of surface before calling `width()` on the buffer" error
+                surface
+                    .resize(win_size.0, win_size.1)
+                    .map_err(map_softbuffer_error)?;
+                let mut buffer = surface.buffer_mut().map_err(map_softbuffer_error)?;
+
+                if buffer.len() != pixels.len() {
+                    anyhow::bail!(
+                        "Called present_pixels on a window (id = {}) but specified wrong buffer size",
+                        self.window_id.into_raw()
+                    );
+                }
+
+                buffer.copy_from_slice(pixels);
+
+                buffer.present().map_err(map_softbuffer_error)?;
+
+                Ok(())
+            })
     }
 }
 
-impl WinitWindow {
+impl WinitWindowInternal {
     pub(crate) fn on_event(&self, event: WindowEvent) {
-        let events_buffer = &mut self.internal.events_buffer.lock().unwrap();
+        let events_buffer = &mut self.events_buffer.lock().unwrap();
 
         if events_buffer.len() > 1024 * 1024 {
             events_buffer.clear();
@@ -142,4 +181,12 @@ impl WinitWindow {
 
         encode_event(self, event, events_buffer);
     }
+}
+
+fn actual_physical_size(size: PhysicalSize<u32>, _scale_factor: f64) -> (u32, u32) {
+    // A workaround of Softbuffer's resize bug. Disables HiDPI for web
+    #[cfg(target_arch = "wasm32")]
+    let size = size.to_logical(_scale_factor);
+
+    return (size.width, size.height);
 }

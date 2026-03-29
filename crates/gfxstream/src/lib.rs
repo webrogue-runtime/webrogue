@@ -7,6 +7,7 @@ use std::{
 };
 
 mod ffi;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod shadow_blob;
 use ash::{
     vk::{Instance, PFN_vkGetInstanceProcAddr},
@@ -30,6 +31,7 @@ impl System {
                 get_proc_address as *const _ as *const (),
             )
         };
+        #[cfg(not(target_arch = "wasm32"))]
         shadow_blob::init();
         Self {}
     }
@@ -66,6 +68,7 @@ impl Decoder {
 
     pub fn commit(&self, buf: &[u8]) {
         // Seem to be the best place to call this function so far
+        #[cfg(not(target_arch = "wasm32"))]
         crate::shadow_blob::flush_all();
 
         unsafe {

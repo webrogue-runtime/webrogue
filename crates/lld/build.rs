@@ -7,6 +7,11 @@ fn main() {
     use std::path::PathBuf;
     use std::str::FromStr as _;
 
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    if target_arch == "wasm32" {
+        return;
+    }
+
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
     let (lib_prefix, lib_suffix) = if target_os == "windows" {
         ("", ".lib")

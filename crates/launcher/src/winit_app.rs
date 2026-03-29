@@ -33,8 +33,7 @@ impl crate::server::ServerConfig for ServerConfigImpl {
     fn run(&self, mut vfs_builder: RealVFSBuilder) -> anyhow::Result<()> {
         let config = vfs_builder.config()?.clone();
         let vfs = vfs_builder.into_vfs()?;
-        let (builder, proxy) =
-            ProxiedWinitBuilder::new(self.event_loop_proxy.clone(), self.window_registry.clone());
+        let (builder, proxy) = ProxiedWinitBuilder::new(self.event_loop_proxy.clone());
         *self.proxy_container.lock().unwrap() = Some(proxy);
         let persistent_dir = self.storage_path.join("persistent");
 
@@ -138,7 +137,12 @@ impl ApplicationHandler for App {
         event: WindowEvent,
     ) {
         if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
-            proxy.window_event(event_loop, window_id, event.clone());
+            proxy.window_event(
+                event_loop,
+                &mut self.window_registry,
+                window_id,
+                event.clone(),
+            );
         }
 
         match event {
@@ -195,7 +199,7 @@ impl ApplicationHandler for App {
         gtk::main_iteration_do(false);
 
         if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
-            proxy.proxy_wake_up(event_loop);
+            proxy.proxy_wake_up(event_loop, &mut self.window_registry);
         }
         if let Some(mailbox) = self.mailbox.as_ref() {
             if let Some(webview) = self.webview.as_ref() {
