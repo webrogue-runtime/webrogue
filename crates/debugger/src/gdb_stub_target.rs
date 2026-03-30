@@ -99,7 +99,10 @@ impl Wasm32Target {
                 Ok(Some(StopReason::Paused(reason, registers)))
             }
             DebuggerLoopMessage::ThreadFinished(tid) => {
-                let thread = self.threads.remove(&tid).unwrap();
+                let thread = self
+                    .threads
+                    .remove(&tid)
+                    .expect("DebuggerLoopMessage::ThreadFinished must refer a live thread");
                 if thread.is_main {
                     Ok(Some(StopReason::Finished))
                 } else {
@@ -149,7 +152,8 @@ impl Wasm32Target {
 
     fn edit_breakpoint(&mut self) -> Result<bool, TargetError<anyhow::Error>> {
         assert!(!self.has_running_threads() || self.skip_stale_threads);
-        // TODO ensure interrupted
+        self.ensure_all_threads_are_paused()
+            .map_err(TargetError::Fatal)?;
         let mut is_ok = true;
         for thread in self.threads.values() {
             let Some(stopped_thread) = thread.stopped.as_ref() else {
@@ -284,12 +288,6 @@ impl gdbstub::target::Target for Wasm32Target {
     ) -> Option<gdbstub::target::ext::process_info::ProcessInfoOps<'_, Self>> {
         Some(self)
     }
-
-    // fn support_list_thread_pc(
-    //     &mut self,
-    // ) -> Option<gdbstub::target::ext::list_threead_pc::ListThreadPCOps<'_, Self>> {
-    //     Some(self)
-    // }
 }
 
 impl gdbstub::target::ext::breakpoints::Breakpoints for Wasm32Target {
@@ -387,10 +385,10 @@ impl gdbstub::target::ext::base::multithread::MultiThreadBase for Wasm32Target {
         tid: gdbstub::common::Tid,
     ) -> TargetResult<usize, Self> {
         let Some(thread_info) = self.threads.get(&tid.try_into().unwrap()) else {
-            unimplemented!()
+            return Err(TargetError::NonFatal);
         };
         let Some(stopped_thread) = thread_info.stopped.as_ref() else {
-            unimplemented!()
+            return Err(TargetError::NonFatal);
         };
         let wasm_addr = WasmAddr::from_raw(start_addr).ok_or(TargetError::NonFatal)?;
         match wasm_addr.addr_type() {
@@ -447,11 +445,8 @@ impl gdbstub::target::ext::base::multithread::MultiThreadBase for Wasm32Target {
     ) -> Result<(), Self::Error> {
         for thread in self.threads.values() {
             if thread.stopped.is_none() {
-                if self.skip_stale_threads {
-                    continue;
-                } else {
-                    panic!();
-                }
+                debug_assert!(self.skip_stale_threads);
+                continue;
             }
             thread_is_active(thread.tid.try_into().unwrap())
         }
@@ -489,14 +484,18 @@ impl gdbstub::target::ext::base::single_register_access::SingleRegisterAccess<gd
         buf: &mut [u8],
     ) -> TargetResult<usize, Self> {
         let Some(thread_info) = self.threads.get(&tid.try_into().unwrap()) else {
-            unimplemented!()
+            return Err(TargetError::NonFatal);
         };
         let Some(stopped_thread) = thread_info.stopped.as_ref() else {
             return Err(TargetError::NonFatal);
         };
         match reg_id {
             WasmRegId::Pc => {
-                let bytes = stopped_thread.regs().unwrap().pc.to_le_bytes();
+                let bytes = stopped_thread
+                    .regs()
+                    .ok_or_else(|| TargetError::NonFatal)?
+                    .pc
+                    .to_le_bytes();
                 let n = bytes.len().min(buf.len());
                 buf[..n].copy_from_slice(&bytes[..n]);
                 Ok(n)
@@ -511,7 +510,7 @@ impl gdbstub::target::ext::base::single_register_access::SingleRegisterAccess<gd
         _reg_id: <Self::Arch as gdbstub::arch::Arch>::RegId,
         _val: &[u8],
     ) -> TargetResult<(), Self> {
-        todo!()
+        Err(TargetError::NonFatal)
     }
 }
 
@@ -519,11 +518,8 @@ impl gdbstub::target::ext::base::multithread::MultiThreadResume for Wasm32Target
     fn resume(&mut self) -> Result<(), Self::Error> {
         for thread in self.threads.values_mut() {
             let Some(stopped_thread) = thread.stopped.take() else {
-                if self.skip_stale_threads {
-                    continue;
-                } else {
-                    panic!();
-                }
+                debug_assert!(self.skip_stale_threads);
+                continue;
             };
 
             let Some(resume_type) = stopped_thread
@@ -535,12 +531,13 @@ impl gdbstub::target::ext::base::multithread::MultiThreadResume for Wasm32Target
                 continue;
             };
 
-            stopped_thread
+            let send_result = stopped_thread
                 .sender
                 .send(ThreadMessage::Resume(ResumeMessage {
                     is_step: matches!(resume_type, ResumeType::Step),
-                }))
-                .unwrap();
+                }));
+
+            assert!(send_result.is_ok());
         }
         self.default_resume_type = Some(ResumeType::Continue);
         Ok(())
@@ -578,29 +575,6 @@ impl gdbstub::target::ext::base::multithread::MultiThreadResume for Wasm32Target
         Some(self)
     }
 
-    fn support_range_step(
-        &mut self,
-    ) -> Option<gdbstub::target::ext::base::multithread::MultiThreadRangeSteppingOps<'_, Self>>
-    {
-        None
-    }
-
-    fn support_reverse_step(
-        &mut self,
-    ) -> Option<
-        gdbstub::target::ext::base::reverse_exec::ReverseStepOps<'_, gdbstub::common::Tid, Self>,
-    > {
-        None
-    }
-
-    fn support_reverse_cont(
-        &mut self,
-    ) -> Option<
-        gdbstub::target::ext::base::reverse_exec::ReverseContOps<'_, gdbstub::common::Tid, Self>,
-    > {
-        None
-    }
-
     fn support_scheduler_locking(
         &mut self,
     ) -> Option<gdbstub::target::ext::base::multithread::MultiThreadSchedulerLockingOps<'_, Self>>
@@ -619,7 +593,7 @@ impl gdbstub::target::ext::base::multithread::MultiThreadSingleStep for Wasm32Ta
             return Ok(());
         };
         let Some(stopped_thread) = thread.stopped.as_mut() else {
-            unimplemented!();
+            return Ok(());
         };
         stopped_thread.resume_type = Some(ResumeType::Step);
         Ok(())
@@ -641,7 +615,7 @@ impl<'a> gdbstub::target::ext::memory_map::MemoryMap for Wasm32Target {
         let mut module_addresses = BTreeMap::new();
         for thread in self.threads.values() {
             let Some(stopped_thread) = thread.stopped.as_ref() else {
-                unimplemented!()
+                return Err(TargetError::NonFatal);
             };
 
             for (id, size) in &stopped_thread.module_addresses {
@@ -665,7 +639,7 @@ impl<'a> gdbstub::target::ext::memory_map::MemoryMap for Wasm32Target {
         let mut memory_addresses = BTreeMap::new();
         for thread in self.threads.values() {
             let Some(stopped_thread) = thread.stopped.as_ref() else {
-                unimplemented!()
+                continue;
             };
 
             for (id, size) in &stopped_thread.memory_addresses {
@@ -710,7 +684,7 @@ impl<'a> gdbstub::target::ext::libraries::Libraries for Wasm32Target {
         let mut addresses = BTreeMap::new();
         for thread in self.threads.values() {
             let Some(stopped_thread) = thread.stopped.as_ref() else {
-                unimplemented!()
+                continue;
             };
 
             for (id, size) in &stopped_thread.module_addresses {

@@ -6,8 +6,12 @@ mod static_code_memory;
 mod thread;
 mod wasi_threads;
 
-pub use gfx_init_params::{AsyncFuncRunner, GFXInitParams};
-pub use runtime::{JitProfile, Runtime};
+#[cfg(feature = "async")]
+pub use gfx_init_params::AsyncFuncRunner;
+pub use gfx_init_params::GFXInitParams;
+#[cfg(feature = "jit")]
+pub use runtime::JitProfile;
+pub use runtime::Runtime;
 pub use thread::WasmThread;
 pub use webrogue_wrapp::{
     IVFSBuilder, RealVFSBuilder, RealVFSHandle, WrappVFSBuilder, WrappVFSHandle,

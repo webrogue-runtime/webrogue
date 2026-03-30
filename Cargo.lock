@@ -2828,7 +2828,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
 dependencies = [
  "foldhash 0.1.5",
- "serde",
 ]
 
 [[package]]
@@ -7357,7 +7356,6 @@ dependencies = [
  "hashbrown 0.15.5",
  "indexmap",
  "semver",
- "serde",
 ]
 
 [[package]]
@@ -7974,6 +7972,7 @@ version = "0.1.0"
 name = "webrogue-aot-lib"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "blake3",
  "dirs",
  "webrogue-gfx-winit",
@@ -8283,7 +8282,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
  "wasm_thread",
- "wasmparser 0.244.0",
+ "wasmparser 0.245.1",
  "web-sys",
  "webrogue-gfx",
  "webrogue-gfx-winit",

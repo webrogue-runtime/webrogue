@@ -5,14 +5,12 @@ mod communication;
 mod connection;
 mod gdb_stub_loop;
 mod gdb_stub_target;
-mod handler;
 mod state;
 mod thread_info;
 
 pub use connection::{
     tokio_tcp_connection, AsyncRead, BoxedPacketReceiver, BoxedPacketSender, PacketSender,
 };
-pub use handler::EventHandler;
 pub use state::State;
 use webrogue_wasmtime::WasmThread;
 

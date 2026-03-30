@@ -4,12 +4,12 @@ use std::{
 };
 
 use anyhow::Context;
-use wasmtime::AsContextMut;
 
+#[cfg(feature = "async")]
+use crate::gfx_init_params::AsyncFuncRunnerParams;
 #[cfg(any(feature = "jit", feature = "aot"))]
 use crate::GFXInitParams;
 use crate::{
-    gfx_init_params::AsyncFuncRunnerParams,
     state::State,
     thread::{StopReason, WasmThreadRegistry},
 };
@@ -214,8 +214,6 @@ impl Runtime {
     }
 }
 
-// #[cfg(all(feature = "jit", not(feature = "aot")))]
-
 #[cfg(any(feature = "jit", feature = "aot"))]
 #[allow(unreachable_code, reason = "Not gonna fight this lint error")]
 impl Runtime {
@@ -259,10 +257,16 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         gfx: None,
     };
     let gfx_builder = gfx_init_params.builder;
+    #[cfg(feature = "async")]
     let async_func_runner = gfx_init_params.async_func_runner;
     let mut store = wasmtime::Store::new(&engine, state);
 
-    let thread_registry = WasmThreadRegistry::new(async_func_runner.is_some(), epoch_interruption);
+    #[cfg(feature = "async")]
+    let is_async = async_func_runner.is_some();
+    #[cfg(not(feature = "async"))]
+    let is_async = false;
+
+    let thread_registry = WasmThreadRegistry::new(is_async, epoch_interruption);
     let main_thread = thread_registry.make_thread(engine.weak());
 
     {
@@ -273,12 +277,12 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 
     store.data_mut().wasi_threads_ctx = Some(Arc::new(crate::wasi_threads::WasiThreadsCtx::new(
         thread_registry.clone(),
+        #[cfg(feature = "async")]
         async_func_runner.clone(),
     )));
     bindings::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
         state.preview1_ctx.as_mut().unwrap()
     })?;
-    // wasi_common::sync::add_to_linker(&mut linker, |state| state.preview1_ctx.as_mut().unwrap())?;
 
     #[cfg(not(target_os = "windows"))]
     unsafe {
@@ -309,9 +313,6 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
     crate::wasi_threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
         host.wasi_threads_ctx.as_ref().unwrap()
     })?;
-    // wasmtime_wasi_threads::add_to_linker(&mut linker, &mut store, &module, |host| {
-    //     host.wasi_threads_ctx.as_ref().unwrap()
-    // })?;
     let linker = Arc::new(linker);
     store
         .data()
@@ -319,9 +320,6 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         .as_ref()
         .unwrap()
         .fill(module.clone(), linker.clone())?;
-    // store.data_mut().wasi_threads_ctx = Some(Arc::new(
-    //     wasmtime_wasi_threads::WasiThreadsCtx::new(module.clone(), linker.clone())?,
-    // ));
 
     store.data_mut().preview1_ctx = Some(webrogue_wasip1::make_ctx(
         handle,
@@ -338,6 +336,8 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 
                 let instance = pre.instantiate(&mut store)?;
                 let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
+
+                #[cfg(feature = "async")]
                 let call_result = if let Some(async_func_runner) = async_func_runner {
                     async_func_runner(
                         AsyncFuncRunnerParams {
@@ -345,29 +345,28 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
                             thread: main_thread.clone(),
                         },
                         Box::new(move |store| {
+                            use wasmtime::AsContextMut as _;
+
                             Box::pin(async move {
                                 store
                                     .edit_breakpoints()
                                     .as_mut()
                                     .map(|edit_breakpoints| edit_breakpoints.single_step(true));
-                                let result = func.call_async(store.as_context_mut(), ()).await;
-
-                                // if epoch_interruption {
-                                //     store.data().wasi_threads_ctx.as_ref().unwrap().stop();
-                                // }
-                                result.map_err(|err| anyhow::anyhow!(err))
+                                func.call_async(store.as_context_mut(), ())
+                                    .await
+                                    .map_err(|err| anyhow::anyhow!(err))
                             })
                         }),
                     )
                     .map(|_| ())
                 } else {
-                    let result = func.call(&mut store, ());
-
-                    // if epoch_interruption {
-                    //     store.data().wasi_threads_ctx.as_ref().unwrap().stop();
-                    // };
-                    result.map_err(|err| anyhow::anyhow!(err))
+                    func.call(&mut store, ())
+                        .map_err(|err| anyhow::anyhow!(err))
                 };
+                #[cfg(not(feature = "async"))]
+                let call_result = func
+                    .call(&mut store, ())
+                    .map_err(|err| anyhow::anyhow!(err));
                 let tid = main_thread.tid();
                 thread_registry.remove_thread(main_thread);
                 thread_registry.stop_all_threads(

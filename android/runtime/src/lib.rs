@@ -81,8 +81,11 @@ fn android_main(app: android_activity::AndroidApp) {
             quick_exit(42);
         }
     }));
-    #[cfg(feature = "launcher")]
-    webrogue_wasmtime::run_jit_builder(gfx_builder, vfs_builder, &data_dir).unwrap();
-    #[cfg(feature = "runner")]
-    webrogue_wasmtime::run_aot_builder(gfx_builder, vfs_builder, &data_dir).unwrap();
+    let mut runtime = webrogue_wasmtime::Runtime::new(&data_dir);
+    runtime
+        .run_builder(
+            webrogue_wasmtime::GFXInitParams::new(gfx_builder),
+            vfs_builder,
+        )
+        .unwrap();
 }
