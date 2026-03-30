@@ -1,3 +1,4 @@
+mod child_builder;
 pub mod events_encoder;
 mod interface;
 pub mod swiftshader;
@@ -5,6 +6,7 @@ pub mod swiftshader;
 pub use webrogue_gfxstream::Decoder as GFXStreamDecoder;
 pub use webrogue_gfxstream::System as GFXStreamSystem;
 
+pub use child_builder::ChildBuilder;
 pub use interface::run;
 pub use interface::webrogue_gfx;
 pub use interface::IBuilder;

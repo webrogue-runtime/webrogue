@@ -1,0 +1,20 @@
+[package]
+name = "webrogue-debugger"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["macros", "net", "rt"] }
+futures-util = { workspace = true }
+wasmtime-internal-debugger = { workspace = true }
+wasmtime = { workspace = true, default-features = false }
+futures = { workspace = true }
+async-trait = { workspace = true }
+webrogue-wasmtime = { workspace = true }
+webrogue-gfx = { workspace = true }
+gdbstub = { workspace = true }
+gdbstub_arch = { workspace = true }

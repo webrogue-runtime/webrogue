@@ -7,6 +7,7 @@ use std::sync::{
 };
 use std::sync::{Arc, Mutex};
 use webrogue_gfx_winit::{ProxiedWinitBuilder, WindowRegistry, WinitProxy};
+use webrogue_wasmtime::GFXInitParams;
 use webrogue_wrapp::{IVFSBuilder, RealVFSBuilder};
 use winit::{
     application::ApplicationHandler,
@@ -38,10 +39,13 @@ impl crate::server::ServerConfig for ServerConfigImpl {
         let persistent_dir = self.storage_path.join("persistent");
 
         let _ = std::thread::Builder::new()
-            .name("wasi-thread-main".to_owned())
+            .name("wasi-main".to_owned())
             .spawn(move || {
-                let _ =
-                    webrogue_wasmtime::run_jit(builder, vfs, &config, &persistent_dir, None, false);
+                let _ = webrogue_wasmtime::Runtime::new(&persistent_dir).run_jit(
+                    GFXInitParams::new(builder),
+                    vfs,
+                    &config,
+                );
             });
 
         Ok(())
