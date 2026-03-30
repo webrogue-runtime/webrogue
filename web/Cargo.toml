@@ -7,11 +7,11 @@ edition = "2018"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[dependencies]
+[target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
 console_error_panic_hook = { version = "0.1.7" }
-wasm_thread = { workspace = true, default-features = false }
+wasm_thread = { path = "../external/wasm_thread", default-features = false }
 lazy_static = { workspace = true }
 winit = { workspace = true }
 winit-web = { workspace = true }
@@ -39,13 +39,13 @@ webrogue-gfx = { workspace = true }
 webrogue-wasip1 = { workspace = true }
 webrogue-wrapp = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
-# To enble "nightly" feature
-parking_lot = { workspace = true, features = ["nightly"] }
 wiggle = { workspace = true, default-features = false }
-wasi-common = { workspace = true, default-features = false, features = [] } # "sync"
+wasi-common = { workspace = true, default-features = false }
+wasmparser = { workspace = true }
 # To enble "js" feature
 getrandom = { version = "0.2", features = ["js"] }
-wasmparser = { workspace = true }
+# To enble "nightly" feature
+parking_lot = { workspace = true, features = ["nightly"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"

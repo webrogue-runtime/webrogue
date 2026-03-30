@@ -45,7 +45,6 @@ pub fn runner<T: Send + 'static>(
                     let run_result = debuggee.run().await?;
                     match run_result {
                         wasmtime_internal_debugger::DebugRunResult::Finished => break 'exec_loop,
-
                         wasmtime_internal_debugger::DebugRunResult::HostcallError
                         | wasmtime_internal_debugger::DebugRunResult::CaughtExceptionThrown(_)
                         | wasmtime_internal_debugger::DebugRunResult::UncaughtExceptionThrown(_)
