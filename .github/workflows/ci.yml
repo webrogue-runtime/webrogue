@@ -1,6 +1,6 @@
 name: Webrogue CI
 
-on: [push, pull_request]
+on: [push]
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -50,6 +50,16 @@ jobs:
     - name: Cargo test
       run: |
         cargo test --package webrogue-wasip1
+
+  typos:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install and run typos-cli
+      run: |
+        cargo install --locked typos
 
   build_cli:
     uses: ./.github/workflows/build_cli.yml
