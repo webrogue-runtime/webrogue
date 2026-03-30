@@ -59,7 +59,9 @@ jobs:
 
     - name: Install and run typos-cli
       run: |
+        curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
         cargo binstall --locked typos-cli
+        typos
 
   build_cli:
     uses: ./.github/workflows/build_cli.yml
