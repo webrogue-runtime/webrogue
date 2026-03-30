@@ -59,7 +59,7 @@ jobs:
 
     - name: Install and run typos-cli
       run: |
-        cargo install --locked typos
+        cargo install --locked typos-cli
 
   build_cli:
     uses: ./.github/workflows/build_cli.yml
