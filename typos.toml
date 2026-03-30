@@ -2,6 +2,7 @@
 extend-exclude = [
     "/webrogue-sdk",
     "/external",
+    "*.storyboard",
 ]
 ignore-vcs = true
 

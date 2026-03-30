@@ -99,7 +99,7 @@ pub fn load_vulkan_entry(required: bool) -> Option<Entry> {
                 let mut title = "Vulkan Driver Not Found".encode_utf16().collect::<Vec<_>>();
                 title.push(0);
                 let mut message = r"
-This application requires a Vulkan-compatable graphics driver to run. To resolve this, try the folowing options one by one
+This application requires a Vulkan-compatible graphics driver to run. To resolve this, try the following options one by one
 
 1. If you are an application developer, you can bundle vk_swiftshader.dll with you executable to provide fallback driver.
 
