@@ -43,7 +43,7 @@ impl State {
         }
     }
 
-    async fn precess_request(
+    async fn process_request(
         &self,
         request: DebugRequestBody,
     ) -> anyhow::Result<DebugResponseBody> {
@@ -100,7 +100,7 @@ impl State {
         Ok(kept_something)
     }
 
-    async fn precess_command(&self, command: DebugCommand) -> anyhow::Result<()> {
+    async fn process_command(&self, command: DebugCommand) -> anyhow::Result<()> {
         match command {
             DebugCommand::AppendFileHash(command) => {
                 self.file_hashes
@@ -277,7 +277,7 @@ impl IncomingDebugConnection {
                             let message = DebugOutgoingMessage::from_bytes(&msg.data)?;
                             match message {
                                 DebugOutgoingMessage::Request(request) => {
-                                    let response_body = s3.precess_request(request.body).await?;
+                                    let response_body = s3.process_request(request.body).await?;
                                     let response = DebugIncomingMessage::Response(DebugResponse {
                                         request_id: request.request_id,
                                         body: response_body,
@@ -285,7 +285,7 @@ impl IncomingDebugConnection {
                                     d2.send(&response.to_bytes()?.into()).await?;
                                 }
                                 DebugOutgoingMessage::Command(command) => {
-                                    s3.precess_command(*command).await?;
+                                    s3.process_command(*command).await?;
                                 }
                             };
                             Ok(())

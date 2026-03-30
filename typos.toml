@@ -1,0 +1,10 @@
+[files]
+extend-exclude = [
+    "/webrogue-sdk",
+    "/external",
+    "*.storyboard",
+]
+ignore-vcs = true
+
+[default.extend-words]
+wrapp = "wrapp"
