@@ -23,6 +23,7 @@ struct App {
     pub create_system_fn: Option<CreateSystemFn>,
     pub proxy: Option<WinitProxy>,
     pub vulkan_requirement: Option<bool>,
+    pub window_registry: WindowRegistry,
 }
 
 impl ApplicationHandler for App {
@@ -47,13 +48,13 @@ impl ApplicationHandler for App {
                     |winit_system| {
                         let mailbox = winit_system.mailbox.clone();
                         body_fn(winit_system);
-                        mailbox.execute(|event_loop| event_loop.exit());
+                        mailbox.execute(|event_loop, _window_registry| event_loop.exit());
                     },
                     vulkan_requirement,
                 );
                 if let Err(error) = result {
                     set_error_fn(error);
-                    error_mailbox.execute(|event_loop| event_loop.exit());
+                    error_mailbox.execute(|event_loop, _window_registry| event_loop.exit());
                 }
             })
             .unwrap();
@@ -72,13 +73,13 @@ impl ApplicationHandler for App {
         event: WindowEvent,
     ) {
         if let Some(proxy) = self.proxy.as_ref() {
-            proxy.window_event(event_loop, window_id, event);
+            proxy.window_event(&mut self.window_registry, window_id, event);
         }
     }
 
     fn proxy_wake_up(&mut self, event_loop: &dyn ActiveEventLoop) {
         if let Some(proxy) = self.proxy.as_ref() {
-            proxy.proxy_wake_up(event_loop);
+            proxy.proxy_wake_up(event_loop, &mut self.window_registry);
         }
     }
 }
@@ -135,14 +136,14 @@ impl webrogue_gfx::IBuilder for SimpleWinitBuilder {
             set_error_fn: Some(Box::new(set_error_fn)),
             vulkan_requirement,
             create_system_fn: Some(Box::new(|event_loop_proxy| {
-                let (mut builder, mailbox) =
-                    ProxiedWinitBuilder::new(event_loop_proxy, WindowRegistry::new());
+                let (mut builder, mailbox) = ProxiedWinitBuilder::new(event_loop_proxy);
                 if let Some(on_hide) = self.on_hide {
                     builder = builder.with_on_hide(on_hide);
                 }
                 (builder, mailbox)
             })),
             proxy: None,
+            window_registry: WindowRegistry::new(),
         };
         self.event_loop.run_app(app).unwrap();
         let output = output.lock().unwrap().as_mut().unwrap().take();

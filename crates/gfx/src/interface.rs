@@ -7,10 +7,12 @@ use types::Size as GuestSize;
 use types::VkObject as GuestVkObject;
 use types::WindowHandle as GuestWindowHandle;
 use types::WindowSize as GuestWindowSize;
+use wiggle::GuestPtr;
 
-use std::cell::UnsafeCell;
+#[cfg(not(target_arch = "wasm32"))]
 use std::rc::Rc;
 use std::{
+    cell::UnsafeCell,
     collections::BTreeMap,
     sync::{Arc, Mutex},
 };
@@ -31,21 +33,25 @@ pub trait ISystem {
     type Window: IWindow + 'static;
     fn make_window(&self) -> Self::Window;
     fn pump(&self);
+    #[cfg(not(target_arch = "wasm32"))]
     fn make_gfxstream_decoder(&self) -> Option<webrogue_gfxstream::Decoder>;
+    #[cfg(not(target_arch = "wasm32"))]
     fn vk_extensions(&self) -> Vec<String>;
 }
 pub trait IWindow {
     fn get_size(&self) -> (u32, u32);
     fn get_gl_size(&self) -> (u32, u32);
+    #[cfg(not(target_arch = "wasm32"))]
     fn make_vk_surface(&self, vk_instance: *mut ()) -> Option<*mut ()>;
     fn poll(&self, events_buffer: &mut Vec<u8>);
-    fn present_pixels(&self, pixels: &[UnsafeCell<u32>]) -> Result<(), ()>;
+    fn present_pixels(&self, pixels: &[u32]) -> anyhow::Result<()>;
 }
 
 pub struct Interface<System: ISystem> {
     system: Arc<System>,
     windows: Arc<Mutex<BTreeMap<u32, Arc<System::Window>>>>,
     // TODO remove mutex
+    #[cfg(not(target_arch = "wasm32"))]
     gfxstream_decoder: Mutex<Option<Rc<webrogue_gfxstream::Decoder>>>,
     event_buf: Arc<Mutex<Vec<u8>>>,
 }
@@ -71,6 +77,7 @@ impl<System: ISystem + 'static> Interface<System> {
         Self {
             system,
             windows: Arc::new(Mutex::new(BTreeMap::new())),
+            #[cfg(not(target_arch = "wasm32"))]
             gfxstream_decoder: Mutex::new(None),
             event_buf: Arc::new(Mutex::new(Vec::new())),
         }
@@ -82,6 +89,7 @@ impl<System: ISystem + 'static> Clone for Interface<System> {
         Self {
             system: self.system.clone(),
             windows: self.windows.clone(),
+            #[cfg(not(target_arch = "wasm32"))]
             gfxstream_decoder: Mutex::new(None),
             event_buf: self.event_buf.clone(),
         }
@@ -91,6 +99,7 @@ impl<System: ISystem + 'static> Clone for Interface<System> {
 impl<System: ISystem> Drop for Interface<System> {
     fn drop(&mut self) {
         // gfxstream must be deinitialized before sdl unloads vulkan library
+        #[cfg(not(target_arch = "wasm32"))]
         if let Ok(mut decoder) = self.gfxstream_decoder.lock() {
             *decoder = None;
         }
@@ -172,6 +181,7 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
 
     // Vulkan
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn make_vk_surface(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
@@ -200,6 +210,7 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn commit_buffer(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
@@ -218,6 +229,7 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         decoder.commit(&b);
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn ret_buffer_read(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
@@ -235,6 +247,7 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         let _ = mem.copy_from_slice(&buffer, buf.as_array(len));
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn vk_register_blob(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
@@ -252,6 +265,7 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
                 let size = size as usize;
                 &unsafe_cells[offset..][..size]
             }
+            wiggle::GuestMemory::Dynamic(_) => unimplemented!(),
         };
         if slice.len() != size as usize {
             assert!(false);
@@ -261,6 +275,7 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         unsafe { decoder.register_blob(slice, blob_id) };
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn check_vk(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
@@ -272,6 +287,53 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
             0
         };
         let _ = mem.write(out_error, ret);
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn make_vk_surface(
+        &mut self,
+        _mem: &mut wiggle::GuestMemory<'_>,
+        _window: GuestWindowHandle,
+        _vk_instance: GuestVkObject,
+        _out_vk_surface: wiggle::GuestPtr<GuestVkObject>,
+    ) {
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn commit_buffer(
+        &mut self,
+        _mem: &mut wiggle::GuestMemory<'_>,
+        _buf: wiggle::GuestPtr<u8>,
+        _len: GuestSize,
+    ) {
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn ret_buffer_read(
+        &mut self,
+        _mem: &mut wiggle::GuestMemory<'_>,
+        _buf: wiggle::GuestPtr<u8>,
+        _len: GuestSize,
+    ) {
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn vk_register_blob(
+        &mut self,
+        _mem: &mut wiggle::GuestMemory<'_>,
+        _blob_id: u64,
+        _size: u64,
+        _buf: wiggle::GuestPtr<u8>,
+    ) {
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn check_vk(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        out_error: wiggle::GuestPtr<u8>,
+    ) -> () {
+        let _ = mem.write(out_error, 0);
     }
 
     // CPU rendering
@@ -288,15 +350,12 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
             let Some(window) = self.get_window(window) else {
                 return Err(1);
             };
-            let pixels = match mem {
-                wiggle::GuestMemory::Unshared(_) => unimplemented!(),
-                wiggle::GuestMemory::Shared(unsafe_cells) => {
-                    let offset = buff.offset() as usize;
-                    let size = len as usize;
-                    &unsafe_cells[offset..][..size]
-                }
-            };
-            let (prefix, pixels, suffix) = unsafe { pixels.align_to::<UnsafeCell<u32>>() };
+            let offset = buff.offset() as usize;
+            let size = len as usize;
+            let pixels = mem
+                .as_cow(GuestPtr::new((offset as u32, size as u32)))
+                .unwrap();
+            let (prefix, pixels, suffix) = unsafe { pixels.align_to::<u32>() };
 
             // If there is a prefix or suffix, the slice wasn't perfectly aligned
             // to the u32 boundary or the length wasn't a multiple of 4.
@@ -325,6 +384,7 @@ impl<System: ISystem + 'static> Interface<System> {
         self.windows.lock().unwrap().get(&window_handle).cloned()
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn get_gfxstream_decoder(&self) -> Option<Rc<webrogue_gfxstream::Decoder>> {
         let mut stored_rc = self.gfxstream_decoder.lock().unwrap();
         if let Some(stored_rc) = stored_rc.as_ref() {

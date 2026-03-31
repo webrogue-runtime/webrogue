@@ -1,15 +1,11 @@
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex, Weak},
-};
+use std::collections::BTreeMap;
 
 use winit::window::WindowId;
 
-use crate::{window::WinitWindowInternal, WinitWindow};
+use crate::window::WinitWindowInternal;
 
-#[derive(Clone)]
 pub struct WindowRegistry {
-    windows: Arc<Mutex<BTreeMap<WindowId, Weak<WinitWindowInternal>>>>,
+    windows: BTreeMap<WindowId, WinitWindowInternal>,
 }
 
 impl Default for WindowRegistry {
@@ -21,20 +17,15 @@ impl Default for WindowRegistry {
 impl WindowRegistry {
     pub fn new() -> Self {
         Self {
-            windows: Arc::new(Mutex::new(BTreeMap::new())),
+            windows: BTreeMap::new(),
         }
     }
 
-    pub(crate) fn add_window(&self, id: WindowId, window: Weak<WinitWindowInternal>) {
-        self.windows.lock().unwrap().insert(id, window);
+    pub(crate) fn add_window(&mut self, id: WindowId, window: WinitWindowInternal) {
+        self.windows.insert(id, window);
     }
 
-    pub(crate) fn get_window(&self, id: WindowId) -> Option<WinitWindow> {
-        self.windows
-            .lock()
-            .unwrap()
-            .get(&id)
-            .and_then(|weak| weak.upgrade())
-            .map(|arc| WinitWindow { internal: arc })
+    pub(crate) fn get_window(&mut self, id: WindowId) -> Option<&WinitWindowInternal> {
+        self.windows.get(&id)
     }
 }

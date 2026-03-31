@@ -44,7 +44,7 @@ pub fn run(
                                     gdb.report_stop_with_regs(&mut target, reason, &mut regs)?;
                             } else {
                                 state_machine = gdb.report_stop(&mut target, reason)?;
-                            };
+                            }
                         }
                         StopReason::Finished => {
                             break;

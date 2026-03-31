@@ -1,26 +1,28 @@
-use std::{
-    ffi::CStr,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
+#[cfg(not(target_arch = "wasm32"))]
 use ash::Entry;
 use winit::window::WindowAttributes;
 
-use crate::{
-    mailbox::Mailbox, vulkan_library::load_vulkan_entry, window::WinitWindowInternal,
-    window_registry::WindowRegistry, WinitWindow,
-};
+use crate::{mailbox::Mailbox, window::WinitWindowInternal, WinitWindow};
+
+#[cfg(not(target_arch = "wasm32"))]
+use crate::vulkan_library::load_vulkan_entry;
 
 pub struct WinitSystem {
     pub(crate) mailbox: Mailbox,
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) gfxstream_system: std::sync::Mutex<Option<Arc<webrogue_gfx::GFXStreamSystem>>>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) vulkan_entry: Option<Arc<Entry>>,
-    pub(crate) window_registry: WindowRegistry,
+    pub(crate) window_attributes_fn:
+        Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
 }
 
 impl Drop for WinitSystem {
     fn drop(&mut self) {
         // gfxstream must be deinitialized before sdl unloads vulkan library
+        #[cfg(not(target_arch = "wasm32"))]
         self.gfxstream_system.lock().unwrap().take();
     }
 }
@@ -28,25 +30,35 @@ impl Drop for WinitSystem {
 impl WinitSystem {
     pub(crate) fn new(
         mailbox: Mailbox,
-        window_registry: WindowRegistry,
         vulkan_requirement: Option<bool>,
+        window_attributes_fn: Option<
+            Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>,
+        >,
     ) -> anyhow::Result<Self> {
+        #[cfg(not(target_arch = "wasm32"))]
         let vulkan_entry =
             if vulkan_requirement == Some(false) || webrogue_gfx::GFXStreamDecoder::is_stub() {
                 None
             } else {
                 load_vulkan_entry(vulkan_requirement == Some(true))
             };
+        #[cfg(not(target_arch = "wasm32"))]
         if vulkan_entry.is_none() && vulkan_requirement == Some(true) {
             anyhow::bail!(
                 "Vulkan is required by this application, but no compatible Vulkan driver found"
             )
         }
+        #[cfg(target_arch = "wasm32")]
+        if vulkan_requirement == Some(true) {
+            anyhow::bail!("Vulkan is unsupported in web runtime")
+        }
         Ok(Self {
             mailbox,
+            #[cfg(not(target_arch = "wasm32"))]
             gfxstream_system: Mutex::new(None),
+            #[cfg(not(target_arch = "wasm32"))]
             vulkan_entry: vulkan_entry.map(Arc::new),
-            window_registry,
+            window_attributes_fn,
         })
     }
 }
@@ -55,31 +67,35 @@ impl webrogue_gfx::ISystem for WinitSystem {
     type Window = WinitWindow;
 
     fn make_window(&self) -> WinitWindow {
-        let window = self.mailbox.execute(|event_loop| {
-            let window = Arc::new(
-                event_loop
-                    .create_window(WindowAttributes::default())
-                    .unwrap(),
-            );
+        let window_id = self.mailbox.execute(|event_loop, window_registry| {
+            let mut window_attributes = WindowAttributes::default();
+
+            if let Some(window_attributes_fn) = &self.window_attributes_fn {
+                window_attributes = window_attributes_fn(window_attributes);
+            }
+            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
             window.set_title("Webrogue");
-            window
+            let window_id = window.id();
+            window_registry.add_window(
+                window_id,
+                WinitWindowInternal {
+                    window,
+                    #[cfg(not(target_arch = "wasm32"))]
+                    vulkan_entry: self.vulkan_entry.clone(),
+                    events_buffer: Mutex::new(Vec::new()),
+                    cpu_surface_data: Mutex::new(None),
+                },
+            );
+            window_id
         });
-        let window_id = window.id();
 
-        let internal = Arc::new(WinitWindowInternal {
-            window,
+        WinitWindow {
+            window_id,
             mailbox: self.mailbox.clone(),
-            vulkan_entry: self.vulkan_entry.clone(),
-            events_buffer: Mutex::new(Vec::new()),
-            cpu_surface_data: Mutex::new(None),
-        });
-
-        self.window_registry
-            .add_window(window_id, Arc::downgrade(&internal));
-
-        WinitWindow { internal }
+        }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn make_gfxstream_decoder(&self) -> Option<webrogue_gfx::GFXStreamDecoder> {
         let Some(vulkan_entry) = self.vulkan_entry.clone() else {
             return None;
@@ -99,8 +115,9 @@ impl webrogue_gfx::ISystem for WinitSystem {
     }
 
     #[allow(unreachable_code)]
+    #[cfg(not(target_arch = "wasm32"))]
     fn vk_extensions(&self) -> Vec<String> {
-        self.mailbox.execute(|event_loop| {
+        self.mailbox.execute(|event_loop, _| {
             ash_window::enumerate_required_extensions(
                 event_loop
                     .rwh_06_handle()
@@ -112,7 +129,10 @@ impl webrogue_gfx::ISystem for WinitSystem {
                 extensions
                     .iter()
                     .map(|extension| unsafe {
-                        CStr::from_ptr(*extension).to_str().unwrap().to_owned()
+                        std::ffi::CStr::from_ptr(*extension)
+                            .to_str()
+                            .unwrap()
+                            .to_owned()
                     })
                     .collect::<Vec<_>>()
             })

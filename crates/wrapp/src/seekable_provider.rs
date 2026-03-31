@@ -25,9 +25,8 @@ impl<OverallReader: Read + Seek> ZSTDSeekableProvider<'_, OverallReader> {
         Ok(Self {
             seekable: zstd_safe::seekable::Seekable::create()
                 .init_advanced(offsetted_reader)
-                .map_err(|error_code| {
-                    anyhow::anyhow!("zstd_safe returned error: {}", error_code)
-                })?,
+                .map_err(|error_code| panic!("zstd_safe returned error: {}", error_code))
+                .unwrap(),
         })
     }
 }

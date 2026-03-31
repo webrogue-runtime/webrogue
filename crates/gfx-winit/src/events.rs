@@ -1,8 +1,8 @@
-use crate::WinitWindow;
+use crate::window::WinitWindowInternal;
 use winit::event::WindowEvent;
 
 pub fn encode_event(
-    window: &WinitWindow,
+    window: &WinitWindowInternal,
     event: WindowEvent,
     events_buffer: &mut std::sync::MutexGuard<'_, Vec<u8>>,
 ) {
@@ -82,7 +82,7 @@ pub fn encode_event(
             primary: _,
             source: _,
         } => {
-            let logical_position = position.to_logical(window.internal.window.scale_factor());
+            let logical_position = position.to_logical(window.window.scale_factor());
             events_encoder::mouse_motion(events_buffer, logical_position.x, logical_position.y);
         }
         // WindowEvent::PointerEntered { device_id, position, primary, kind } => todo!(),
@@ -114,7 +114,7 @@ pub fn encode_event(
                 } => events_encoder::MouseButton::Left,
                 winit::event::ButtonSource::Unknown(_) => events_encoder::MouseButton::Unknown,
             };
-            let logical_position = position.to_logical(window.internal.window.scale_factor());
+            let logical_position = position.to_logical(window.window.scale_factor());
             events_encoder::mouse_button(
                 events_buffer,
                 button,

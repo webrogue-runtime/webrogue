@@ -3,6 +3,13 @@ fn main() {}
 
 #[cfg(feature = "_build")]
 fn main() {
+    use std::env;
+
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    if target_arch == "wasm32" {
+        return;
+    }
+
     use std::str::FromStr as _;
     let _crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();

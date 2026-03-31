@@ -10,9 +10,13 @@ edition.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
-wasi-common = { workspace = true, default-features = false, features = ["sync"] }
+wasi-common = { workspace = true, default-features = false, features = [] }
 wiggle = { workspace = true, default-features = false }
 async-trait = { workspace = true }
+rand_core = { workspace = true }
+rand = { workspace = true, default-features = false, features = ["sys_rng", "thread_rng"] }
+getrandom = { workspace = true, default-features = false, features = ["wasm_js"] }
+cap-rand = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true, features = ["pipe"] }
@@ -21,5 +25,10 @@ rustix = { workspace = true, features = ["pipe"] }
 io-extras = { workspace = true }
 windows-sys = { workspace = true, features = ["Win32_System_Threading", "Win32_Security"] }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wasi-common = { workspace = true, default-features = false, features = ["sync"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+
 [dev-dependencies]
-rand = { workspace = true, default-features = true, features = ["small_rng"] }
+rand = { workspace = true, default-features = true, features = ["thread_rng"] }

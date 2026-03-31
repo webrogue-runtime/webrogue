@@ -6,6 +6,7 @@ pub use write::{archive, WRAPPWriter};
 mod vfs;
 pub use vfs::real::{RealVFSBuilder, RealVFSHandle};
 pub use vfs::wrapp::builder::WrappVFSBuilder;
+pub use vfs::wrapp::reader::Reader;
 pub use vfs::wrapp::WrappVFSHandle;
 pub use vfs::{IFilePosition, IFileReader, IVFSBuilder, IVFSHandle};
 

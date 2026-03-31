@@ -1,0 +1,52 @@
+[package]
+name = "webrogue-web-runtime"
+version = "0.1.0"
+authors = ["Artem Borovik <polzovatellllk@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
+console_error_panic_hook = { version = "0.1.7" }
+wasm_thread = { workspace = true, default-features = false }
+lazy_static = { workspace = true }
+winit = { workspace = true }
+winit-web = { workspace = true }
+web-sys = { workspace = true, features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlCanvasElement",
+    "Response",
+    "ReadableStream",
+    "Navigator",
+    "StorageManager",
+    "FileSystemDirectoryHandle",
+    "FileSystemFileHandle",
+    "FileSystemGetFileOptions",
+    "FileSystemSyncAccessHandle",
+    "FileSystemSyncAccessHandleOptions",
+    "WritableStream",
+    "WorkerGlobalScope",
+    "FileSystemReadWriteOptions",
+    "FileSystemCreateWritableOptions",
+    "MessageEvent",
+]}
+webrogue-gfx = { workspace = true }
+webrogue-wasip1 = { workspace = true }
+webrogue-wrapp = { workspace = true }
+webrogue-gfx-winit = { workspace = true }
+wiggle = { workspace = true, default-features = false }
+wasi-common = { workspace = true, default-features = false }
+wasmparser = { workspace = true }
+# To enble "js" feature
+getrandom = { version = "0.2", features = ["js"] }
+# To enble "nightly" feature
+parking_lot = { workspace = true, features = ["nightly"] }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.34"

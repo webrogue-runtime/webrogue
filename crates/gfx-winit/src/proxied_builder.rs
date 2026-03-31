@@ -3,20 +3,18 @@ use std::sync::{Arc, Mutex};
 use winit::{
     event::WindowEvent,
     event_loop::{ActiveEventLoop, EventLoopProxy},
-    window::WindowId,
+    window::{WindowAttributes, WindowId},
 };
 
-use crate::{mailbox::Mailbox, window_registry::WindowRegistry, WinitSystem};
+use crate::{mailbox::Mailbox, utils::lock_mutex, window_registry::WindowRegistry, WinitSystem};
 
 pub struct ProxiedWinitBuilder {
     proxy: WinitProxy,
+    window_attributes_fn: Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
 }
 
 impl ProxiedWinitBuilder {
-    pub fn new(
-        event_loop_proxy: EventLoopProxy,
-        window_registry: WindowRegistry,
-    ) -> (Self, WinitProxy) {
+    pub fn new(event_loop_proxy: EventLoopProxy) -> (Self, WinitProxy) {
         let mailbox = Mailbox {
             event_loop_proxy,
             requests: Arc::new(Mutex::new(Vec::new())),
@@ -25,12 +23,12 @@ impl ProxiedWinitBuilder {
             internal: Arc::new(Mutex::new(WinitProxyInternal {
                 mailbox,
                 on_hide: None,
-                window_registry,
             })),
         };
         (
             Self {
                 proxy: proxy.clone(),
+                window_attributes_fn: None,
             },
             proxy,
         )
@@ -40,11 +38,18 @@ impl ProxiedWinitBuilder {
         self.proxy.internal.lock().unwrap().on_hide = Some(on_hide);
         self
     }
+
+    pub fn with_window_attributes(
+        mut self,
+        window_attributes_fn: impl Fn(WindowAttributes) -> WindowAttributes + Send + Sync + 'static,
+    ) -> Self {
+        self.window_attributes_fn = Some(Arc::new(window_attributes_fn));
+        self
+    }
 }
 struct WinitProxyInternal {
     mailbox: Mailbox,
     on_hide: Option<Box<dyn Fn() + Send + Sync + 'static>>,
-    window_registry: WindowRegistry,
 }
 
 #[derive(Clone)]
@@ -53,11 +58,18 @@ pub struct WinitProxy {
 }
 
 impl WinitProxy {
-    pub fn proxy_wake_up(&self, event_loop: &dyn ActiveEventLoop) {
-        let internal = self.internal.lock().unwrap();
-        let mut requests = internal.mailbox.requests.lock().unwrap();
-        while let Some(func) = requests.pop() {
-            func(event_loop)
+    pub fn proxy_wake_up(
+        &self,
+        event_loop: &dyn ActiveEventLoop,
+        window_registry: &mut WindowRegistry,
+    ) {
+        loop {
+            let internal = lock_mutex(&self.internal);
+            let mut requests = lock_mutex(&internal.mailbox.requests);
+            let Some(func) = requests.pop() else {
+                return;
+            };
+            func(event_loop, window_registry)
         }
     }
 
@@ -71,17 +83,11 @@ impl WinitProxy {
 
     pub fn window_event(
         &self,
-        _event_loop: &dyn ActiveEventLoop,
+        window_registry: &mut WindowRegistry,
         window_id: WindowId,
         event: WindowEvent,
     ) {
-        if let Some(window) = self
-            .internal
-            .lock()
-            .unwrap()
-            .window_registry
-            .get_window(window_id)
-        {
+        if let Some(window) = window_registry.get_window(window_id) {
             window.on_event(event);
         }
     }
@@ -104,7 +110,11 @@ impl webrogue_gfx::IBuilder for ProxiedWinitBuilder {
     {
         let proxy = self.proxy.internal.lock().unwrap();
         let mailbox = proxy.mailbox.clone();
-        let system = WinitSystem::new(mailbox, proxy.window_registry.clone(), vulkan_requirement)?;
+        let system = WinitSystem::new(
+            mailbox,
+            vulkan_requirement,
+            self.window_attributes_fn.clone(),
+        )?;
         drop(proxy);
 
         Ok(body_fn(system))
