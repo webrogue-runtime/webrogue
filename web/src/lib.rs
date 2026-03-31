@@ -12,3 +12,5 @@ mod memory;
 mod run;
 #[cfg(target_arch = "wasm32")]
 mod sync_reader;
+#[cfg(target_arch = "wasm32")]
+mod wasi_threads;

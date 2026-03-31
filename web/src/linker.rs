@@ -2,14 +2,22 @@ use std::{cell::RefCell, rc::Rc, str::FromStr as _, sync::Arc};
 
 use web_sys::js_sys::{JsString, Map, Object};
 
-#[derive(Clone)]
 pub struct DeferredLinker<ContextT> {
     funcs: Vec<
         Arc<
             dyn Fn(&mut Linker, Rc<RefCell<ContextT>>, Rc<dyn Fn() -> wiggle::GuestMemory<'static>>)
-                + Send,
+                + Send
+                + Sync,
         >,
     >,
+}
+
+impl<ContextT> Clone for DeferredLinker<ContextT> {
+    fn clone(&self) -> Self {
+        Self {
+            funcs: self.funcs.clone(),
+        }
+    }
 }
 
 impl<ContextT> DeferredLinker<ContextT> {
@@ -21,18 +29,19 @@ impl<ContextT> DeferredLinker<ContextT> {
         &mut self,
         func: impl Fn(&mut Linker, Rc<RefCell<ContextT>>, Rc<dyn Fn() -> wiggle::GuestMemory<'static>>)
             + Send
+            + Sync
             + 'static,
     ) {
         self.funcs.push(Arc::new(func));
     }
 
     pub fn into_linker(
-        self,
+        &self,
         context: Rc<RefCell<ContextT>>,
         mem_fn: Rc<dyn Fn() -> wiggle::GuestMemory<'static>>,
     ) -> Linker {
         let mut linker = Linker::new();
-        for func in self.funcs {
+        for func in &self.funcs {
             func(&mut linker, context.clone(), mem_fn.clone());
         }
         linker

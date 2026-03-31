@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
 console_error_panic_hook = { version = "0.1.7" }
-wasm_thread = { path = "../external/wasm_thread", default-features = false }
+wasm_thread = { workspace = true, default-features = false }
 lazy_static = { workspace = true }
 winit = { workspace = true }
 winit-web = { workspace = true }
@@ -34,6 +34,7 @@ web-sys = { workspace = true, features = [
     "WorkerGlobalScope",
     "FileSystemReadWriteOptions",
     "FileSystemCreateWritableOptions",
+    "MessageEvent",
 ]}
 webrogue-gfx = { workspace = true }
 webrogue-wasip1 = { workspace = true }

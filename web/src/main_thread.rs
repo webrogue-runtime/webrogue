@@ -112,8 +112,8 @@ impl ApplicationHandler for App {
         if is_called_twice {
             panic!("can_create_surfaces called twice")
         }
-        wasm_thread::Builder::new()
-            .name("zygote".to_owned())
+        let _ = wasm_thread::Builder::new()
+            .name("wasi-main".to_owned())
             .spawn(|| crate::run::main(builder))
             .unwrap();
     }

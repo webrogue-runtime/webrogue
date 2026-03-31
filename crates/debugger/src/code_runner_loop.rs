@@ -252,8 +252,6 @@ pub fn runner<T: Send + 'static>(
                                             }
                                         }
 
-                                        let mut is_ok = true;
-
                                         for module in modules {
                                             let module_id = module.debug_index_in_engine();
                                             let current_breakpoints = breakpoints_per_stores
@@ -270,8 +268,8 @@ pub fn runner<T: Send + 'static>(
                                             for breakpoint in
                                                 needed_breakpoints.difference(&current_breakpoints)
                                             {
-                                                // set is_ok to false if can't add a breakpoint
-                                                is_ok &= edit_breakpoint
+                                                // TODO make error in edit_breakpoint.add_breakpoint recoverable
+                                                edit_breakpoint
                                                     .add_breakpoint(&module, *breakpoint)?;
                                             }
                                             for breakpoint in
@@ -281,10 +279,7 @@ pub fn runner<T: Send + 'static>(
                                                     .remove_breakpoint(&module, *breakpoint)?;
                                             }
                                         }
-
-                                        is_ok &= message.breakpoints.is_empty();
-
-                                        message.sender.send(is_ok)?;
+                                        message.sender.send(true)?;
 
                                         Ok(())
                                     })

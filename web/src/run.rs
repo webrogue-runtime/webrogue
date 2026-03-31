@@ -1,4 +1,11 @@
-use std::{cell::RefCell, io::Read as _, path::PathBuf, rc::Rc, str::FromStr as _, sync::Arc};
+use std::{
+    cell::RefCell,
+    io::Read as _,
+    path::PathBuf,
+    rc::Rc,
+    str::FromStr as _,
+    sync::{atomic::AtomicU32, Arc},
+};
 
 use wasm_bindgen::{prelude::Upcast as _, JsCast as _, JsValue};
 use web_sys::js_sys::{
@@ -9,13 +16,11 @@ use webrogue_gfx_winit::ProxiedWinitBuilder;
 use webrogue_wrapp::{IVFSBuilder as _, IVFSHandle as _};
 
 use crate::{
-    bindings::{
-        add_wasi_snapshot_preview1_to_linker, add_wasi_threads_to_linker,
-        add_webrogue_gfx_to_linker,
-    },
+    bindings::{add_wasi_snapshot_preview1_to_linker, add_webrogue_gfx_to_linker},
     linker::DeferredLinker,
     memory::Memory,
     sync_reader::SyncReader,
+    wasi_threads::{add_wasi_threads_to_linker, WasiThreadsContext},
 };
 
 pub fn main(builder: ProxiedWinitBuilder) {
@@ -82,6 +87,10 @@ pub fn main(builder: ProxiedWinitBuilder) {
                     .unwrap();
                 });
 
+                deferred_linker.defer(|linker, context, _| {
+                    add_wasi_threads_to_linker(linker, context);
+                });
+
                 let context = Context {
                     gfx: Rc::new(RefCell::new(webrogue_gfx::Interface::new(system))),
                     wasip1: Rc::new(RefCell::new(
@@ -92,12 +101,8 @@ pub fn main(builder: ProxiedWinitBuilder) {
                         )
                         .unwrap(),
                     )),
+                    wasi_threads: Rc::new(RefCell::new(None)),
                 };
-
-                deferred_linker.defer(|linker, context, mem_fn| {
-                    add_wasi_threads_to_linker(linker, context);
-                });
-
                 let context = Rc::new(RefCell::new(context));
 
                 let mut linker = deferred_linker.into_linker(context.clone(), mem_fn.clone());
@@ -139,12 +144,18 @@ pub fn main(builder: ProxiedWinitBuilder) {
                     .get(&JsString::from_str("memory").unwrap())
                     .dyn_into::<WebAssembly::Memory>()
                     .unwrap();
+                let _ = context
+                    .borrow()
+                    .wasi_threads
+                    .borrow_mut()
+                    .insert(WasiThreadsContext {
+                        memory_object: memory_object.clone(),
+                        module,
+                        deferred_linker,
+                        tid: Arc::new(AtomicU32::new(1)),
+                    });
 
-                let is_memory_shared = memory_object.buffer().is_instance_of::<SharedArrayBuffer>();
-                let memory = Memory {
-                    memory_object,
-                    is_shared: is_memory_shared,
-                };
+                let memory = Memory::new(memory_object);
 
                 let _ = mem.borrow_mut().insert(memory);
 
@@ -177,6 +188,7 @@ pub fn main(builder: ProxiedWinitBuilder) {
 }
 
 pub struct Context {
-    gfx: Rc<RefCell<webrogue_gfx::Interface<webrogue_gfx_winit::WinitSystem>>>,
-    wasip1: Rc<RefCell<wasi_common::WasiCtx>>,
+    pub gfx: Rc<RefCell<webrogue_gfx::Interface<webrogue_gfx_winit::WinitSystem>>>,
+    pub wasip1: Rc<RefCell<wasi_common::WasiCtx>>,
+    pub wasi_threads: Rc<RefCell<Option<WasiThreadsContext>>>,
 }
