@@ -8,11 +8,8 @@ docs/AuthSignupRequest.md
 docs/AuthSignupResponse.md
 docs/AuthVerifyEmailRequest.md
 docs/AuthVerifyEmailResponse.md
-docs/DebugIncomingWsMessage.md
-docs/DebugOutgoingWsMessage.md
+docs/ConnectDeviceWsRequest.md
 docs/DefaultApi.md
-docs/DeviceConnectionIncomingWsMessage.md
-docs/DeviceConnectionOutgoingWsMessage.md
 docs/DeviceInfo.md
 docs/ErrorResponse.md
 docs/ListDevicesResponse.md
@@ -28,10 +25,7 @@ src/models/auth_signup_request.rs
 src/models/auth_signup_response.rs
 src/models/auth_verify_email_request.rs
 src/models/auth_verify_email_response.rs
-src/models/debug_incoming_ws_message.rs
-src/models/debug_outgoing_ws_message.rs
-src/models/device_connection_incoming_ws_message.rs
-src/models/device_connection_outgoing_ws_message.rs
+src/models/connect_device_ws_request.rs
 src/models/device_info.rs
 src/models/error_response.rs
 src/models/list_devices_response.rs

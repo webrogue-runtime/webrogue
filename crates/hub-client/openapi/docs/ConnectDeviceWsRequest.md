@@ -1,11 +1,10 @@
-# ErrorResponse
+# ConnectDeviceWsRequest
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**error** | **String** |  | 
-**error_code** | Option<**ErrorCode**> |  (enum: USERNAME_INVALID, EMAIL_INVALID, LOGIN_INVALID, PASSWORD_INVALID) | 
+**uuid** | **uuid::Uuid** |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
