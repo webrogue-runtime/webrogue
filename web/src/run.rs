@@ -164,23 +164,6 @@ pub fn main(builder: ProxiedWinitBuilder) {
                 let start_func = Function::new_with_args("start", "start();");
 
                 start_func.call1(&start_func, &start).unwrap();
-
-                // let window = system.make_window();
-                // loop {
-                //     wasm_thread::sleep(Duration::from_millis(10));
-                //     let gl_size = window.get_gl_size();
-                //     unsafe { log(&format!("gl_size: {}x{}", gl_size.0, gl_size.1)) };
-                //     let mut pixels = vec![];
-                //     for y in 0..gl_size.1 {
-                //         for x in 0..gl_size.0 {
-                //             let offset = 4 * (x + gl_size.0 * y) as usize;
-                //             let val =
-                //                 ((x * y) % 256) + ((y % 256) << 8) + ((x % 256) << 16);
-                //             pixels.push(UnsafeCell::new(val));
-                //         }
-                //     }
-                //     window.present_pixels(&pixels).unwrap()
-                // }
             },
             Some(false),
         )

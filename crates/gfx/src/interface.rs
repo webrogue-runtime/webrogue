@@ -352,23 +352,9 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
             };
             let offset = buff.offset() as usize;
             let size = len as usize;
-            let mut data_store: Option<Vec<UnsafeCell<u8>>> = None;
             let pixels = mem
                 .as_cow(GuestPtr::new((offset as u32, size as u32)))
                 .unwrap();
-            // let pixels = match mem {
-            //     wiggle::GuestMemory::Unshared(_) => unimplemented!(),
-            //     wiggle::GuestMemory::Shared(unsafe_cells) => &unsafe_cells[offset..][..size],
-            //     wiggle::GuestMemory::Dynamic(memory) => {
-            //         let data = data_store.insert({
-            //             let mut data = Vec::new();
-            //             data.resize_with(size, || 0u8.into());
-            //             data
-            //         });
-
-            //         memory.read(offset, data); data
-            //     }
-            // };
             let (prefix, pixels, suffix) = unsafe { pixels.align_to::<u32>() };
 
             // If there is a prefix or suffix, the slice wasn't perfectly aligned

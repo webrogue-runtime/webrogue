@@ -81,7 +81,6 @@ impl SyncReader {
                     .dyn_into::<web_sys::FileSystemSyncAccessHandle>()
                     .unwrap();
 
-                // let vfs_builder = webrogue_wrapp::WrappVFSBuilder::from_vec(bytes).unwrap();
                 let (request_tx, request_rx) = std::sync::mpsc::channel();
                 reader_tx
                     .send(SyncReader {

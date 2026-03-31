@@ -50,7 +50,3 @@ parking_lot = { workspace = true, features = ["nightly"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"
-
-[profile.release]
-# Tell `rustc` to optimize for small code size.
-opt-level = "s"
