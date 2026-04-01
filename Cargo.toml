@@ -158,7 +158,7 @@ ndk-sys = { version = "0.6.0", default-features = false }
 ndk = { version = "0.9.0", default-features = false }
 json-escape = { version = "0.3.0" }
 wit-bindgen = { version = "0.52" }
-webrtc = { version = "0.17.0" }
+webrtc = { version = "0.17.1" }
 base64 = { version = "0.22.1" }
 tokio-tungstenite = { version = "*" }
 futures-util = { version = "0.3" }
