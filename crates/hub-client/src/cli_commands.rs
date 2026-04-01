@@ -163,19 +163,17 @@ async fn get_debug_sdp_answer(
     device_id: &str,
     api_key: &str,
     sdp_offer: String,
-) -> Result<webrogue_hub_client_openapi::models::DebugIncomingWsMessage, anyhow::Error> {
+) -> Result<DebugIncomingWsMessage, anyhow::Error> {
     let (ws_stream, _) = connect_async(format!(
         "ws://localhost:8080/api/v1/devices/debug?{}",
         api_key
     ))
     .await?;
     let (mut write, mut read) = ws_stream.split();
-    let outgoing_message = serde_json::to_string(
-        &webrogue_hub_client_openapi::models::DebugOutgoingWsMessage::new(
-            uuid::Uuid::from_str(device_id)?,
-            sdp_offer,
-        ),
-    )?;
+    let outgoing_message = serde_json::to_string(&DebugOutgoingWsMessage::new(
+        uuid::Uuid::from_str(device_id)?,
+        sdp_offer,
+    ))?;
     write.send(Message::Text(outgoing_message.into())).await?;
     let incoming_message = loop {
         match read.next().await.unwrap()? {
@@ -190,8 +188,35 @@ async fn get_debug_sdp_answer(
         };
     };
     write.close().await?;
-    let incoming_message = serde_json::from_str::<
-        webrogue_hub_client_openapi::models::DebugIncomingWsMessage,
-    >(incoming_message.as_str())?;
+    let incoming_message =
+        serde_json::from_str::<DebugIncomingWsMessage>(incoming_message.as_str())?;
     Ok(incoming_message)
+}
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DebugIncomingWsMessage {
+    #[serde(rename = "sdp_answer")]
+    pub sdp_answer: String,
+}
+
+impl DebugIncomingWsMessage {
+    pub fn new(sdp_answer: String) -> DebugIncomingWsMessage {
+        DebugIncomingWsMessage { sdp_answer }
+    }
+}
+
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DebugOutgoingWsMessage {
+    #[serde(rename = "uuid")]
+    pub uuid: uuid::Uuid,
+    #[serde(rename = "sdp_offer")]
+    pub sdp_offer: String,
+}
+
+impl DebugOutgoingWsMessage {
+    pub fn new(uuid: uuid::Uuid, sdp_offer: String) -> DebugOutgoingWsMessage {
+        DebugOutgoingWsMessage { uuid, sdp_offer }
+    }
 }
