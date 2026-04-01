@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **error** | **String** |  | 
-**error_code** | Option<**String**> |  | 
+**error_code** | Option<**ErrorCode**> |  (enum: USERNAME_INVALID, EMAIL_INVALID, LOGIN_INVALID, PASSWORD_INVALID) | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

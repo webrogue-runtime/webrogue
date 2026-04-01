@@ -12,15 +12,15 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct DebugIncomingWsMessage {
-    #[serde(rename = "sdp_answer")]
-    pub sdp_answer: String,
+pub struct ConnectDeviceWsRequest {
+    #[serde(rename = "uuid")]
+    pub uuid: uuid::Uuid,
 }
 
-impl DebugIncomingWsMessage {
-    pub fn new(sdp_answer: String) -> DebugIncomingWsMessage {
-        DebugIncomingWsMessage {
-            sdp_answer,
+impl ConnectDeviceWsRequest {
+    pub fn new(uuid: uuid::Uuid) -> ConnectDeviceWsRequest {
+        ConnectDeviceWsRequest {
+            uuid,
         }
     }
 }
