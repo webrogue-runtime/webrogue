@@ -8,6 +8,8 @@ use tao::{
     event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget},
     window::WindowBuilder,
 };
+use tokio::io::AsyncRead;
+use webrogue_hub_client::DebugRunnerConfig;
 use webrogue_launcher::MailboxInternal;
 use webrogue_wrapp::RealVFSBuilder;
 use wry::WebView;
@@ -162,12 +164,16 @@ struct ServerConfigImpl {
     storage_path: std::path::PathBuf,
 }
 
-impl webrogue_launcher::ServerConfig for ServerConfigImpl {
+impl DebugRunnerConfig for ServerConfigImpl {
     fn storage_path(&self) -> std::path::PathBuf {
         self.storage_path.clone()
     }
 
-    fn run(&self, _vfs_builder: RealVFSBuilder) -> anyhow::Result<()> {
+    fn run(
+        &self,
+        _vfs_builder: RealVFSBuilder,
+        receiver: Box<dyn AsyncRead + Send>,
+    ) -> anyhow::Result<()> {
         #[cfg(target_os = "android")]
         {
             let jvm_lock = JVM.lock().unwrap();

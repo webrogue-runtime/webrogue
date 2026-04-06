@@ -17,6 +17,7 @@ impl DebugOutgoingMessage {
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugIncomingMessage {
     Response(DebugResponse),
+    Event(DebugEvent),
 }
 
 impl DebugIncomingMessage {
@@ -65,6 +66,7 @@ pub enum DebugCommand {
     AppendFileHash(AppendFileHashCommand),
     SetFileChunk(SetFileChunkCommand),
     Launch(LaunchCommand),
+    GDBData(GDBDataDebugCommand),
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -87,3 +89,18 @@ pub struct SetFileChunkCommand {
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct LaunchCommand {}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct GDBDataDebugCommand {
+    pub data: Vec<u8>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub enum DebugEvent {
+    GDBData(GDBDataDebugEvent),
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct GDBDataDebugEvent {
+    pub data: Vec<u8>,
+}

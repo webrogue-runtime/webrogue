@@ -6,16 +6,13 @@ use http::{Method, Request, Uri};
 use lazy_static::lazy_static;
 use tokio_stream::{self, StreamExt as _};
 use tower_service::Service;
+use webrogue_hub_client::DebugRunnerConfig;
 use wry::{
     http, raw_window_handle::HasWindowHandle, RequestAsyncResponder, WebView, WebViewBuilder,
     WebViewId,
 };
 
-use crate::{
-    mailbox::Mailbox,
-    server::{make_router, ServerConfig},
-    MailboxInternal,
-};
+use crate::{mailbox::Mailbox, server::make_router, MailboxInternal};
 
 lazy_static! {
     static ref RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
@@ -55,7 +52,7 @@ fn assets_url() -> &'static str {
 pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
     window: &W,
     as_child: bool,
-    server_config: Arc<dyn ServerConfig>,
+    server_config: Arc<dyn DebugRunnerConfig>,
     mailbox_factory: impl FnOnce(MailboxInternal) -> MailboxImpl,
 ) -> Result<(WebView, MailboxImpl), wry::Error> {
     let router = RUNTIME.block_on(async { make_router(server_config).await.unwrap() });

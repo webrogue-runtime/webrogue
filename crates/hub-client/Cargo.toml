@@ -20,3 +20,5 @@ uuid = { workspace = true, features = ["serde", "v4"] }
 postcard = { workspace = true, default-features = false, features = ['alloc', 'use-std'] }
 webrogue-wrapp = { workspace = true }
 blake3 = { workspace = true }
+tokio-stream = { workspace = true }
+tokio-util = { workspace = true, features = ['io'] }

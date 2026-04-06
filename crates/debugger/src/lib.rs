@@ -8,13 +8,13 @@ mod gdb_stub_target;
 mod state;
 mod thread_info;
 
+pub use crate::connection::ConnectionFactory;
 pub use connection::{
-    tokio_tcp_connection, AsyncRead, BoxedPacketReceiver, BoxedPacketSender, PacketSender,
+    premade_connection, tokio_tcp_connection, AsyncRead, BoxedPacketReceiver, BoxedPacketSender,
+    PacketSender,
 };
 pub use state::State;
 use webrogue_wasmtime::WasmThread;
-
-use crate::connection::ConnectionFactory;
 
 pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send + 'static>(
     rt_handle: tokio::runtime::Handle,

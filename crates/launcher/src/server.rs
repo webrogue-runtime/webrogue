@@ -5,6 +5,7 @@ use axum_extra::extract::{CookieJar, Host};
 use http::Method;
 use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
+use webrogue_hub_client::DebugRunnerConfig;
 use webrogue_launcher_server_openapi::{
     apis::default::{GetWrappConfigResponse, MakePeerConnectionResponse},
     models::{Sdp, WebrogueConfig},
@@ -13,18 +14,13 @@ use webrogue_wrapp::RealVFSBuilder;
 
 use crate::debug_connection::IncomingDebugConnection;
 
-pub trait ServerConfig: Send + Sync {
-    fn storage_path(&self) -> PathBuf;
-    fn run(&self, vfs_builder: RealVFSBuilder) -> anyhow::Result<()>;
-}
-
 struct Inner {
     pub connection: Option<IncomingDebugConnection>,
-    pub config: Arc<dyn ServerConfig>,
+    pub config: Arc<dyn DebugRunnerConfig>,
 }
 
 impl Inner {
-    fn new(config: Arc<dyn ServerConfig>) -> Self {
+    fn new(config: Arc<dyn DebugRunnerConfig>) -> Self {
         Self {
             connection: None,
             config,
@@ -93,7 +89,7 @@ impl webrogue_launcher_server_openapi::apis::ErrorHandler<anyhow::Error> for Api
     }
 }
 
-pub fn run_server(config: Arc<dyn ServerConfig>) {
+pub fn run_server(config: Arc<dyn DebugRunnerConfig>) {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -110,7 +106,7 @@ pub fn run_server(config: Arc<dyn ServerConfig>) {
     });
 }
 
-pub async fn make_router(config: Arc<dyn ServerConfig>) -> anyhow::Result<axum::Router> {
+pub async fn make_router(config: Arc<dyn DebugRunnerConfig>) -> anyhow::Result<axum::Router> {
     Ok(webrogue_launcher_server_openapi::server::new(Arc::new(Api {
         inner: Arc::new(Mutex::new(Inner::new(config))),
     }))

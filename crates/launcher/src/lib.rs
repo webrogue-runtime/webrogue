@@ -1,7 +1,7 @@
 mod webview;
 pub use webview::build_webview;
 mod server;
-pub use server::{run_server, ServerConfig};
+pub use server::run_server;
 mod debug_connection;
 mod mailbox;
 pub use mailbox::{Mailbox, MailboxInternal};

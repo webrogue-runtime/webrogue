@@ -12,8 +12,7 @@ use webrtc::{
     ice_transport::ice_server::RTCIceServer,
     interceptor::registry::Registry,
     peer_connection::{
-        configuration::RTCConfiguration, peer_connection_state::RTCPeerConnectionState,
-        sdp::session_description::RTCSessionDescription,
+        configuration::RTCConfiguration, sdp::session_description::RTCSessionDescription,
     },
 };
 
@@ -22,6 +21,7 @@ pub struct OutgoingDebugConnection {
     pub sdp_offer: String,
     senders: Arc<Mutex<BTreeMap<u64, tokio::sync::mpsc::Sender<DebugResponseBody>>>>,
     data_channel: Arc<webrtc::data_channel::RTCDataChannel>,
+    pub gdb_rx: tokio::sync::mpsc::Receiver<Vec<u8>>,
 }
 
 impl OutgoingDebugConnection {
@@ -42,30 +42,17 @@ impl OutgoingDebugConnection {
         };
         let peer_connection = Arc::new(api.new_peer_connection(config).await?);
         let data_channel = peer_connection.create_data_channel("data", None).await?;
-        // let (done_tx, mut done_rx) = tokio::sync::mpsc::channel::<()>(1);
-        peer_connection.on_peer_connection_state_change(Box::new(
-            move |s: RTCPeerConnectionState| {
-                println!("Peer Connection State has changed: {s}");
-
-                if s == RTCPeerConnectionState::Failed {
-                    // Wait until PeerConnection has had no network activity for 30 seconds or another failure. It may be reconnected using an ICE Restart.
-                    // Use webrtc.PeerConnectionStateDisconnected if you are interested in detecting faster timeout.
-                    // Note that the PeerConnection may come back from PeerConnectionStateDisconnected.
-                    println!("Peer Connection has gone to failed exiting");
-                    // let _ = done_tx.try_send(());
-                }
-
-                Box::pin(async {})
-            },
-        ));
 
         let senders = Arc::new(Mutex::new(BTreeMap::<
             u64,
             tokio::sync::mpsc::Sender<DebugResponseBody>,
         >::new()));
         let senders2 = senders.clone();
+        let (gdb_tx, gdb_rx) = tokio::sync::mpsc::channel(8);
+        let gdb_tx2 = gdb_tx.clone();
         data_channel.on_message(Box::new(move |msg: DataChannelMessage| {
             let senders2 = senders2.clone();
+            let gdb_tx2 = gdb_tx2.clone();
             Box::pin(async move {
                 let Ok(message) = DebugIncomingMessage::from_bytes(&msg.data) else {
                     return;
@@ -78,6 +65,11 @@ impl OutgoingDebugConnection {
                             let _ = sender.send(debug_response.body).await;
                         }
                     }
+                    DebugIncomingMessage::Event(event) => match event {
+                        crate::debug_messages::DebugEvent::GDBData(event) => {
+                            let _ = gdb_tx2.send(event.data).await;
+                        }
+                    },
                 }
             })
         }));
@@ -95,6 +87,7 @@ impl OutgoingDebugConnection {
             sdp_offer,
             senders,
             data_channel,
+            gdb_rx,
         })
     }
 
@@ -134,7 +127,8 @@ impl OutgoingDebugConnection {
         Ok(())
     }
 
-    pub async fn set_answer(&mut self, answer: RTCSessionDescription) -> anyhow::Result<()> {
+    pub async fn set_answer(&mut self, sdp_answer: &str) -> anyhow::Result<()> {
+        let answer = serde_json::from_str::<RTCSessionDescription>(sdp_answer)?;
         let (opened_tx, mut opened_rx) = tokio::sync::mpsc::channel::<()>(1);
         self.data_channel.on_open(Box::new(move || {
             Box::pin(async move {

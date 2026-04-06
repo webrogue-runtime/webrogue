@@ -17,6 +17,8 @@ tao = { workspace = true, features = ["rwh_06"] }
 wry = { workspace = true }
 lazy_static = "1.4"
 log = { workspace = true }
+tokio = { workspace = true }
+webrogue-hub-client = { workspace = true }
 webrogue-hub-client-openapi = { workspace = true, default-features = false, features = ["rustls"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
