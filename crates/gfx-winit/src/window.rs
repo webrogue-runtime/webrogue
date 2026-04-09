@@ -7,7 +7,6 @@ use softbuffer::SoftBufferError;
 use winit::{
     dpi::PhysicalSize,
     event::WindowEvent,
-    event_loop::ActiveEventLoop,
     window::{Window, WindowId},
 };
 

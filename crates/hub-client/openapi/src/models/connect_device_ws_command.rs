@@ -13,16 +13,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectDeviceWsCommand {
-    #[serde(rename = "uuid")]
-    pub uuid: uuid::Uuid,
+    #[serde(rename = "name", skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     #[serde(rename = "sdp_answer", skip_serializing_if = "Option::is_none")]
     pub sdp_answer: Option<String>,
 }
 
 impl ConnectDeviceWsCommand {
-    pub fn new(uuid: uuid::Uuid) -> ConnectDeviceWsCommand {
+    pub fn new() -> ConnectDeviceWsCommand {
         ConnectDeviceWsCommand {
-            uuid,
+            name: None,
             sdp_answer: None,
         }
     }

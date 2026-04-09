@@ -1,12 +1,12 @@
-use std::{io::Read as _, str::FromStr as _};
+use std::io::Read as _;
 
 use futures_util::{SinkExt as _, StreamExt as _};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio_tungstenite::{
     connect_async,
     tungstenite::{
+        protocol::{frame::coding::CloseCode, CloseFrame},
         Message,
-        protocol::{CloseFrame, frame::coding::CloseCode},
     },
 };
 use webrogue_hub_client::{
@@ -17,31 +17,34 @@ use webrogue_hub_client::{
         SetFileChunkCommand,
     },
     ws_messages::{DebugDeviceWsCommand, DebugDeviceWsEvent},
+    WS_BASE_ADDR,
 };
 use webrogue_wrapp::IVFSHandle as _;
 
-use crate::hub::WS_BASE_ADDR;
-
 pub async fn debug(
     wrapp_path: &std::path::Path,
-    device_id: &str,
+    device_name: &str,
     api_key: &str,
 ) -> Result<(), anyhow::Error> {
-    let mut connection = OutgoingDebugConnection::new().await?;
+    let (done_tx, mut done_rx) = tokio::sync::mpsc::channel(1);
+    let mut connection = OutgoingDebugConnection::new(done_tx).await?;
 
     let result = async {
         let (mut ws_stream, _) =
             connect_async(format!("{}/api/v1/devices/debug?{}", WS_BASE_ADDR, api_key)).await?;
         let outgoing_message = serde_json::to_string(&DebugDeviceWsCommand {
             sdp_offer: connection.sdp_offer.clone(),
-            uuid: uuid::Uuid::from_str(device_id)?,
+            device_name: device_name.to_owned(),
         })?;
         ws_stream
             .send(Message::Text(outgoing_message.into()))
             .await?;
         let response = loop {
             match ws_stream.next().await.unwrap()? {
-                Message::Text(utf8_bytes) => break utf8_bytes,
+                Message::Text(utf8_bytes) => {
+                    eprintln!("{}", utf8_bytes.as_str());
+                    break utf8_bytes;
+                }
                 Message::Binary(_bytes) => todo!(),
                 Message::Ping(bytes) => {
                     ws_stream.send(Message::Pong(bytes)).await?;
@@ -51,7 +54,7 @@ pub async fn debug(
                     if let Some(close_frame) = close_frame {
                         anyhow::bail!("Webrogue Hub returned an error: {}", close_frame.reason);
                     } else {
-                        anyhow::bail!("Webrogue Hub unknown error");
+                        anyhow::bail!("Webrogue Hub returned an unknown error");
                     }
                 }
                 Message::Frame(_frame) => todo!(),
@@ -105,6 +108,12 @@ pub async fn debug(
                         break 'tcp_loop;
                     };
                     tcp_stream.write_all(&gdb_data).await?;
+                }
+                result = done_rx.recv() => {
+                    let Some(result) = result else {
+                        break 'tcp_loop;
+                    };
+                    return result;
                 }
             };
         }

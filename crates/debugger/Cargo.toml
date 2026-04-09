@@ -14,7 +14,7 @@ wasmtime-internal-debugger = { workspace = true }
 wasmtime = { workspace = true, default-features = false }
 futures = { workspace = true }
 async-trait = { workspace = true }
-webrogue-wasmtime = { workspace = true }
+webrogue-wasmtime = { workspace = true, features = ["async"] }
 webrogue-gfx = { workspace = true }
 gdbstub = { workspace = true }
 gdbstub_arch = { workspace = true }

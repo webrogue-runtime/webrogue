@@ -68,7 +68,7 @@ impl ApplicationHandler for App {
 
     fn window_event(
         &mut self,
-        event_loop: &dyn ActiveEventLoop,
+        _event_loop: &dyn ActiveEventLoop,
         window_id: WindowId,
         event: WindowEvent,
     ) {

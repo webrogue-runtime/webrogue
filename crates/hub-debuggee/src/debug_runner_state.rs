@@ -10,21 +10,105 @@ use tokio::{
     io::AsyncRead,
     sync::{mpsc::Sender, Mutex},
 };
-use webrogue_wrapp::RealVFSBuilder;
+use webrogue_gfx_winit::ProxiedWinitBuilder;
+use webrogue_hub_client::debug_messages::{
+    DebugCommand, DebugRequestBody, DebugResponseBody, ListFilesResponse,
+};
+use webrogue_wrapp::IVFSBuilder as _;
+use webrtc::data_channel::RTCDataChannel;
 
-use crate::debug_messages::{DebugCommand, DebugRequestBody, DebugResponseBody, ListFilesResponse};
+use crate::{webrtc_packet_sender::WebRTCPacketSender, HubDebuggeeGFX};
 
-pub trait DebugRunnerConfig: Send + Sync {
-    fn storage_path(&self) -> PathBuf;
+pub struct DebugRunnerConfig {
+    pub storage: PathBuf,
+    pub gfx: std::sync::Mutex<Option<HubDebuggeeGFX>>,
+    pub data_channel: std::sync::Mutex<Option<std::sync::Weak<RTCDataChannel>>>,
+    pub done_tx: Sender<anyhow::Result<()>>,
+}
+
+impl DebugRunnerConfig {
+    fn storage_path(&self) -> std::path::PathBuf {
+        self.storage.clone()
+    }
+
     fn run(
         &self,
-        vfs_builder: RealVFSBuilder,
-        receiver: Box<dyn AsyncRead + Send>,
-    ) -> anyhow::Result<()>;
+        mut vfs_builder: webrogue_wrapp::RealVFSBuilder,
+        receiver: Box<dyn AsyncRead + std::marker::Send>,
+    ) -> anyhow::Result<()> {
+        let storage = self.storage.clone();
+        let gfx = self.gfx.lock().unwrap().take().unwrap();
+        let data_channel = self.data_channel.lock().unwrap().take().unwrap();
+        let done_tx = self.done_tx.clone();
+
+        tokio::task::spawn(async move {
+            let config = vfs_builder.config().unwrap().clone();
+            let persistent_path = storage.join("persistent").join(&config.id);
+            let mut runtime = webrogue_wasmtime::Runtime::new(&persistent_path);
+            runtime.jit_profile(webrogue_wasmtime::JitProfile::Debug);
+            let handle = vfs_builder.into_vfs().unwrap();
+            let sender = WebRTCPacketSender { data_channel };
+
+            let result = tokio_util::task::LocalPoolHandle::new(1)
+                .spawn_pinned(async move || {
+                    match &gfx {
+                        HubDebuggeeGFX::ProxiedWinit(gfx) => {
+                            let (builder, proxy) =
+                                ProxiedWinitBuilder::new(gfx.event_loop_proxy.clone());
+                            *gfx.proxy_container.lock().unwrap() = Some(proxy);
+                            let gfx_init_params = webrogue_wasmtime::GFXInitParams::new(builder);
+                            webrogue_debugger::debug(
+                                tokio::runtime::Handle::current(),
+                                runtime,
+                                gfx_init_params,
+                                webrogue_debugger::premade_connection(
+                                    Box::new(sender),
+                                    Box::into_pin(receiver),
+                                ),
+                                false,
+                                move |runtime, gfx_init_params| {
+                                    runtime.run_jit(gfx_init_params, handle, &config)
+                                },
+                            )
+                            .await?;
+                        }
+                        HubDebuggeeGFX::WinitSystem(gfx) => {
+                            let gfx_init_params = webrogue_wasmtime::GFXInitParams::new(
+                                webrogue_gfx::ChildBuilder::new(
+                                    gfx.gfx_system.lock().unwrap().take().unwrap(),
+                                ),
+                            );
+                            webrogue_debugger::debug(
+                                tokio::runtime::Handle::current(),
+                                runtime,
+                                gfx_init_params,
+                                webrogue_debugger::premade_connection(
+                                    Box::new(sender),
+                                    Box::into_pin(receiver),
+                                ),
+                                false,
+                                move |runtime, gfx_init_params| {
+                                    runtime.run_jit(gfx_init_params, handle, &config)
+                                },
+                            )
+                            .await?;
+                        }
+                    }
+
+                    anyhow::Ok(())
+                })
+                .await?;
+
+            done_tx.send(result).await?;
+
+            anyhow::Ok(())
+        });
+        Ok(())
+    }
 }
 
 pub struct DebugRunnerState {
-    config: Arc<dyn DebugRunnerConfig>,
+    config: Arc<DebugRunnerConfig>,
     file_hashes: Mutex<HashMap<String, String>>,
     currently_constructed_file: Mutex<Option<(String, File)>>,
     wrapp_config: Mutex<Option<webrogue_wrapp::config::Config>>,
@@ -32,7 +116,7 @@ pub struct DebugRunnerState {
 }
 
 impl DebugRunnerState {
-    pub fn new(config: Arc<dyn DebugRunnerConfig>) -> Self {
+    pub fn new(config: Arc<DebugRunnerConfig>) -> Self {
         Self {
             config,
             file_hashes: Mutex::new(HashMap::new()),

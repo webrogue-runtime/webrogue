@@ -530,22 +530,23 @@ dependencies = [
 
 [[package]]
 name = "axum-extra"
-version = "0.10.3"
+version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9963ff19f40c6102c76756ef0a46004c0d58957d87259fc9208ff8441c12ab96"
+checksum = "fef252edff26ddba56bbcdf2ee3307b8129acb86f5749b68990c168a6fcc9c76"
 dependencies = [
  "axum",
  "axum-core",
  "bytes",
  "cookie",
  "form_urlencoded",
+ "futures-core",
  "futures-util",
+ "headers",
  "http",
  "http-body",
  "http-body-util",
  "mime",
  "pin-project-lite",
- "rustversion",
  "serde_core",
  "serde_html_form",
  "serde_path_to_error",
@@ -963,9 +964,9 @@ dependencies = [
 
 [[package]]
 name = "chrono"
-version = "0.4.43"
+version = "0.4.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fac4744fb15ae8337dc853fee7fb3f4e48c0fbaa23d0afe49c447b4fab126118"
+checksum = "c673075a2e0e5f4a1dde27ce9dee1ea4558c7ffe648f576438a20ca1d2acc4b0"
 dependencies = [
  "iana-time-zone",
  "js-sys",
@@ -2921,6 +2922,30 @@ dependencies = [
  "foldhash 0.2.0",
  "serde",
  "serde_core",
+]
+
+[[package]]
+name = "headers"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3314d5adb5d94bcdf56771f2e50dbbc80bb4bdf88967526706205ac9eff24eb"
+dependencies = [
+ "base64",
+ "bytes",
+ "headers-core",
+ "http",
+ "httpdate",
+ "mime",
+ "sha1",
+]
+
+[[package]]
+name = "headers-core"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54b4a22553d4242c49fddb9ba998a99962b5cc6f22cb5a3482bec22522403ce4"
+dependencies = [
+ "http",
 ]
 
 [[package]]
@@ -8122,16 +8147,15 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "uuid",
  "webrogue-aot-compiler",
  "webrogue-debugger",
  "webrogue-gfx",
  "webrogue-gfx-winit",
  "webrogue-gfxstream",
  "webrogue-hub-client",
+ "webrogue-hub-debuggee",
  "webrogue-wasmtime",
  "webrogue-wrapp",
- "webrtc",
 ]
 
 [[package]]
@@ -8232,18 +8256,11 @@ name = "webrogue-hub-client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64",
- "blake3",
  "clap",
- "futures-util",
  "postcard",
  "serde",
  "serde_json",
  "tokio",
- "tokio-stream",
- "tokio-tungstenite",
- "tokio-util",
- "uuid",
  "webrogue-hub-client-openapi",
  "webrogue-wrapp",
  "webrtc",
@@ -8258,7 +8275,27 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "url",
- "uuid",
+]
+
+[[package]]
+name = "webrogue-hub-debuggee"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "blake3",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "webrogue-debugger",
+ "webrogue-gfx",
+ "webrogue-gfx-winit",
+ "webrogue-hub-client",
+ "webrogue-wasmtime",
+ "webrogue-wrapp",
+ "webrtc",
+ "winit",
 ]
 
 [[package]]
@@ -8298,18 +8335,23 @@ dependencies = [
  "dpi",
  "futures-util",
  "gtk",
+ "headers",
  "http",
  "json-escape",
  "lazy_static",
+ "rand 0.10.0",
  "serde",
  "serde_json",
  "tokio",
  "tokio-stream",
+ "tokio-tungstenite",
+ "tokio-util",
  "tower-http",
  "tower-service",
  "webrogue-gfx-winit",
  "webrogue-gfxstream",
  "webrogue-hub-client",
+ "webrogue-hub-debuggee",
  "webrogue-launcher-server-openapi",
  "webrogue-wasmtime",
  "webrogue-wrapp",
@@ -8343,6 +8385,7 @@ dependencies = [
  "frunk-enum-derive",
  "frunk_core",
  "frunk_derives",
+ "headers",
  "http",
  "lazy_static",
  "regex",

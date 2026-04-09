@@ -10,6 +10,8 @@ docs/AuthVerifyEmailRequest.md
 docs/AuthVerifyEmailResponse.md
 docs/ConnectDeviceWsCommand.md
 docs/ConnectDeviceWsEvent.md
+docs/DebugDeviceWsCommand.md
+docs/DebugDeviceWsEvent.md
 docs/DefaultApi.md
 docs/DeviceInfo.md
 docs/ErrorResponse.md
@@ -28,6 +30,8 @@ src/models/auth_verify_email_request.rs
 src/models/auth_verify_email_response.rs
 src/models/connect_device_ws_command.rs
 src/models/connect_device_ws_event.rs
+src/models/debug_device_ws_command.rs
+src/models/debug_device_ws_event.rs
 src/models/device_info.rs
 src/models/error_response.rs
 src/models/list_devices_response.rs

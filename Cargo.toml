@@ -57,6 +57,7 @@ members = [
   "crates/gfxstream-lib",
   "crates/hub-client",
   "crates/hub-client/openapi",
+  "crates/hub-debuggee",
   "crates/icons",
   "crates/launcher",
   "crates/launcher/server-openapi",
@@ -90,6 +91,7 @@ webrogue-debugger = { path = "crates/debugger" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
 webrogue-hub-client = { path = "crates/hub-client" }
 webrogue-hub-client-openapi = { path = "crates/hub-client/openapi", default-features=false }
+webrogue-hub-debuggee = { path = "crates/hub-debuggee" }
 webrogue-icons = { path = "crates/icons" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-winit = { path = "crates/gfx-winit" }
@@ -189,6 +191,8 @@ tracing = "0.1"
 inquire = "0.9"
 crossterm = "0.29"
 spinners = "4.2.0"
+headers = "0.4"
+axum-extra = { version = "0.12" }
 
 [profile.dev]
 panic = "abort"

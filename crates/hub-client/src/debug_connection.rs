@@ -3,7 +3,10 @@ use crate::debug_messages::{
     DebugResponseBody,
 };
 use std::{collections::BTreeMap, sync::Arc};
-use tokio::sync::Mutex;
+use tokio::sync::{
+    mpsc::{Receiver, Sender},
+    Mutex,
+};
 use webrtc::{
     api::{
         interceptor_registry::register_default_interceptors, media_engine::MediaEngine, APIBuilder,
@@ -12,20 +15,21 @@ use webrtc::{
     ice_transport::ice_server::RTCIceServer,
     interceptor::registry::Registry,
     peer_connection::{
-        configuration::RTCConfiguration, sdp::session_description::RTCSessionDescription,
+        configuration::RTCConfiguration, peer_connection_state::RTCPeerConnectionState,
+        sdp::session_description::RTCSessionDescription,
     },
 };
 
 pub struct OutgoingDebugConnection {
     peer_connection: Arc<webrtc::peer_connection::RTCPeerConnection>,
     pub sdp_offer: String,
-    senders: Arc<Mutex<BTreeMap<u64, tokio::sync::mpsc::Sender<DebugResponseBody>>>>,
+    senders: Arc<Mutex<BTreeMap<u64, Sender<DebugResponseBody>>>>,
     data_channel: Arc<webrtc::data_channel::RTCDataChannel>,
-    pub gdb_rx: tokio::sync::mpsc::Receiver<Vec<u8>>,
+    pub gdb_rx: Receiver<Vec<u8>>,
 }
 
 impl OutgoingDebugConnection {
-    pub async fn new() -> anyhow::Result<Self> {
+    pub async fn new(done_tx: Sender<anyhow::Result<()>>) -> anyhow::Result<Self> {
         let mut m = MediaEngine::default();
         let mut registry = Registry::new();
         registry = register_default_interceptors(registry, &mut m)?;
@@ -41,6 +45,23 @@ impl OutgoingDebugConnection {
             ..Default::default()
         };
         let peer_connection = Arc::new(api.new_peer_connection(config).await?);
+        let done_tx2 = done_tx.clone();
+        peer_connection.on_peer_connection_state_change(Box::new(move |state| {
+            let done_tx = done_tx2.clone();
+            Box::pin(async move {
+                match state {
+                    RTCPeerConnectionState::Unspecified
+                    | RTCPeerConnectionState::New
+                    | RTCPeerConnectionState::Connecting
+                    | RTCPeerConnectionState::Connected => {}
+                    RTCPeerConnectionState::Disconnected
+                    | RTCPeerConnectionState::Failed
+                    | RTCPeerConnectionState::Closed => {
+                        let _ = done_tx.send(anyhow::Ok(())).await;
+                    }
+                }
+            })
+        }));
         let data_channel = peer_connection.create_data_channel("data", None).await?;
 
         let senders = Arc::new(Mutex::new(BTreeMap::<

@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DeviceInfo {
-    #[serde(rename = "device_id")]
-    pub device_id: uuid::Uuid,
+    #[serde(rename = "name")]
+    pub name: String,
     #[serde(rename = "online_at")]
     pub online_at: String,
     #[serde(rename = "is_online")]
@@ -22,9 +22,9 @@ pub struct DeviceInfo {
 }
 
 impl DeviceInfo {
-    pub fn new(device_id: uuid::Uuid, online_at: String, is_online: bool) -> DeviceInfo {
+    pub fn new(name: String, online_at: String, is_online: bool) -> DeviceInfo {
         DeviceInfo {
-            device_id,
+            name,
             online_at,
             is_online,
         }

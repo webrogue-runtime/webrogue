@@ -12,15 +12,15 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ConnectDeviceWsEvent {
-    #[serde(rename = "sdp_offer")]
-    pub sdp_offer: String,
+pub struct DebugDeviceWsEvent {
+    #[serde(rename = "sdp_answer")]
+    pub sdp_answer: String,
 }
 
-impl ConnectDeviceWsEvent {
-    pub fn new(sdp_offer: String) -> ConnectDeviceWsEvent {
-        ConnectDeviceWsEvent {
-            sdp_offer,
+impl DebugDeviceWsEvent {
+    pub fn new(sdp_answer: String) -> DebugDeviceWsEvent {
+        DebugDeviceWsEvent {
+            sdp_answer,
         }
     }
 }

@@ -16,16 +16,16 @@ dpi = { workspace = true, default-features = false }
 json-escape = { workspace = true }
 webrogue-launcher-server-openapi = { workspace = true, default-features = true }
 axum = { version = "0.8" }
-axum-extra = { version = "0.10", features = ["cookie", "query"] }
+axum-extra = { workspace = true, features = ["cookie", "query"] }
 http = { version = "*" }
-async-trait = "0.1"
+async-trait = { workspace = true }
 anyhow = { workspace = true }
-tokio = { version = "1.0", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 tower-service = "0.3"
 bytes = "1.0"
-tokio-stream = "0.1"
+tokio-stream = { workspace = true }
 tower-http = { version = "*", features = ["cors"] }
-lazy_static = "1.4"
+lazy_static = { workspace = true }
 futures-util = { workspace = true }
 webrtc = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -36,6 +36,11 @@ webrogue-wrapp = { workspace = true }
 webrogue-wasmtime = { workspace = true, features = ["jit"], optional = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, optional = true }
+headers = { workspace = true }
+rand = { workspace = true }
+tokio-tungstenite = { workspace = true }
+tokio-util = { workspace = true, features = ["rt"] }
+webrogue-hub-debuggee = { workspace = true }
 
 
 [target.'cfg(target_os = "linux")'.dependencies]

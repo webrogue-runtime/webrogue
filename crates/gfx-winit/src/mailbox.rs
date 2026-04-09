@@ -1,7 +1,4 @@
-use std::{
-    cell::UnsafeCell,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use winit::event_loop::{ActiveEventLoop, EventLoopProxy};
 

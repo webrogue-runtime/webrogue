@@ -43,6 +43,8 @@ Class | Method | HTTP request | Description
  - [AuthVerifyEmailResponse](docs/AuthVerifyEmailResponse.md)
  - [ConnectDeviceWsCommand](docs/ConnectDeviceWsCommand.md)
  - [ConnectDeviceWsEvent](docs/ConnectDeviceWsEvent.md)
+ - [DebugDeviceWsCommand](docs/DebugDeviceWsCommand.md)
+ - [DebugDeviceWsEvent](docs/DebugDeviceWsEvent.md)
  - [DeviceInfo](docs/DeviceInfo.md)
  - [ErrorResponse](docs/ErrorResponse.md)
  - [ListDevicesResponse](docs/ListDevicesResponse.md)

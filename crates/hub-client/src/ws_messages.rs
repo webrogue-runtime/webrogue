@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ConnectDeviceWsCommand {
-    #[serde(rename = "uuid", skip_serializing_if = "Option::is_none")]
-    pub uuid: Option<uuid::Uuid>,
+    #[serde(rename = "name", skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     #[serde(rename = "sdp_answer", skip_serializing_if = "Option::is_none")]
     pub sdp_answer: Option<String>,
 }
@@ -18,8 +18,8 @@ pub struct ConnectDeviceWsEvent {
 pub struct DebugDeviceWsCommand {
     #[serde(rename = "sdp_offer")]
     pub sdp_offer: String,
-    #[serde(rename = "uuid")]
-    pub uuid: uuid::Uuid,
+    #[serde(rename = "device_name")]
+    pub device_name: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

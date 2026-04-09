@@ -28,12 +28,11 @@ hub = [
     "dep:futures-util",
     "dep:serde_json",
     "dep:serde",
-    "dep:uuid",
     "dep:rand",
-    "dep:webrtc",
     "dep:inquire",
     "dep:crossterm",
     "dep:spinners",
+    "dep:webrogue-hub-debuggee"
 ]
 llvm = ["webrogue-aot-compiler/llvm"]
 appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
@@ -44,13 +43,14 @@ clap = { workspace = true, features = ["derive"] }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 
-webrogue-wasmtime = { workspace = true, features = ["jit", "cache", "async"], optional = true }
+webrogue-wasmtime = { workspace = true, features = ["jit", "cache"], optional = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
 webrogue-gfx = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }
 webrogue-wrapp = { workspace = true, features = ["write"], optional = true }
 webrogue-hub-client = { workspace = true, optional = true }
+webrogue-hub-debuggee = { workspace = true, optional = true }
 webrogue-debugger = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"], optional = true }
 blake3 = { workspace = true, optional = true }
@@ -58,11 +58,9 @@ tokio-tungstenite = { workspace = true, optional = true }
 futures-util = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
-uuid = { workspace = true, features = ["v4"], optional = true }
 rand = { workspace = true, optional = true }
-webrtc = { workspace = true, optional = true  }
 async-trait = { workspace = true, optional = true }
-tokio-util = { workspace = true, features = ["rt"], optional = true }
+tokio-util = { workspace = true, features = ["rt", "io"], optional = true }
 inquire = { workspace = true, optional = true }
 crossterm = { workspace = true, optional = true }
 spinners = { workspace = true, optional = true }

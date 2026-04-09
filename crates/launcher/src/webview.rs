@@ -6,13 +6,12 @@ use http::{Method, Request, Uri};
 use lazy_static::lazy_static;
 use tokio_stream::{self, StreamExt as _};
 use tower_service::Service;
-use webrogue_hub_client::DebugRunnerConfig;
 use wry::{
     http, raw_window_handle::HasWindowHandle, RequestAsyncResponder, WebView, WebViewBuilder,
     WebViewId,
 };
 
-use crate::{mailbox::Mailbox, server::make_router, MailboxInternal};
+use crate::{mailbox::Mailbox, server::make_router, LauncherConfig, MailboxInternal};
 
 lazy_static! {
     static ref RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
@@ -21,12 +20,12 @@ lazy_static! {
         .unwrap();
 }
 
-fn use_localhost_ui() -> bool {
-    cfg!(debug_assertions)
+fn use_localhost_api() -> bool {
+    false
 }
 
 fn api_url() -> Option<&'static str> {
-    if use_localhost_ui() {
+    if use_localhost_api() {
         if cfg!(target_os = "android") {
             Some("http://10.0.2.2:8080")
         } else {
@@ -35,6 +34,10 @@ fn api_url() -> Option<&'static str> {
     } else {
         None
     }
+}
+
+fn use_localhost_ui() -> bool {
+    cfg!(debug_assertions)
 }
 
 fn assets_url() -> &'static str {
@@ -52,10 +55,10 @@ fn assets_url() -> &'static str {
 pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
     window: &W,
     as_child: bool,
-    server_config: Arc<dyn DebugRunnerConfig>,
+    launcher_config: Arc<dyn LauncherConfig>,
     mailbox_factory: impl FnOnce(MailboxInternal) -> MailboxImpl,
 ) -> Result<(WebView, MailboxImpl), wry::Error> {
-    let router = RUNTIME.block_on(async { make_router(server_config).await.unwrap() });
+    let router = RUNTIME.block_on(async { make_router(launcher_config).await.unwrap() });
     let router1 = router.clone();
 
     let mailbox_internal = MailboxInternal::new();
@@ -110,6 +113,7 @@ pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
                         mapped_request_builder =
                             mapped_request_builder.header(header_name, header_value);
                     }
+                    mapped_request_builder = mapped_request_builder.header("Host", "api");
                     let mapped_request = mapped_request_builder
                         .body(axum::body::Body::from_stream(stream))
                         .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;

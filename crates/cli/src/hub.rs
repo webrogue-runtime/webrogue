@@ -2,12 +2,10 @@ use std::{fmt::Display, io::stdout, path::PathBuf};
 
 use clap::Subcommand;
 use crossterm::style::Stylize;
+use webrogue_hub_client::HTTP_BASE_ADDR;
 mod debug;
 #[cfg(feature = "run")]
 mod runner;
-
-static WS_BASE_ADDR: &str = "ws://localhost:8080";
-static HTTP_BASE_ADDR: &str = "http://localhost:8080";
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum HubCommand {
@@ -88,7 +86,7 @@ impl HubCommand {
 async fn select_device(api_key: &String) -> anyhow::Result<String> {
     let result = async {
         struct SelectableDevice {
-            id: String,
+            name: String,
             is_online: bool,
             is_reload: bool,
         }
@@ -99,7 +97,7 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
                     f.write_str("Update device list")?;
                     return Ok(());
                 }
-                f.write_str(&self.id)?;
+                f.write_str(&self.name)?;
                 if !self.is_online {
                     f.write_str(" (offline)")?;
                 }
@@ -132,13 +130,13 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
                 .devices
                 .iter()
                 .map(|device| SelectableDevice {
-                    id: device.device_id.to_string(),
+                    name: device.name.to_string(),
                     is_online: device.is_online,
                     is_reload: false,
                 })
                 .collect();
             device_list.push(SelectableDevice {
-                id: "".to_owned(),
+                name: "".to_owned(),
                 is_online: false,
                 is_reload: true,
             });
@@ -173,7 +171,7 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
             }
         };
 
-        anyhow::Ok(device.id)
+        anyhow::Ok(device.name)
     }
     .await;
     crossterm::terminal::disable_raw_mode()?;
