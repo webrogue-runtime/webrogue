@@ -135,7 +135,7 @@ syn = { version = "2.0.25", default-features = false }
 proc-macro2 = { version = "1.0", default-features = false }
 witx = { version = "0.9.1", default-features = false }
 dirs = { version = "6.0.0" }
-zip = { version = "7.2", default-features = false }
+zip = { version = "8.5", default-features = false }
 libc = { version = "0.2.112", default-features = false }
 lazy_static = { version = "1.5.0" }
 rustix = { version = "1.0.8", default-features = false }
