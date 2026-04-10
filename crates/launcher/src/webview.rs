@@ -12,9 +12,10 @@ use wry::{
 };
 
 use crate::{
+    api_base_path::{assets_url, http_api_url},
     mailbox::Mailbox,
-    server::{make_router, ServerConfig},
-    MailboxInternal,
+    server::make_router,
+    LauncherConfig, MailboxInternal,
 };
 
 lazy_static! {
@@ -24,41 +25,13 @@ lazy_static! {
         .unwrap();
 }
 
-fn use_localhost_ui() -> bool {
-    cfg!(debug_assertions)
-}
-
-fn api_url() -> Option<&'static str> {
-    if use_localhost_ui() {
-        if cfg!(target_os = "android") {
-            Some("http://10.0.2.2:8080")
-        } else {
-            Some("http://localhost:8080")
-        }
-    } else {
-        None
-    }
-}
-
-fn assets_url() -> &'static str {
-    if use_localhost_ui() {
-        if cfg!(target_os = "android") {
-            "http://10.0.2.2:5202/"
-        } else {
-            "http://localhost:5202/"
-        }
-    } else {
-        "wrlauncher://asset/"
-    }
-}
-
 pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
     window: &W,
     as_child: bool,
-    server_config: Arc<dyn ServerConfig>,
+    launcher_config: Arc<dyn LauncherConfig>,
     mailbox_factory: impl FnOnce(MailboxInternal) -> MailboxImpl,
 ) -> Result<(WebView, MailboxImpl), wry::Error> {
-    let router = RUNTIME.block_on(async { make_router(server_config).await.unwrap() });
+    let router = RUNTIME.block_on(async { make_router(launcher_config).await.unwrap() });
     let router1 = router.clone();
 
     let mailbox_internal = MailboxInternal::new();
@@ -113,6 +86,7 @@ pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
                         mapped_request_builder =
                             mapped_request_builder.header(header_name, header_value);
                     }
+                    mapped_request_builder = mapped_request_builder.header("Host", "api");
                     let mapped_request = mapped_request_builder
                         .body(axum::body::Body::from_stream(stream))
                         .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;
@@ -158,12 +132,10 @@ pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
             });
         });
 
-    if let Some(url) = api_url() {
-        builder = builder.with_initialization_script(format!(
-            "wrApiBasePath = \"{}\"",
-            json_escape::escape_str(url)
-        ))
-    }
+    builder = builder.with_initialization_script(format!(
+        "wrApiBasePath = \"{}\"",
+        json_escape::escape_str(&http_api_url())
+    ));
 
     let webview = if as_child {
         builder.build_as_child(window)?

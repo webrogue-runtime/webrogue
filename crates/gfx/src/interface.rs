@@ -12,7 +12,6 @@ use wiggle::GuestPtr;
 #[cfg(not(target_arch = "wasm32"))]
 use std::rc::Rc;
 use std::{
-    cell::UnsafeCell,
     collections::BTreeMap,
     sync::{Arc, Mutex},
 };

@@ -21,8 +21,8 @@ impl<T: AsyncWrite + Send + Unpin> PacketSender for T {
 
 pub type ConnectionFactory = Box<
     dyn FnOnce() -> Pin<
-        Box<dyn Future<Output = anyhow::Result<(BoxedPacketReceiver, BoxedPacketSender)>>>,
-    >,
+            Box<dyn Future<Output = anyhow::Result<(BoxedPacketReceiver, BoxedPacketSender)>>>,
+        > + Send,
 >;
 
 pub(crate) struct Connection {
@@ -93,4 +93,11 @@ pub fn tokio_tcp_connection(port: u16) -> ConnectionFactory {
             anyhow::Ok((rx, tx))
         })
     })
+}
+
+pub fn premade_connection(
+    sender: BoxedPacketSender,
+    receiver: BoxedPacketReceiver,
+) -> ConnectionFactory {
+    Box::new(move || Box::pin(async move { anyhow::Ok((receiver, sender)) }))
 }

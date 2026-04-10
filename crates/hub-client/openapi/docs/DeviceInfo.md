@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**device_id** | **uuid::Uuid** |  | 
+**name** | **String** |  | 
 **online_at** | **String** |  | 
 **is_online** | **bool** |  | 
 

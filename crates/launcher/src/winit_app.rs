@@ -1,14 +1,12 @@
-use crate::WinitMailbox;
+use crate::{LauncherConfig, WinitMailbox};
 use dpi::{PhysicalPosition, PhysicalSize};
 #[cfg(target_os = "linux")]
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Arc,
 };
-use std::sync::{Arc, Mutex};
-use webrogue_gfx_winit::{ProxiedWinitBuilder, WindowRegistry, WinitProxy};
-use webrogue_wasmtime::GFXInitParams;
-use webrogue_wrapp::{IVFSBuilder, RealVFSBuilder};
+use std::{path::PathBuf, sync::{Arc, Mutex}};
+use webrogue_gfx_winit::{WindowRegistry, WinitProxy};
+use webrogue_hub_debuggee::{HubDebuggee, HubDebuggeeGFX, HubDebuggeeProxiedWinitGFX};
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
@@ -18,36 +16,43 @@ use winit::{
 use wry::Rect;
 
 use crate::build_webview;
-struct ServerConfigImpl {
-    storage_path: std::path::PathBuf,
-    proxy_container: Arc<Mutex<Option<WinitProxy>>>,
-    event_loop_proxy: EventLoopProxy,
-    window_registry: WindowRegistry,
+
+struct LauncherConfigImpl {
+    storage_path: PathBuf,
+    hub_debuggee: HubDebuggee,
 }
 
-impl crate::server::ServerConfig for ServerConfigImpl {
-    fn storage_path(&self) -> std::path::PathBuf {
+impl LauncherConfigImpl {
+    fn new(
+        storage_path: PathBuf,
+        proxy_container: Arc<Mutex<Option<WinitProxy>>>,
+        event_loop_proxy: EventLoopProxy,
+    ) -> Self {
+        Self {
+            storage_path: storage_path.clone(),
+            hub_debuggee: HubDebuggee::new(
+                storage_path.clone(),
+                HubDebuggeeGFX::ProxiedWinit(HubDebuggeeProxiedWinitGFX {
+                    proxy_container,
+                    event_loop_proxy,
+                }),
+            ),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl LauncherConfig for LauncherConfigImpl {
+    fn storage_path(&self) -> PathBuf {
         self.storage_path.clone()
     }
 
-    fn run(&self, mut vfs_builder: RealVFSBuilder) -> anyhow::Result<()> {
-        let config = vfs_builder.config()?.clone();
-        let vfs = vfs_builder.into_vfs()?;
-        let (builder, proxy) = ProxiedWinitBuilder::new(self.event_loop_proxy.clone());
-        *self.proxy_container.lock().unwrap() = Some(proxy);
-        let persistent_dir = self.storage_path.join("persistent");
-
-        let _ = std::thread::Builder::new()
-            .name("wasi-main".to_owned())
-            .spawn(move || {
-                let _ = webrogue_wasmtime::Runtime::new(&persistent_dir).run_jit(
-                    GFXInitParams::new(builder),
-                    vfs,
-                    &config,
-                );
-            });
-
-        Ok(())
+    async fn launch(
+        &self,
+        sdp_offer: String,
+        on_sdp_answer: Box<dyn FnOnce(String) + Send>,
+    ) -> anyhow::Result<()> {
+        self.hub_debuggee.launch(sdp_offer, on_sdp_answer).await
     }
 }
 
@@ -91,12 +96,11 @@ impl ApplicationHandler for App {
         let (webview, mailbox) = build_webview(
             &window,
             self.as_child,
-            Arc::new(ServerConfigImpl {
-                storage_path: self.storage_path.clone(),
-                proxy_container: self.proxy_container.clone(),
-                event_loop_proxy: event_loop.create_proxy(),
-                window_registry: self.window_registry.clone(),
-            }),
+            Arc::new(LauncherConfigImpl::new(
+                self.storage_path.clone(),
+                self.proxy_container.clone(),
+                event_loop.create_proxy(),
+            )),
             |internal| WinitMailbox::new(event_loop_proxy, internal),
         )
         .unwrap();
@@ -127,6 +131,7 @@ impl ApplicationHandler for App {
     fn destroy_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
             proxy.destroy_surfaces(event_loop);
+            return;
         }
     }
 
@@ -137,12 +142,8 @@ impl ApplicationHandler for App {
         event: WindowEvent,
     ) {
         if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
-            proxy.window_event(
-                event_loop,
-                &mut self.window_registry,
-                window_id,
-                event.clone(),
-            );
+            proxy.window_event(&mut self.window_registry, window_id, event.clone());
+            return;
         }
 
         match event {

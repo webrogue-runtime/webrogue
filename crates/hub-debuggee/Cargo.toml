@@ -1,0 +1,23 @@
+[package]
+name = "webrogue-hub-debuggee"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+webrogue-gfx = { workspace = true }
+webrogue-debugger = { workspace = true }
+webrogue-gfx-winit = { workspace = true }
+webrogue-hub-client = { workspace = true }
+webrogue-wrapp = { workspace = true }
+webrtc = { workspace = true }
+winit = { workspace = true, default-features = false }
+async-trait = { workspace = true }
+serde_json = { workspace = true }
+webrogue-wasmtime = { workspace = true, features = ["jit"] }
+tokio-util = { workspace = true, features = ["rt", "io"] }
+tokio-stream = { workspace = true }
+blake3 = { workspace = true }

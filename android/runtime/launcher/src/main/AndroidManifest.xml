@@ -84,5 +84,13 @@
             -->
             <meta-data android:name="android.app.lib_name" android:value="webrogue" />
         </activity>
+
+        <receiver
+            android:name=".DebugEventBroadcastReceiver"
+            android:exported="false"> <!-- Set to false if only your app sends this -->
+            <intent-filter>
+                <action android:name="dev.webrogue.launcher.DEBUG_EVENT" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
