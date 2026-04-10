@@ -11,45 +11,18 @@ use wry::{
     WebViewId,
 };
 
-use crate::{mailbox::Mailbox, server::make_router, LauncherConfig, MailboxInternal};
+use crate::{
+    api_base_path::{assets_url, http_api_url},
+    mailbox::Mailbox,
+    server::make_router,
+    LauncherConfig, MailboxInternal,
+};
 
 lazy_static! {
     static ref RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap();
-}
-
-fn use_localhost_api() -> bool {
-    false
-}
-
-fn api_url() -> Option<&'static str> {
-    if use_localhost_api() {
-        if cfg!(target_os = "android") {
-            Some("http://10.0.2.2:8080")
-        } else {
-            Some("http://localhost:8080")
-        }
-    } else {
-        None
-    }
-}
-
-fn use_localhost_ui() -> bool {
-    cfg!(debug_assertions)
-}
-
-fn assets_url() -> &'static str {
-    if use_localhost_ui() {
-        if cfg!(target_os = "android") {
-            "http://10.0.2.2:5202/"
-        } else {
-            "http://localhost:5202/"
-        }
-    } else {
-        "wrlauncher://asset/"
-    }
 }
 
 pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
@@ -159,12 +132,10 @@ pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
             });
         });
 
-    if let Some(url) = api_url() {
-        builder = builder.with_initialization_script(format!(
-            "wrApiBasePath = \"{}\"",
-            json_escape::escape_str(url)
-        ))
-    }
+    builder = builder.with_initialization_script(format!(
+        "wrApiBasePath = \"{}\"",
+        json_escape::escape_str(&http_api_url())
+    ));
 
     let webview = if as_child {
         builder.build_as_child(window)?

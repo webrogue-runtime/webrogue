@@ -3,9 +3,8 @@ use dpi::{PhysicalPosition, PhysicalSize};
 #[cfg(target_os = "linux")]
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Arc,
 };
-use std::{path::PathBuf, sync::Mutex};
+use std::{path::PathBuf, sync::{Arc, Mutex}};
 use webrogue_gfx_winit::{WindowRegistry, WinitProxy};
 use webrogue_hub_debuggee::{HubDebuggee, HubDebuggeeGFX, HubDebuggeeProxiedWinitGFX};
 use winit::{

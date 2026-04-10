@@ -1,3 +1,7 @@
+use jni::{
+    objects::{JClass, JString},
+    JNIEnv,
+};
 use lazy_static::lazy_static;
 use std::{
     path::PathBuf,
@@ -9,8 +13,7 @@ use tao::{
     window::WindowBuilder,
 };
 use tokio::io::AsyncRead;
-use webrogue_hub_client::DebugRunnerConfig;
-use webrogue_launcher::MailboxInternal;
+use webrogue_launcher::{LauncherConfig, MailboxInternal};
 use webrogue_wrapp::RealVFSBuilder;
 use wry::WebView;
 
@@ -138,6 +141,26 @@ pub fn main() {
     });
 }
 
+lazy_static! {
+    static ref SDP_ANSWER_SENDER: Mutex<Option<tokio::sync::mpsc::UnboundedSender<String>>> =
+        Mutex::new(None);
+}
+
+#[no_mangle]
+unsafe extern "C" fn Java_dev_webrogue_launcher_DebugEventBroadcastReceiver_onData<'local>(
+    mut env: JNIEnv<'local>,
+    class: JClass<'local>,
+    data: JString,
+) {
+    let data = env.get_string(&data).unwrap().to_str().unwrap().to_owned();
+    SDP_ANSWER_SENDER
+        .lock()
+        .unwrap()
+        .as_ref()
+        .unwrap()
+        .send(data);
+}
+
 fn build_webview(
     event_loop: &EventLoopWindowTarget<()>,
     event_loop_proxy: EventLoopProxy<()>,
@@ -148,7 +171,7 @@ fn build_webview(
     Ok(webrogue_launcher::build_webview(
         &window,
         false,
-        Arc::new(ServerConfigImpl {
+        Arc::new(LauncherConfigImpl {
             storage_path: dir
                 .unwrap_or_else(std::env::temp_dir)
                 .join("server_storage"),
@@ -160,84 +183,105 @@ fn build_webview(
     )?)
 }
 
-struct ServerConfigImpl {
+struct LauncherConfigImpl {
     storage_path: std::path::PathBuf,
 }
 
-impl DebugRunnerConfig for ServerConfigImpl {
+#[async_trait::async_trait]
+impl LauncherConfig for LauncherConfigImpl {
     fn storage_path(&self) -> std::path::PathBuf {
         self.storage_path.clone()
     }
 
-    fn run(
+    async fn launch(
         &self,
-        _vfs_builder: RealVFSBuilder,
-        receiver: Box<dyn AsyncRead + Send>,
+        sdp_offer: String,
+        on_sdp_answer: Box<dyn FnOnce(String) + Send>,
     ) -> anyhow::Result<()> {
         #[cfg(target_os = "android")]
         {
-            let jvm_lock = JVM.lock().unwrap();
-            let jvm = jvm_lock.as_ref().unwrap();
-            let mut env = jvm.attach_current_thread().unwrap();
+            {
+                let jvm_lock = JVM.lock().unwrap();
+                let jvm = jvm_lock.as_ref().unwrap();
+                let mut env = jvm.attach_current_thread().unwrap();
 
-            let activity_lock = ACTIVITY.lock().unwrap();
-            let activity = activity_lock.as_ref().unwrap().clone();
+                let activity_lock = ACTIVITY.lock().unwrap();
+                let activity = activity_lock.as_ref().unwrap().clone();
 
-            let intent_class = env.find_class("android/content/Intent").unwrap();
-            // let native_activity_class = env
-            //     .find_class("dev/webrogue/launcher/LauncherActivity")
-            //     .unwrap();
+                let intent_class = env.find_class("android/content/Intent").unwrap();
+                // let native_activity_class = env
+                //     .find_class("dev/webrogue/launcher/LauncherActivity")
+                //     .unwrap();
 
-            let class_name =
-                env.new_string("android.app.NativeActivity".to_owned().replace('/', "."))?;
-            let native_activity_class = env
-                .call_method(
-                    activity.clone(),
-                    "getAppClass",
-                    "(Ljava/lang/String;)Ljava/lang/Class;",
-                    &[(&class_name).into()],
-                )?
-                .l()
-                .unwrap();
+                let class_name =
+                    env.new_string("android.app.NativeActivity".to_owned().replace('/', "."))?;
+                let native_activity_class = env
+                    .call_method(
+                        activity.clone(),
+                        "getAppClass",
+                        "(Ljava/lang/String;)Ljava/lang/Class;",
+                        &[(&class_name).into()],
+                    )?
+                    .l()
+                    .unwrap();
 
-            let intent = env
-                .new_object(
-                    intent_class,
-                    "(Landroid/content/Context;Ljava/lang/Class;)V",
-                    &[
-                        jni::objects::JValue::Object(activity.as_obj().into()),
-                        (&native_activity_class).into(),
-                    ],
+                let intent = env
+                    .new_object(
+                        intent_class,
+                        "(Landroid/content/Context;Ljava/lang/Class;)V",
+                        &[
+                            jni::objects::JValue::Object(activity.as_obj().into()),
+                            (&native_activity_class).into(),
+                        ],
+                    )
+                    .unwrap();
+
+                // Keep in sync with android/runtime/src/lib.rs
+                #[derive(serde::Serialize, serde::Deserialize)]
+                struct LaunchIntentData {
+                    pub storage_path: String,
+                    pub sdp_offer: String,
+                }
+
+                let key = env.new_string("data").unwrap();
+                let value = env
+                    .new_string(
+                        serde_json::to_string(&LaunchIntentData {
+                            storage_path: self.storage_path.to_str().unwrap().to_owned(),
+                            sdp_offer: sdp_offer,
+                        })
+                        .unwrap(),
+                    )
+                    .unwrap();
+                env.call_method(
+                    &intent,
+                    "putExtra",
+                    "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
+                    &[(&key).into(), (&value).into()],
                 )
                 .unwrap();
 
-            let key = env.new_string("data").unwrap();
-            let value = env
-                .new_string(serde_json::to_string(&_vfs_builder).unwrap())
+                env.call_method(
+                    &intent,
+                    "setFlags",
+                    "(I)Landroid/content/Intent;",
+                    &[(0x10000000 | 0x08000000).into()], // FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK
+                )
                 .unwrap();
-            env.call_method(
-                &intent,
-                "putExtra",
-                "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
-                &[(&key).into(), (&value).into()],
-            )
-            .unwrap();
 
-            env.call_method(
-                &intent,
-                "setFlags",
-                "(I)Landroid/content/Intent;",
-                &[(0x10000000 | 0x08000000).into()], // FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK
-            )
-            .unwrap();
+                env.call_method(
+                    &activity,
+                    "startActivity",
+                    "(Landroid/content/Intent;)V",
+                    &[(&intent).into()],
+                )
+                .unwrap();
+            }
 
-            env.call_method(
-                &activity,
-                "startActivity",
-                "(Landroid/content/Intent;)V",
-                &[(&intent).into()],
-            )
-            .unwrap();
+            let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+            *SDP_ANSWER_SENDER.lock().unwrap() = Some(tx);
+            let sdp_answer = rx.recv().await.unwrap();
+            on_sdp_answer(sdp_answer);
         };
         Ok(())
     }

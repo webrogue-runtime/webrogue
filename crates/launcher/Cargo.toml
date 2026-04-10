@@ -42,7 +42,9 @@ tokio-tungstenite = { workspace = true }
 tokio-util = { workspace = true, features = ["rt"] }
 webrogue-hub-debuggee = { workspace = true }
 
-
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
 wry = { workspace = true, features = ["linux-body"] }
+
+[build-dependencies]
+reqwest = { workspace = true, features = ["blocking"] }

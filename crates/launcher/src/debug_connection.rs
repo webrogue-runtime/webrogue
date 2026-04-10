@@ -3,10 +3,10 @@ use std::{sync::Arc, time::Duration};
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use webrogue_hub_client::{
-    openapi::models::ConnectDeviceWsCommand, ws_messages::ConnectDeviceWsEvent, WS_BASE_ADDR,
+    openapi::models::ConnectDeviceWsCommand, ws_messages::ConnectDeviceWsEvent,
 };
 
-use crate::LauncherConfig;
+use crate::{api_base_path::ws_api_url, LauncherConfig};
 
 pub struct DebugConnection {
     abort_handle: tokio::task::AbortHandle,
@@ -23,7 +23,8 @@ impl DebugConnection {
                     async move {
                         let (mut ws_stream, _) = connect_async(format!(
                             "{}/api/v1/devices/connect?{}",
-                            WS_BASE_ADDR, auth_token
+                            ws_api_url(),
+                            auth_token
                         ))
                         .await?;
 

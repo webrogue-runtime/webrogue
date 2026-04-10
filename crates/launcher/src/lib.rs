@@ -8,6 +8,7 @@ pub use mailbox::{Mailbox, MailboxInternal};
 mod debug_connection;
 mod launcher_config;
 pub use launcher_config::LauncherConfig;
+mod api_base_path;
 
 #[cfg(feature = "winit")]
 mod winit_app;

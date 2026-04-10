@@ -6,8 +6,20 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-launcher = ["webrogue-wasmtime/jit", "dep:jni", "dep:serde_json", "webrogue-gfxstream/lib-impl"]
-runner = ["webrogue-wasmtime/aot", "webrogue-gfxstream/lib-impl"]
+launcher = [
+    "webrogue-wasmtime/jit",
+    "dep:jni",
+    "dep:serde",
+    "dep:serde_json",
+    "webrogue-gfxstream/lib-impl",
+    "dep:webrogue-hub-debuggee",
+    "dep:webrogue-gfx",
+    "dep:tokio",
+]
+runner = [
+    "webrogue-wasmtime/aot",
+    "webrogue-gfxstream/lib-impl"
+]
 
 [lib]
 name = "webrogue"
@@ -20,7 +32,11 @@ winit = { workspace = true }
 webrogue-gfxstream = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
 jni = { version = "0.21", optional = true }
+serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
+webrogue-hub-debuggee = { workspace = true, optional = true }
+webrogue-gfx = { workspace = true, optional = true }
+tokio = { workspace = true, features = ["full"], optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 winit-android = { workspace = true }
