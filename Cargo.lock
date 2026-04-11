@@ -4385,6 +4385,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "object"
+version = "0.39.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63944c133d03f44e75866bbd160b95af0ec3f6a13d936d69d31c81078cbc5baf"
+dependencies = [
+ "crc32fast",
+ "hashbrown 0.16.1",
+ "indexmap",
+ "memchr",
+]
+
+[[package]]
 name = "oid-registry"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7512,7 +7524,7 @@ dependencies = [
  "log",
  "mach2",
  "memfd",
- "object",
+ "object 0.38.1",
  "once_cell",
  "postcard",
  "pulley-interpreter",
@@ -7552,7 +7564,7 @@ dependencies = [
  "hashbrown 0.16.1",
  "indexmap",
  "log",
- "object",
+ "object 0.38.1",
  "postcard",
  "rustc-demangle",
  "semver",
@@ -7626,7 +7638,7 @@ dependencies = [
  "gimli",
  "itertools 0.14.0",
  "log",
- "object",
+ "object 0.38.1",
  "pulley-interpreter",
  "smallvec",
  "target-lexicon 0.13.5",
@@ -7688,7 +7700,7 @@ dependencies = [
  "cfg-if",
  "cranelift-codegen",
  "log",
- "object",
+ "object 0.38.1",
  "wasmtime-environ",
 ]
 
@@ -7708,7 +7720,7 @@ dependencies = [
  "cranelift-codegen",
  "gimli",
  "log",
- "object",
+ "object 0.38.1",
  "target-lexicon 0.13.5",
  "wasmparser 0.245.1",
  "wasmtime-environ",
@@ -8078,7 +8090,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "object",
+ "object 0.39.0",
  "postcard",
  "serde",
  "wasmtime",
