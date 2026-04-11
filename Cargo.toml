@@ -143,7 +143,7 @@ cfg_aliases = { version = "0.2.1" }
 windows-sys = { version = "0.61.2", default-features = false }
 windows = { version = "0.62.2", default-features = false }
 wry = { version = "0.55", default-features = false }
-tao = { version = "0.34.5", default-features = false }
+tao = { version = "0.35.0", default-features = false }
 winit = { version = "0.31.0-beta.2", default-features = false }
 winit-android = { version = "0.31.0-beta.2", default-features = false }
 winit-x11 = { version = "0.31.0-beta.2", default-features = false }
