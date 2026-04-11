@@ -115,7 +115,7 @@ wasmtime-internal-debugger = { path = "external/wasmtime/crates/debugger" }
 # other crates
 image = { version = "0.25", default-features = false }
 imageproc = { version = "0.26", default-features = false }
-object = { version = "0.38", default-features = false }
+object = { version = "0.39", default-features = false }
 clap = { version = "4" }
 futures =  { version = "0.3" }
 wasmparser = { version = ">=0.215" }
