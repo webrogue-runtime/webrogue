@@ -219,7 +219,15 @@ strip = "debuginfo"
 inherits = "release"
 debug = true
 
+[profile.dev.package.hashbrown]
+opt-level = 3
+codegen-units = 1
+
 [profile.dev.package.cranelift-codegen]
+opt-level = 3
+codegen-units = 1
+
+[profile.dev.package.regalloc2]
 opt-level = 3
 codegen-units = 1
 

@@ -569,11 +569,11 @@ impl gdbstub::target::ext::base::multithread::MultiThreadResume for Wasm32Target
         Ok(())
     }
 
-    fn support_single_step(
-        &mut self,
-    ) -> Option<gdbstub::target::ext::base::multithread::MultiThreadSingleStepOps<'_, Self>> {
-        Some(self)
-    }
+    // fn support_single_step(
+    //     &mut self,
+    // ) -> Option<gdbstub::target::ext::base::multithread::MultiThreadSingleStepOps<'_, Self>> {
+    //     Some(self)
+    // }
 
     fn support_scheduler_locking(
         &mut self,
