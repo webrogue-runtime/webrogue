@@ -86,12 +86,12 @@ impl Wasm32Target {
                 thread_info.stopped = Some(stop_info.stopped_thread);
 
                 let reason = if stop_info.is_step {
-                    gdbstub::stub::MultiThreadStopReason::DoneStep
-                    // or maybe
-                    // gdbstub::stub::MultiThreadStopReason::SignalWithThread {
-                    //     tid: tid.try_into().unwrap(),
-                    //     signal: gdbstub::common::Signal::SIGTRAP,
-                    // }
+                    // For some reason gdbstub::stub::MultiThreadStopReason::DoneStep
+                    // makes LLDB behave oddly. But SIGTRAP is perfectly fine
+                    gdbstub::stub::MultiThreadStopReason::SignalWithThread {
+                        tid: tid.try_into().unwrap(),
+                        signal: gdbstub::common::Signal::SIGTRAP,
+                    }
                 } else {
                     gdbstub::stub::MultiThreadStopReason::SwBreak(NonZero::try_from(tid).unwrap())
                 };
@@ -315,8 +315,6 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         let module_index = wasm_addr.module_index() as u64;
         let pc = wasm_addr.offset();
 
-        let old_breakpoints = self.breakpoints.clone();
-
         if let Some(breakpoints) = self.breakpoints.get_mut(&module_index) {
             breakpoints.insert(wasmtime::ModulePC::new(pc));
         } else {
@@ -326,10 +324,6 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         }
 
         let is_ok = self.edit_breakpoint()?;
-        if !is_ok {
-            self.breakpoints = old_breakpoints;
-            self.edit_breakpoint()?;
-        }
         Ok(is_ok)
     }
 
@@ -356,8 +350,8 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
             return Ok(true);
         }
 
-        self.edit_breakpoint()?;
-        Ok(true)
+        let is_ok = self.edit_breakpoint()?;
+        Ok(is_ok)
     }
 }
 
