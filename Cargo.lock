@@ -8325,6 +8325,7 @@ dependencies = [
  "lazy_static",
  "rand 0.10.1",
  "reqwest",
+ "rustls",
  "serde",
  "serde_json",
  "tokio",

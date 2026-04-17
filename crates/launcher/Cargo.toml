@@ -41,6 +41,7 @@ rand = { workspace = true }
 tokio-tungstenite = { workspace = true, features = ["rustls-tls-webpki-roots"] }
 tokio-util = { workspace = true, features = ["rt"] }
 webrogue-hub-debuggee = { workspace = true }
+rustls = { workspace = true, features = ["aws_lc_rs"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
