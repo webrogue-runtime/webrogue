@@ -16,7 +16,6 @@ async-trait = { workspace = true }
 rand_core = { workspace = true }
 rand = { workspace = true, default-features = false, features = ["sys_rng", "thread_rng"] }
 getrandom = { workspace = true, default-features = false, features = ["wasm_js"] }
-cap-rand = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true, features = ["pipe"] }

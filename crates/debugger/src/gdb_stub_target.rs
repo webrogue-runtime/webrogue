@@ -30,7 +30,7 @@ pub(crate) enum StopReason {
 pub(crate) struct Wasm32Target {
     receiver: tokio::sync::mpsc::UnboundedReceiver<DebuggerLoopMessage>,
     threads: BTreeMap<NonZeroI32, ThreadInfo>,
-    breakpoints: BTreeMap<u64, BTreeSet<u32>>,
+    breakpoints: BTreeMap<u64, BTreeSet<wasmtime::ModulePC>>,
     default_resume_type: Option<ResumeType>,
     skip_stale_threads: bool,
 }
@@ -318,10 +318,10 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         let old_breakpoints = self.breakpoints.clone();
 
         if let Some(breakpoints) = self.breakpoints.get_mut(&module_index) {
-            breakpoints.insert(pc);
+            breakpoints.insert(wasmtime::ModulePC::new(pc));
         } else {
             let mut breakpoints = BTreeSet::new();
-            breakpoints.insert(pc);
+            breakpoints.insert(wasmtime::ModulePC::new(pc));
             self.breakpoints.insert(module_index, breakpoints);
         }
 
@@ -352,7 +352,7 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         let Some(breakpoints) = self.breakpoints.get_mut(&module_index) else {
             return Ok(true);
         };
-        if !breakpoints.remove(&pc) {
+        if !breakpoints.remove(&wasmtime::ModulePC::new(pc)) {
             return Ok(true);
         }
 
@@ -569,11 +569,11 @@ impl gdbstub::target::ext::base::multithread::MultiThreadResume for Wasm32Target
         Ok(())
     }
 
-    // fn support_single_step(
-    //     &mut self,
-    // ) -> Option<gdbstub::target::ext::base::multithread::MultiThreadSingleStepOps<'_, Self>> {
-    //     Some(self)
-    // }
+    fn support_single_step(
+        &mut self,
+    ) -> Option<gdbstub::target::ext::base::multithread::MultiThreadSingleStepOps<'_, Self>> {
+        Some(self)
+    }
 
     fn support_scheduler_locking(
         &mut self,
