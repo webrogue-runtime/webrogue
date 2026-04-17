@@ -105,7 +105,7 @@ impl ApplicationHandler for App {
         gtk::init().unwrap();
 
         let window = event_loop
-            .create_window(WindowAttributes::default())
+            .create_window(WindowAttributes::default().with_title("Webrogue"))
             .unwrap();
         let event_loop_proxy = event_loop.create_proxy();
         let (webview, mailbox) = build_webview(

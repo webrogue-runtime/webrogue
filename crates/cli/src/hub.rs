@@ -31,6 +31,8 @@ pub enum HubCommand {
         /// ID of device to run on
         #[arg(long)]
         device: Option<String>,
+        #[arg(long)]
+        gdb_port: u16,
     },
 }
 
@@ -63,7 +65,9 @@ impl HubCommand {
                 wrapp_path,
                 api_key,
                 device,
+                gdb_port,
             } => {
+                let gdb_port = *gdb_port;
                 tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()?
@@ -74,7 +78,7 @@ impl HubCommand {
                             select_device(api_key).await?
                         };
 
-                        crate::hub::debug::debug(wrapp_path, &device, api_key).await?;
+                        crate::hub::debug::debug(wrapp_path, &device, api_key, gdb_port).await?;
                         anyhow::Ok(())
                     })?;
                 Ok(())
