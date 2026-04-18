@@ -4,8 +4,6 @@ pub fn generate_icons(
     build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> anyhow::Result<()> {
-    println!("Generating icons...");
-
     generate_icon(build_dir, icons_data)?;
     generate_ios_splash_screen(build_dir, icons_data)?;
 

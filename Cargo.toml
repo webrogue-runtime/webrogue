@@ -47,6 +47,7 @@ members = [
   "crates/aot-data",
   "crates/aot-lib",
   "crates/cli",
+  "crates/cli-goodies",
   "crates/debugger",
   "crates/events",
   "crates/events-apigen",
@@ -85,6 +86,7 @@ exclude = [
 webrogue-aot-compiler = { path = "crates/aot-compiler", default-features=false }
 webrogue-aot-data = { path = "crates/aot-data" }
 webrogue-cli = { path = "crates/cli" }
+webrogue-cli-goodies = { path = "crates/cli-goodies" }
 webrogue-events = { path = "crates/events" }
 webrogue-events-macro = { path = "crates/events-macro" }
 webrogue-debugger = { path = "crates/debugger" }

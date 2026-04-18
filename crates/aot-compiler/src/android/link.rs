@@ -1,7 +1,7 @@
 use crate::utils::path_to_arg;
 
 pub fn link(
-    object_file: &crate::utils::TemporalFile,
+    object_file: &crate::utils::TemporaryFile,
     target: crate::Target,
     output_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {

@@ -8084,9 +8084,11 @@ dependencies = [
  "clap",
  "object 0.38.1",
  "postcard",
+ "semver",
  "serde",
  "wasmtime",
  "wasmtime-environ",
+ "webrogue-cli-goodies",
  "webrogue-icons",
  "webrogue-lld",
  "webrogue-wrapp",
@@ -8118,20 +8120,18 @@ dependencies = [
  "async-trait",
  "blake3",
  "clap",
- "crossterm",
  "futures-util",
- "inquire",
  "rand 0.10.1",
  "rustls",
  "serde",
  "serde_json",
- "spinners",
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
  "tracing",
  "tracing-subscriber",
  "webrogue-aot-compiler",
+ "webrogue-cli-goodies",
  "webrogue-debugger",
  "webrogue-gfx",
  "webrogue-gfx-winit",
@@ -8140,6 +8140,16 @@ dependencies = [
  "webrogue-hub-debuggee",
  "webrogue-wasmtime",
  "webrogue-wrapp",
+]
+
+[[package]]
+name = "webrogue-cli-goodies"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "crossterm",
+ "inquire",
+ "spinners",
 ]
 
 [[package]]

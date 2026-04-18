@@ -29,9 +29,7 @@ hub = [
     "dep:serde_json",
     "dep:serde",
     "dep:rand",
-    "dep:inquire",
-    "dep:crossterm",
-    "dep:spinners",
+    "dep:webrogue-cli-goodies",
     "dep:webrogue-hub-debuggee",
     "__rustls",
 ]
@@ -63,9 +61,7 @@ serde = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 async-trait = { workspace = true, optional = true }
 tokio-util = { workspace = true, features = ["rt", "io"], optional = true }
-inquire = { workspace = true, optional = true }
-crossterm = { workspace = true, optional = true }
-spinners = { workspace = true, optional = true }
+webrogue-cli-goodies = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true, features = ["aws_lc_rs"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]

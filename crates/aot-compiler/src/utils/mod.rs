@@ -20,11 +20,11 @@ macro_rules! lld {
 pub(crate) use lld;
 use webrogue_wrapp::{config::Config, IVFSBuilder as _};
 
-pub struct TemporalFile {
+pub struct TemporaryFile {
     path: std::path::PathBuf,
 }
 
-impl TemporalFile {
+impl TemporaryFile {
     pub fn for_tmp_object<P: AsRef<std::path::Path>>(base_path: P) -> anyhow::Result<Self> {
         Ok(Self {
             path: base_path
@@ -65,7 +65,7 @@ impl TemporalFile {
     }
 }
 
-impl Display for TemporalFile {
+impl Display for TemporaryFile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -75,7 +75,7 @@ impl Display for TemporalFile {
     }
 }
 
-impl Drop for TemporalFile {
+impl Drop for TemporaryFile {
     fn drop(&mut self) {
         let _ = std::fs::remove_file(&self.path);
     }
