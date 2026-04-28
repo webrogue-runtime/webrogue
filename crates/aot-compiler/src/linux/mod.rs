@@ -3,6 +3,7 @@ mod link;
 use std::io::{Seek, Write};
 
 use anyhow::Context as _;
+use webrogue_cli_goodies::step;
 
 use crate::utils::extract_config;
 
@@ -30,70 +31,74 @@ pub fn build_linux(
     libc: LibC,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
-    let object_file = crate::utils::TemporalFile::for_tmp_object(output_file_path)?;
+    let object_file = crate::utils::TemporaryFile::for_tmp_object(output_file_path)?;
     let config = extract_config(wrapp_file_path)?;
     let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
     match libc {
         LibC::GLibC => {
-            println!("Compiling AOT object...");
-            crate::compile::compile_wrapp_to_object(
-                wrapp_file_path,
-                object_file.path(),
-                crate::Target::X86_64LinuxGNU,
-                cache,
-                false,
-                false,
-            )?;
-
-            println!("Linking native binary...");
-            link::link_glibc(&object_file, output_file_path, vulkan)?;
+            step("Compiling AOT object".to_owned(), || {
+                crate::compile::compile_wrapp_to_object(
+                    wrapp_file_path,
+                    object_file.path(),
+                    crate::Target::X86_64LinuxGNU,
+                    cache,
+                    false,
+                    false,
+                )
+            })?;
+            step("Linking native binary".to_owned(), || {
+                link::link_glibc(&object_file, output_file_path, vulkan)
+            })?;
         }
         LibC::Musl => {
-            println!("Compiling AOT object...");
-            crate::compile::compile_wrapp_to_object(
-                wrapp_file_path,
-                object_file.path(),
-                crate::Target::X86_64LinuxMUSL,
-                cache,
-                true,
-                false,
-            )?;
-
-            println!("Linking native binary...");
-            link::link_musl(&object_file, output_file_path, vulkan)?;
+            step("Compiling AOT object".to_owned(), || {
+                crate::compile::compile_wrapp_to_object(
+                    wrapp_file_path,
+                    object_file.path(),
+                    crate::Target::X86_64LinuxMUSL,
+                    cache,
+                    true,
+                    false,
+                )
+            })?;
+            step("Linking native binary".to_owned(), || {
+                link::link_musl(&object_file, output_file_path, vulkan)
+            })?;
         }
     }
 
     drop(object_file);
 
-    println!("Embedding stripped WRAPP file...");
-    let mut output_file: std::fs::File = std::fs::OpenOptions::new()
-        .append(true)
-        .create(false)
-        .open(output_file_path)?;
+    step("Embedding stripped WRAPP file".to_owned(), || {
+        let mut output_file: std::fs::File = std::fs::OpenOptions::new()
+            .append(true)
+            .create(false)
+            .open(output_file_path)?;
 
-    let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
+        let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
 
-    if webrogue_wrapp::is_path_a_wrapp(wrapp_file_path).with_context(|| {
-        format!(
-            "Unable to determine file type for {}",
-            wrapp_file_path.display()
-        )
-    })? {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::WrappVFSBuilder::from_file_path(
-            wrapp_file_path,
-        )?)
-        .write(&mut output_file)?;
-    } else {
-        webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(
-            wrapp_file_path,
-        )?)
-        .write(&mut output_file)?;
-    }
-    let new_size = output_file.seek(std::io::SeekFrom::End(0))?;
+        if webrogue_wrapp::is_path_a_wrapp(wrapp_file_path).with_context(|| {
+            format!(
+                "Unable to determine file type for {}",
+                wrapp_file_path.display()
+            )
+        })? {
+            webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::WrappVFSBuilder::from_file_path(
+                wrapp_file_path,
+            )?)
+            .write(&mut output_file)?;
+        } else {
+            webrogue_wrapp::WRAPPWriter::new(webrogue_wrapp::RealVFSBuilder::from_config_path(
+                wrapp_file_path,
+            )?)
+            .write(&mut output_file)?;
+        }
+        let new_size = output_file.seek(std::io::SeekFrom::End(0))?;
 
-    let wrapp_size: u64 = new_size - original_size;
-    output_file.write_all(&wrapp_size.to_le_bytes())?;
+        let wrapp_size: u64 = new_size - original_size;
+        output_file.write_all(&wrapp_size.to_le_bytes())?;
 
+        anyhow::Ok(())
+    })?;
     anyhow::Ok(())
 }

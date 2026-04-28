@@ -42,10 +42,10 @@ impl Connection {
 
     pub fn flush(&mut self) -> anyhow::Result<()> {
         if self.needs_flush {
-            // eprintln!("");
-            // eprintln!("-> to client");
-            // eprintln!("{}", String::from_utf8_lossy(&self.buffer));
-            // eprintln!("<- from client");
+            eprintln!("");
+            eprintln!("-> to client");
+            eprintln!("{}", String::from_utf8_lossy(&self.buffer));
+            eprintln!("<- from client");
 
             tokio::runtime::Handle::current()
                 .block_on(async { self.sender.send(&self.buffer).await })?;

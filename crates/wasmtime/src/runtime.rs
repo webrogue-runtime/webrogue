@@ -98,7 +98,6 @@ impl Runtime {
 
         self.wasmtime_config
             .wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
-        self.wasmtime_config.epoch_interruption(true);
 
         #[cfg(feature = "cache")]
         if let Some(cache_config) = self.jit_cache_config {

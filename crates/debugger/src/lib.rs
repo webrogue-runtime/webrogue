@@ -36,37 +36,30 @@ pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send 
 
     let wasi_main_join_handle = rt_handle.spawn_blocking(|| func(runtime, gfx_init_params));
     let debugger_error = target.wait_for_first_step().await;
-    // let debugger_error = Ok(debugger_error.unwrap()); // TODO remove
-    if let Err(debugger_error) = debugger_error {
-        for thread in threads.lock().unwrap().iter() {
-            thread.trap();
+
+    let debugger_error = match debugger_error {
+        Ok(_) => {
+            let (receiver, sender) = connection_factory().await?;
+            rt_handle
+                .spawn_blocking(|| gdb_stub_loop::run(receiver, sender, target))
+                .await?
         }
-
-        return Err(wasi_main_join_handle
-            .await?
-            .err()
-            .map(|err| err.into())
-            .unwrap_or(debugger_error));
-    }
-    let (receiver, sender) = connection_factory().await?;
-    let debugger_error = rt_handle
-        .spawn_blocking(|| gdb_stub_loop::run(receiver, sender, target))
-        .await?;
-    if let Err(debugger_error) = debugger_error {
-        for thread in threads.lock().unwrap().iter() {
-            thread.trap();
-        }
-
-        return Err(wasi_main_join_handle
-            .await?
-            .err()
-            .map(|err| err.into())
-            .unwrap_or(debugger_error));
-    }
-
+        Err(error) => Err(error),
+    };
     for thread in threads.lock().unwrap().iter() {
         thread.trap();
     }
-
-    Ok(wasi_main_join_handle.await??)
+    let wasi_main_error = wasi_main_join_handle.await?;
+    match (wasi_main_error, debugger_error) {
+        (Ok(result), Ok(_)) => Ok(result),
+        (Ok(_), Err(err)) => Err(err),
+        (Err(err), Ok(_)) => Err(err),
+        (Err(wasi_main_error), Err(debugger_error)) => {
+            if wasi_main_error.root_cause().to_string() == "Debugger disconnected" {
+                Err(debugger_error)
+            } else {
+                Err(wasi_main_error)
+            }
+        }
+    }
 }

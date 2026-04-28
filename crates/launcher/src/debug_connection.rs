@@ -116,7 +116,7 @@ impl DebugConnection {
                     .await;
 
                 if let Err(err) = result {
-                    eprintln!("{:#}", err)
+                    eprintln!("Error: {:#}", err)
                 }
 
                 tokio::time::sleep(Duration::from_secs(5)).await;

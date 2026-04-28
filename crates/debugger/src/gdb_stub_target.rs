@@ -30,7 +30,7 @@ pub(crate) enum StopReason {
 pub(crate) struct Wasm32Target {
     receiver: tokio::sync::mpsc::UnboundedReceiver<DebuggerLoopMessage>,
     threads: BTreeMap<NonZeroI32, ThreadInfo>,
-    breakpoints: BTreeMap<u64, BTreeSet<u32>>,
+    breakpoints: BTreeMap<u64, BTreeSet<wasmtime::ModulePC>>,
     default_resume_type: Option<ResumeType>,
     skip_stale_threads: bool,
 }
@@ -86,12 +86,12 @@ impl Wasm32Target {
                 thread_info.stopped = Some(stop_info.stopped_thread);
 
                 let reason = if stop_info.is_step {
-                    gdbstub::stub::MultiThreadStopReason::DoneStep
-                    // or maybe
-                    // gdbstub::stub::MultiThreadStopReason::SignalWithThread {
-                    //     tid: tid.try_into().unwrap(),
-                    //     signal: gdbstub::common::Signal::SIGTRAP,
-                    // }
+                    // For some reason gdbstub::stub::MultiThreadStopReason::DoneStep
+                    // makes LLDB behave oddly. But SIGTRAP is perfectly fine
+                    gdbstub::stub::MultiThreadStopReason::SignalWithThread {
+                        tid: tid.try_into().unwrap(),
+                        signal: gdbstub::common::Signal::SIGTRAP,
+                    }
                 } else {
                     gdbstub::stub::MultiThreadStopReason::SwBreak(NonZero::try_from(tid).unwrap())
                 };
@@ -315,21 +315,15 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         let module_index = wasm_addr.module_index() as u64;
         let pc = wasm_addr.offset();
 
-        let old_breakpoints = self.breakpoints.clone();
-
         if let Some(breakpoints) = self.breakpoints.get_mut(&module_index) {
-            breakpoints.insert(pc);
+            breakpoints.insert(wasmtime::ModulePC::new(pc));
         } else {
             let mut breakpoints = BTreeSet::new();
-            breakpoints.insert(pc);
+            breakpoints.insert(wasmtime::ModulePC::new(pc));
             self.breakpoints.insert(module_index, breakpoints);
         }
 
         let is_ok = self.edit_breakpoint()?;
-        if !is_ok {
-            self.breakpoints = old_breakpoints;
-            self.edit_breakpoint()?;
-        }
         Ok(is_ok)
     }
 
@@ -352,12 +346,12 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         let Some(breakpoints) = self.breakpoints.get_mut(&module_index) else {
             return Ok(true);
         };
-        if !breakpoints.remove(&pc) {
+        if !breakpoints.remove(&wasmtime::ModulePC::new(pc)) {
             return Ok(true);
         }
 
-        self.edit_breakpoint()?;
-        Ok(true)
+        let is_ok = self.edit_breakpoint()?;
+        Ok(is_ok)
     }
 }
 

@@ -12,21 +12,15 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct AuthLoginRequest {
+pub struct CheckEmailRequest {
     #[serde(rename = "email")]
     pub email: String,
-    #[serde(rename = "is_signup")]
-    pub is_signup: bool,
-    #[serde(rename = "password")]
-    pub password: String,
 }
 
-impl AuthLoginRequest {
-    pub fn new(email: String, is_signup: bool, password: String) -> AuthLoginRequest {
-        AuthLoginRequest {
+impl CheckEmailRequest {
+    pub fn new(email: String) -> CheckEmailRequest {
+        CheckEmailRequest {
             email,
-            is_signup,
-            password,
         }
     }
 }

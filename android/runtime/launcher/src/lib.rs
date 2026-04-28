@@ -1,7 +1,3 @@
-use jni::{
-    objects::{JClass, JString},
-    JNIEnv,
-};
 use lazy_static::lazy_static;
 use std::{
     path::PathBuf,
@@ -12,9 +8,7 @@ use tao::{
     event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget},
     window::WindowBuilder,
 };
-use tokio::io::AsyncRead;
 use webrogue_launcher::{LauncherConfig, MailboxInternal};
-use webrogue_wrapp::RealVFSBuilder;
 use wry::WebView;
 
 #[cfg(target_os = "android")]
@@ -146,11 +140,12 @@ lazy_static! {
         Mutex::new(None);
 }
 
+#[cfg(target_os = "android")]
 #[no_mangle]
 unsafe extern "C" fn Java_dev_webrogue_launcher_DebugEventBroadcastReceiver_onData<'local>(
-    mut env: JNIEnv<'local>,
-    class: JClass<'local>,
-    data: JString,
+    mut env: jni::JNIEnv<'local>,
+    class: jni::objects::JClass<'local>,
+    data: jni::objects::JString,
 ) {
     let data = env.get_string(&data).unwrap().to_str().unwrap().to_owned();
     SDP_ANSWER_SENDER

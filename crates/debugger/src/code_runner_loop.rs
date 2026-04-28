@@ -70,7 +70,7 @@ pub fn runner<T: Send + 'static>(
                                             .unwrap()
                                             .debug_index_in_engine()
                                             as u32,
-                                        function_index_and_pc.1,
+                                        function_index_and_pc.1.raw(),
                                     ) {
                                         let mut stack = Vec::new();
                                         for index in 0..frame.num_stacks(&mut store)? {
@@ -234,7 +234,7 @@ pub fn runner<T: Send + 'static>(
 
                                         let mut breakpoints_per_stores: BTreeMap<
                                             u64,
-                                            BTreeSet<u32>,
+                                            BTreeSet<wasmtime::ModulePC>,
                                         > = BTreeMap::new();
                                         for breakpoint in store.as_context().breakpoints().unwrap()
                                         {

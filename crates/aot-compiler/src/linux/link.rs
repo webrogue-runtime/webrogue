@@ -1,7 +1,7 @@
 #[allow(unreachable_code)]
 #[allow(unused_variables)]
 pub fn link_musl(
-    object_file: &crate::utils::TemporalFile,
+    object_file: &crate::utils::TemporaryFile,
     output_file_path: &std::path::PathBuf,
     vulkan: bool,
 ) -> anyhow::Result<()> {
@@ -59,7 +59,7 @@ pub fn link_musl(
 }
 
 pub fn link_glibc(
-    object_file: &crate::utils::TemporalFile,
+    object_file: &crate::utils::TemporaryFile,
     output_file_path: &std::path::PathBuf,
     vulkan: bool,
 ) -> anyhow::Result<()> {
