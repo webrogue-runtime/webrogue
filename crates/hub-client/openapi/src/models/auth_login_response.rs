@@ -15,12 +15,15 @@ use serde::{Deserialize, Serialize};
 pub struct AuthLoginResponse {
     #[serde(rename = "token")]
     pub token: String,
+    #[serde(rename = "needs_email_verification")]
+    pub needs_email_verification: bool,
 }
 
 impl AuthLoginResponse {
-    pub fn new(token: String) -> AuthLoginResponse {
+    pub fn new(token: String, needs_email_verification: bool) -> AuthLoginResponse {
         AuthLoginResponse {
             token,
+            needs_email_verification,
         }
     }
 }

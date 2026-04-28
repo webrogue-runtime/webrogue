@@ -37,9 +37,9 @@ pub fn ws_api_url() -> String {
 pub fn assets_url() -> &'static str {
     if use_localhost_ui() {
         if cfg!(target_os = "android") {
-            "http://10.0.2.2:5202/"
+            "http://10.0.2.2:5173/"
         } else {
-            "http://localhost:5202/"
+            "http://localhost:5173/"
         }
     } else {
         "wrlauncher://asset/"
