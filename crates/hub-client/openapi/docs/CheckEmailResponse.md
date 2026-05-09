@@ -1,11 +1,10 @@
-# ErrorResponse
+# CheckEmailResponse
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**error** | **String** |  | 
-**error_code** | Option<**ErrorCode**> |  (enum: WEAK_PASSWORD, WRONG_PASSWORD) | 
+**is_taken** | **bool** |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

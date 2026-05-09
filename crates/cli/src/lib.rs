@@ -47,6 +47,9 @@ enum Cli {
 pub fn main() -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
     tracing_subscriber::fmt().init();
+    #[cfg(feature = "__rustls")]
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+
     let args = Cli::parse();
     match args {
         #[cfg(feature = "run")]

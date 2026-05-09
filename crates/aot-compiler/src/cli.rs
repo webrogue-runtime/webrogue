@@ -63,7 +63,7 @@ pub enum Commands {
         /// Don't add vk_swiftshader.dll.
         /// SwiftShader is used as a fallback renderer on system that have no Vulkan drivers installed.
         /// Webrogue places SwiftShader in the same directory resulting executable is in.
-        /// It's recommended to keep SwiftShader in most cases, but you can use this option to skip this 
+        /// It's recommended to keep SwiftShader in most cases, but you can use this option to skip this
         /// step, so you app will fail to start if hardware-accelerated rendering is unavailable.
         #[arg(long)]
         no_swiftshader: bool,
@@ -118,7 +118,7 @@ impl Commands {
                 target,
             } => {
                 let target = crate::Target::from_name(target)?;
-                let object_file = crate::utils::TemporalFile::for_tmp_object(out_path)?;
+                let object_file = crate::utils::TemporaryFile::for_tmp_object(out_path)?;
                 crate::compile::compile_wrapp_to_object(
                     wrapp_path,
                     object_file.path(),

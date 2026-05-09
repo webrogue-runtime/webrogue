@@ -4,10 +4,8 @@ Cargo.toml
 README.md
 docs/AuthLoginRequest.md
 docs/AuthLoginResponse.md
-docs/AuthSignupRequest.md
-docs/AuthSignupResponse.md
-docs/AuthVerifyEmailRequest.md
-docs/AuthVerifyEmailResponse.md
+docs/CheckEmailRequest.md
+docs/CheckEmailResponse.md
 docs/ConnectDeviceWsCommand.md
 docs/ConnectDeviceWsEvent.md
 docs/DebugDeviceWsCommand.md
@@ -24,10 +22,8 @@ src/apis/mod.rs
 src/lib.rs
 src/models/auth_login_request.rs
 src/models/auth_login_response.rs
-src/models/auth_signup_request.rs
-src/models/auth_signup_response.rs
-src/models/auth_verify_email_request.rs
-src/models/auth_verify_email_response.rs
+src/models/check_email_request.rs
+src/models/check_email_response.rs
 src/models/connect_device_ws_command.rs
 src/models/connect_device_ws_event.rs
 src/models/debug_device_ws_command.rs

@@ -27,7 +27,6 @@ pub fn generate_icons(
     build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> anyhow::Result<()> {
-    println!("Generating icons...");
     for dir in [
         "drawable",
         "mipmap-anydpi-v26",

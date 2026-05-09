@@ -19,24 +19,17 @@ use super::{Error, configuration, ContentType};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum AuthLoginError {
-    Status401(models::ErrorResponse),
-    UnknownValue(serde_json::Value),
-}
-
-/// struct for typed errors of method [`auth_signup`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum AuthSignupError {
     Status400(models::ErrorResponse),
+    Status401(models::ErrorResponse),
     Status500(models::ErrorResponse),
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`auth_verify_email`]
+/// struct for typed errors of method [`check_email`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum AuthVerifyEmailError {
-    Status401(models::ErrorResponse),
+pub enum CheckEmailError {
+    Status500(models::ErrorResponse),
     UnknownValue(serde_json::Value),
 }
 
@@ -95,18 +88,18 @@ pub async fn auth_login(configuration: &configuration::Configuration, auth_login
     }
 }
 
-/// Register a new user account. May require email verifyation
-pub async fn auth_signup(configuration: &configuration::Configuration, auth_signup_request: models::AuthSignupRequest) -> Result<models::AuthSignupResponse, Error<AuthSignupError>> {
+/// Check if a user is registered for this email
+pub async fn check_email(configuration: &configuration::Configuration, check_email_request: models::CheckEmailRequest) -> Result<models::CheckEmailResponse, Error<CheckEmailError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_body_auth_signup_request = auth_signup_request;
+    let p_body_check_email_request = check_email_request;
 
-    let uri_str = format!("{}/api/v1/auth/signup", configuration.base_path);
+    let uri_str = format!("{}/api/v1/auth/check_email", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
-    req_builder = req_builder.json(&p_body_auth_signup_request);
+    req_builder = req_builder.json(&p_body_check_email_request);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -123,50 +116,12 @@ pub async fn auth_signup(configuration: &configuration::Configuration, auth_sign
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::AuthSignupResponse`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::AuthSignupResponse`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::CheckEmailResponse`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::CheckEmailResponse`")))),
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<AuthSignupError> = serde_json::from_str(&content).ok();
-        Err(Error::ResponseError(ResponseContent { status, content, entity }))
-    }
-}
-
-/// Verify user registration using OTP code sent to email
-pub async fn auth_verify_email(configuration: &configuration::Configuration, auth_verify_email_request: models::AuthVerifyEmailRequest) -> Result<models::AuthVerifyEmailResponse, Error<AuthVerifyEmailError>> {
-    // add a prefix to parameters to efficiently prevent name collisions
-    let p_body_auth_verify_email_request = auth_verify_email_request;
-
-    let uri_str = format!("{}/api/v1/verify_email", configuration.base_path);
-    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
-
-    if let Some(ref user_agent) = configuration.user_agent {
-        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
-    }
-    req_builder = req_builder.json(&p_body_auth_verify_email_request);
-
-    let req = req_builder.build()?;
-    let resp = configuration.client.execute(req).await?;
-
-    let status = resp.status();
-    let content_type = resp
-        .headers()
-        .get("content-type")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
-    let content_type = super::ContentType::from(content_type);
-
-    if !status.is_client_error() && !status.is_server_error() {
-        let content = resp.text().await?;
-        match content_type {
-            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::AuthVerifyEmailResponse`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::AuthVerifyEmailResponse`")))),
-        }
-    } else {
-        let content = resp.text().await?;
-        let entity: Option<AuthVerifyEmailError> = serde_json::from_str(&content).ok();
+        let entity: Option<CheckEmailError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

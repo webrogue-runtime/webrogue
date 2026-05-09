@@ -1,5 +1,8 @@
 use anyhow::Context as _;
+use semver::Version;
 use std::io::Write;
+use webrogue_cli_goodies::{note, step, warning};
+use webrogue_wrapp::config::Config;
 
 mod icons;
 mod types;
@@ -16,6 +19,49 @@ pub enum Signing {
 }
 
 #[allow(clippy::too_many_arguments)]
+pub fn build(
+    sdk_env: Option<&std::path::PathBuf>,
+    java_home_env: Option<&std::path::PathBuf>,
+    container_path: &std::path::PathBuf,
+    build_dir: &std::path::PathBuf,
+    signing: Signing,
+    debug: bool,
+    output: Option<std::path::PathBuf>,
+    cache: Option<&std::path::PathBuf>,
+) -> anyhow::Result<()> {
+    if webrogue_wrapp::is_path_a_wrapp(container_path).with_context(|| {
+        format!(
+            "Unable to determine file type for {}",
+            container_path.display()
+        )
+    })? {
+        build_using_vfs(
+            || webrogue_wrapp::WrappVFSBuilder::from_file_path(container_path),
+            sdk_env,
+            java_home_env,
+            container_path,
+            build_dir,
+            signing,
+            debug,
+            output,
+            cache,
+        )
+    } else {
+        build_using_vfs(
+            || webrogue_wrapp::RealVFSBuilder::from_config_path(container_path),
+            sdk_env,
+            java_home_env,
+            container_path,
+            build_dir,
+            signing,
+            debug,
+            output,
+            cache,
+        )
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
     sdk_env: Option<&std::path::PathBuf>,
@@ -28,6 +74,7 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     let mut vfs_builder = vfs_builder_factory()?;
+    let config = vfs_builder.config()?.clone();
     let mut artifacts =
         crate::utils::Artifacts::new().with_context(|| "Error opening artifacts library")?;
     let template_id = artifacts.get_data("android_gradle/template_id")?;
@@ -35,15 +82,18 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
 
     if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id) {
         old_stamp = None;
-        println!("(Re)creating Android Gradle project...");
-        if build_dir.exists() {
-            anyhow::ensure!(build_dir.is_dir(), "build_dir can't be a file");
-            std::fs::remove_dir_all(build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
-        }
-        artifacts.extract_dir(build_dir, "android_gradle/template")?;
+
+        step("(Re)creating Android Gradle project".to_owned(), || {
+            if build_dir.exists() {
+                anyhow::ensure!(build_dir.is_dir(), "build_dir can't be a file");
+                std::fs::remove_dir_all(build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
+            }
+            artifacts.extract_dir(build_dir, "android_gradle/template")?;
+            anyhow::Ok(())
+        })?;
     }
 
-    let object_file = crate::utils::TemporalFile::for_tmp_object(build_dir.join("aarch64"))?;
+    let object_file = crate::utils::TemporaryFile::for_tmp_object(build_dir.join("aarch64"))?;
 
     let assets_path = build_dir
         .join("app")
@@ -53,11 +103,12 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     if !std::fs::exists(assets_path.clone())? {
         std::fs::create_dir(assets_path.clone())?;
     };
-    println!("Generating stripped WRAPP file...");
-    let version = vfs_builder.config()?.version.clone();
-
-    webrogue_wrapp::WRAPPWriter::new(vfs_builder_factory()?)
-        .write(&mut std::fs::File::create(assets_path.join("aot.swrapp"))?)?;
+    let version = config.version.clone();
+    step("Generating stripped WRAPP file".to_owned(), || {
+        webrogue_wrapp::WRAPPWriter::new(vfs_builder_factory()?)
+            .write(&mut std::fs::File::create(assets_path.join("aot.swrapp"))?)?;
+        anyhow::Ok(())
+    })?;
 
     let icons_stamp = icons::build(
         build_dir,
@@ -65,30 +116,66 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
         old_stamp.as_ref().map(|stamp| &stamp.icons),
     )?;
 
-    println!("Compiling AOT object...");
-    crate::compile::compile_wrapp_to_object(
-        container_path,
-        object_file.path(),
-        crate::Target::ARM64LinuxAndroid,
-        cache,
-        true,
-        true,
-    )?;
+    step("Compiling AOT object".to_owned(), || {
+        crate::compile::compile_wrapp_to_object(
+            container_path,
+            object_file.path(),
+            crate::Target::ARM64LinuxAndroid,
+            cache,
+            true,
+            true,
+        )
+    })?;
 
-    crate::android::link::link(
-        &object_file,
-        crate::Target::ARM64LinuxAndroid,
-        &build_dir
-            .join("app")
-            .join("src")
-            .join("main")
-            .join("jniLibs")
-            .join("arm64-v8a")
-            .join("libwebrogue_aot.so"),
-    )?;
+    step("Linking native library".to_owned(), || {
+        crate::android::link::link(
+            &object_file,
+            crate::Target::ARM64LinuxAndroid,
+            &build_dir
+                .join("app")
+                .join("src")
+                .join("main")
+                .join("jniLibs")
+                .join("arm64-v8a")
+                .join("libwebrogue_aot.so"),
+        )
+    })?;
     drop(object_file);
 
-    println!("Building Android project...");
+    let copied_apk_dir = step("Building Android project".to_owned(), || {
+        gradle_build(
+            sdk_env,
+            java_home_env,
+            build_dir,
+            signing,
+            debug,
+            output,
+            config,
+            version,
+        )
+    })?;
+    note(&format!("APK saved to {}", copied_apk_dir.display()));
+
+    let new_stamp = types::Stamp {
+        template_id,
+        icons: icons_stamp,
+    };
+    if old_stamp.as_ref() != Some(&new_stamp) {
+        write_stamp(new_stamp, build_dir)?;
+    }
+    Ok(())
+}
+
+fn gradle_build(
+    sdk_env: Option<&std::path::PathBuf>,
+    java_home_env: Option<&std::path::PathBuf>,
+    build_dir: &std::path::PathBuf,
+    signing: Signing,
+    debug: bool,
+    output: Option<std::path::PathBuf>,
+    config: Config,
+    version: Version,
+) -> anyhow::Result<std::path::PathBuf> {
     #[cfg(target_os = "windows")]
     let (gradle_shell, gradle_script) = ("cmd", "gradlew.bat");
     #[cfg(not(target_os = "windows"))]
@@ -112,12 +199,12 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     set_gradle_property(
         &mut properties_file,
         "webrogueApplicationId",
-        vfs_builder.config()?.id.to_ascii_lowercase(),
+        config.id.to_ascii_lowercase(),
     )?;
     set_gradle_property(
         &mut properties_file,
         "webrogueApplicationName",
-        vfs_builder.config()?.name.clone(),
+        config.name.clone(),
     )?;
     if let Signing::Signed {
         keystore_path,
@@ -140,9 +227,9 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
         set_gradle_property(&mut properties_file, "webrogueKeyPassword", key_password)?;
         set_gradle_property(&mut properties_file, "webrogueKeyAlias", key_alias)?;
     } else if !debug {
-        eprintln!(
-            "warning: Using debug signature. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signature",
-        );
+        warning(
+        "warning: Using debug signature. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signature",
+      );
     }
     drop(properties_file);
     let mut command = std::process::Command::new(gradle_shell);
@@ -195,7 +282,7 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
         }
     };
 
-    let output_apk_filename = vfs_builder.config()?.name.clone().replace(' ', "_") + ".apk";
+    let output_apk_filename = config.name.clone().replace(' ', "_") + ".apk";
 
     let copied_apk_dir = if let Some(output) = output {
         if output.is_dir() {
@@ -207,59 +294,7 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
         build_dir.join(output_apk_filename)
     };
     std::fs::rename(gradle_apk_path, &copied_apk_dir)?;
-    println!("APK saved to {}", copied_apk_dir.display());
-
-    let new_stamp = types::Stamp {
-        template_id,
-        icons: icons_stamp,
-    };
-    if old_stamp.as_ref() != Some(&new_stamp) {
-        write_stamp(new_stamp, build_dir)?;
-    }
-    Ok(())
-}
-
-#[allow(clippy::too_many_arguments)]
-pub fn build(
-    sdk_env: Option<&std::path::PathBuf>,
-    java_home_env: Option<&std::path::PathBuf>,
-    container_path: &std::path::PathBuf,
-    build_dir: &std::path::PathBuf,
-    signing: Signing,
-    debug: bool,
-    output: Option<std::path::PathBuf>,
-    cache: Option<&std::path::PathBuf>,
-) -> anyhow::Result<()> {
-    if webrogue_wrapp::is_path_a_wrapp(container_path).with_context(|| {
-        format!(
-            "Unable to determine file type for {}",
-            container_path.display()
-        )
-    })? {
-        build_using_vfs(
-            || webrogue_wrapp::WrappVFSBuilder::from_file_path(container_path),
-            sdk_env,
-            java_home_env,
-            container_path,
-            build_dir,
-            signing,
-            debug,
-            output,
-            cache,
-        )
-    } else {
-        build_using_vfs(
-            || webrogue_wrapp::RealVFSBuilder::from_config_path(container_path),
-            sdk_env,
-            java_home_env,
-            container_path,
-            build_dir,
-            signing,
-            debug,
-            output,
-            cache,
-        )
-    }
+    anyhow::Ok(copied_apk_dir)
 }
 
 fn read_stamp(build_dir: &std::path::Path) -> anyhow::Result<types::Stamp> {

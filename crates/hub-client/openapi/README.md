@@ -27,8 +27,7 @@ All URIs are relative to *https://api.hub.example.com/v1*
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *DefaultApi* | [**auth_login**](docs/DefaultApi.md#auth_login) | **POST** /api/v1/auth/login | User login
-*DefaultApi* | [**auth_signup**](docs/DefaultApi.md#auth_signup) | **POST** /api/v1/auth/signup | User signup (registration)
-*DefaultApi* | [**auth_verify_email**](docs/DefaultApi.md#auth_verify_email) | **POST** /api/v1/verify_email | Verify Email with OTP
+*DefaultApi* | [**check_email**](docs/DefaultApi.md#check_email) | **POST** /api/v1/auth/check_email | Check if email is taken
 *DefaultApi* | [**get_current_user**](docs/DefaultApi.md#get_current_user) | **GET** /api/v1/users/me | Get current user data
 *DefaultApi* | [**list_devices**](docs/DefaultApi.md#list_devices) | **GET** /api/v1/devices | List user devices
 
@@ -37,10 +36,8 @@ Class | Method | HTTP request | Description
 
  - [AuthLoginRequest](docs/AuthLoginRequest.md)
  - [AuthLoginResponse](docs/AuthLoginResponse.md)
- - [AuthSignupRequest](docs/AuthSignupRequest.md)
- - [AuthSignupResponse](docs/AuthSignupResponse.md)
- - [AuthVerifyEmailRequest](docs/AuthVerifyEmailRequest.md)
- - [AuthVerifyEmailResponse](docs/AuthVerifyEmailResponse.md)
+ - [CheckEmailRequest](docs/CheckEmailRequest.md)
+ - [CheckEmailResponse](docs/CheckEmailResponse.md)
  - [ConnectDeviceWsCommand](docs/ConnectDeviceWsCommand.md)
  - [ConnectDeviceWsEvent](docs/ConnectDeviceWsEvent.md)
  - [DebugDeviceWsCommand](docs/DebugDeviceWsCommand.md)

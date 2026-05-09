@@ -78,7 +78,7 @@ pub fn run(
 
 async fn receive_byte(receiver: &mut BoxedPacketReceiver) -> anyhow::Result<u8> {
     let byte = receiver.read_u8().await?;
-    // eprint!("{}", byte as char);
+    eprint!("{}", byte as char);
     std::io::stderr().flush().unwrap();
     Ok(byte)
 }

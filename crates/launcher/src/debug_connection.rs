@@ -21,12 +21,13 @@ impl DebugConnection {
                 let config = config.clone();
                 let result =
                     async move {
-                        let (mut ws_stream, _) = connect_async(format!(
+                        let (ws_stream, _) = connect_async(format!(
                             "{}/api/v1/devices/connect?{}",
                             ws_api_url(),
                             auth_token
                         ))
                         .await?;
+                        let (mut write, mut read) = ws_stream.split();
 
                         let command = ConnectDeviceWsCommand {
                             name: Some(device_name),
@@ -34,14 +35,14 @@ impl DebugConnection {
                         };
                         let command = serde_json::to_string(&command)?;
 
-                        ws_stream.send(Message::Text(command.into())).await?;
+                        write.send(Message::Text(command.into())).await?;
 
                         let event = loop {
-                            match ws_stream.next().await.unwrap()? {
+                            match read.next().await.unwrap()? {
                                 Message::Text(utf8_bytes) => break utf8_bytes,
                                 Message::Binary(_bytes) => todo!(),
                                 Message::Ping(bytes) => {
-                                    ws_stream.send(Message::Pong(bytes)).await?;
+                                    write.send(Message::Pong(bytes)).await?;
                                 }
                                 Message::Pong(_bytes) => {}
                                 Message::Close(close_frame) => {
@@ -61,62 +62,39 @@ impl DebugConnection {
                         };
                         let event: ConnectDeviceWsEvent = serde_json::from_str(event.as_str())?;
 
-                        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
-
                         let run_task = tokio::spawn(async move {
                             config
                                 .launch(
                                     event.sdp_offer,
                                     Box::new(move |sdp_answer| {
-                                        let tx = tx.clone();
-                                        let _ = tokio::spawn(async move { tx.send(sdp_answer) });
+                                        tokio::spawn(async move {
+                                            let result: anyhow::Result<()> = (async move || {
+                                                let command = ConnectDeviceWsCommand {
+                                                    name: None,
+                                                    sdp_answer: Some(sdp_answer),
+                                                };
+                                                let command = serde_json::to_string(&command)?;
+                                                write.send(Message::Text(command.into())).await?;
+                                                Ok(())
+                                            })(
+                                            )
+                                            .await;
+                                            if let Err(err) = result {
+                                                tracing::error!("Error sending sdp_answer {}", err);
+                                            }
+                                        });
                                     }),
                                 )
                                 .await
                         });
 
-                        tokio::spawn(async move {
-                            loop {
-                                tokio::select! {
-                                    sdp_answer = rx.recv() => {
-                                        if let Some(sdp_answer) = sdp_answer {
-                                            let command = ConnectDeviceWsCommand {
-                                                name: None,
-                                                sdp_answer: Some(sdp_answer),
-                                            };
-                                            let command = serde_json::to_string(&command)?;
-                                            ws_stream.send(Message::Text(command.into())).await?;
-                                        } else {
-                                            return anyhow::Ok(());
-                                        }
-                                    },
-                                    event = ws_stream.next() => {
-                                        if let Some(event) = event {
-                                            let event = event?;
-                                            match event {
-                                                Message::Text(_utf8_bytes) => todo!(),
-                                                Message::Binary(_bytes) => todo!(),
-                                                Message::Ping(bytes) => {
-                                                    ws_stream.send(Message::Pong(bytes)).await?;
-                                                }
-                                                Message::Pong(_bytes) => todo!(),
-                                                Message::Close(_close_frame) => todo!(),
-                                                Message::Frame(_frame) => todo!(),
-                                            };
-                                        } else {
-                                            return anyhow::Ok(());
-                                        }
-                                    }
-                                }
-                            }
-                        });
                         run_task.await??;
                         anyhow::Ok(())
                     }
                     .await;
 
                 if let Err(err) = result {
-                    eprintln!("{:#}", err)
+                    eprintln!("Error: {:#}", err)
                 }
 
                 tokio::time::sleep(Duration::from_secs(5)).await;

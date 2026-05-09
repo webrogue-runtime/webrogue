@@ -41,8 +41,8 @@ impl Artifacts {
         &mut self,
         base_path: P,
         file: &str,
-    ) -> anyhow::Result<super::TemporalFile> {
-        let result = super::TemporalFile::for_tmp(base_path.as_ref(), file.replace("/", "_"))?;
+    ) -> anyhow::Result<super::TemporaryFile> {
+        let result = super::TemporaryFile::for_tmp(base_path.as_ref(), file.replace("/", "_"))?;
         self.inner
             .extract(result.path(), file)
             .with_context(|| format!("Unable to extract {} from archive", file))?;

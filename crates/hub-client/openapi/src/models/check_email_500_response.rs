@@ -12,15 +12,15 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct UserResponse {
-    #[serde(rename = "email")]
-    pub email: String,
+pub struct CheckEmail500Response {
+    #[serde(rename = "error")]
+    pub error: serde_json::Value,
 }
 
-impl UserResponse {
-    pub fn new(email: String) -> UserResponse {
-        UserResponse {
-            email,
+impl CheckEmail500Response {
+    pub fn new(error: serde_json::Value) -> CheckEmail500Response {
+        CheckEmail500Response {
+            error,
         }
     }
 }

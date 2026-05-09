@@ -9,8 +9,8 @@ fn localhost_api_addr_port() -> &'static str {
 }
 
 fn use_localhost_api() -> bool {
-    cfg!(debug_assertions)
-    // false
+    // cfg!(debug_assertions)
+    false
 }
 
 fn use_localhost_ui() -> bool {
@@ -37,9 +37,9 @@ pub fn ws_api_url() -> String {
 pub fn assets_url() -> &'static str {
     if use_localhost_ui() {
         if cfg!(target_os = "android") {
-            "http://10.0.2.2:5202/"
+            "http://10.0.2.2:5173/"
         } else {
-            "http://localhost:5202/"
+            "http://localhost:5173/"
         }
     } else {
         "wrlauncher://asset/"

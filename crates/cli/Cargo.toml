@@ -29,13 +29,13 @@ hub = [
     "dep:serde_json",
     "dep:serde",
     "dep:rand",
-    "dep:inquire",
-    "dep:crossterm",
-    "dep:spinners",
-    "dep:webrogue-hub-debuggee"
+    "dep:webrogue-cli-goodies",
+    "dep:webrogue-hub-debuggee",
+    "__rustls",
 ]
 llvm = ["webrogue-aot-compiler/llvm"]
 appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
+__rustls = ["dep:rustls"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -54,16 +54,15 @@ webrogue-hub-debuggee = { workspace = true, optional = true }
 webrogue-debugger = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"], optional = true }
 blake3 = { workspace = true, optional = true }
-tokio-tungstenite = { workspace = true, optional = true }
+tokio-tungstenite = { workspace = true, optional = true, features = ["rustls-tls-webpki-roots"] }
 futures-util = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 async-trait = { workspace = true, optional = true }
 tokio-util = { workspace = true, features = ["rt", "io"], optional = true }
-inquire = { workspace = true, optional = true }
-crossterm = { workspace = true, optional = true }
-spinners = { workspace = true, optional = true }
+webrogue-cli-goodies = { workspace = true, optional = true }
+rustls = { workspace = true, optional = true, features = ["aws_lc_rs"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 webrogue-gfx-winit = { workspace = true, features = ["static-vk"], optional = true }

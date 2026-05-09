@@ -165,13 +165,12 @@ fn get_asset_response(
 ) -> Result<http::Response<&'static [u8]>, Box<dyn std::error::Error>> {
     let path = request.uri().path();
     let data: Option<(&[u8], _)> = match path {
-        "/" => Some((include_bytes!("../webview_assets/index.html"), "text/html")),
         "/main.js" => Some((
             include_bytes!("../webview_assets/main.js"),
             "text/javascript",
         )),
         "/style.css" => Some((include_bytes!("../webview_assets/style.css"), "text/css")),
-        _ => None,
+        _ => Some((include_bytes!("../webview_assets/index.html"), "text/html")),
     };
     let Some((content, mimetype)) = data else {
         return Ok(not_found_response());

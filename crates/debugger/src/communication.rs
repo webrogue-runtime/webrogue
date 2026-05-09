@@ -63,6 +63,6 @@ pub struct ReadWasmMessage {
 }
 
 pub struct EditBreakpointMessage {
-    pub breakpoints: BTreeMap<u64, BTreeSet<u32>>, // (module, offset)
+    pub breakpoints: BTreeMap<u64, BTreeSet<wasmtime::ModulePC>>, // (module, offset)
     pub sender: tokio::sync::mpsc::UnboundedSender<bool>,
 }

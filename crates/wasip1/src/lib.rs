@@ -1,30 +1,5 @@
-use cap_rand::Rng as _;
-use cap_rand::SeedableRng as _;
-use rand::Rng as _;
-
 mod fs;
 mod stdout;
-
-struct RandomCtx {}
-
-impl cap_rand::RngCore for RandomCtx {
-    fn next_u32(&mut self) -> u32 {
-        rand::random()
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        rand::random()
-    }
-
-    fn fill_bytes(&mut self, dst: &mut [u8]) {
-        rand::rng().fill_bytes(dst);
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), cap_rand::Error> {
-        self.fill_bytes(dest);
-        Ok(())
-    }
-}
 
 pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
     handle: VFSHandle,

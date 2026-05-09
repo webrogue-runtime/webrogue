@@ -25,6 +25,7 @@ pub async fn debug(
     wrapp_path: &std::path::Path,
     device_name: &str,
     api_key: &str,
+    gdb_port: u16,
 ) -> Result<(), anyhow::Error> {
     let (done_tx, mut done_rx) = tokio::sync::mpsc::channel(1);
     let mut connection = OutgoingDebugConnection::new(done_tx).await?;
@@ -84,9 +85,8 @@ pub async fn debug(
             .await?;
         }
 
-        let port = 8012;
-        let tcp_listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
-        eprintln!("Awaiting for incoming GDB Remote connection on port {port}");
+        let tcp_listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", gdb_port)).await?;
+        eprintln!("Awaiting for incoming GDB Remote connection on port {gdb_port}");
         let (mut tcp_stream, _addr) = tcp_listener.accept().await?;
         eprintln!("GDB Remote connection accepted!");
 

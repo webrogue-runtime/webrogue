@@ -30,19 +30,15 @@ impl ErrorResponse {
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum ErrorCode {
-    #[serde(rename = "USERNAME_INVALID")]
-    UsernameInvalid,
-    #[serde(rename = "EMAIL_INVALID")]
-    EmailInvalid,
-    #[serde(rename = "LOGIN_INVALID")]
-    LoginInvalid,
-    #[serde(rename = "PASSWORD_INVALID")]
-    PasswordInvalid,
+    #[serde(rename = "WEAK_PASSWORD")]
+    WeakPassword,
+    #[serde(rename = "WRONG_PASSWORD")]
+    WrongPassword,
 }
 
 impl Default for ErrorCode {
     fn default() -> ErrorCode {
-        Self::UsernameInvalid
+        Self::WeakPassword
     }
 }
 

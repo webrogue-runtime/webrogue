@@ -28,4 +28,8 @@ impl WindowRegistry {
     pub(crate) fn get_window(&mut self, id: WindowId) -> Option<&WinitWindowInternal> {
         self.windows.get(&id)
     }
+
+    pub fn clean(&mut self) {
+        self.windows.clear();
+    }
 }

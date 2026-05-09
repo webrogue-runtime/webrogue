@@ -1,6 +1,7 @@
 use anyhow::Context as _;
 use clap::Subcommand;
 use std::{fs::File, io::Write as _};
+use webrogue_cli_goodies::step;
 use webrogue_wrapp::config::Requirement;
 
 mod build;
@@ -73,56 +74,58 @@ fn run_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
         || old_config != Some(&wrapp_config)
     {
         old_stamp = None;
-        println!("(Re)generating Xcode project...");
-        if args.build_dir.exists() {
-            anyhow::ensure!(args.build_dir.is_dir(), "build_dir can't be a file");
-            std::fs::remove_dir_all(args.build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
-        }
-        artifacts.extract_dir(args.build_dir, "apple_xcode/template")?;
+        step("(Re)generating Xcode project".to_owned(), || {
+            if args.build_dir.exists() {
+                anyhow::ensure!(args.build_dir.is_dir(), "build_dir can't be a file");
+                std::fs::remove_dir_all(args.build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
+            }
+            artifacts.extract_dir(args.build_dir, "apple_xcode/template")?;
 
-        for platform in ["macos", "iphoneos", "iphonesimulator"] {
-            let is_vulkan_needed = wrapp_config
-                .vulkan_requirement()
-                .to_bool_option()
-                .unwrap_or(platform != "iphonesimulator");
+            for platform in ["macos", "iphoneos", "iphonesimulator"] {
+                let is_vulkan_needed = wrapp_config
+                    .vulkan_requirement()
+                    .to_bool_option()
+                    .unwrap_or(platform != "iphonesimulator");
 
-            let bin_dir = args.build_dir.join("bin").join(platform);
-            let impl_lib_name = "libGFXStreamImpl.a";
-            let stub_lib_name = "libGFXStreamStub.a";
-            let (used_lib_name, unused_lib_name) = if is_vulkan_needed {
-                (impl_lib_name, stub_lib_name)
-            } else {
-                (stub_lib_name, impl_lib_name)
-            };
-            std::fs::rename(bin_dir.join(used_lib_name), bin_dir.join("libGFXStream.a"))?;
-            std::fs::remove_file(bin_dir.join(unused_lib_name))?;
-        }
+                let bin_dir = args.build_dir.join("bin").join(platform);
+                let impl_lib_name = "libGFXStreamImpl.a";
+                let stub_lib_name = "libGFXStreamStub.a";
+                let (used_lib_name, unused_lib_name) = if is_vulkan_needed {
+                    (impl_lib_name, stub_lib_name)
+                } else {
+                    (stub_lib_name, impl_lib_name)
+                };
+                std::fs::rename(bin_dir.join(used_lib_name), bin_dir.join("libGFXStream.a"))?;
+                std::fs::remove_file(bin_dir.join(unused_lib_name))?;
+            }
 
-        if !is_simulator_supported {
-            std::fs::remove_dir_all(args.build_dir.join("bin").join("iphonesimulator"))?;
-            File::create(args.build_dir.join("bin").join("iphonesimulator"))?
-                .write_all(NO_VULKAN_ON_SIM_ERROR.as_bytes())?;
-        }
+            if !is_simulator_supported {
+                std::fs::remove_dir_all(args.build_dir.join("bin").join("iphonesimulator"))?;
+                File::create(args.build_dir.join("bin").join("iphonesimulator"))?
+                    .write_all(NO_VULKAN_ON_SIM_ERROR.as_bytes())?;
+            }
 
-        let mut id_parts = wrapp_config
-            .id
-            .split(".")
-            .map(|s| s.to_owned())
-            .collect::<Vec<_>>();
+            let mut id_parts = wrapp_config
+                .id
+                .split(".")
+                .map(|s| s.to_owned())
+                .collect::<Vec<_>>();
 
-        let last_part = id_parts.last_mut().unwrap();
-        let mut chars = (*last_part).chars().collect::<Vec<_>>();
-        *chars.first_mut().unwrap() = chars.first().unwrap().to_ascii_uppercase();
-        *last_part = chars.iter().copied().collect();
-        let id = id_parts.join(".");
+            let last_part = id_parts.last_mut().unwrap();
+            let mut chars = (*last_part).chars().collect::<Vec<_>>();
+            *chars.first_mut().unwrap() = chars.first().unwrap().to_ascii_uppercase();
+            *last_part = chars.iter().copied().collect();
+            let id = id_parts.join(".");
 
-        std::fs::File::create(args.build_dir.join("aot.xcconfig"))?.write_fmt(format_args!(
-            "WEBROGUE_APPLICATION_NAME = {}
+            std::fs::File::create(args.build_dir.join("aot.xcconfig"))?.write_fmt(format_args!(
+                "WEBROGUE_APPLICATION_NAME = {}
 WEBROGUE_APPLICATION_ID = {}
 WEBROGUE_APPLICATION_VERSION = {}
 ",
-            wrapp_config.name, id, wrapp_config.version
-        ))?;
+                wrapp_config.name, id, wrapp_config.version
+            ))?;
+            anyhow::Ok(())
+        })?;
     }
 
     let icons_stamp = icons::build(
@@ -131,14 +134,16 @@ WEBROGUE_APPLICATION_VERSION = {}
         old_stamp.as_ref().map(|stamp| &stamp.icons),
     )?;
 
-    println!("Generating stripped WRAPP file...");
-    let aot_dir = args.build_dir.join("aot");
-    if !aot_dir.exists() {
-        std::fs::create_dir(&aot_dir)?;
-    }
-    webrogue_wrapp::WRAPPWriter::new(vfs_builder_factory()?).write(&mut std::fs::File::create(
-        args.build_dir.join("aot.swrapp"),
-    )?)?;
+    step("Generating stripped WRAPP file".to_owned(), || {
+        let aot_dir = args.build_dir.join("aot");
+        if !aot_dir.exists() {
+            std::fs::create_dir(&aot_dir)?;
+        }
+        webrogue_wrapp::WRAPPWriter::new(vfs_builder_factory()?).write(
+            &mut std::fs::File::create(args.build_dir.join("aot.swrapp"))?,
+        )?;
+        anyhow::Ok(())
+    })?;
 
     match command {
         XcodeCommands::Macos { config } => {
@@ -193,13 +198,13 @@ WEBROGUE_APPLICATION_VERSION = {}
                     args.cache,
                 )?;
             } else {
-                eprintln!("warning: {}", NO_VULKAN_ON_SIM_ERROR);
+                webrogue_cli_goodies::warning(NO_VULKAN_ON_SIM_ERROR);
             }
 
-            println!(
-                "Xcode project saved to {}",
+            webrogue_cli_goodies::note(&format!(
+                "Xcode project saved to '{}'",
                 args.build_dir.join("webrogue.xcodeproj").display()
-            );
+            ));
         }
     }
 

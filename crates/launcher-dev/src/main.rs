@@ -1,6 +1,7 @@
 use winit::event_loop::EventLoop;
 
 fn main() {
+    webrogue_launcher::install_default_crypto_provider();
     #[cfg(target_os = "linux")]
     let event_loop = {
         use winit_x11::EventLoopBuilderExtX11;

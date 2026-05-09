@@ -1,7 +1,7 @@
-use std::{fmt::Display, io::stdout, path::PathBuf};
+use std::{fmt::Display, path::PathBuf};
 
+use anyhow::Context;
 use clap::Subcommand;
-use crossterm::style::Stylize;
 use webrogue_hub_client::HTTP_BASE_ADDR;
 mod debug;
 #[cfg(feature = "run")]
@@ -31,6 +31,8 @@ pub enum HubCommand {
         /// ID of device to run on
         #[arg(long)]
         device: Option<String>,
+        #[arg(long)]
+        gdb_port: u16,
     },
 }
 
@@ -63,7 +65,9 @@ impl HubCommand {
                 wrapp_path,
                 api_key,
                 device,
+                gdb_port,
             } => {
+                let gdb_port = *gdb_port;
                 tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()?
@@ -71,10 +75,14 @@ impl HubCommand {
                         let device = if let Some(device) = device {
                             device.clone()
                         } else {
-                            select_device(api_key).await?
+                            anyhow::ensure!(
+                                webrogue_cli_goodies::is_tty(),
+                                "No device has been specified. Use --device option or run in a terminal to select device interactively"
+                            );
+                            select_device(api_key).await.context("An error occurred while trying to select device interactively. Note that this step can be bypassed by specifying --device option")?
                         };
 
-                        crate::hub::debug::debug(wrapp_path, &device, api_key).await?;
+                        crate::hub::debug::debug(wrapp_path, &device, api_key, gdb_port).await?;
                         anyhow::Ok(())
                     })?;
                 Ok(())
@@ -110,20 +118,23 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
             let response = if let Some(response) = maybe_response.as_mut() {
                 response
             } else {
-                let mut spinner = spinners::Spinner::new(
-                    spinners::Spinners::Dots11,
+                let response = webrogue_cli_goodies::step_async(
                     "Fetching device list".to_string(),
-                );
-                let mut configuration =
-                    webrogue_hub_client::openapi::apis::configuration::Configuration::new();
-                configuration.bearer_access_token = Some(api_key.clone());
-                configuration.base_path = HTTP_BASE_ADDR.to_owned();
-                let response =
-                    webrogue_hub_client::openapi::apis::default_api::list_devices(&configuration)
-                        .await;
-                spinner.stop_with_symbol(if response.is_ok() { "✅" } else { "❌" });
-                drop(spinner);
-                maybe_response.insert(response?)
+                    async || {
+                        let mut configuration =
+                            webrogue_hub_client::openapi::apis::configuration::Configuration::new();
+                        configuration.bearer_access_token = Some(api_key.clone());
+                        configuration.base_path = HTTP_BASE_ADDR.to_owned();
+                        webrogue_hub_client::openapi::apis::default_api::list_devices(
+                            &configuration,
+                        )
+                        .await
+                    },
+                )
+                .await
+                .context("Unable to fetch list of devices")?;
+
+                maybe_response.insert(response)
             };
             // response.devices.first().unwrap().
             let mut device_list: Vec<SelectableDevice> = response
@@ -141,31 +152,15 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
                 is_reload: true,
             });
             let device = tokio::task::spawn_blocking(move || {
-                let mut select = inquire::Select::new("Select device:", device_list);
-                if let Some(index) = index {
-                    select = select.with_starting_cursor(index);
-                }
-                let result = select.raw_prompt();
-                result
+                webrogue_cli_goodies::select("Select device:", device_list, index)
             })
             .await??;
-            index = Some(device.index);
-            let device = device.value;
+            index = Some(device.1);
+            let device = device.0;
             if device.is_reload {
                 maybe_response = None;
-                // crossterm::execute!(stdout(), crossterm::cursor::MoveUp(1))?;
-                // crossterm::execute!(stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::CurrentLine))?;
             } else if !device.is_online {
-                // crossterm::execute!(stdout(), crossterm::cursor::MoveUp(1))?;
-                // crossterm::execute!(stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::CurrentLine))?;
-                crossterm::execute!(
-                    stdout(),
-                    crossterm::style::PrintStyledContent(crossterm::style::StyledContent::new(
-                        crossterm::style::ContentStyle::new().red(),
-                        "This device is offline"
-                    ))
-                )?;
-                crossterm::execute!(stdout(), crossterm::cursor::MoveToNextLine(1))?;
+                webrogue_cli_goodies::write_error("This device is offline");
             } else {
                 break device;
             }
@@ -174,6 +169,5 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
         anyhow::Ok(device.name)
     }
     .await;
-    crossterm::terminal::disable_raw_mode()?;
     result
 }

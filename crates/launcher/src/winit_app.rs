@@ -1,10 +1,11 @@
 use crate::{LauncherConfig, WinitMailbox};
 use dpi::{PhysicalPosition, PhysicalSize};
 #[cfg(target_os = "linux")]
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
 };
-use std::{path::PathBuf, sync::{Arc, Mutex}};
 use webrogue_gfx_winit::{WindowRegistry, WinitProxy};
 use webrogue_hub_debuggee::{HubDebuggee, HubDebuggeeGFX, HubDebuggeeProxiedWinitGFX};
 use winit::{
@@ -20,6 +21,8 @@ use crate::build_webview;
 struct LauncherConfigImpl {
     storage_path: PathBuf,
     hub_debuggee: HubDebuggee,
+    event_loop_proxy: EventLoopProxy,
+    launch_finish_indicator: Arc<Mutex<Option<()>>>,
 }
 
 impl LauncherConfigImpl {
@@ -27,6 +30,7 @@ impl LauncherConfigImpl {
         storage_path: PathBuf,
         proxy_container: Arc<Mutex<Option<WinitProxy>>>,
         event_loop_proxy: EventLoopProxy,
+        launch_finish_indicator: Arc<Mutex<Option<()>>>,
     ) -> Self {
         Self {
             storage_path: storage_path.clone(),
@@ -34,9 +38,11 @@ impl LauncherConfigImpl {
                 storage_path.clone(),
                 HubDebuggeeGFX::ProxiedWinit(HubDebuggeeProxiedWinitGFX {
                     proxy_container,
-                    event_loop_proxy,
+                    event_loop_proxy: event_loop_proxy.clone(),
                 }),
             ),
+            event_loop_proxy,
+            launch_finish_indicator,
         }
     }
 }
@@ -52,7 +58,14 @@ impl LauncherConfig for LauncherConfigImpl {
         sdp_offer: String,
         on_sdp_answer: Box<dyn FnOnce(String) + Send>,
     ) -> anyhow::Result<()> {
-        self.hub_debuggee.launch(sdp_offer, on_sdp_answer).await
+        let result = self.hub_debuggee.launch(sdp_offer, on_sdp_answer).await;
+        let old_indicator = self.launch_finish_indicator.lock().unwrap().replace(());
+        debug_assert!(
+            old_indicator.is_none(),
+            "Trying to set launch_finish_indicator, but it's already set"
+        );
+        self.event_loop_proxy.wake_up();
+        result
     }
 }
 
@@ -66,6 +79,7 @@ pub struct App {
     storage_path: std::path::PathBuf,
     proxy_container: Arc<Mutex<Option<WinitProxy>>>,
     window_registry: WindowRegistry,
+    launch_finish_indicator: Arc<Mutex<Option<()>>>,
 }
 
 impl App {
@@ -80,6 +94,7 @@ impl App {
             storage_path,
             proxy_container: Arc::new(Mutex::new(None)),
             window_registry: WindowRegistry::new(),
+            launch_finish_indicator: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -90,7 +105,7 @@ impl ApplicationHandler for App {
         gtk::init().unwrap();
 
         let window = event_loop
-            .create_window(WindowAttributes::default())
+            .create_window(WindowAttributes::default().with_title("Webrogue"))
             .unwrap();
         let event_loop_proxy = event_loop.create_proxy();
         let (webview, mailbox) = build_webview(
@@ -100,6 +115,7 @@ impl ApplicationHandler for App {
                 self.storage_path.clone(),
                 self.proxy_container.clone(),
                 event_loop.create_proxy(),
+                self.launch_finish_indicator.clone(),
             )),
             |internal| WinitMailbox::new(event_loop_proxy, internal),
         )
@@ -206,6 +222,9 @@ impl ApplicationHandler for App {
             if let Some(webview) = self.webview.as_ref() {
                 mailbox.proxy_wake_up(webview);
             }
+        }
+        if let Some(_) = self.launch_finish_indicator.lock().unwrap().take() {
+            self.window_registry.clean();
         }
     }
 }

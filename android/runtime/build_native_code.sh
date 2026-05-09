@@ -17,8 +17,8 @@ rm -rf runner/src/main/jniLibs
 cargo install cargo-ndk
 
 # CARGO_TARGET_VAR="-C link-arg=-Wl,--no-allow-shlib-undefined -C link-arg=-Wl,--no-undefined"
-# export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="$CARGO_TARGET_VAR" 
-# export CARGO_TARGET_X86_64_LINUX_ANDROID_RUSTFLAGS="$CARGO_TARGET_VAR" 
+# export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="$CARGO_TARGET_VAR"
+# export CARGO_TARGET_X86_64_LINUX_ANDROID_RUSTFLAGS="$CARGO_TARGET_VAR"
 
 # rm -f ../process_dump/p.*
 # STRACE_COMMAND="strace -s 1000 -o ../process_dump/p -ff"
