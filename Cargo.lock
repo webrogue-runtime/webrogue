@@ -4379,12 +4379,12 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.39.0"
+version = "0.39.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63944c133d03f44e75866bbd160b95af0ec3f6a13d936d69d31c81078cbc5baf"
+checksum = "2e5a6c098c7a3b6547378093f5cc30bc54fd361ce711e05293a5cc589562739b"
 dependencies = [
  "crc32fast",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.0",
  "indexmap",
  "memchr",
 ]
@@ -7266,31 +7266,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
 
 [[package]]
-name = "wasi-common"
-version = "45.0.0"
-dependencies = [
- "async-trait",
- "bitflags 2.11.0",
- "cap-fs-ext",
- "cap-std",
- "cap-time-ext",
- "fs-set-times",
- "io-extras",
- "io-lifetimes",
- "libc",
- "log",
- "rand 0.10.1",
- "rustix 1.1.4",
- "system-interface",
- "thiserror 2.0.18",
- "tracing",
- "wasmtime",
- "wasmtime-environ",
- "wiggle",
- "windows-sys 0.61.2",
-]
-
-[[package]]
 name = "wasip2"
 version = "1.0.2+wasi-0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7498,7 +7473,7 @@ dependencies = [
  "log",
  "mach2",
  "memfd",
- "object 0.39.0",
+ "object 0.39.1",
  "once_cell",
  "postcard",
  "pulley-interpreter",
@@ -7538,7 +7513,7 @@ dependencies = [
  "hashbrown 0.17.0",
  "indexmap",
  "log",
- "object 0.39.0",
+ "object 0.39.1",
  "postcard",
  "rustc-demangle",
  "semver",
@@ -7612,7 +7587,7 @@ dependencies = [
  "gimli",
  "itertools 0.14.0",
  "log",
- "object 0.39.0",
+ "object 0.39.1",
  "pulley-interpreter",
  "smallvec",
  "target-lexicon 0.13.5",
@@ -7674,7 +7649,7 @@ dependencies = [
  "cfg-if",
  "cranelift-codegen",
  "log",
- "object 0.39.0",
+ "object 0.39.1",
  "wasmtime-environ",
 ]
 
@@ -7694,7 +7669,7 @@ dependencies = [
  "cranelift-codegen",
  "gimli",
  "log",
- "object 0.39.0",
+ "object 0.39.1",
  "target-lexicon 0.13.5",
  "wasmparser 0.246.2",
  "wasmtime-environ",
@@ -7749,17 +7724,6 @@ dependencies = [
  "futures",
  "tracing",
  "wasmtime",
-]
-
-[[package]]
-name = "wasmtime-wasi-threads"
-version = "45.0.0"
-dependencies = [
- "log",
- "rand 0.10.1",
- "wasi-common",
- "wasmtime",
- "wasmtime-wasi",
 ]
 
 [[package]]
@@ -8414,6 +8378,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "webrogue-wasi-common"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bitflags 2.11.0",
+ "cap-fs-ext",
+ "cap-std",
+ "cap-time-ext",
+ "fs-set-times",
+ "io-extras",
+ "io-lifetimes",
+ "libc",
+ "log",
+ "rand 0.10.1",
+ "rustix 1.1.4",
+ "system-interface",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "wasmtime",
+ "wasmtime-internal-core",
+ "wiggle",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "webrogue-wasip1"
 version = "0.1.0"
 dependencies = [
@@ -8424,7 +8414,7 @@ dependencies = [
  "rand 0.10.1",
  "rand_core 0.10.0",
  "rustix 1.1.4",
- "wasi-common",
+ "webrogue-wasi-common",
  "webrogue-wrapp",
  "wiggle",
  "windows-sys 0.61.2",
@@ -8435,12 +8425,11 @@ name = "webrogue-wasmtime"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "wasi-common",
  "wasmtime",
- "wasmtime-wasi-threads",
  "webrogue-aot-data",
  "webrogue-gfx",
  "webrogue-gfxstream",
+ "webrogue-wasi-common",
  "webrogue-wasip1",
  "webrogue-wrapp",
  "wiggle",
@@ -8454,7 +8443,6 @@ dependencies = [
  "getrandom 0.2.17",
  "lazy_static",
  "parking_lot",
- "wasi-common",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
@@ -8463,6 +8451,7 @@ dependencies = [
  "web-sys",
  "webrogue-gfx",
  "webrogue-gfx-winit",
+ "webrogue-wasi-common",
  "webrogue-wasip1",
  "webrogue-wrapp",
  "wiggle",
@@ -8720,6 +8709,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-environ",
  "wiggle-macro",
+ "witx",
 ]
 
 [[package]]

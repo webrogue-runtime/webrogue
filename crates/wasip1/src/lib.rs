@@ -5,10 +5,10 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
     handle: VFSHandle,
     config: &webrogue_wrapp::config::Config,
     persistent_dir: &std::path::Path,
-) -> anyhow::Result<wasi_common::WasiCtx> {
+) -> anyhow::Result<webrogue_wasi_common::WasiCtx> {
     #[cfg(not(target_arch = "wasm32"))]
     let mut wasi_ctx = {
-        let mut builder = wasi_common::sync::WasiCtxBuilder::new();
+        let mut builder = webrogue_wasi_common::sync::WasiCtxBuilder::new();
         // builder.inherit_stdio();
         // builder.stdout(Box::new(stdout::STDOutFile {}));
         // builder.stderr(Box::new(stdout::STDOutFile {}));
@@ -19,10 +19,10 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
         let random = Box::new(cap_rand::rngs::StdRng::from_seed(
             cap_rand::thread_rng(cap_rand::ambient_authority()).r#gen(),
         ));
-        let clocks = wasi_common::WasiClocks::new();
+        let clocks = webrogue_wasi_common::WasiClocks::new();
         let sched = Box::new(Sched {});
-        let table = wasi_common::Table::new();
-        wasi_common::WasiCtx::new(random, clocks, sched, table)
+        let table = webrogue_wasi_common::Table::new();
+        webrogue_wasi_common::WasiCtx::new(random, clocks, sched, table)
     };
 
     let app_dir = fs::Dir::root(handle);
@@ -46,10 +46,10 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
                     if !real_path.is_dir() {
                         std::fs::create_dir_all(&real_path)?;
                     }
-                    let home_dir = wasi_common::sync::dir::Dir::from_cap_std(
-                        wasi_common::sync::Dir::open_ambient_dir(
+                    let home_dir = webrogue_wasi_common::sync::dir::Dir::from_cap_std(
+                        webrogue_wasi_common::sync::Dir::open_ambient_dir(
                             real_path,
-                            wasi_common::sync::ambient_authority(),
+                            webrogue_wasi_common::sync::ambient_authority(),
                         )?,
                     );
                     wasi_ctx.push_preopened_dir(Box::new(home_dir), &persistent.mapped_path)?;
@@ -77,17 +77,20 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
 struct Sched {}
 
 #[async_trait::async_trait]
-impl wasi_common::WasiSched for Sched {
+impl webrogue_wasi_common::WasiSched for Sched {
     async fn poll_oneoff<'a>(
         &self,
-        poll: &mut wasi_common::Poll<'a>,
-    ) -> Result<(), wasi_common::Error> {
+        poll: &mut webrogue_wasi_common::Poll<'a>,
+    ) -> Result<(), webrogue_wasi_common::Error> {
         todo!()
     }
-    async fn sched_yield(&self) -> Result<(), wasi_common::Error> {
+    async fn sched_yield(&self) -> Result<(), webrogue_wasi_common::Error> {
         todo!()
     }
-    async fn sleep(&self, duration: std::time::Duration) -> Result<(), wasi_common::Error> {
+    async fn sleep(
+        &self,
+        duration: std::time::Duration,
+    ) -> Result<(), webrogue_wasi_common::Error> {
         todo!()
     }
 }

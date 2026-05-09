@@ -395,7 +395,7 @@ mod bindings {
     });
 
     wiggle::wasmtime_integration!({
-        target: wasi_common::snapshots::preview_1,
+        target: webrogue_wasi_common::snapshots::preview_1,
         witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
         block_on: *
     });
