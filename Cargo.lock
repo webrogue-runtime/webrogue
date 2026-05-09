@@ -8344,6 +8344,7 @@ dependencies = [
  "tokio-util",
  "tower-http",
  "tower-service",
+ "tracing",
  "webrogue-gfx-winit",
  "webrogue-gfxstream",
  "webrogue-hub-client",
