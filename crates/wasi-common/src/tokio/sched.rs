@@ -9,8 +9,8 @@ mod windows;
 pub use windows::poll_oneoff;
 
 use crate::{
-    Error,
     sched::{Duration, Poll, WasiSched},
+    Error,
 };
 
 pub fn sched_ctx() -> Box<dyn crate::WasiSched> {

@@ -398,6 +398,6 @@ mod bindings {
     wiggle::wasmtime_integration!({
         target: webrogue_wasi_common::snapshots::preview_1,
         witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
-        block_on: *
+        block_on [webrogue_wasip1::run_in_executor]: *
     });
 }

@@ -67,73 +67,76 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
         let _ = std::thread::Builder::new()
             .name(thread_name.clone())
             .spawn(move || {
-                let mut store = wasmtime::Store::new(instance_pre.module().engine(), host);
-                let thread = thread_registry.make_thread(store.engine().weak());
-                {
-                    let thread = thread.clone();
-                    store.epoch_deadline_callback(move |_| thread.on_epoch_update_deadline());
-                    store.set_epoch_deadline(1);
-                }
-
-                let result: Result<anyhow::Result<()>, Box<dyn std::any::Any + Send>> =
-                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        #[cfg(feature = "async")]
-                        if let Some(async_func_runner) = async_func_runner {
-                            return async_func_runner(
-                                AsyncFuncRunnerParams {
-                                    store,
-                                    thread: thread.clone(),
-                                },
-                                Box::new(move |mut store| {
-                                    Box::pin(async move {
-                                        let instance = instance_pre
-                                            .instantiate_async(&mut store)
-                                            .await
-                                            .unwrap();
-                                        let thread_entry_point = instance
-                                            .get_typed_func::<(i32, i32), ()>(
-                                                &mut store,
-                                                WASI_ENTRY_POINT,
-                                            )
-                                            .unwrap();
-                                        thread_entry_point
-                                            .call_async(
-                                                &mut store,
-                                                (wasi_thread_id, thread_start_arg),
-                                            )
-                                            .await?;
-                                        Ok(())
-                                    })
-                                }),
-                            )
-                            .map(|_| ());
-                        }
-                        let instance = instance_pre.instantiate(&mut store)?;
-                        let thread_entry_point = instance
-                            .get_typed_func::<(i32, i32), ()>(&mut store, WASI_ENTRY_POINT)
-                            .unwrap();
-                        thread_entry_point
-                            .call(&mut store, (wasi_thread_id, thread_start_arg))
-                            .map_err(|err| anyhow::anyhow!(err))
-                    }));
-
-                let tid = thread.tid();
-
-                thread_registry.remove_thread(thread);
-
-                match result {
-                    Err(e) => {
-                        thread_registry.stop_all_threads(StopReason::ThreadError(
-                            tid,
-                            anyhow::anyhow!("{thread_name} panicked: {e:?}"),
-                        ));
+                webrogue_wasip1::run_in_runtime(move || {
+                    let mut store = wasmtime::Store::new(instance_pre.module().engine(), host);
+                    let thread = thread_registry.make_thread(store.engine().weak());
+                    {
+                        let thread = thread.clone();
+                        store.epoch_deadline_callback(move |_| thread.on_epoch_update_deadline());
+                        store.set_epoch_deadline(1);
                     }
-                    Ok(result) => {
-                        if let Err(error) = result {
-                            thread_registry.stop_all_threads(StopReason::ThreadError(tid, error));
+
+                    let result: Result<anyhow::Result<()>, Box<dyn std::any::Any + Send>> =
+                        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            #[cfg(feature = "async")]
+                            if let Some(async_func_runner) = async_func_runner {
+                                return async_func_runner(
+                                    AsyncFuncRunnerParams {
+                                        store,
+                                        thread: thread.clone(),
+                                    },
+                                    Box::new(move |mut store| {
+                                        Box::pin(async move {
+                                            let instance = instance_pre
+                                                .instantiate_async(&mut store)
+                                                .await
+                                                .unwrap();
+                                            let thread_entry_point = instance
+                                                .get_typed_func::<(i32, i32), ()>(
+                                                    &mut store,
+                                                    WASI_ENTRY_POINT,
+                                                )
+                                                .unwrap();
+                                            thread_entry_point
+                                                .call_async(
+                                                    &mut store,
+                                                    (wasi_thread_id, thread_start_arg),
+                                                )
+                                                .await?;
+                                            Ok(())
+                                        })
+                                    }),
+                                )
+                                .map(|_| ());
+                            }
+                            let instance = instance_pre.instantiate(&mut store)?;
+                            let thread_entry_point = instance
+                                .get_typed_func::<(i32, i32), ()>(&mut store, WASI_ENTRY_POINT)
+                                .unwrap();
+                            thread_entry_point
+                                .call(&mut store, (wasi_thread_id, thread_start_arg))
+                                .map_err(|err| anyhow::anyhow!(err))
+                        }));
+
+                    let tid = thread.tid();
+
+                    thread_registry.remove_thread(thread);
+
+                    match result {
+                        Err(e) => {
+                            thread_registry.stop_all_threads(StopReason::ThreadError(
+                                tid,
+                                anyhow::anyhow!("{thread_name} panicked: {e:?}"),
+                            ));
+                        }
+                        Ok(result) => {
+                            if let Err(error) = result {
+                                thread_registry
+                                    .stop_all_threads(StopReason::ThreadError(tid, error));
+                            }
                         }
                     }
-                }
+                })
             });
 
         Ok(wasi_thread_id)

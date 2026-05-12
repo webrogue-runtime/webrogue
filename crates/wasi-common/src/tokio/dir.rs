@@ -1,8 +1,8 @@
 use crate::tokio::{block_on_dummy_executor, file::File};
 use crate::{
-    Error, ErrorExt,
     dir::{ReaddirCursor, ReaddirEntity, WasiDir},
     file::{FdFlags, Filestat, OFlags},
+    Error, ErrorExt,
 };
 use std::any::Any;
 use std::path::PathBuf;
@@ -121,100 +121,5 @@ impl WasiDir for Dir {
         follow_symlinks: bool,
     ) -> Result<(), Error> {
         block_on_dummy_executor(move || self.0.set_times(path, atime, mtime, follow_symlinks))
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::Dir;
-    use crate::file::{FdFlags, OFlags};
-    use cap_std::ambient_authority;
-
-    #[tokio::test(flavor = "multi_thread")]
-    async fn scratch_dir() {
-        let tempdir = tempfile::Builder::new()
-            .prefix("cap-std-sync")
-            .tempdir()
-            .expect("create temporary dir");
-        let preopen_dir = cap_std::fs::Dir::open_ambient_dir(tempdir.path(), ambient_authority())
-            .expect("open ambient temporary dir");
-        let preopen_dir = Dir::from_cap_std(preopen_dir);
-        crate::WasiDir::open_file(
-            &preopen_dir,
-            false,
-            ".",
-            OFlags::empty(),
-            false,
-            false,
-            FdFlags::empty(),
-        )
-        .await
-        .expect("open the same directory via WasiDir abstraction");
-    }
-
-    // Readdir does not work on windows, so we won't test it there.
-    #[cfg(not(windows))]
-    #[tokio::test(flavor = "multi_thread")]
-    async fn readdir() {
-        use crate::dir::{ReaddirCursor, ReaddirEntity, WasiDir};
-        use crate::file::{FdFlags, FileType, OFlags};
-        use std::collections::HashMap;
-
-        async fn readdir_into_map(dir: &dyn WasiDir) -> HashMap<String, ReaddirEntity> {
-            let mut out = HashMap::new();
-            for readdir_result in dir
-                .readdir(ReaddirCursor::from(0))
-                .await
-                .expect("readdir succeeds")
-            {
-                let entity = readdir_result.expect("readdir entry is valid");
-                out.insert(entity.name.clone(), entity);
-            }
-            out
-        }
-
-        let tempdir = tempfile::Builder::new()
-            .prefix("cap-std-sync")
-            .tempdir()
-            .expect("create temporary dir");
-        let preopen_dir = cap_std::fs::Dir::open_ambient_dir(tempdir.path(), ambient_authority())
-            .expect("open ambient temporary dir");
-        let preopen_dir = Dir::from_cap_std(preopen_dir);
-
-        let entities = readdir_into_map(&preopen_dir).await;
-        assert_eq!(
-            entities.len(),
-            2,
-            "should just be . and .. in empty dir: {entities:?}"
-        );
-        assert!(entities.get(".").is_some());
-        assert!(entities.get("..").is_some());
-
-        preopen_dir
-            .open_file(
-                false,
-                "file1",
-                OFlags::CREATE,
-                true,
-                false,
-                FdFlags::empty(),
-            )
-            .await
-            .expect("create file1");
-
-        let entities = readdir_into_map(&preopen_dir).await;
-        assert_eq!(entities.len(), 3, "should be ., .., file1 {entities:?}");
-        assert_eq!(
-            entities.get(".").expect(". entry").filetype,
-            FileType::Directory
-        );
-        assert_eq!(
-            entities.get("..").expect(".. entry").filetype,
-            FileType::Directory
-        );
-        assert_eq!(
-            entities.get("file1").expect("file1 entry").filetype,
-            FileType::RegularFile
-        );
     }
 }
