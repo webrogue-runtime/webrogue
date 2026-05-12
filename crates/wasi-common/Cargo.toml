@@ -22,7 +22,7 @@ rand = { workspace = true, features = ['std_rng', 'thread_rng'] }
 async-trait = { workspace = true }
 
 # Optional, enabled by wasmtime feature:
-wasmtime = { workspace = true, optional = true, features = ['runtime', 'component-model'] }
+wasmtime = { workspace = true, optional = true, features = ['runtime', 'component-model', 'std'] }
 # Optional, enabled by sync feature:
 cap-fs-ext = { workspace = true, optional = true }
 cap-time-ext = { workspace = true, optional = true }
