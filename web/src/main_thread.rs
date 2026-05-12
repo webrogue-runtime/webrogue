@@ -56,15 +56,32 @@ pub async fn start(wasm_bindgen_shim_url: String, wrapp_url: String) {
     .dyn_into::<web_sys::FileSystemFileHandle>()
     .unwrap();
 
-    let writable = JsFuture::from(file_handle.create_writable_with_options(&{
-        let options = web_sys::FileSystemCreateWritableOptions::new();
-        options.set_keep_existing_data(true);
-        options
-    }))
-    .await
-    .unwrap()
-    .dyn_into::<web_sys::WritableStream>()
-    .unwrap();
+    let writable = {
+        let mut tries = 10;
+        loop {
+            tries -= 1;
+            let writable = JsFuture::from(file_handle.create_writable_with_options(&{
+                let options = web_sys::FileSystemCreateWritableOptions::new();
+                options.set_keep_existing_data(true);
+                options
+            }))
+            .await;
+            if let Ok(writable) = writable {
+                break writable.dyn_into::<web_sys::WritableStream>().unwrap();
+            }
+            if tries <= 0 {
+                unreachable!("Failed to execute 'createWritable'")
+            }
+            let promise = web_sys::js_sys::Promise::new(&mut |resolve, _| {
+                web_sys::window()
+                    .unwrap()
+                    .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, 200)
+                    .unwrap();
+            });
+
+            let _ = JsFuture::from(promise).await;
+        }
+    };
 
     JsFuture::from(response.body().unwrap().pipe_to(&writable))
         .await

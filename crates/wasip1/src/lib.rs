@@ -1,3 +1,4 @@
+#![cfg_attr(target_arch = "wasm32", feature(stdarch_wasm_atomic_wait))]
 mod fs;
 mod stdout;
 
@@ -16,9 +17,9 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
     };
     #[cfg(target_arch = "wasm32")]
     let mut wasi_ctx = {
-        let random = Box::new(cap_rand::rngs::StdRng::from_seed(
-            cap_rand::thread_rng(cap_rand::ambient_authority()).r#gen(),
-        ));
+        use rand::SeedableRng as _;
+
+        let random = Box::new(rand::rngs::StdRng::from_seed(rand::random()));
         let clocks = webrogue_wasi_common::WasiClocks::new();
         let sched = Box::new(Sched {});
         let table = webrogue_wasi_common::Table::new();
@@ -74,8 +75,10 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
     Ok(wasi_ctx)
 }
 
+#[cfg(target_arch = "wasm32")]
 struct Sched {}
 
+#[cfg(target_arch = "wasm32")]
 #[async_trait::async_trait]
 impl webrogue_wasi_common::WasiSched for Sched {
     async fn poll_oneoff<'a>(
@@ -91,6 +94,24 @@ impl webrogue_wasi_common::WasiSched for Sched {
         &self,
         duration: std::time::Duration,
     ) -> Result<(), webrogue_wasi_common::Error> {
-        todo!()
+        blocking_sleep(duration.as_millis() as i64);
+        Ok(())
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn blocking_sleep(millis: i64) {
+    // We create a dummy variable to "wait" on
+    let mut dummy: i32 = 0;
+    let ptr = &mut dummy as *mut i32;
+
+    // Convert milliseconds to nanoseconds for the WASM intrinsic
+    let timeout_ns = millis * 1_000_000;
+
+    unsafe {
+        // 0: The pointer to wait on
+        // 0: The "expected" value (it matches, so it will sleep)
+        // timeout_ns: How long to sleep before timing out
+        core::arch::wasm32::memory_atomic_wait32(ptr, 0, timeout_ns);
     }
 }
