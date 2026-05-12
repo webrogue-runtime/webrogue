@@ -16,6 +16,7 @@ struct WasmThreadInner {
     engine: EngineWeak,
     tid: NonZeroI32,
     trap_on_epoch_deadline: AtomicBool,
+    #[cfg(feature = "async")]
     is_async: bool,
     epoch_interruption: bool,
 }
@@ -29,18 +30,20 @@ impl WasmThread {
         {
             return Ok(UpdateDeadline::Interrupt);
         };
+        #[cfg(feature = "async")]
         if self.0.is_async {
-            Ok(UpdateDeadline::Yield(1))
-        } else {
-            panic!("Epoch deadline callback executed, but neither runtime is async not stopping threads.");
-            // maybe Ok(UpdateDeadline::Continue(1)) will be fine?
+            return Ok(UpdateDeadline::Yield(1));
         }
+        panic!(
+            "Epoch deadline callback executed, but neither runtime is async not stopping threads."
+        );
     }
 
     pub fn tid(&self) -> NonZeroI32 {
         self.0.tid
     }
 
+    #[cfg(feature = "async")]
     pub fn async_yield(&self) {
         assert!(self.0.is_async);
         assert!(self.0.epoch_interruption);
@@ -65,9 +68,12 @@ pub struct WasmThreadRegistry(Arc<Mutex<WasmThreadRegistryInner>>);
 
 impl WasmThreadRegistry {
     pub fn new(is_async: bool, epoch_interruption: bool) -> Self {
+        #[cfg(not(feature = "async"))]
+        debug_assert!(!is_async);
         Self(Arc::new(Mutex::new(WasmThreadRegistryInner {
             threads: BTreeMap::new(),
             tid_counter: AtomicI32::new(1),
+            #[cfg(feature = "async")]
             is_async,
             stop_reason: None,
             epoch_interruption,
@@ -94,6 +100,7 @@ impl WasmThreadRegistry {
             engine,
             tid,
             trap_on_epoch_deadline: AtomicBool::new(false),
+            #[cfg(feature = "async")]
             is_async: registry.is_async,
             epoch_interruption: registry.epoch_interruption,
         }));
@@ -146,6 +153,7 @@ impl WasmThreadRegistry {
 struct WasmThreadRegistryInner {
     threads: BTreeMap<NonZeroI32, WasmThread>,
     tid_counter: AtomicI32,
+    #[cfg(feature = "async")]
     is_async: bool,
     stop_reason: Option<StopReason>,
     epoch_interruption: bool,

@@ -14,7 +14,7 @@ mod unix {
     impl File {
         pub fn new() -> Result<Self, webrogue_wasi_common::Error> {
             // let (read_fd, write_fd) = rustix::pipe::pipe_with(rustix::pipe::PipeFlags::NONBLOCK | rustix::pipe::PipeFlags::CLOEXEC)
-            //     .map_err(|_err| wasi_common::Error::not_supported())?;
+            //     .map_err(|_err| webrogue_wasi_common::Error::not_supported())?;
             let (read_fd, write_fd) = rustix::pipe::pipe()
                 .map_err(|_err| webrogue_wasi_common::Error::not_supported())?;
             for fd in [read_fd.as_fd(), read_fd.as_fd()] {
@@ -81,7 +81,7 @@ mod windows {
     }
 
     impl File {
-        pub fn new() -> Result<Self, wasi_common::Error> {
+        pub fn new() -> Result<Self, webrogue_wasi_common::Error> {
             let handle = unsafe { CreateEventA(null(), 1, 0, null()) };
             assert!(handle != null_mut());
             Ok(Self {
