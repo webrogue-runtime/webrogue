@@ -1,6 +1,9 @@
 name: Webrogue CI
 
-on: [push]
+on: 
+  push:
+  merge_group:
+
 jobs:
   linux:
     runs-on: ubuntu-latest
