@@ -84,9 +84,6 @@ mod string_array;
 #[cfg(feature = "sync")]
 pub mod sync;
 pub mod table;
-#[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-#[cfg(feature = "tokio")]
-pub mod tokio;
 
 pub use clocks::{SystemTimeSpec, WasiClocks, WasiMonotonicClock, WasiSystemClock};
 pub use ctx::WasiCtx;

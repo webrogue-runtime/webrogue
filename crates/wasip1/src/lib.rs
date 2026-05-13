@@ -9,7 +9,7 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
 ) -> anyhow::Result<webrogue_wasi_common::WasiCtx> {
     #[cfg(not(target_arch = "wasm32"))]
     let mut wasi_ctx = {
-        let mut builder = webrogue_wasi_common::tokio::WasiCtxBuilder::new();
+        let mut builder = webrogue_wasi_common::sync::WasiCtxBuilder::new();
         // builder.inherit_stdio();
         // builder.stdout(Box::new(stdout::STDOutFile {}));
         // builder.stderr(Box::new(stdout::STDOutFile {}));
@@ -114,18 +114,6 @@ pub fn blocking_sleep(millis: i64) {
         // timeout_ns: How long to sleep before timing out
         core::arch::wasm32::memory_atomic_wait32(ptr, 0, timeout_ns);
     }
-}
-
-pub fn run_in_runtime<Output>(f: impl FnOnce() -> Output) -> Output {
-    if tokio::runtime::Handle::try_current().is_ok() {
-        return f();
-    }
-    tokio::runtime::Builder::new_current_thread()
-        .enable_time()
-        .enable_io()
-        .build()
-        .unwrap()
-        .block_on(async { return f() })
 }
 
 fn make_runtime() -> tokio::runtime::Runtime {

@@ -1,6 +1,6 @@
 use crate::{
-    Error, ErrorExt,
     file::{Advice, FdFlags, FileType, Filestat, WasiFile},
+    Error, ErrorExt,
 };
 use cap_fs_ext::MetadataExt;
 use fs_set_times::{SetTimes, SystemTimeSpec};
@@ -24,14 +24,6 @@ impl File {
 impl WasiFile for File {
     fn as_any(&self) -> &dyn Any {
         self
-    }
-    #[cfg(unix)]
-    fn pollable(&self) -> Option<rustix::fd::BorrowedFd<'_>> {
-        Some(self.0.as_fd())
-    }
-    #[cfg(windows)]
-    fn pollable(&self) -> Option<io_extras::os::windows::RawHandleOrSocket> {
-        Some(self.0.as_raw_handle_or_socket())
     }
     async fn datasync(&self) -> Result<(), Error> {
         self.0.sync_data()?;
