@@ -1,10 +1,10 @@
-use wasi_common::{file::FileType, ErrorExt as _, WasiFile};
+use webrogue_wasi_common::{file::FileType, ErrorExt as _, WasiFile};
 
 #[cfg(unix)]
 mod unix {
     use std::os::fd::AsFd;
 
-    use wasi_common::ErrorExt as _;
+    use webrogue_wasi_common::ErrorExt as _;
 
     pub struct File {
         read_fd: std::os::fd::OwnedFd,
@@ -12,16 +12,16 @@ mod unix {
     }
 
     impl File {
-        pub fn new() -> Result<Self, wasi_common::Error> {
+        pub fn new() -> Result<Self, webrogue_wasi_common::Error> {
             // let (read_fd, write_fd) = rustix::pipe::pipe_with(rustix::pipe::PipeFlags::NONBLOCK | rustix::pipe::PipeFlags::CLOEXEC)
-            //     .map_err(|_err| wasi_common::Error::not_supported())?;
-            let (read_fd, write_fd) =
-                rustix::pipe::pipe().map_err(|_err| wasi_common::Error::not_supported())?;
+            //     .map_err(|_err| webrogue_wasi_common::Error::not_supported())?;
+            let (read_fd, write_fd) = rustix::pipe::pipe()
+                .map_err(|_err| webrogue_wasi_common::Error::not_supported())?;
             for fd in [read_fd.as_fd(), read_fd.as_fd()] {
                 rustix::io::fcntl_setfd(fd, rustix::io::FdFlags::CLOEXEC)
-                    .map_err(|_err| wasi_common::Error::not_supported())?;
+                    .map_err(|_err| webrogue_wasi_common::Error::not_supported())?;
                 rustix::io::ioctl_fionbio(fd, true)
-                    .map_err(|_err| wasi_common::Error::not_supported())?;
+                    .map_err(|_err| webrogue_wasi_common::Error::not_supported())?;
             }
             Ok(Self { read_fd, write_fd })
         }
@@ -81,7 +81,7 @@ mod windows {
     }
 
     impl File {
-        pub fn new() -> Result<Self, wasi_common::Error> {
+        pub fn new() -> Result<Self, webrogue_wasi_common::Error> {
             let handle = unsafe { CreateEventA(null(), 1, 0, null()) };
             assert!(handle != null_mut());
             Ok(Self {
@@ -120,7 +120,7 @@ impl WasiFile for File {
         self
     }
 
-    async fn get_filetype(&self) -> Result<FileType, wasi_common::Error> {
+    async fn get_filetype(&self) -> Result<FileType, webrogue_wasi_common::Error> {
         Ok(FileType::Pipe)
     }
 
@@ -137,18 +137,18 @@ impl WasiFile for File {
     async fn read_vectored<'a>(
         &self,
         _bufs: &mut [std::io::IoSliceMut<'a>],
-    ) -> Result<u64, wasi_common::Error> {
+    ) -> Result<u64, webrogue_wasi_common::Error> {
         self.acknowledge()
-            .map_err(|_| wasi_common::Error::not_supported())?;
+            .map_err(|_| webrogue_wasi_common::Error::not_supported())?;
         Ok(0)
     }
 
     async fn write_vectored<'a>(
         &self,
         _bufs: &[std::io::IoSlice<'a>],
-    ) -> Result<u64, wasi_common::Error> {
+    ) -> Result<u64, webrogue_wasi_common::Error> {
         self.signal()
-            .map_err(|_| wasi_common::Error::not_supported())?;
+            .map_err(|_| webrogue_wasi_common::Error::not_supported())?;
 
         Ok(_bufs.iter().map(|slice| slice.len()).sum::<usize>() as u64)
     }

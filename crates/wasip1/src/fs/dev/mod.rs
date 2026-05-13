@@ -1,6 +1,6 @@
 use std::{any::Any, sync::Arc};
 
-use wasi_common::{
+use webrogue_wasi_common::{
     file::{FdFlags, OFlags},
     ErrorExt as _, WasiDir, WasiFile,
 };
@@ -12,13 +12,13 @@ mod wakeup;
 struct DevState {}
 
 trait IDevDir {
-    fn content(&self, state: &DevState) -> Vec<(String, wasi_common::file::FileType)>;
+    fn content(&self, state: &DevState) -> Vec<(String, webrogue_wasi_common::file::FileType)>;
     fn open(
         &self,
         filename: &str,
         create: bool,
         state: &DevState,
-    ) -> Result<OpenResult, wasi_common::Error>;
+    ) -> Result<OpenResult, webrogue_wasi_common::Error>;
 }
 
 struct DevDirAdapter {
@@ -47,14 +47,14 @@ impl WasiDir for DevDirAdapter {
         _read: bool,
         _write: bool,
         _fdflags: FdFlags,
-    ) -> Result<wasi_common::dir::OpenResult, wasi_common::Error> {
+    ) -> Result<webrogue_wasi_common::dir::OpenResult, webrogue_wasi_common::Error> {
         let mut path_components = self.path_components.clone();
         for path_component in path.split('/') {
             match path_component {
                 "." => {}
                 ".." => {
                     if path_components.pop().is_none() {
-                        return Err(wasi_common::Error::badf());
+                        return Err(webrogue_wasi_common::Error::badf());
                     }
                 }
                 path_component => path_components.push(path_component.to_owned()),
@@ -73,27 +73,34 @@ impl WasiDir for DevDirAdapter {
                 }
                 OpenResult::File(file) => {
                     if !is_last_component {
-                        return Err(wasi_common::Error::not_dir());
+                        return Err(webrogue_wasi_common::Error::not_dir());
                     }
-                    return Ok(wasi_common::dir::OpenResult::File(file));
+                    return Ok(webrogue_wasi_common::dir::OpenResult::File(file));
                 }
             }
         }
-        return Ok(wasi_common::dir::OpenResult::Dir(Box::new(DevDirAdapter {
-            state: self.state.clone(),
-            path_components,
-            inner: dir,
-        })));
+        return Ok(webrogue_wasi_common::dir::OpenResult::Dir(Box::new(
+            DevDirAdapter {
+                state: self.state.clone(),
+                path_components,
+                inner: dir,
+            },
+        )));
     }
 
     async fn readdir(
         &self,
-        cursor: wasi_common::dir::ReaddirCursor,
+        cursor: webrogue_wasi_common::dir::ReaddirCursor,
     ) -> Result<
         Box<
-            dyn Iterator<Item = Result<wasi_common::dir::ReaddirEntity, wasi_common::Error>> + Send,
+            dyn Iterator<
+                    Item = Result<
+                        webrogue_wasi_common::dir::ReaddirEntity,
+                        webrogue_wasi_common::Error,
+                    >,
+                > + Send,
         >,
-        wasi_common::Error,
+        webrogue_wasi_common::Error,
     > {
         let result = self
             .inner
@@ -101,8 +108,8 @@ impl WasiDir for DevDirAdapter {
             .into_iter()
             .enumerate()
             .map(|(index, (name, ty))| {
-                Ok(wasi_common::dir::ReaddirEntity {
-                    next: wasi_common::dir::ReaddirCursor::from(index as u64 + 1),
+                Ok(webrogue_wasi_common::dir::ReaddirEntity {
+                    next: webrogue_wasi_common::dir::ReaddirCursor::from(index as u64 + 1),
                     inode: 0,
                     name,
                     filetype: ty,

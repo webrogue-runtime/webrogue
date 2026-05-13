@@ -46,8 +46,7 @@ pub fn runner<T: Send + 'static>(
                     match run_result {
                         wasmtime_internal_debugger::DebugRunResult::Finished => break 'exec_loop,
                         wasmtime_internal_debugger::DebugRunResult::HostcallError
-                        | wasmtime_internal_debugger::DebugRunResult::CaughtExceptionThrown(_)
-                        | wasmtime_internal_debugger::DebugRunResult::UncaughtExceptionThrown(_)
+                        | wasmtime_internal_debugger::DebugRunResult::Exception(_)
                         | wasmtime_internal_debugger::DebugRunResult::Trap(_) => {
                             must_break = true;
                         }

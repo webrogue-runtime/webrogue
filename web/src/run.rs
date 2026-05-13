@@ -172,6 +172,6 @@ pub fn main(builder: ProxiedWinitBuilder) {
 
 pub struct Context {
     pub gfx: Rc<RefCell<webrogue_gfx::Interface<webrogue_gfx_winit::WinitSystem>>>,
-    pub wasip1: Rc<RefCell<wasi_common::WasiCtx>>,
+    pub wasip1: Rc<RefCell<webrogue_wasi_common::WasiCtx>>,
     pub wasi_threads: Rc<RefCell<Option<WasiThreadsContext>>>,
 }

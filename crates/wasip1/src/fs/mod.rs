@@ -7,7 +7,7 @@ use std::io::Seek;
 use std::sync::{Arc, Mutex, Weak};
 use webrogue_wrapp::IFilePosition;
 
-use wasi_common::ErrorExt as _;
+use webrogue_wasi_common::ErrorExt as _;
 
 pub struct DirInner<VFSHandle: webrogue_wrapp::IVFSHandle> {
     dirs: std::collections::BTreeMap<String, Arc<DirInner<VFSHandle>>>,
@@ -127,7 +127,9 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle> Dir<VFSHandle> {
 }
 
 #[async_trait::async_trait]
-impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiDir for Dir<VFSHandle> {
+impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> webrogue_wasi_common::WasiDir
+    for Dir<VFSHandle>
+{
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -136,56 +138,75 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiDir for D
         &self,
         _symlink_follow: bool,
         path: &str,
-        _oflags: wasi_common::file::OFlags,
+        _oflags: webrogue_wasi_common::file::OFlags,
         _read: bool,
         write: bool,
-        _fdflags: wasi_common::file::FdFlags,
-    ) -> Result<wasi_common::dir::OpenResult, wasi_common::Error> {
+        _fdflags: webrogue_wasi_common::file::FdFlags,
+    ) -> Result<webrogue_wasi_common::dir::OpenResult, webrogue_wasi_common::Error> {
         if write {
-            return Err(wasi_common::Error::not_supported());
+            return Err(webrogue_wasi_common::Error::not_supported());
         }
         if let Some(search_result) = self.search(path) {
             match search_result {
-                SearchResult::File(file) => Ok(wasi_common::dir::OpenResult::File(Box::new(
-                    OpenFile::open(file),
-                ))),
-                SearchResult::Dir(dir) => Ok(wasi_common::dir::OpenResult::Dir(Box::new(dir))),
+                SearchResult::File(file) => Ok(webrogue_wasi_common::dir::OpenResult::File(
+                    Box::new(OpenFile::open(file)),
+                )),
+                SearchResult::Dir(dir) => {
+                    Ok(webrogue_wasi_common::dir::OpenResult::Dir(Box::new(dir)))
+                }
             }
         } else {
-            Err(wasi_common::Error::not_found())
+            Err(webrogue_wasi_common::Error::not_found())
         }
     }
 
-    async fn create_dir(&self, _path: &str) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::not_supported())
+    async fn create_dir(&self, _path: &str) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::not_supported())
     }
 
     async fn readdir(
         &self,
-        cursor: wasi_common::dir::ReaddirCursor,
+        cursor: webrogue_wasi_common::dir::ReaddirCursor,
     ) -> Result<
         Box<
-            dyn Iterator<Item = Result<wasi_common::dir::ReaddirEntity, wasi_common::Error>> + Send,
+            dyn Iterator<
+                    Item = Result<
+                        webrogue_wasi_common::dir::ReaddirEntity,
+                        webrogue_wasi_common::Error,
+                    >,
+                > + Send,
         >,
-        wasi_common::Error,
+        webrogue_wasi_common::Error,
     > {
-        let mut result = vec![(".".to_owned(), wasi_common::file::FileType::Directory)];
+        let mut result = vec![(
+            ".".to_owned(),
+            webrogue_wasi_common::file::FileType::Directory,
+        )];
         if self.inner.parent.is_some() {
-            result.push(("..".to_owned(), wasi_common::file::FileType::Directory));
+            result.push((
+                "..".to_owned(),
+                webrogue_wasi_common::file::FileType::Directory,
+            ));
         }
         for dir in self.inner.dirs.keys() {
-            result.push((dir.to_owned(), wasi_common::file::FileType::Directory));
+            result.push((
+                dir.to_owned(),
+                webrogue_wasi_common::file::FileType::Directory,
+            ));
         }
         for file in self.inner.files.keys() {
-            result.push((file.to_owned(), wasi_common::file::FileType::RegularFile));
+            result.push((
+                file.to_owned(),
+                webrogue_wasi_common::file::FileType::RegularFile,
+            ));
         }
 
         let result = result
             .into_iter()
             .enumerate()
             .map(|(index, (name, ty))| {
-                Ok(wasi_common::dir::ReaddirEntity {
-                    next: wasi_common::dir::ReaddirCursor::from(index as u64 + 1),
+                Ok(webrogue_wasi_common::dir::ReaddirEntity {
+                    next: webrogue_wasi_common::dir::ReaddirCursor::from(index as u64 + 1),
                     inode: 0,
                     name,
                     filetype: ty,
@@ -196,23 +217,32 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiDir for D
         Ok(Box::new(result))
     }
 
-    async fn symlink(&self, _old_path: &str, _new_path: &str) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::not_supported())
+    async fn symlink(
+        &self,
+        _old_path: &str,
+        _new_path: &str,
+    ) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::not_supported())
     }
 
-    async fn remove_dir(&self, _path: &str) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::not_supported())
+    async fn remove_dir(&self, _path: &str) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::not_supported())
     }
 
-    async fn unlink_file(&self, _path: &str) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::not_supported())
+    async fn unlink_file(&self, _path: &str) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::not_supported())
     }
 
-    async fn read_link(&self, _path: &str) -> Result<std::path::PathBuf, wasi_common::Error> {
-        Err(wasi_common::Error::not_supported())
+    async fn read_link(
+        &self,
+        _path: &str,
+    ) -> Result<std::path::PathBuf, webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::not_supported())
     }
 
-    async fn get_filestat(&self) -> Result<wasi_common::file::Filestat, wasi_common::Error> {
+    async fn get_filestat(
+        &self,
+    ) -> Result<webrogue_wasi_common::file::Filestat, webrogue_wasi_common::Error> {
         todo!()
         // Err(Error::not_supported())
     }
@@ -221,23 +251,23 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiDir for D
         &self,
         path: &str,
         _follow_symlinks: bool,
-    ) -> Result<wasi_common::file::Filestat, wasi_common::Error> {
+    ) -> Result<webrogue_wasi_common::file::Filestat, webrogue_wasi_common::Error> {
         if let Some(search_result) = self.search(path) {
             match search_result {
-                SearchResult::File(file) => Ok(wasi_common::file::Filestat {
+                SearchResult::File(file) => Ok(webrogue_wasi_common::file::Filestat {
                     device_id: 0,
                     inode: 0,
-                    filetype: wasi_common::file::FileType::RegularFile,
+                    filetype: webrogue_wasi_common::file::FileType::RegularFile,
                     nlink: 0,
                     size: file.position.get_size() as u64,
                     atim: None,
                     mtim: None,
                     ctim: None,
                 }),
-                SearchResult::Dir(_dir) => Ok(wasi_common::file::Filestat {
+                SearchResult::Dir(_dir) => Ok(webrogue_wasi_common::file::Filestat {
                     device_id: 0,
                     inode: 0,
-                    filetype: wasi_common::file::FileType::Directory,
+                    filetype: webrogue_wasi_common::file::FileType::Directory,
                     nlink: 0,
                     size: 0,
                     atim: None,
@@ -246,36 +276,36 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiDir for D
                 }),
             }
         } else {
-            Err(wasi_common::Error::not_found())
+            Err(webrogue_wasi_common::Error::not_found())
         }
     }
 
     async fn rename(
         &self,
         _path: &str,
-        _dest_dir: &dyn wasi_common::WasiDir,
+        _dest_dir: &dyn webrogue_wasi_common::WasiDir,
         _dest_path: &str,
-    ) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::not_supported())
+    ) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::not_supported())
     }
 
     async fn hard_link(
         &self,
         _path: &str,
-        _target_dir: &dyn wasi_common::WasiDir,
+        _target_dir: &dyn webrogue_wasi_common::WasiDir,
         _target_path: &str,
-    ) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::not_supported())
+    ) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::not_supported())
     }
 
     async fn set_times(
         &self,
         _path: &str,
-        _atime: Option<wasi_common::SystemTimeSpec>,
-        _mtime: Option<wasi_common::SystemTimeSpec>,
+        _atime: Option<webrogue_wasi_common::SystemTimeSpec>,
+        _mtime: Option<webrogue_wasi_common::SystemTimeSpec>,
         _follow_symlinks: bool,
-    ) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::not_supported())
+    ) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::not_supported())
     }
 }
 
@@ -320,15 +350,17 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle> OpenFile<VFSHandle> {
 }
 
 #[async_trait::async_trait]
-impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiFile
+impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> webrogue_wasi_common::WasiFile
     for OpenFile<VFSHandle>
 {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
 
-    async fn get_filetype(&self) -> Result<wasi_common::file::FileType, wasi_common::Error> {
-        Ok(wasi_common::file::FileType::RegularFile)
+    async fn get_filetype(
+        &self,
+    ) -> Result<webrogue_wasi_common::file::FileType, webrogue_wasi_common::Error> {
+        Ok(webrogue_wasi_common::file::FileType::RegularFile)
     }
 
     fn isatty(&self) -> bool {
@@ -337,60 +369,64 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiFile
 
     async fn sock_accept(
         &self,
-        _fdflags: wasi_common::file::FdFlags,
-    ) -> Result<Box<dyn wasi_common::WasiFile>, wasi_common::Error> {
-        Err(wasi_common::Error::badf())
+        _fdflags: webrogue_wasi_common::file::FdFlags,
+    ) -> Result<Box<dyn webrogue_wasi_common::WasiFile>, webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::badf())
     }
 
     async fn sock_recv<'a>(
         &self,
         _ri_data: &mut [std::io::IoSliceMut<'a>],
-        _ri_flags: wasi_common::file::RiFlags,
-    ) -> Result<(u64, wasi_common::file::RoFlags), wasi_common::Error> {
-        Err(wasi_common::Error::badf())
+        _ri_flags: webrogue_wasi_common::file::RiFlags,
+    ) -> Result<(u64, webrogue_wasi_common::file::RoFlags), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::badf())
     }
 
     async fn sock_send<'a>(
         &self,
         _si_data: &[std::io::IoSlice<'a>],
-        _si_flags: wasi_common::file::SiFlags,
-    ) -> Result<u64, wasi_common::Error> {
-        Err(wasi_common::Error::badf())
+        _si_flags: webrogue_wasi_common::file::SiFlags,
+    ) -> Result<u64, webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::badf())
     }
 
     async fn sock_shutdown(
         &self,
-        _how: wasi_common::file::SdFlags,
-    ) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::badf())
+        _how: webrogue_wasi_common::file::SdFlags,
+    ) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::badf())
     }
 
-    async fn datasync(&self) -> Result<(), wasi_common::Error> {
+    async fn datasync(&self) -> Result<(), webrogue_wasi_common::Error> {
         Ok(())
     }
 
-    async fn sync(&self) -> Result<(), wasi_common::Error> {
+    async fn sync(&self) -> Result<(), webrogue_wasi_common::Error> {
         Ok(())
     }
 
-    async fn get_fdflags(&self) -> Result<wasi_common::file::FdFlags, wasi_common::Error> {
+    async fn get_fdflags(
+        &self,
+    ) -> Result<webrogue_wasi_common::file::FdFlags, webrogue_wasi_common::Error> {
         todo!();
-        // Ok(wasi_common::file::FdFlags::empty())
+        // Ok(webrogue_wasi_common::file::FdFlags::empty())
     }
 
     async fn set_fdflags(
         &mut self,
-        _flags: wasi_common::file::FdFlags,
-    ) -> Result<(), wasi_common::Error> {
+        _flags: webrogue_wasi_common::file::FdFlags,
+    ) -> Result<(), webrogue_wasi_common::Error> {
         todo!();
-        // Err(wasi_common::Error::badf())
+        // Err(webrogue_wasi_common::Error::badf())
     }
 
-    async fn get_filestat(&self) -> Result<wasi_common::file::Filestat, wasi_common::Error> {
-        Ok(wasi_common::file::Filestat {
+    async fn get_filestat(
+        &self,
+    ) -> Result<webrogue_wasi_common::file::Filestat, webrogue_wasi_common::Error> {
+        Ok(webrogue_wasi_common::file::Filestat {
             device_id: 0,
             inode: 0,
-            filetype: wasi_common::file::FileType::RegularFile,
+            filetype: webrogue_wasi_common::file::FileType::RegularFile,
             nlink: 0,
             size: self.pos.get_size() as u64,
             atim: None,
@@ -399,32 +435,32 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiFile
         })
     }
 
-    async fn set_filestat_size(&self, _size: u64) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::badf())
+    async fn set_filestat_size(&self, _size: u64) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::badf())
     }
 
     async fn advise(
         &self,
         _offset: u64,
         _len: u64,
-        _advice: wasi_common::file::Advice,
-    ) -> Result<(), wasi_common::Error> {
+        _advice: webrogue_wasi_common::file::Advice,
+    ) -> Result<(), webrogue_wasi_common::Error> {
         Ok(())
     }
 
     async fn set_times(
         &self,
-        _atime: Option<wasi_common::SystemTimeSpec>,
-        _mtime: Option<wasi_common::SystemTimeSpec>,
-    ) -> Result<(), wasi_common::Error> {
+        _atime: Option<webrogue_wasi_common::SystemTimeSpec>,
+        _mtime: Option<webrogue_wasi_common::SystemTimeSpec>,
+    ) -> Result<(), webrogue_wasi_common::Error> {
         todo!();
-        // Err(wasi_common::Error::badf())
+        // Err(webrogue_wasi_common::Error::badf())
     }
 
     async fn read_vectored<'a>(
         &self,
         bufs: &mut [std::io::IoSliceMut<'a>],
-    ) -> Result<u64, wasi_common::Error> {
+    ) -> Result<u64, webrogue_wasi_common::Error> {
         Ok(self.reader.lock().unwrap().read_vectored(bufs)? as u64)
     }
 
@@ -432,31 +468,31 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiFile
         &self,
         _bufs: &mut [std::io::IoSliceMut<'a>],
         _offset: u64,
-    ) -> Result<u64, wasi_common::Error> {
+    ) -> Result<u64, webrogue_wasi_common::Error> {
         todo!();
-        // Err(wasi_common::Error::badf())
+        // Err(webrogue_wasi_common::Error::badf())
     }
 
     async fn write_vectored<'a>(
         &self,
         _bufs: &[std::io::IoSlice<'a>],
-    ) -> Result<u64, wasi_common::Error> {
-        Err(wasi_common::Error::badf())
+    ) -> Result<u64, webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::badf())
     }
 
     async fn write_vectored_at<'a>(
         &self,
         _bufs: &[std::io::IoSlice<'a>],
         _offset: u64,
-    ) -> Result<u64, wasi_common::Error> {
-        Err(wasi_common::Error::badf())
+    ) -> Result<u64, webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::badf())
     }
 
-    async fn seek(&self, pos: std::io::SeekFrom) -> Result<u64, wasi_common::Error> {
+    async fn seek(&self, pos: std::io::SeekFrom) -> Result<u64, webrogue_wasi_common::Error> {
         Ok(self.reader.lock().unwrap().seek(pos)?)
     }
 
-    async fn peek(&self, buf: &mut [u8]) -> Result<u64, wasi_common::Error> {
+    async fn peek(&self, buf: &mut [u8]) -> Result<u64, webrogue_wasi_common::Error> {
         let mut reader = self.reader.lock().unwrap();
         let pos = reader.seek(std::io::SeekFrom::Current(0))?;
         let result = reader.read(buf);
@@ -464,15 +500,15 @@ impl<VFSHandle: webrogue_wrapp::IVFSHandle + 'static> wasi_common::WasiFile
         Ok(result? as u64)
     }
 
-    fn num_ready_bytes(&self) -> Result<u64, wasi_common::Error> {
+    fn num_ready_bytes(&self) -> Result<u64, webrogue_wasi_common::Error> {
         Ok(0)
     }
 
-    async fn readable(&self) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::badf())
+    async fn readable(&self) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::badf())
     }
 
-    async fn writable(&self) -> Result<(), wasi_common::Error> {
-        Err(wasi_common::Error::badf())
+    async fn writable(&self) -> Result<(), webrogue_wasi_common::Error> {
+        Err(webrogue_wasi_common::Error::badf())
     }
 }

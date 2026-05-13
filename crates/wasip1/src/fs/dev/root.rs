@@ -1,4 +1,4 @@
-use wasi_common::{file::FileType, ErrorExt};
+use webrogue_wasi_common::{file::FileType, ErrorExt};
 
 use crate::fs::dev::{DevState, IDevDir, OpenResult};
 
@@ -16,11 +16,11 @@ impl IDevDir for Dir {
         filename: &str,
         _create: bool,
         _state: &DevState,
-    ) -> Result<OpenResult, wasi_common::Error> {
+    ) -> Result<OpenResult, webrogue_wasi_common::Error> {
         match filename {
             #[cfg(not(target_arch = "wasm32"))]
             "wakeup" => Ok(OpenResult::File(Box::new(wakeup::File::new()?))),
-            _ => Err(wasi_common::Error::not_found()),
+            _ => Err(webrogue_wasi_common::Error::not_found()),
         }
     }
 }

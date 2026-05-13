@@ -41,7 +41,7 @@ webrogue-wasip1 = { workspace = true }
 webrogue-wrapp = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
 wiggle = { workspace = true, default-features = false }
-wasi-common = { workspace = true, default-features = false }
+webrogue-wasi-common = { workspace = true, default-features = false }
 wasmparser = { workspace = true }
 # To enble "js" feature
 getrandom = { version = "0.2", features = ["js"] }

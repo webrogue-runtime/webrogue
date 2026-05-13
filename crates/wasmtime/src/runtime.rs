@@ -95,6 +95,7 @@ impl Runtime {
         use std::io::Read as _;
 
         use anyhow::Context;
+        use wasmtime::Inlining;
 
         self.wasmtime_config
             .wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
@@ -119,21 +120,21 @@ impl Runtime {
                     .cranelift_opt_level(wasmtime::OptLevel::None)
                     .guest_debug(true)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
-                    .compiler_inlining(false);
+                    .compiler_inlining(Inlining::No);
             }
             JitProfile::FastExecution => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
                     .guest_debug(false)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
-                    .compiler_inlining(true);
+                    .compiler_inlining(Inlining::Intrinsics);
             }
             JitProfile::FastCompilation => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
                     .guest_debug(false)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
-                    .compiler_inlining(false);
+                    .compiler_inlining(Inlining::Intrinsics);
             }
         };
 
@@ -395,8 +396,8 @@ mod bindings {
     });
 
     wiggle::wasmtime_integration!({
-        target: wasi_common::snapshots::preview_1,
+        target: webrogue_wasi_common::snapshots::preview_1,
         witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
-        block_on: *
+        block_on [webrogue_wasip1::run_in_executor]: *
     });
 }

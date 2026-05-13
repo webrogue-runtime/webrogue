@@ -64,6 +64,7 @@ members = [
   "crates/launcher/server-openapi",
   "crates/launcher-dev",
   "crates/lld",
+  "crates/wasi-common",
   "crates/wasip1",
   "crates/wasmtime",
   "crates/wrapp",
@@ -100,6 +101,7 @@ webrogue-gfx-winit = { path = "crates/gfx-winit" }
 webrogue-gfxstream = { path = "crates/gfxstream" }
 webrogue-gfxstream-lib  = { path = "crates/gfxstream-lib" }
 webrogue-lld = { path = "crates/lld" }
+webrogue-wasi-common = { path = "crates/wasi-common", default-features = false }
 webrogue-wasip1 = { path = "crates/wasip1" }
 webrogue-wrapp = { path = "crates/wrapp" }
 webrogue-launcher = { path = "crates/launcher" }
@@ -108,11 +110,10 @@ webrogue-launcher-server-openapi = { path = "crates/launcher/server-openapi", de
 # Wasmtime crates
 wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
 wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
-wasi-common = { path = "external/wasmtime/crates/wasi-common", default-features = false }
 wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
 wiggle-generate = { path = "external/wasmtime/crates/wiggle/generate", default-features = false }
-wasmtime-wasi-threads = { path = "external/wasmtime/crates/wasi-threads" }
 wasmtime-internal-debugger = { path = "external/wasmtime/crates/debugger" }
+wasmtime-internal-core = { path = "external/wasmtime/crates/core" }
 
 # other crates
 image = { version = "0.25", default-features = false }
@@ -140,7 +141,7 @@ dirs = { version = "6.0.0" }
 zip = { version = "8.5", default-features = false }
 libc = { version = "0.2.112", default-features = false }
 lazy_static = { version = "1.5.0" }
-rustix = { version = "1.0.8", default-features = false }
+rustix = { version = "1", default-features = false }
 cfg_aliases = { version = "0.2.1" }
 windows-sys = { version = "0.61.2", default-features = false }
 windows = { version = "0.62.2", default-features = false }
@@ -195,6 +196,18 @@ spinners = "4.2.0"
 headers = "0.4"
 axum-extra = { version = "0.12" }
 rustls = { version = "0.23", default-features = false }
+bitflags = "2.9.4"
+
+# To remove
+cap-fs-ext = "3.4.5"
+cap-time-ext = "3.4.5"
+fs-set-times = "0.20.3"
+io-lifetimes = { version = "2.0.3", default-features = false }
+system-interface = { version = "0.27.3", features = ["cap_std_impls"] }
+thiserror = "2.0.17"
+tempfile = "3.27.0"
+test-log = { version = "0.2.18", default-features = false, features = ["trace"] }
+cap-std = "3.4.5"
 
 [profile.dev]
 panic = "abort"

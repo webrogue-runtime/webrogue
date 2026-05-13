@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 pub struct State<System: webrogue_gfx::ISystem + 'static> {
-    pub preview1_ctx: Option<wasi_common::WasiCtx>,
+    pub preview1_ctx: Option<webrogue_wasi_common::WasiCtx>,
     pub wasi_threads_ctx: Option<Arc<crate::wasi_threads::WasiThreadsCtx<Self>>>,
     pub gfx: Option<webrogue_gfx::Interface<System>>,
 }
