@@ -20,5 +20,4 @@
 //!   `WasiCtx`. No further downcasting via the `as_any` escape hatch is
 //!   permitted.
 
-pub mod preview_0;
 pub mod preview_1;

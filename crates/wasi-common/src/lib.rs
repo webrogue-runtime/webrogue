@@ -118,13 +118,11 @@ macro_rules! define_wasi {
         get_cx: impl Fn(&mut T) -> &mut U + Send + Sync + Copy + 'static,
     ) -> EnvResult<()>
         where U: Send
-                + crate::snapshots::preview_0::wasi_unstable::WasiUnstable
                 + crate::snapshots::preview_1::wasi_snapshot_preview1::WasiSnapshotPreview1,
               T: 'static,
             $($bounds)*
     {
         snapshots::preview_1::add_wasi_snapshot_preview1_to_linker(linker, get_cx)?;
-        snapshots::preview_0::add_wasi_unstable_to_linker(linker, get_cx)?;
         Ok(())
     }
 
@@ -134,15 +132,6 @@ macro_rules! define_wasi {
                 // The wiggle code to integrate with lives here:
                 target: crate::snapshots::preview_1,
                 witx: ["witx/preview1/wasi_snapshot_preview1.witx"],
-                errors: { errno => trappable Error },
-                $async_mode: *
-            });
-        }
-        pub mod preview_0 {
-            wiggle::wasmtime_integration!({
-                // The wiggle code to integrate with lives here:
-                target: crate::snapshots::preview_0,
-                witx: ["witx/preview0/wasi_unstable.witx"],
                 errors: { errno => trappable Error },
                 $async_mode: *
             });
