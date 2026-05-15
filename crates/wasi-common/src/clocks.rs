@@ -1,7 +1,4 @@
 use crate::{Error, ErrorExt};
-#[cfg(feature = "use_cap_std")]
-use cap_std::time::{Duration, Instant, SystemTime};
-#[cfg(not(feature = "use_cap_std"))]
 use std::time::{Duration, Instant, SystemTime};
 
 pub enum SystemTimeSpec {
@@ -20,9 +17,6 @@ pub trait WasiMonotonicClock: Send + Sync {
 }
 
 pub struct WasiMonotonicOffsetClock {
-    #[cfg(feature = "use_cap_std")]
-    pub creation_time: cap_std::time::Instant,
-    #[cfg(not(feature = "use_cap_std"))]
     pub creation_time: std::time::Instant,
     pub abs_clock: Box<dyn WasiMonotonicClock>,
 }

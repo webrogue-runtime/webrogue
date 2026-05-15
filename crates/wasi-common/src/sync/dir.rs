@@ -1,16 +1,23 @@
-use crate::sync::file::{filetype_from, File};
+use crate::sync::file::File;
 use crate::{
     dir::{ReaddirCursor, ReaddirEntity, WasiDir},
     file::{FdFlags, FileType, Filestat, OFlags},
     Error, ErrorExt,
 };
-use cap_fs_ext::{DirEntryExt, DirExt, MetadataExt, OpenOptionsMaybeDirExt, SystemTimeSpec};
-use cap_std::fs;
 use std::any::Any;
-use std::path::{Path, PathBuf};
-use system_interface::fs::GetSetFdFlags;
+use std::fs::{create_dir, metadata, read_dir, remove_dir, remove_file, rename, OpenOptions};
+use std::path::{absolute, PathBuf};
 
-pub struct Dir(fs::Dir);
+#[derive(Clone)]
+pub struct Dir {
+    path: PathBuf,
+    parent: Option<Box<Dir>>,
+}
+
+pub enum ResolveResult {
+    File(PathBuf),
+    Dir(Dir),
+}
 
 pub enum OpenResult {
     File(File),
@@ -18,23 +25,96 @@ pub enum OpenResult {
 }
 
 impl Dir {
-    pub fn from_cap_std(dir: fs::Dir) -> Self {
-        Dir(dir)
+    /// Path must be absolute
+    pub fn from_path(path: PathBuf) -> Self {
+        debug_assert!(path.is_absolute());
+        Dir {
+            path: path,
+            parent: None,
+        }
+    }
+
+    fn resolve_path(&self, path: &str, existed: Option<bool>) -> Result<ResolveResult, Error> {
+        if let Some((dir_path, file_path)) = path.split_once('/') {
+            let new_dir: Self = match dir_path {
+                "." | "" => self.clone(),
+                ".." => {
+                    let Some(parent) = self.parent.clone() else {
+                        return Err(Error::perm());
+                    };
+                    parent.as_ref().clone()
+                }
+                dir_path => {
+                    let dir_path = self.path.join(dir_path);
+                    if !dir_path.exists() {
+                        return Err(Error::not_found());
+                    }
+                    let (old_path, new_path) =
+                        (|| Ok::<_, Error>((absolute(&self.path)?, absolute(dir_path)?)))()?;
+                    if !new_path.starts_with(old_path) {
+                        return Err(Error::perm());
+                    }
+                    Dir {
+                        path: new_path,
+                        parent: Some(Box::new(self.clone())),
+                    }
+                }
+            };
+            return new_dir.resolve_path(file_path, existed);
+        }
+
+        let new_path = self.path.join(path);
+
+        let (old_path, new_path) =
+            (|| Ok::<_, Error>((absolute(&self.path)?, absolute(new_path)?)))()?;
+        if !new_path.starts_with(old_path) {
+            return Err(Error::perm());
+        }
+
+        if new_path.exists() {
+            if existed == Some(false) {
+                return Err(Error::io());
+            }
+            let metadata = metadata(&new_path)?;
+            if metadata.is_dir() {
+                Ok(ResolveResult::Dir(Dir {
+                    path: new_path,
+                    parent: Some(Box::new(self.clone())),
+                }))
+            } else {
+                Ok(ResolveResult::File(new_path))
+            }
+        } else {
+            if existed == Some(true) {
+                return Err(Error::not_found());
+            }
+            Ok(ResolveResult::File(new_path))
+        }
+    }
+
+    fn resolve_path_not_open_dir(
+        &self,
+        path: &str,
+        existed: Option<bool>,
+    ) -> Result<PathBuf, Error> {
+        match self.resolve_path(path, existed)? {
+            ResolveResult::File(path_buf) => Ok(path_buf),
+            ResolveResult::Dir(dir) => {
+                // TODO check if no files are opened within this dir
+                Ok(dir.path)
+            }
+        }
     }
 
     pub fn open_file_(
         &self,
-        symlink_follow: bool,
         path: &str,
         oflags: OFlags,
         read: bool,
         write: bool,
         fdflags: FdFlags,
     ) -> Result<OpenResult, Error> {
-        use cap_fs_ext::{FollowSymlinks, OpenOptionsFollowExt};
-
-        let mut opts = fs::OpenOptions::new();
-        opts.maybe_dir(true);
+        let mut opts = OpenOptions::new();
 
         if oflags.contains(OFlags::CREATE | OFlags::EXCLUSIVE) {
             opts.create_new(true);
@@ -60,12 +140,6 @@ impl Dir {
         if fdflags.contains(FdFlags::APPEND) {
             opts.append(true);
         }
-
-        if symlink_follow {
-            opts.follow(FollowSymlinks::Yes);
-        } else {
-            opts.follow(FollowSymlinks::No);
-        }
         // the DSYNC, SYNC, and RSYNC flags are ignored! We do not
         // have support for them in cap-std yet.
         // ideally OpenOptions would just support this though:
@@ -85,37 +159,30 @@ impl Dir {
             }
         }
 
-        let mut f = self.0.open_with(Path::new(path), &opts)?;
-        if f.metadata()?.is_dir() {
-            Ok(OpenResult::Dir(Dir::from_cap_std(fs::Dir::from_std_file(
-                f.into_std(),
-            ))))
-        } else if oflags.contains(OFlags::DIRECTORY) {
-            Err(Error::not_dir().context("expected directory but got file"))
-        } else {
-            // NONBLOCK does not have an OpenOption either, but we can patch that on with set_fd_flags:
-            if fdflags.contains(crate::file::FdFlags::NONBLOCK) {
-                let set_fd_flags = f.new_set_fd_flags(system_interface::fs::FdFlags::NONBLOCK)?;
-                f.set_fd_flags(set_fd_flags)?;
+        let resolved = self.resolve_path(path, Some(true))?;
+
+        match resolved {
+            ResolveResult::File(path_buf) => {
+                if oflags.contains(OFlags::DIRECTORY) {
+                    return Err(Error::not_dir());
+                }
+                let file = opts.open(&path_buf)?;
+
+                Ok(OpenResult::File(File::from_std(file, path_buf, fdflags)))
             }
-            Ok(OpenResult::File(File::from_cap_std(f)))
+            ResolveResult::Dir(dir) => {
+                if !oflags.contains(OFlags::DIRECTORY) {
+                    return Err(Error::not_found());
+                }
+                Ok(OpenResult::Dir(dir))
+            }
         }
     }
 
     pub fn rename_(&self, src_path: &str, dest_dir: &Self, dest_path: &str) -> Result<(), Error> {
-        self.0
-            .rename(Path::new(src_path), &dest_dir.0, Path::new(dest_path))?;
-        Ok(())
-    }
-    pub fn hard_link_(
-        &self,
-        src_path: &str,
-        target_dir: &Self,
-        target_path: &str,
-    ) -> Result<(), Error> {
-        let src_path = Path::new(src_path);
-        let target_path = Path::new(target_path);
-        self.0.hard_link(src_path, &target_dir.0, target_path)?;
+        let src = self.resolve_path_not_open_dir(src_path, Some(true))?;
+        let dest = dest_dir.resolve_path_not_open_dir(dest_path, Some(false))?;
+        rename(src, dest)?;
         Ok(())
     }
 }
@@ -127,14 +194,14 @@ impl WasiDir for Dir {
     }
     async fn open_file(
         &self,
-        symlink_follow: bool,
+        _symlink_follow: bool,
         path: &str,
         oflags: OFlags,
         read: bool,
         write: bool,
         fdflags: FdFlags,
     ) -> Result<crate::dir::OpenResult, Error> {
-        let f = self.open_file_(symlink_follow, path, oflags, read, write, fdflags)?;
+        let f = self.open_file_(path, oflags, read, write, fdflags)?;
         match f {
             OpenResult::File(f) => Ok(crate::dir::OpenResult::File(Box::new(f))),
             OpenResult::Dir(d) => Ok(crate::dir::OpenResult::Dir(Box::new(d))),
@@ -142,140 +209,100 @@ impl WasiDir for Dir {
     }
 
     async fn create_dir(&self, path: &str) -> Result<(), Error> {
-        self.0.create_dir(Path::new(path))?;
+        let path = self.resolve_path_not_open_dir(path, Some(false))?;
+        create_dir(path)?;
         Ok(())
     }
     async fn readdir(
         &self,
         cursor: ReaddirCursor,
     ) -> Result<Box<dyn Iterator<Item = Result<ReaddirEntity, Error>> + Send>, Error> {
-        // We need to keep a full-fidelity io Error around to check for a special failure mode
-        // on windows, but also this function can fail due to an illegal byte sequence in a
-        // filename, which we can't construct an io Error to represent.
-        enum ReaddirError {
-            Io(std::io::Error),
-            IllegalSequence,
+        let mut entries = vec![
+            (FileType::Directory, ".".to_string()),
+            (FileType::Directory, "..".to_string()),
+        ];
+
+        for entry in read_dir(&self.path)? {
+            let entry = entry?;
+            entries.push((
+                if entry.metadata()?.is_dir() {
+                    FileType::Directory
+                } else {
+                    FileType::RegularFile
+                },
+                entry.file_name().into_string().unwrap(),
+            ));
         }
-        impl From<std::io::Error> for ReaddirError {
-            fn from(e: std::io::Error) -> ReaddirError {
-                ReaddirError::Io(e)
-            }
-        }
 
-        // cap_std's read_dir does not include . and .., we should prepend these.
-        // Why does the Ok contain a tuple? We can't construct a cap_std::fs::DirEntry, and we don't
-        // have enough info to make a ReaddirEntity yet.
-        let dir_meta = self.0.dir_metadata()?;
-        let rd = vec![
-            {
-                let name = ".".to_owned();
-                Ok::<_, ReaddirError>((FileType::Directory, dir_meta.ino(), name))
-            },
-            {
-                let name = "..".to_owned();
-                Ok((FileType::Directory, dir_meta.ino(), name))
-            },
-        ]
-        .into_iter()
-        .chain({
-            // Now process the `DirEntry`s:
-            let entries = self.0.entries()?.map(|entry| {
-                let entry = entry?;
-                let meta = entry.full_metadata()?;
-                let inode = meta.ino();
-                let filetype = filetype_from(&meta.file_type());
-                let name = entry
-                    .file_name()
-                    .into_string()
-                    .map_err(|_| ReaddirError::IllegalSequence)?;
-                Ok((filetype, inode, name))
-            });
-
-            // On Windows, filter out files like `C:\DumpStack.log.tmp` which we
-            // can't get a full metadata for.
-            #[cfg(windows)]
-            let entries = entries.filter(|entry| {
-                use windows_sys::Win32::Foundation::{
-                    ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION,
-                };
-                if let Err(ReaddirError::Io(err)) = entry {
-                    if err.raw_os_error() == Some(ERROR_SHARING_VIOLATION as i32)
-                        || err.raw_os_error() == Some(ERROR_ACCESS_DENIED as i32)
-                    {
-                        return false;
-                    }
-                }
-                true
-            });
-
-            entries
-        })
-        // Enumeration of the iterator makes it possible to define the ReaddirCursor
-        .enumerate()
-        .map(|(ix, r)| match r {
-            Ok((filetype, inode, name)) => Ok(ReaddirEntity {
-                next: ReaddirCursor::from(ix as u64 + 1),
-                filetype,
-                inode,
-                name,
-            }),
-            Err(ReaddirError::Io(e)) => Err(e.into()),
-            Err(ReaddirError::IllegalSequence) => Err(Error::illegal_byte_sequence()),
-        })
-        .skip(u64::from(cursor) as usize);
+        let rd = entries
+            .into_iter()
+            .enumerate()
+            .map(|(ix, (filetype, name))| {
+                Ok(ReaddirEntity {
+                    next: ReaddirCursor::from(ix as u64 + 1),
+                    filetype,
+                    inode: 0,
+                    name,
+                })
+            })
+            .skip(u64::from(cursor) as usize);
 
         Ok(Box::new(rd))
     }
 
-    async fn symlink(&self, src_path: &str, dest_path: &str) -> Result<(), Error> {
-        self.0.symlink(src_path, dest_path)?;
-        Ok(())
-    }
     async fn remove_dir(&self, path: &str) -> Result<(), Error> {
-        self.0.remove_dir(Path::new(path))?;
+        let path = self.resolve_path_not_open_dir(path, Some(true))?;
+        remove_dir(path)?;
         Ok(())
     }
 
     async fn unlink_file(&self, path: &str) -> Result<(), Error> {
-        self.0.remove_file_or_symlink(Path::new(path))?;
+        let path = match self.resolve_path(path, Some(true))? {
+            ResolveResult::File(path) => path,
+            ResolveResult::Dir(_) => return Err(Error::io()),
+        };
+        remove_file(path)?;
         Ok(())
     }
-    async fn read_link(&self, path: &str) -> Result<PathBuf, Error> {
-        let link = self.0.read_link(Path::new(path))?;
-        Ok(link)
-    }
     async fn get_filestat(&self) -> Result<Filestat, Error> {
-        let meta = self.0.dir_metadata()?;
         Ok(Filestat {
-            device_id: meta.dev(),
-            inode: meta.ino(),
-            filetype: filetype_from(&meta.file_type()),
-            nlink: meta.nlink(),
-            size: meta.len(),
-            atim: meta.accessed().map(|t| Some(t.into_std())).unwrap_or(None),
-            mtim: meta.modified().map(|t| Some(t.into_std())).unwrap_or(None),
-            ctim: meta.created().map(|t| Some(t.into_std())).unwrap_or(None),
+            device_id: 0,
+            inode: 0,
+            filetype: FileType::Directory,
+            nlink: 1,
+            size: 4096,
+            atim: None,
+            mtim: None,
+            ctim: None,
         })
     }
     async fn get_path_filestat(
         &self,
         path: &str,
-        follow_symlinks: bool,
+        _follow_symlinks: bool,
     ) -> Result<Filestat, Error> {
-        let meta = if follow_symlinks {
-            self.0.metadata(Path::new(path))?
-        } else {
-            self.0.symlink_metadata(Path::new(path))?
+        let path = match self.resolve_path(path, Some(true))? {
+            ResolveResult::File(path_buf) => path_buf,
+            ResolveResult::Dir(dir) => dir.path,
         };
+        let metadata = metadata(path)?;
         Ok(Filestat {
-            device_id: meta.dev(),
-            inode: meta.ino(),
-            filetype: filetype_from(&meta.file_type()),
-            nlink: meta.nlink(),
-            size: meta.len(),
-            atim: meta.accessed().map(|t| Some(t.into_std())).unwrap_or(None),
-            mtim: meta.modified().map(|t| Some(t.into_std())).unwrap_or(None),
-            ctim: meta.created().map(|t| Some(t.into_std())).unwrap_or(None),
+            device_id: 0,
+            inode: 0,
+            filetype: if metadata.is_dir() {
+                FileType::Directory
+            } else {
+                FileType::RegularFile
+            },
+            nlink: 1,
+            size: if metadata.is_dir() {
+                4096
+            } else {
+                metadata.len()
+            },
+            atim: None,
+            mtim: None,
+            ctim: None,
         })
     }
     async fn rename(
@@ -290,46 +317,12 @@ impl WasiDir for Dir {
             .ok_or(Error::badf().context("failed downcast to cap-std Dir"))?;
         self.rename_(src_path, dest_dir, dest_path)
     }
-    async fn hard_link(
-        &self,
-        src_path: &str,
-        target_dir: &dyn WasiDir,
-        target_path: &str,
-    ) -> Result<(), Error> {
-        let target_dir = target_dir
-            .as_any()
-            .downcast_ref::<Self>()
-            .ok_or(Error::badf().context("failed downcast to cap-std Dir"))?;
-        self.hard_link_(src_path, target_dir, target_path)
-    }
-    async fn set_times(
-        &self,
-        path: &str,
-        atime: Option<crate::SystemTimeSpec>,
-        mtime: Option<crate::SystemTimeSpec>,
-        follow_symlinks: bool,
-    ) -> Result<(), Error> {
-        if follow_symlinks {
-            self.0.set_times(
-                Path::new(path),
-                convert_systimespec(atime),
-                convert_systimespec(mtime),
-            )?;
-        } else {
-            self.0.set_symlink_times(
-                Path::new(path),
-                convert_systimespec(atime),
-                convert_systimespec(mtime),
-            )?;
-        }
-        Ok(())
-    }
 }
 
-fn convert_systimespec(t: Option<crate::SystemTimeSpec>) -> Option<SystemTimeSpec> {
-    match t {
-        Some(crate::SystemTimeSpec::Absolute(t)) => Some(SystemTimeSpec::Absolute(t)),
-        Some(crate::SystemTimeSpec::SymbolicNow) => Some(SystemTimeSpec::SymbolicNow),
-        None => None,
-    }
-}
+// fn convert_systimespec(t: Option<crate::SystemTimeSpec>) -> Option<SystemTimeSpec> {
+//     match t {
+//         Some(crate::SystemTimeSpec::Absolute(t)) => Some(SystemTimeSpec::Absolute(t)),
+//         Some(crate::SystemTimeSpec::SymbolicNow) => Some(SystemTimeSpec::SymbolicNow),
+//         None => None,
+//     }
+// }

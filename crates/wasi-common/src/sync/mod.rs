@@ -17,21 +17,16 @@
 pub mod clocks;
 pub mod dir;
 pub mod file;
-pub mod net;
 pub mod sched;
 pub mod stdio;
 
-pub use cap_std::ambient_authority;
-pub use cap_std::fs::Dir;
-pub use cap_std::net::TcpListener;
 pub use clocks::clocks_ctx;
 pub use sched::sched_ctx;
 
-use self::net::Socket;
-use crate::{Error, WasiCtx, WasiFile, file::FileAccessMode, table::Table};
+use crate::{table::Table, Error, WasiCtx, WasiFile};
 use rand::{Rng, SeedableRng};
 use std::mem;
-use std::path::Path;
+use std::path::{absolute, Path};
 
 pub struct WasiCtxBuilder {
     ctx: WasiCtx,
@@ -89,36 +84,13 @@ impl WasiCtxBuilder {
         self.ctx.set_stderr(f);
         self
     }
-    pub fn inherit_stdin(&mut self) -> &mut Self {
-        self.stdin(Box::new(crate::sync::stdio::stdin()))
-    }
-    pub fn inherit_stdout(&mut self) -> &mut Self {
-        self.stdout(Box::new(crate::sync::stdio::stdout()))
-    }
-    pub fn inherit_stderr(&mut self) -> &mut Self {
-        self.stderr(Box::new(crate::sync::stdio::stderr()))
-    }
-    pub fn inherit_stdio(&mut self) -> &mut Self {
-        self.inherit_stdin().inherit_stdout().inherit_stderr()
-    }
     pub fn preopened_dir(
         &mut self,
-        dir: Dir,
+        host_path: impl AsRef<Path>,
         guest_path: impl AsRef<Path>,
     ) -> Result<&mut Self, Error> {
-        let dir = Box::new(crate::sync::dir::Dir::from_cap_std(dir));
+        let dir = Box::new(crate::sync::dir::Dir::from_path(absolute(host_path)?));
         self.ctx.push_preopened_dir(dir, guest_path)?;
-        Ok(self)
-    }
-    pub fn preopened_socket(
-        &mut self,
-        fd: u32,
-        socket: impl Into<Socket>,
-    ) -> Result<&mut Self, Error> {
-        let socket: Socket = socket.into();
-        let file: Box<dyn WasiFile> = socket.into();
-        self.ctx
-            .insert_file(fd, file, FileAccessMode::READ | FileAccessMode::WRITE);
         Ok(self)
     }
     pub fn build(&mut self) -> WasiCtx {
@@ -132,6 +104,3 @@ impl WasiCtxBuilder {
 pub fn random_ctx() -> Box<dyn Rng + Send + Sync> {
     Box::new(rand::rngs::StdRng::from_seed(rand::random()))
 }
-
-#[cfg(feature = "wasmtime")]
-super::define_wasi!(block_on);
