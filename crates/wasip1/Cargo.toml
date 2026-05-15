@@ -17,7 +17,7 @@ async-trait = { workspace = true }
 rand_core = { workspace = true }
 rand = { workspace = true, default-features = false, features = ["sys_rng", "thread_rng"] }
 getrandom = { workspace = true, default-features = false, features = ["wasm_js"] }
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
 lazy_static = { workspace = true }
 rustix = { workspace = true, features = ["std"] }
 
