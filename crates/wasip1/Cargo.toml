@@ -19,14 +19,6 @@ rand = { workspace = true, default-features = false, features = ["sys_rng", "thr
 getrandom = { workspace = true, default-features = false, features = ["wasm_js"] }
 tokio = { workspace = true, features = ["rt", "time", "sync"] }
 lazy_static = { workspace = true }
-rustix = { workspace = true, features = ["std"] }
-
-[target.'cfg(unix)'.dependencies]
-rustix = { workspace = true, features = ["pipe"] }
-
-[target.'cfg(windows)'.dependencies]
-io-extras = { workspace = true }
-windows-sys = { workspace = true, features = ["Win32_System_Threading", "Win32_Security"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 webrogue-wasi-common = { workspace = true, default-features = false, features = ["sync"] }

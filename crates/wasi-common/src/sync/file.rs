@@ -12,7 +12,7 @@ use std::{
 
 pub struct File {
     std_file: Mutex<std::fs::File>,
-    path: PathBuf,
+    _path: PathBuf,
     fdflags: FdFlags,
 }
 
@@ -20,7 +20,7 @@ impl File {
     pub(crate) fn from_std(std_file: std::fs::File, path: PathBuf, fdflags: FdFlags) -> Self {
         File {
             std_file: Mutex::new(std_file),
-            path,
+            _path: path,
             fdflags,
         }
     }
