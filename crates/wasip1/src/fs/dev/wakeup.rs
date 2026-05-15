@@ -1,6 +1,4 @@
-use webrogue_wasi_common::{file::FileType, ErrorExt as _, WasiFile};
-
-use webrogue_wasi_common::ErrorExt as _;
+use webrogue_wasi_common::{file::FileType, WasiFile};
 
 pub struct File {
     tx: tokio::sync::watch::Sender<bool>,
@@ -52,14 +50,14 @@ impl WasiFile for File {
 
     async fn write_vectored<'a>(
         &self,
-        _bufs: &[std::io::IoSlice<'a>],
+        bufs: &[std::io::IoSlice<'a>],
     ) -> Result<u64, webrogue_wasi_common::Error> {
         self.signal();
-        Ok(_bufs.iter().map(|slice| slice.len()).sum::<usize>() as u64)
+        Ok(bufs.iter().map(|slice| slice.len()).sum::<usize>() as u64)
     }
 
     async fn readable(&self) -> Result<(), webrogue_wasi_common::Error> {
-        self.wait();
+        self.wait().await;
         Ok(())
     }
 

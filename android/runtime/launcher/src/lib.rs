@@ -278,6 +278,11 @@ impl LauncherConfig for LauncherConfigImpl {
             let sdp_answer = rx.recv().await.unwrap();
             on_sdp_answer(sdp_answer);
         };
+        #[cfg(not(target_os = "android"))]
+        {
+            let _ = sdp_offer;
+            let _ = on_sdp_answer;
+        }
         Ok(())
     }
 }

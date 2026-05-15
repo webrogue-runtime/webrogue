@@ -1,14 +1,8 @@
-use crate::Error;
 use crate::clocks::WasiMonotonicClock;
 use crate::file::WasiFile;
-#[cfg(feature = "use_cap_std")]
-use cap_std::time::Instant;
-#[cfg(not(feature = "use_cap_std"))]
+use crate::Error;
 use std::time::Instant;
 pub mod subscription;
-#[cfg(feature = "use_cap_std")]
-pub use cap_std::time::Duration;
-#[cfg(not(feature = "use_cap_std"))]
 pub use std::time::Duration;
 
 pub use subscription::{

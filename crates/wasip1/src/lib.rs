@@ -9,10 +9,14 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
 ) -> anyhow::Result<webrogue_wasi_common::WasiCtx> {
     #[cfg(not(target_arch = "wasm32"))]
     let mut wasi_ctx = {
+        use webrogue_wasi_common::sync::stdio::Stdout;
+
         let mut builder = webrogue_wasi_common::sync::WasiCtxBuilder::new();
         // builder.inherit_stdio();
-        // builder.stdout(Box::new(stdout::STDOutFile {}));
-        // builder.stderr(Box::new(stdout::STDOutFile {}));
+        builder.stdout(Box::new(Stdout::new(Box::new(|line| println!("{}", line)))));
+        builder.stderr(Box::new(Stdout::new(Box::new(|line| {
+            eprintln!("{}", line)
+        }))));
         builder.build()
     };
     #[cfg(target_arch = "wasm32")]
@@ -35,6 +39,8 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
                 #[cfg(not(target_arch = "wasm32"))]
                 {
                     // TODO check if this check enough
+
+                    use std::path::absolute;
                     anyhow::ensure!(
                         !persistent.name.contains("/")
                             && !persistent.name.contains("\\")
@@ -47,12 +53,8 @@ pub fn make_ctx<VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
                     if !real_path.is_dir() {
                         std::fs::create_dir_all(&real_path)?;
                     }
-                    let home_dir = webrogue_wasi_common::sync::dir::Dir::from_cap_std(
-                        webrogue_wasi_common::sync::Dir::open_ambient_dir(
-                            real_path,
-                            webrogue_wasi_common::sync::ambient_authority(),
-                        )?,
-                    );
+                    let home_dir =
+                        webrogue_wasi_common::sync::dir::Dir::from_path(absolute(real_path)?);
                     wasi_ctx.push_preopened_dir(Box::new(home_dir), &persistent.mapped_path)?;
                 }
 

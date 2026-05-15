@@ -1,22 +1,19 @@
 use crate::{
-    EnvError, I32Exit, SystemTimeSpec, WasiCtx,
     dir::{DirEntry, OpenResult, ReaddirCursor, ReaddirEntity, TableDirExt},
     file::{
         Advice, FdFlags, FdStat, FileAccessMode, FileEntry, FileType, Filestat, OFlags, RiFlags,
         RoFlags, SdFlags, SiFlags, TableFileExt, WasiFile,
     },
     sched::{
-        Poll, Userdata,
         subscription::{RwEventFlags, SubscriptionResult},
+        Poll, Userdata,
     },
+    EnvError, I32Exit, SystemTimeSpec, WasiCtx,
 };
-#[cfg(feature = "use_cap_std")]
-use cap_std::time::{Duration, SystemClock};
 use std::borrow::Cow;
 use std::io::{IoSlice, IoSliceMut};
 use std::ops::Deref;
 use std::sync::Arc;
-#[cfg(not(feature = "use_cap_std"))]
 use std::time::Duration;
 use wiggle::GuestMemory;
 use wiggle::GuestPtr;
@@ -101,9 +98,6 @@ impl wasi_snapshot_preview1::WasiSnapshotPreview1 for WasiCtx {
         let precision = Duration::from_nanos(precision);
         match id {
             types::Clockid::Realtime => {
-                #[cfg(feature = "use_cap_std")]
-                let now = self.clocks.system()?.now(precision).into_std();
-                #[cfg(not(feature = "use_cap_std"))]
                 let now = self.clocks.system()?.now(precision);
                 let d = now
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
@@ -1523,11 +1517,6 @@ fn systimespec(
     if set && now {
         Err(Error::invalid_argument())
     } else if set {
-        #[cfg(feature = "use_cap_std")]
-        return Ok(Some(SystemTimeSpec::Absolute(
-            SystemClock::UNIX_EPOCH + Duration::from_nanos(ts),
-        )));
-        #[cfg(not(feature = "use_cap_std"))]
         Ok(Some(SystemTimeSpec::Absolute(
             std::time::SystemTime::UNIX_EPOCH + Duration::from_nanos(ts),
         )))

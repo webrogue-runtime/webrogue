@@ -1,41 +1,41 @@
-use crate::clocks::{WasiClocks, WasiMonotonicClock, WasiSystemClock};
-use cap_std::time::{Duration, Instant, SystemTime};
-use cap_std::{AmbientAuthority, ambient_authority};
-use cap_time_ext::{MonotonicClockExt, SystemClockExt};
+use std::time::{Duration, Instant, SystemTime};
 
-pub struct SystemClock(cap_std::time::SystemClock);
+use crate::clocks::{WasiClocks, WasiMonotonicClock, WasiSystemClock};
+
+pub struct SystemClock {}
 
 impl SystemClock {
-    pub fn new(ambient_authority: AmbientAuthority) -> Self {
-        SystemClock(cap_std::time::SystemClock::new(ambient_authority))
+    pub fn new() -> Self {
+        Self {}
     }
 }
 impl WasiSystemClock for SystemClock {
     fn resolution(&self) -> Duration {
-        self.0.resolution()
+        Duration::from_millis(1)
     }
-    fn now(&self, precision: Duration) -> SystemTime {
-        self.0.now_with(precision)
+    fn now(&self, _precision: Duration) -> SystemTime {
+        SystemTime::now()
     }
 }
 
-pub struct MonotonicClock(cap_std::time::MonotonicClock);
+pub struct MonotonicClock {}
+
 impl MonotonicClock {
-    pub fn new(ambient_authority: AmbientAuthority) -> Self {
-        MonotonicClock(cap_std::time::MonotonicClock::new(ambient_authority))
+    pub fn new() -> Self {
+        Self {}
     }
 }
 impl WasiMonotonicClock for MonotonicClock {
     fn resolution(&self) -> Duration {
-        self.0.resolution()
+        Duration::from_millis(1)
     }
-    fn now(&self, precision: Duration) -> Instant {
-        self.0.now_with(precision)
+    fn now(&self, _precision: Duration) -> Instant {
+        Instant::now()
     }
 }
 
 pub fn clocks_ctx() -> WasiClocks {
     WasiClocks::new()
-        .with_system(SystemClock::new(ambient_authority()))
-        .with_monotonic(MonotonicClock::new(ambient_authority()))
+        .with_system(SystemClock::new())
+        .with_monotonic(MonotonicClock::new())
 }

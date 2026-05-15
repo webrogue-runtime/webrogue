@@ -199,15 +199,8 @@ rustls = { version = "0.23", default-features = false }
 bitflags = "2.9.4"
 
 # To remove
-cap-fs-ext = "3.4.5"
-cap-time-ext = "3.4.5"
-fs-set-times = "0.20.3"
-io-lifetimes = { version = "2.0.3", default-features = false }
-system-interface = { version = "0.27.3", features = ["cap_std_impls"] }
 thiserror = "2.0.17"
 tempfile = "3.27.0"
-test-log = { version = "0.2.18", default-features = false, features = ["trace"] }
-cap-std = "3.4.5"
 
 [profile.dev]
 panic = "abort"

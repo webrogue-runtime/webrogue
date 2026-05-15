@@ -18,17 +18,15 @@ pub mod clocks;
 pub mod dir;
 pub mod file;
 pub mod sched;
+pub mod stdio;
 
-pub use cap_std::ambient_authority;
-pub use cap_std::fs::Dir;
-pub use cap_std::net::TcpListener;
 pub use clocks::clocks_ctx;
 pub use sched::sched_ctx;
 
-use crate::{file::FileAccessMode, table::Table, Error, WasiCtx, WasiFile};
+use crate::{table::Table, Error, WasiCtx, WasiFile};
 use rand::{Rng, SeedableRng};
 use std::mem;
-use std::path::Path;
+use std::path::{absolute, Path};
 
 pub struct WasiCtxBuilder {
     ctx: WasiCtx,
@@ -88,10 +86,10 @@ impl WasiCtxBuilder {
     }
     pub fn preopened_dir(
         &mut self,
-        dir: Dir,
+        host_path: impl AsRef<Path>,
         guest_path: impl AsRef<Path>,
     ) -> Result<&mut Self, Error> {
-        let dir = Box::new(crate::sync::dir::Dir::from_cap_std(dir));
+        let dir = Box::new(crate::sync::dir::Dir::from_path(absolute(host_path)?));
         self.ctx.push_preopened_dir(dir, guest_path)?;
         Ok(self)
     }
@@ -106,6 +104,3 @@ impl WasiCtxBuilder {
 pub fn random_ctx() -> Box<dyn Rng + Send + Sync> {
     Box::new(rand::rngs::StdRng::from_seed(rand::random()))
 }
-
-#[cfg(feature = "wasmtime")]
-super::define_wasi!(block_on);
