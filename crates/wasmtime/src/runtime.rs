@@ -292,7 +292,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         })?;
     }
     #[cfg(not(feature = "async"))]
-    bindings::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
+    bindings::sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
         state.preview1_ctx.as_mut().unwrap()
     })?;
 
