@@ -156,7 +156,7 @@ ash = { version = "0.38.0", default-features = false }
 ash-window = { version = "0.13.0", default-features = false }
 android-activity = { version = "0.6.0", default-features = false }
 log = { version = "0.4", default-features = false }
-android_logger = { version = "0.11.0", default-features = false }
+android_logger = { version = "0.15.1", default-features = false }
 ndk-sys = { version = "0.6.0", default-features = false }
 ndk = { version = "0.9.0", default-features = false }
 json-escape = { version = "0.3.0" }
