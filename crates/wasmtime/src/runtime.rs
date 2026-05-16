@@ -280,7 +280,19 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         #[cfg(feature = "async")]
         async_func_runner.clone(),
     )));
-    bindings::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
+
+    #[cfg(feature = "async")]
+    if async_func_runner.is_some() {
+        bindings::not_sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
+            state.preview1_ctx.as_mut().unwrap()
+        })?;
+    } else {
+        bindings::sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
+            state.preview1_ctx.as_mut().unwrap()
+        })?;
+    }
+    #[cfg(not(feature = "async"))]
+    bindings::sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
         state.preview1_ctx.as_mut().unwrap()
     })?;
 
@@ -334,9 +346,6 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 
                 let pre = linker.instantiate_pre(&module)?;
 
-                let instance = pre.instantiate(&mut store)?;
-                let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
-
                 #[cfg(feature = "async")]
                 let call_result = if let Some(async_func_runner) = async_func_runner {
                     async_func_runner(
@@ -348,6 +357,10 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
                             use wasmtime::AsContextMut as _;
 
                             Box::pin(async move {
+                                let instance =
+                                    pre.instantiate_async(store.as_context_mut()).await?;
+                                let func = instance
+                                    .get_typed_func::<(), ()>(store.as_context_mut(), "_start")?;
                                 store
                                     .edit_breakpoints()
                                     .as_mut()
@@ -360,13 +373,18 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
                     )
                     .map(|_| ())
                 } else {
+                    let instance = pre.instantiate(&mut store)?;
+                    let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
                     func.call(&mut store, ())
                         .map_err(|err| anyhow::anyhow!(err))
                 };
                 #[cfg(not(feature = "async"))]
-                let call_result = func
-                    .call(&mut store, ())
-                    .map_err(|err| anyhow::anyhow!(err));
+                let call_result = {
+                    let instance = pre.instantiate(&mut store)?;
+                    let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
+                    func.call(&mut store, ())
+                        .map_err(|err| anyhow::anyhow!(err))
+                };
                 let tid = main_thread.tid();
                 thread_registry.remove_thread(main_thread);
                 thread_registry.stop_all_threads(
@@ -395,9 +413,20 @@ mod bindings {
         witx: ["../gfx/witx/webrogue_gfx.witx"],
     });
 
-    wiggle::wasmtime_integration!({
-        target: webrogue_wasi_common::snapshots::preview_1,
-        witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
-        block_on [webrogue_wasip1::run_in_executor]: *
-    });
+    pub mod sync {
+        wiggle::wasmtime_integration!({
+            target: webrogue_wasi_common::snapshots::preview_1,
+            witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
+            block_on [webrogue_wasip1::run_in_executor]: *
+        });
+    }
+    #[cfg(feature = "async")]
+    // Not gonna fight compiler again
+    pub mod not_sync {
+        wiggle::wasmtime_integration!({
+            target: webrogue_wasi_common::snapshots::preview_1,
+            witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
+            async: *
+        });
+    }
 }

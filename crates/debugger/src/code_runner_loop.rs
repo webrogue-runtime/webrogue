@@ -19,6 +19,7 @@ pub fn runner<T: Send + 'static>(
     let is_main_thread_arc = Arc::new(AtomicBool::new(true));
     Arc::new(move |params, func| {
         tokio::runtime::Builder::new_current_thread()
+            .enable_all()
             .build()
             .unwrap()
             .block_on((async || {
