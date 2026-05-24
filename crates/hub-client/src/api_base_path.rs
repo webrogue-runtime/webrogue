@@ -1,4 +1,5 @@
-use webrogue_hub_client::{HTTP_BASE_ADDR, WS_BASE_ADDR};
+pub static STAGE_WS_BASE_ADDR: &str = "wss://stage.webrogue.dev";
+pub static STAGE_HTTP_BASE_ADDR: &str = "https://stage.webrogue.dev";
 
 fn localhost_api_addr_port() -> &'static str {
     if cfg!(target_os = "android") {
@@ -9,20 +10,20 @@ fn localhost_api_addr_port() -> &'static str {
 }
 
 fn use_localhost_api() -> bool {
-    // cfg!(debug_assertions)
-    false
+    cfg!(debug_assertions)
+    // false
 }
 
 fn use_localhost_ui() -> bool {
-    // cfg!(debug_assertions)
-    false
+    cfg!(debug_assertions)
+    // false
 }
 
 pub fn http_api_url() -> String {
     if use_localhost_api() {
         format!("http://{}", localhost_api_addr_port())
     } else {
-        HTTP_BASE_ADDR.to_owned()
+        STAGE_HTTP_BASE_ADDR.to_owned()
     }
 }
 
@@ -30,7 +31,7 @@ pub fn ws_api_url() -> String {
     if use_localhost_api() {
         format!("ws://{}", localhost_api_addr_port())
     } else {
-        WS_BASE_ADDR.to_owned()
+        STAGE_WS_BASE_ADDR.to_owned()
     }
 }
 
@@ -42,6 +43,6 @@ pub fn assets_url() -> &'static str {
             "http://localhost:5173/"
         }
     } else {
-        "wrlauncher://asset/"
+        "wrlauncher://webrogue.dev/"
     }
 }

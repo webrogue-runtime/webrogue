@@ -1,11 +1,3 @@
-pub mod auth_login_request;
-pub use self::auth_login_request::AuthLoginRequest;
-pub mod auth_login_response;
-pub use self::auth_login_response::AuthLoginResponse;
-pub mod check_email_request;
-pub use self::check_email_request::CheckEmailRequest;
-pub mod check_email_response;
-pub use self::check_email_response::CheckEmailResponse;
 pub mod connect_device_ws_command;
 pub use self::connect_device_ws_command::ConnectDeviceWsCommand;
 pub mod connect_device_ws_event;
@@ -20,5 +12,3 @@ pub mod error_response;
 pub use self::error_response::ErrorResponse;
 pub mod list_devices_response;
 pub use self::list_devices_response::ListDevicesResponse;
-pub mod user_response;
-pub use self::user_response::UserResponse;

@@ -8,8 +8,9 @@ use futures_util::{SinkExt as _, StreamExt as _};
 use serde::{Deserialize, Serialize};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use webrogue_hub_client::{
+    api_base_path::ws_api_url,
+    wait_for_text_message_with_pings,
     ws_messages::{ConnectDeviceWsCommand, ConnectDeviceWsEvent},
-    WS_BASE_ADDR,
 };
 use webrogue_hub_debuggee::{HubDebuggeeGFX, HubDebuggeeWinitSystemGFX};
 
@@ -43,7 +44,8 @@ pub async fn host(
 
     let (ws_stream, _) = connect_async(format!(
         "{}/api/v1/devices/connect?{}",
-        WS_BASE_ADDR, api_key
+        ws_api_url(),
+        api_key
     ))
     .await?;
     let (mut write, mut read) = ws_stream.split();
@@ -58,28 +60,10 @@ pub async fn host(
         ))
         .await?;
 
-    let incoming_message = loop {
-        match read.next().await.unwrap()? {
-            Message::Text(utf8_bytes) => break utf8_bytes,
-            Message::Binary(_bytes) => todo!(),
-            Message::Ping(bytes) => {
-                write.send(Message::Pong(bytes)).await?;
-            }
-            Message::Pong(_bytes) => {}
-            Message::Close(close_frame) => {
-                if let Some(close_frame) = close_frame {
-                    anyhow::bail!(
-                        "Connection closed by server with error: {}",
-                        close_frame.reason.as_str()
-                    )
-                } else {
-                    anyhow::bail!("Connection closed by server with unknown error",);
-                }
-            }
-            Message::Frame(_frame) => todo!(),
-        };
-    };
-    let incoming_message = serde_json::from_str::<ConnectDeviceWsEvent>(incoming_message.as_str())?;
+    let event_str =
+        wait_for_text_message_with_pings(&mut read, &mut write, "during initial connection")
+            .await?;
+    let incoming_message = serde_json::from_str::<ConnectDeviceWsEvent>(event_str.as_str())?;
 
     let hub_debuggee = webrogue_hub_debuggee::HubDebuggee::new(
         storage_path.to_path_buf(),

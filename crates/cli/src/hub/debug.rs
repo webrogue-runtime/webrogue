@@ -10,6 +10,7 @@ use tokio_tungstenite::{
     },
 };
 use webrogue_hub_client::{
+    api_base_path::ws_api_url,
     debug_connection::OutgoingDebugConnection,
     debug_messages::{
         AppendFileHashCommand, DebugCommand, DebugRequestBody, DebugResponseBody,
@@ -17,7 +18,6 @@ use webrogue_hub_client::{
         SetFileChunkCommand,
     },
     ws_messages::{DebugDeviceWsCommand, DebugDeviceWsEvent},
-    WS_BASE_ADDR,
 };
 use webrogue_wrapp::IVFSHandle as _;
 
@@ -32,7 +32,7 @@ pub async fn debug(
 
     let result = async {
         let (mut ws_stream, _) =
-            connect_async(format!("{}/api/v1/devices/debug?{}", WS_BASE_ADDR, api_key)).await?;
+            connect_async(format!("{}/api/v1/devices/debug?{}", ws_api_url(), api_key)).await?;
         let outgoing_message = serde_json::to_string(&DebugDeviceWsCommand {
             sdp_offer: connection.sdp_offer.clone(),
             device_name: device_name.to_owned(),

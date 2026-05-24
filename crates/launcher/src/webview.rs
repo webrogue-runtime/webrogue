@@ -6,17 +6,13 @@ use http::{Method, Request, Uri};
 use lazy_static::lazy_static;
 use tokio_stream::{self, StreamExt as _};
 use tower_service::Service;
+use webrogue_hub_client::api_base_path::{assets_url, http_api_url};
 use wry::{
     http, raw_window_handle::HasWindowHandle, RequestAsyncResponder, WebView, WebViewBuilder,
     WebViewId,
 };
 
-use crate::{
-    api_base_path::{assets_url, http_api_url},
-    mailbox::Mailbox,
-    server::make_router,
-    LauncherConfig, MailboxInternal,
-};
+use crate::{mailbox::Mailbox, server::make_router, LauncherConfig, MailboxInternal};
 
 lazy_static! {
     static ref RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
@@ -152,7 +148,7 @@ fn make_handler(
 ) {
     let authority = request.uri().authority().map(|a| a.as_str());
     match authority {
-        Some("asset") | Some("asset.wrlauncher") => match get_asset_response(request) {
+        Some("webrogue.dev") => match get_asset_response(request) {
             Ok(r) => responder.respond(r),
             Err(e) => responder.respond(internal_server_error_response(&e.to_string())),
         },

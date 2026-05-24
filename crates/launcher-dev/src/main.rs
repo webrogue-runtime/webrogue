@@ -1,6 +1,10 @@
 use winit::event_loop::EventLoop;
 
 fn main() {
+    #[cfg(debug_assertions)]
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
     webrogue_launcher::install_default_crypto_provider();
     #[cfg(target_os = "linux")]
     let event_loop = {
