@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{future::try_join, SinkExt, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use webrogue_hub_client::{
     api_base_path::ws_api_url,
@@ -130,16 +130,10 @@ impl DebugConnection {
                             });
 
                         tracing::debug!("Waiting for launch and ping tasks to complete");
-                        tokio::select! {
-                            run_result = run_task => {
-                                tracing::debug!("Launch task completed first");
-                                run_result??;
-                            }
-                            ping_result = ping_task => {
-                                tracing::debug!("Ping task completed first");
-                                ping_result??;
-                            }
-                        }
+                        try_join(
+                            async { anyhow::Ok(run_task.await??) },
+                            async { anyhow::Ok(ping_task.await??) }
+                        ).await?;
                         tracing::debug!("Both tasks completed successfully");
                         anyhow::Ok(())
                     }
