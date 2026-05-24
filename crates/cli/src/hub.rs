@@ -2,7 +2,7 @@ use std::{fmt::Display, path::PathBuf};
 
 use anyhow::Context;
 use clap::Subcommand;
-use webrogue_hub_client::HTTP_BASE_ADDR;
+use webrogue_hub_client::{api_base_path::http_api_url, openapi::models::device_info::Status};
 mod debug;
 #[cfg(feature = "run")]
 mod runner;
@@ -95,7 +95,7 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
     let result = async {
         struct SelectableDevice {
             name: String,
-            is_online: bool,
+            status: Status,
             is_reload: bool,
         }
 
@@ -106,8 +106,10 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
                     return Ok(());
                 }
                 f.write_str(&self.name)?;
-                if !self.is_online {
-                    f.write_str(" (offline)")?;
+                match self.status {
+                    Status::Offline => f.write_str(" (offline)")?,
+                    Status::Online => {}
+                    Status::Busy => f.write_str(" (busy)")?,
                 }
                 Ok(())
             }
@@ -124,7 +126,7 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
                         let mut configuration =
                             webrogue_hub_client::openapi::apis::configuration::Configuration::new();
                         configuration.bearer_access_token = Some(api_key.clone());
-                        configuration.base_path = HTTP_BASE_ADDR.to_owned();
+                        configuration.base_path = http_api_url();
                         webrogue_hub_client::openapi::apis::default_api::list_devices(
                             &configuration,
                         )
@@ -142,13 +144,13 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
                 .iter()
                 .map(|device| SelectableDevice {
                     name: device.name.to_string(),
-                    is_online: device.is_online,
+                    status: device.status,
                     is_reload: false,
                 })
                 .collect();
             device_list.push(SelectableDevice {
                 name: "".to_owned(),
-                is_online: false,
+                status: Status::Offline,
                 is_reload: true,
             });
             let device = tokio::task::spawn_blocking(move || {
@@ -159,11 +161,12 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
             let device = device.0;
             if device.is_reload {
                 maybe_response = None;
-            } else if !device.is_online {
-                webrogue_cli_goodies::write_error("This device is offline");
-            } else {
-                break device;
             }
+            match device.status {
+                Status::Offline => webrogue_cli_goodies::write_error("This device is offline"),
+                Status::Online => break device,
+                Status::Busy => webrogue_cli_goodies::write_error("This device is busy"),
+            };
         };
 
         anyhow::Ok(device.name)

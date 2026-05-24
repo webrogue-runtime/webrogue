@@ -8279,10 +8279,13 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "futures-util",
  "postcard",
  "serde",
  "serde_json",
  "tokio",
+ "tokio-tungstenite",
+ "tracing",
  "webrogue-hub-client-openapi",
  "webrogue-wrapp",
  "webrtc",
@@ -8292,6 +8295,7 @@ dependencies = [
 name = "webrogue-hub-client-openapi"
 version = "1.0.0"
 dependencies = [
+ "chrono",
  "reqwest",
  "serde",
  "serde_json",
@@ -8389,6 +8393,8 @@ dependencies = [
 name = "webrogue-launcher-dev"
 version = "0.1.0"
 dependencies = [
+ "tracing",
+ "tracing-subscriber",
  "webrogue-launcher",
  "winit",
  "winit-x11",

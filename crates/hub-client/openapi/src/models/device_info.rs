@@ -16,18 +16,34 @@ pub struct DeviceInfo {
     #[serde(rename = "name")]
     pub name: String,
     #[serde(rename = "online_at")]
-    pub online_at: String,
-    #[serde(rename = "is_online")]
-    pub is_online: bool,
+    pub online_at: chrono::DateTime<chrono::FixedOffset>,
+    #[serde(rename = "status")]
+    pub status: Status,
 }
 
 impl DeviceInfo {
-    pub fn new(name: String, online_at: String, is_online: bool) -> DeviceInfo {
+    pub fn new(name: String, online_at: chrono::DateTime<chrono::FixedOffset>, status: Status) -> DeviceInfo {
         DeviceInfo {
             name,
             online_at,
-            is_online,
+            status,
         }
+    }
+}
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub enum Status {
+    #[serde(rename = "offline")]
+    Offline,
+    #[serde(rename = "online")]
+    Online,
+    #[serde(rename = "busy")]
+    Busy,
+}
+
+impl Default for Status {
+    fn default() -> Status {
+        Self::Offline
     }
 }
 

@@ -32,8 +32,12 @@ impl ErrorResponse {
 pub enum ErrorCode {
     #[serde(rename = "WEAK_PASSWORD")]
     WeakPassword,
-    #[serde(rename = "WRONG_PASSWORD")]
-    WrongPassword,
+    #[serde(rename = "WRONG_EMAIL_OR_PASSWORD")]
+    WrongEmailOrPassword,
+    #[serde(rename = "WRONG_OTP")]
+    WrongOtp,
+    #[serde(rename = "API_TOKEN_NAME_TAKEN")]
+    ApiTokenNameTaken,
 }
 
 impl Default for ErrorCode {
