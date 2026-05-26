@@ -143,17 +143,14 @@ impl OutgoingDebugConnection {
                         .into(),
                     )
                     .await?;
-                anyhow::Ok(())
+                anyhow::Ok(response_rx.recv().await.unwrap())
             }),
             Box::pin(wait_until_closed(self.closed_rx.clone())),
         )
         .await;
 
         match result {
-            futures_util::future::Either::Left((result, _)) => {
-                result?;
-                Ok(response_rx.recv().await.unwrap())
-            }
+            futures_util::future::Either::Left((result, _)) => result,
             futures_util::future::Either::Right((error, _)) => Err(error),
         }
     }
