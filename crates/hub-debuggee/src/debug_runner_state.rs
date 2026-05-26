@@ -50,7 +50,7 @@ impl DebugRunnerConfig {
             let handle = vfs_builder.into_vfs().unwrap();
             let sender = WebRTCPacketSender { data_channel };
 
-            let result = tokio_util::task::LocalPoolHandle::new(1)
+            tokio_util::task::LocalPoolHandle::new(1)
                 .spawn_pinned(async move || {
                     let result = async {
                         match &gfx {
