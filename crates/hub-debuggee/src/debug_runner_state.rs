@@ -52,57 +52,64 @@ impl DebugRunnerConfig {
 
             let result = tokio_util::task::LocalPoolHandle::new(1)
                 .spawn_pinned(async move || {
-                    match &gfx {
-                        HubDebuggeeGFX::ProxiedWinit(gfx) => {
-                            let (builder, proxy) =
-                                ProxiedWinitBuilder::new(gfx.event_loop_proxy.clone());
-                            *gfx.proxy_container.lock().unwrap() = Some(proxy);
-                            let gfx_init_params = webrogue_wasmtime::GFXInitParams::new(builder);
-                            webrogue_debugger::debug(
-                                tokio::runtime::Handle::current(),
-                                runtime,
-                                gfx_init_params,
-                                webrogue_debugger::premade_connection(
-                                    Box::new(sender),
-                                    Box::into_pin(receiver),
-                                    move || launched_tx.send(()).unwrap(),
-                                ),
-                                false,
-                                move |runtime, gfx_init_params| {
-                                    runtime.run_jit(gfx_init_params, handle, &config)
-                                },
-                            )
-                            .await?;
+                    let result = async {
+                        match &gfx {
+                            HubDebuggeeGFX::ProxiedWinit(gfx) => {
+                                let (builder, proxy) =
+                                    ProxiedWinitBuilder::new(gfx.event_loop_proxy.clone());
+                                *gfx.proxy_container.lock().unwrap() = Some(proxy);
+                                let gfx_init_params =
+                                    webrogue_wasmtime::GFXInitParams::new(builder);
+                                webrogue_debugger::debug(
+                                    tokio::runtime::Handle::current(),
+                                    runtime,
+                                    gfx_init_params,
+                                    webrogue_debugger::premade_connection(
+                                        Box::new(sender),
+                                        Box::into_pin(receiver),
+                                        move || launched_tx.send(()).unwrap(),
+                                    ),
+                                    false,
+                                    move |runtime, gfx_init_params| {
+                                        runtime.run_jit(gfx_init_params, handle, &config)
+                                    },
+                                )
+                                .await?;
+                            }
+                            HubDebuggeeGFX::WinitSystem(gfx) => {
+                                let gfx_init_params = webrogue_wasmtime::GFXInitParams::new(
+                                    webrogue_gfx::ChildBuilder::new(
+                                        gfx.gfx_system.lock().unwrap().take().unwrap(),
+                                    ),
+                                );
+                                webrogue_debugger::debug(
+                                    tokio::runtime::Handle::current(),
+                                    runtime,
+                                    gfx_init_params,
+                                    webrogue_debugger::premade_connection(
+                                        Box::new(sender),
+                                        Box::into_pin(receiver),
+                                        move || launched_tx.send(()).unwrap(),
+                                    ),
+                                    false,
+                                    move |runtime, gfx_init_params| {
+                                        runtime.run_jit(gfx_init_params, handle, &config)
+                                    },
+                                )
+                                .await?;
+                            }
                         }
-                        HubDebuggeeGFX::WinitSystem(gfx) => {
-                            let gfx_init_params = webrogue_wasmtime::GFXInitParams::new(
-                                webrogue_gfx::ChildBuilder::new(
-                                    gfx.gfx_system.lock().unwrap().take().unwrap(),
-                                ),
-                            );
-                            webrogue_debugger::debug(
-                                tokio::runtime::Handle::current(),
-                                runtime,
-                                gfx_init_params,
-                                webrogue_debugger::premade_connection(
-                                    Box::new(sender),
-                                    Box::into_pin(receiver),
-                                    move || launched_tx.send(()).unwrap(),
-                                ),
-                                false,
-                                move |runtime, gfx_init_params| {
-                                    runtime.run_jit(gfx_init_params, handle, &config)
-                                },
-                            )
-                            .await?;
-                        }
+                        anyhow::Ok(())
                     }
-
-                    anyhow::Ok(())
+                    .await;
+                    if let Err(err) = result {
+                        tracing::error!("Error: {:#}", err);
+                        println!("Error: {:#}", err)
+                    }
                 })
                 .await?;
 
-            done_tx.send(result).await?;
+            done_tx.send(Ok(())).await?;
 
             anyhow::Ok(())
         });
@@ -148,6 +155,9 @@ impl DebugRunnerState {
                 for (rel_path, hash) in file_hashes.clone() {
                     if self.is_file_missing(&rel_path, &hash)? {
                         missing_files.push(rel_path);
+                        if missing_files.len() >= 64 {
+                            break;
+                        }
                     }
                 }
 

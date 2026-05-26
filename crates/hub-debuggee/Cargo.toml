@@ -21,3 +21,4 @@ webrogue-wasmtime = { workspace = true, features = ["jit"] }
 tokio-util = { workspace = true, features = ["rt", "io"] }
 tokio-stream = { workspace = true }
 blake3 = { workspace = true }
+tracing = { workspace = true }
