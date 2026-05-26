@@ -130,7 +130,14 @@ async fn launch_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     mut vfs_builder: VFSBuilder,
     connection: &mut OutgoingDebugConnection,
 ) -> anyhow::Result<()> {
-    let config = vfs_builder.config()?.clone();
+    let mut config = vfs_builder.config()?.clone();
+    config.filesystem.iter_mut().for_each(|filesystem| {
+        filesystem.resources.iter_mut().for_each(|resource| {
+            resource
+                .iter_mut()
+                .for_each(|resource| resource.real_path = resource.mapped_path.clone())
+        });
+    });
     connection
         .command(DebugCommand::SetConfig(SetConfigCommand { config }))
         .await?;
@@ -170,7 +177,7 @@ async fn launch_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
             };
             println!("Sending {}", file_path);
             let mut pos: u64 = 0;
-            let mut buf = [0u8; 8 * 1024];
+            let mut buf = [0u8; 1024];
             loop {
                 let n = file.read(&mut buf)?;
                 if n == 0 {

@@ -2,6 +2,7 @@ use crate::debug_messages::{
     DebugCommand, DebugIncomingMessage, DebugOutgoingMessage, DebugRequest, DebugRequestBody,
     DebugResponseBody,
 };
+use futures_util::future::select;
 use std::{collections::BTreeMap, sync::Arc};
 use tokio::sync::{
     mpsc::{Receiver, Sender},
@@ -26,12 +27,14 @@ pub struct OutgoingDebugConnection {
     senders: Arc<Mutex<BTreeMap<u64, Sender<DebugResponseBody>>>>,
     data_channel: Arc<webrtc::data_channel::RTCDataChannel>,
     pub gdb_rx: Receiver<Vec<u8>>,
+    pub closed_rx: tokio::sync::watch::Receiver<bool>,
 }
 
 impl OutgoingDebugConnection {
     pub async fn new(done_tx: Sender<anyhow::Result<()>>) -> anyhow::Result<Self> {
         let mut m = MediaEngine::default();
         let mut registry = Registry::new();
+        let (closed_tx, closed_rx) = tokio::sync::watch::channel(false);
         registry = register_default_interceptors(registry, &mut m)?;
         let api = APIBuilder::new()
             .with_media_engine(m)
@@ -48,6 +51,7 @@ impl OutgoingDebugConnection {
         let done_tx2 = done_tx.clone();
         peer_connection.on_peer_connection_state_change(Box::new(move |state| {
             let done_tx = done_tx2.clone();
+            let closed_tx2 = closed_tx.clone();
             Box::pin(async move {
                 match state {
                     RTCPeerConnectionState::Unspecified
@@ -58,6 +62,7 @@ impl OutgoingDebugConnection {
                     | RTCPeerConnectionState::Failed
                     | RTCPeerConnectionState::Closed => {
                         let _ = done_tx.send(anyhow::Ok(())).await;
+                        closed_tx2.send(true).unwrap();
                     }
                 }
             })
@@ -109,6 +114,7 @@ impl OutgoingDebugConnection {
             senders,
             data_channel,
             gdb_rx,
+            closed_rx,
         })
     }
 
@@ -124,28 +130,56 @@ impl OutgoingDebugConnection {
             request_id
         };
 
-        self.data_channel
-            .send(
-                &DebugOutgoingMessage::Request(Box::new(DebugRequest {
-                    request_id,
-                    body: request,
-                }))
-                .to_bytes()?
-                .into(),
-            )
-            .await?;
-        Ok(response_rx.recv().await.unwrap())
+        let data_channel = self.data_channel.clone();
+        let result = select(
+            Box::pin(async move {
+                data_channel
+                    .send(
+                        &DebugOutgoingMessage::Request(Box::new(DebugRequest {
+                            request_id,
+                            body: request,
+                        }))
+                        .to_bytes()?
+                        .into(),
+                    )
+                    .await?;
+                anyhow::Ok(())
+            }),
+            Box::pin(wait_until_closed(self.closed_rx.clone())),
+        )
+        .await;
+
+        match result {
+            futures_util::future::Either::Left((result, _)) => {
+                result?;
+                Ok(response_rx.recv().await.unwrap())
+            }
+            futures_util::future::Either::Right((error, _)) => Err(error),
+        }
     }
 
     pub async fn command(&self, command: DebugCommand) -> anyhow::Result<()> {
-        self.data_channel
-            .send(
-                &DebugOutgoingMessage::Command(Box::new(command))
-                    .to_bytes()?
-                    .into(),
-            )
-            .await?;
-        Ok(())
+        let data_channel = self.data_channel.clone();
+
+        let result = select(
+            Box::pin(async move {
+                data_channel
+                    .send(
+                        &DebugOutgoingMessage::Command(Box::new(command))
+                            .to_bytes()?
+                            .into(),
+                    )
+                    .await?;
+                anyhow::Ok(())
+            }),
+            Box::pin(wait_until_closed(self.closed_rx.clone())),
+        )
+        .await;
+
+        match result {
+            futures_util::future::Either::Left((result, _)) => result,
+            futures_util::future::Either::Right((error, _)) => Err(error),
+        }
     }
 
     pub async fn set_answer(&mut self, sdp_answer: &str) -> anyhow::Result<()> {
@@ -164,5 +198,16 @@ impl OutgoingDebugConnection {
     pub async fn close(&self) -> anyhow::Result<()> {
         self.peer_connection.close().await?;
         Ok(())
+    }
+}
+
+async fn wait_until_closed(mut closed_rx: tokio::sync::watch::Receiver<bool>) -> anyhow::Error {
+    loop {
+        if *closed_rx.borrow() {
+            return anyhow::anyhow!("Debug WebRTC connection closed");
+        }
+        let Ok(_) = closed_rx.changed().await else {
+            return anyhow::anyhow!("Debug WebRTC connection closed");
+        };
     }
 }
