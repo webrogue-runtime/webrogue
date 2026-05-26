@@ -125,6 +125,7 @@ impl DebugRunnerConfig {
 pub struct DebugRunnerState {
     config: Arc<DebugRunnerConfig>,
     file_hashes: Mutex<HashMap<String, String>>,
+    actual_file_hashes_cache: std::sync::Mutex<HashMap<String, String>>,
     currently_constructed_file: Mutex<Option<(String, File)>>,
     wrapp_config: Mutex<Option<webrogue_wrapp::config::Config>>,
     gdb_data_tx: Mutex<Option<Sender<Result<VecDeque<u8>, std::io::Error>>>>,
@@ -135,6 +136,7 @@ impl DebugRunnerState {
         Self {
             config,
             file_hashes: Mutex::new(HashMap::new()),
+            actual_file_hashes_cache: std::sync::Mutex::new(HashMap::new()),
             currently_constructed_file: Mutex::new(None),
             wrapp_config: Mutex::new(None),
             gdb_data_tx: Mutex::new(None),
@@ -155,7 +157,7 @@ impl DebugRunnerState {
                 for (rel_path, hash) in file_hashes.clone() {
                     if self.is_file_missing(&rel_path, &hash)? {
                         missing_files.push(rel_path);
-                        if missing_files.len() >= 64 {
+                        if missing_files.len() >= 16 {
                             break;
                         }
                     }
@@ -227,6 +229,10 @@ impl DebugRunnerState {
                 Ok(())
             }
             DebugCommand::SetFileChunk(command) => {
+                self.actual_file_hashes_cache
+                    .lock()
+                    .unwrap()
+                    .remove(&command.path);
                 let mut currently_constructed_file = self.currently_constructed_file.lock().await;
                 let old_file: Option<anyhow::Result<File>> = currently_constructed_file
                     .take()
@@ -269,25 +275,29 @@ impl DebugRunnerState {
     }
 
     fn is_file_missing(&self, rel_path: &str, hash: &str) -> anyhow::Result<bool> {
-        let path = self.rel_to_absolute_path(rel_path)?;
-        if !path.exists() {
-            return Ok(true);
-        }
-        let Ok(file) = File::open(path) else {
-            return Ok(true);
+        let mut actual_file_hashes_cache = self.actual_file_hashes_cache.lock().unwrap();
+        let actual_hash = if let Some(actual_hash) = actual_file_hashes_cache.get(rel_path) {
+            actual_hash.clone()
+        } else {
+            let path = self.rel_to_absolute_path(rel_path)?;
+            if !path.exists() {
+                return Ok(true);
+            }
+            let Ok(file) = File::open(path) else {
+                return Ok(true);
+            };
+
+            let mut hasher = blake3::Hasher::new();
+
+            if hasher.update_reader(file).is_err() {
+                return Ok(true);
+            }
+
+            let actual_hash = hasher.finalize().to_hex().as_str().to_owned();
+            actual_file_hashes_cache.insert(rel_path.to_owned(), actual_hash.clone());
+            actual_hash
         };
-
-        let mut hasher = blake3::Hasher::new();
-
-        if hasher.update_reader(file).is_err() {
-            return Ok(true);
-        }
-
-        let actual_hash = hasher.finalize().to_hex().as_str().to_owned();
-        if actual_hash != hash {
-            return Ok(true);
-        }
-        Ok(false)
+        Ok(actual_hash != hash)
     }
 
     fn constructed_wrapp_dir(&self) -> anyhow::Result<PathBuf> {
