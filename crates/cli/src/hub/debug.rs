@@ -14,7 +14,7 @@ use webrogue_hub_client::{
     debug_connection::OutgoingDebugConnection,
     debug_messages::{
         AppendFileHashCommand, DebugCommand, DebugRequestBody, DebugResponseBody,
-        GDBDataDebugCommand, LaunchCommand, ListFilesRequest, SetConfigCommand,
+        GDBDataDebugCommand, LaunchRequest, ListFilesRequest, SetConfigCommand,
         SetFileChunkCommand,
     },
     ws_messages::{DebugDeviceWsCommand, DebugDeviceWsEvent},
@@ -152,47 +152,48 @@ async fn launch_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
             .await?;
     }
 
-    let DebugResponseBody::ListFiles(response) = connection
-        .request(DebugRequestBody::ListFiles(ListFilesRequest {}))
-        .await?
-    // else {
-    //     anyhow::bail!("ListFiles request returned response of wrong type")
-    // }
-    ;
-
-    for file_path in response.missing_files.iter() {
-        let Some(mut file) = vfs.open_file(file_path.as_str())? else {
-            anyhow::bail!("Couldn't open {}", file_path)
+    loop {
+        let DebugResponseBody::ListFiles(response) = connection
+            .request(DebugRequestBody::ListFiles(ListFilesRequest {}))
+            .await?
+        else {
+            anyhow::bail!("ListFiles request returned response of wrong type")
         };
-        println!("Sending {}", file_path);
-        let mut pos: u64 = 0;
-        let mut buf = [0u8; 8 * 1024];
-        loop {
-            let n = file.read(&mut buf)?;
-            if n == 0 {
-                break;
+
+        if response.missing_files.is_empty() {
+            break;
+        }
+
+        for file_path in response.missing_files.iter() {
+            let Some(mut file) = vfs.open_file(file_path.as_str())? else {
+                anyhow::bail!("Couldn't open {}", file_path)
+            };
+            println!("Sending {}", file_path);
+            let mut pos: u64 = 0;
+            let mut buf = [0u8; 8 * 1024];
+            loop {
+                let n = file.read(&mut buf)?;
+                if n == 0 {
+                    break;
+                }
+                connection
+                    .command(DebugCommand::SetFileChunk(SetFileChunkCommand {
+                        path: file_path.clone(),
+                        pos,
+                        data: buf[..n].to_vec(),
+                    }))
+                    .await?;
+                pos += n as u64;
             }
-            connection
-                .command(DebugCommand::SetFileChunk(SetFileChunkCommand {
-                    path: file_path.clone(),
-                    pos,
-                    data: buf[..n].to_vec(),
-                }))
-                .await?;
-            pos += n as u64;
         }
     }
 
-    let DebugResponseBody::ListFiles(_response) = connection
-        .request(DebugRequestBody::ListFiles(ListFilesRequest {}))
+    let DebugResponseBody::Launch(_response) = connection
+        .request(DebugRequestBody::Launch(LaunchRequest {}))
         .await?
-    // else {
-    //     anyhow::bail!("ListFiles request returned response of wrong type")
-    // }
-    ;
-    connection
-        .command(DebugCommand::Launch(LaunchCommand {}))
-        .await?;
+    else {
+        anyhow::bail!("Launch request returned response of wrong type")
+    };
 
     Ok(())
 }

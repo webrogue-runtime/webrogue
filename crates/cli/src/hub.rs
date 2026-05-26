@@ -161,6 +161,7 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
             let device = device.0;
             if device.is_reload {
                 maybe_response = None;
+                continue;
             }
             match device.status {
                 Status::Offline => webrogue_cli_goodies::write_error("This device is offline"),
