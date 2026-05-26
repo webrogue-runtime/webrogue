@@ -45,11 +45,13 @@ pub struct DebugResponse {
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugRequestBody {
     ListFiles(ListFilesRequest),
+    Launch(LaunchRequest),
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugResponseBody {
     ListFiles(ListFilesResponse),
+    Launch(LaunchResponse),
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -61,11 +63,16 @@ pub struct ListFilesResponse {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct LaunchRequest {}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct LaunchResponse {}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugCommand {
     SetConfig(SetConfigCommand),
     AppendFileHash(AppendFileHashCommand),
     SetFileChunk(SetFileChunkCommand),
-    Launch(LaunchCommand),
     GDBData(GDBDataDebugCommand),
 }
 
@@ -86,9 +93,6 @@ pub struct SetFileChunkCommand {
     pub pos: u64,
     pub data: Vec<u8>,
 }
-
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct LaunchCommand {}
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct GDBDataDebugCommand {

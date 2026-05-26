@@ -12,7 +12,7 @@ use tokio::{
 };
 use webrogue_gfx_winit::ProxiedWinitBuilder;
 use webrogue_hub_client::debug_messages::{
-    DebugCommand, DebugRequestBody, DebugResponseBody, ListFilesResponse,
+    DebugCommand, DebugRequestBody, DebugResponseBody, LaunchResponse, ListFilesResponse,
 };
 use webrogue_wrapp::IVFSBuilder as _;
 use webrtc::data_channel::RTCDataChannel;
@@ -31,7 +31,7 @@ impl DebugRunnerConfig {
         self.storage.clone()
     }
 
-    fn run(
+    async fn run(
         &self,
         mut vfs_builder: webrogue_wrapp::RealVFSBuilder,
         receiver: Box<dyn AsyncRead + std::marker::Send>,
@@ -40,6 +40,7 @@ impl DebugRunnerConfig {
         let gfx = self.gfx.lock().unwrap().take().unwrap();
         let data_channel = self.data_channel.lock().unwrap().take().unwrap();
         let done_tx = self.done_tx.clone();
+        let (launched_tx, mut launched_rx) = tokio::sync::mpsc::unbounded_channel();
 
         tokio::task::spawn(async move {
             let config = vfs_builder.config().unwrap().clone();
@@ -64,6 +65,7 @@ impl DebugRunnerConfig {
                                 webrogue_debugger::premade_connection(
                                     Box::new(sender),
                                     Box::into_pin(receiver),
+                                    move || launched_tx.send(()).unwrap(),
                                 ),
                                 false,
                                 move |runtime, gfx_init_params| {
@@ -85,6 +87,7 @@ impl DebugRunnerConfig {
                                 webrogue_debugger::premade_connection(
                                     Box::new(sender),
                                     Box::into_pin(receiver),
+                                    move || launched_tx.send(()).unwrap(),
                                 ),
                                 false,
                                 move |runtime, gfx_init_params| {
@@ -103,6 +106,11 @@ impl DebugRunnerConfig {
 
             anyhow::Ok(())
         });
+
+        let Some(_) = launched_rx.recv().await else {
+            anyhow::bail!("launched_tx dropped at DebugRunnerConfig::run");
+        };
+
         Ok(())
     }
 }
@@ -146,6 +154,22 @@ impl DebugRunnerState {
                 Ok(DebugResponseBody::ListFiles(ListFilesResponse {
                     missing_files,
                 }))
+            }
+
+            DebugRequestBody::Launch(_launch_request) => {
+                let Some(config) = self.wrapp_config.lock().await.clone() else {
+                    anyhow::bail!("Launch command is executed before SetConfig");
+                };
+                let (tx, rx) = tokio::sync::mpsc::channel(1024);
+                let _ = self.gdb_data_tx.lock().await.insert(tx);
+                let rx = tokio_util::io::StreamReader::new(
+                    tokio_stream::wrappers::ReceiverStream::new(rx),
+                );
+
+                let vfs_builder =
+                    webrogue_wrapp::RealVFSBuilder::new(self.constructed_wrapp_dir()?, config)?;
+                self.config.run(vfs_builder, Box::new(rx)).await?;
+                Ok(DebugResponseBody::Launch(LaunchResponse {}))
             }
         }
     }
@@ -221,24 +245,6 @@ impl DebugRunnerState {
                 let mut config = set_config_command.config;
                 config.main = Some("/app/main.wasm".to_owned());
                 *self.wrapp_config.lock().await = Some(config);
-                Ok(())
-            }
-            DebugCommand::Launch(_launch_command) => {
-                let Some(config) = self.wrapp_config.lock().await.clone() else {
-                    anyhow::bail!("Launch command is executed before SetConfig");
-                };
-                let (tx, rx) = tokio::sync::mpsc::channel(1024);
-                let _ = self.gdb_data_tx.lock().await.insert(tx);
-                let rx = tokio_util::io::StreamReader::new(
-                    tokio_stream::wrappers::ReceiverStream::new(rx),
-                );
-
-                // let (gdb_data_tx, gdb_data_rx) = tokio::sync::mpsc::channel(1024);
-                //     gdb_data_tx,
-                //     gdb_reader: Some(),
-                let vfs_builder =
-                    webrogue_wrapp::RealVFSBuilder::new(self.constructed_wrapp_dir()?, config)?;
-                self.config.run(vfs_builder, Box::new(rx))?;
                 Ok(())
             }
             DebugCommand::GDBData(command) => {

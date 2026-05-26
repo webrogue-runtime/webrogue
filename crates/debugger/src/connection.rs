@@ -98,6 +98,12 @@ pub fn tokio_tcp_connection(port: u16) -> ConnectionFactory {
 pub fn premade_connection(
     sender: BoxedPacketSender,
     receiver: BoxedPacketReceiver,
+    on_constructed: impl FnOnce() + Send + 'static,
 ) -> ConnectionFactory {
-    Box::new(move || Box::pin(async move { anyhow::Ok((receiver, sender)) }))
+    Box::new(move || {
+        Box::pin(async move {
+            on_constructed();
+            anyhow::Ok((receiver, sender))
+        })
+    })
 }
