@@ -92,7 +92,7 @@ pub fn run_builder(
                             runtime,
                             gfx_init_params,
                             connection_factory,
-                            false,
+                            true,
                             move |runtime, gfx_init_params| -> anyhow::Result<()> {
                                 runtime.run_jit(gfx_init_params, handle, &config)?;
                                 Ok(())

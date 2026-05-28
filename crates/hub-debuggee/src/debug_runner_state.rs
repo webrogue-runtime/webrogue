@@ -69,7 +69,7 @@ impl DebugRunnerConfig {
                                         Box::into_pin(receiver),
                                         move || launched_tx.send(()).unwrap(),
                                     ),
-                                    false,
+                                    true,
                                     move |runtime, gfx_init_params| {
                                         runtime.run_jit(gfx_init_params, handle, &config)
                                     },
@@ -91,7 +91,7 @@ impl DebugRunnerConfig {
                                         Box::into_pin(receiver),
                                         move || launched_tx.send(()).unwrap(),
                                     ),
-                                    false,
+                                    true,
                                     move |runtime, gfx_init_params| {
                                         runtime.run_jit(gfx_init_params, handle, &config)
                                     },

@@ -1,10 +1,5 @@
-use std::{
-    cmp::min,
-    collections::{BTreeMap, BTreeSet},
-    sync::{atomic::AtomicBool, Arc, Mutex},
-};
+use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
-use wasmtime::{AsContext, AsContextMut as _};
 use webrogue_wasmtime::WasmThread;
 
 use crate::{
@@ -64,12 +59,8 @@ pub fn runner<T: Send + 'static>(
                             .await??;
                     }
                     let wasm_call_stack = thread.latest_debug_frame().unwrap();
-                    let memory_addresses = thread.memory_addresses().unwrap();
-                    let module_addresses = thread.module_addresses().unwrap();
-                    let memories = thread.memories().unwrap();
-                    let modules = thread.modules().unwrap();
 
-                    let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+                    let (sender, mut receiver) = futures::channel::mpsc::unbounded();
 
                     target_proxy.send(DebuggerLoopMessage::ThreadStopped(ThreadStopInfo {
                         tid: thread.tid(),
@@ -77,15 +68,14 @@ pub fn runner<T: Send + 'static>(
                         stopped_thread: StoppedThread {
                             wasm_call_stack,
                             sender,
-                            module_addresses,
-                            memory_addresses,
                             resume_type: None,
                         },
                     }))?;
 
                     loop {
+                        let thread = thread.clone();
                         match receiver.recv().await {
-                            Some(ThreadMessage::Resume(message)) => {
+                            Ok(ThreadMessage::Resume(message)) => {
                                 doing_step = message.is_step;
                                 debuggee
                                     .with_store(move |store| -> anyhow::Result<()> {
@@ -104,126 +94,20 @@ pub fn runner<T: Send + 'static>(
                                     continue 'exec_loop;
                                 }
                             }
-                            Some(ThreadMessage::ReadMemory(message)) => {
-                                let memories = memories.clone();
+                            Ok(ThreadMessage::EditBreakpoint(message)) => {
                                 debuggee
-                                    .with_store(move |mut store| -> anyhow::Result<()> {
-                                        let Some(memory) = memories
-                                            .iter()
-                                            .find(|(id, _)| *id == message.module)
-                                            .or_else(|| {
-                                                if memories.len() == 1 {
-                                                    memories.first()
-                                                } else {
-                                                    None
-                                                }
-                                            })
-                                            .map(|(_, memory)| memory)
-                                        else {
-                                            return Ok(());
-                                        };
-
-                                        let data = match memory {
-                                            webrogue_wasmtime::Memory::Shared(shared_memory) => {
-                                                get_safe_range(
-                                                    shared_memory.data(),
-                                                    message.offset,
-                                                    message.size,
-                                                )
-                                                .iter()
-                                                .map(|a| unsafe { *a.get() })
-                                                .collect()
-                                            }
-                                            webrogue_wasmtime::Memory::Unshared(memory) => {
-                                                get_safe_range(
-                                                    memory.data(store.as_context_mut()),
-                                                    message.offset,
-                                                    message.size,
-                                                )
-                                                .to_vec()
-                                            }
-                                        };
-                                        message.sender.send(data)?;
-                                        Ok(())
-                                    })
-                                    .await??;
-                            }
-                            Some(ThreadMessage::ReadWasm(message)) => {
-                                let Some(module) = modules.iter().find(|module| {
-                                    (module.debug_index_in_engine() as u32) == message.module
-                                }) else {
-                                    return Ok(());
-                                };
-
-                                let data = get_safe_range(
-                                    module.debug_bytecode().unwrap(),
-                                    message.offset,
-                                    message.size,
-                                );
-
-                                message.sender.send(data.to_vec())?;
-                            }
-                            Some(ThreadMessage::EditBreakpoint(mut message)) => {
-                                debuggee
-                                    .with_store(move |mut store| -> anyhow::Result<()> {
-                                        let modules = store.as_context_mut().debug_all_modules();
-
-                                        let mut breakpoints_per_stores: BTreeMap<
-                                            u64,
-                                            BTreeSet<wasmtime::ModulePC>,
-                                        > = BTreeMap::new();
-                                        for breakpoint in store.as_context().breakpoints().unwrap()
-                                        {
-                                            if let Some(breakpoints) = breakpoints_per_stores
-                                                .get_mut(&breakpoint.module.debug_index_in_engine())
-                                            {
-                                                breakpoints.insert(breakpoint.pc);
-                                            } else {
-                                                let mut breakpoints = BTreeSet::new();
-                                                breakpoints.insert(breakpoint.pc);
-                                                breakpoints_per_stores.insert(
-                                                    breakpoint.module.debug_index_in_engine(),
-                                                    breakpoints,
-                                                );
-                                            }
-                                        }
-
-                                        for module in modules {
-                                            let module_id = module.debug_index_in_engine();
-                                            let current_breakpoints = breakpoints_per_stores
-                                                .remove(&module_id)
-                                                .unwrap_or_default();
-                                            let needed_breakpoints = message
-                                                .breakpoints
-                                                .remove(&module_id)
-                                                .unwrap_or_default();
-
-                                            let mut edit_breakpoint =
-                                                store.as_context_mut().edit_breakpoints().unwrap();
-
-                                            for breakpoint in
-                                                needed_breakpoints.difference(&current_breakpoints)
-                                            {
-                                                // TODO make error in edit_breakpoint.add_breakpoint recoverable
-                                                edit_breakpoint
-                                                    .add_breakpoint(&module, *breakpoint)?;
-                                            }
-                                            for breakpoint in
-                                                current_breakpoints.difference(&needed_breakpoints)
-                                            {
-                                                edit_breakpoint
-                                                    .remove_breakpoint(&module, *breakpoint)?;
-                                            }
-                                        }
+                                    .with_store(move |store: wasmtime::StoreContextMut<'_, T>| -> anyhow::Result<()> {
+                                        thread.set_breakpoints_patch(message.breakpoints);
+                                        thread.apply_breakpoints_patch(store)?;
 
                                         Ok(())
                                     })
                                     .await??;
                             }
-                            Some(ThreadMessage::Kill) => {
+                            Ok(ThreadMessage::Kill) => {
                                 anyhow::bail!("Debugger disconnected")
                             }
-                            None => panic!(),
+                            Err(_) => panic!(),
                         }
                     }
                 }
@@ -232,9 +116,4 @@ pub fn runner<T: Send + 'static>(
                 Ok(())
             })())
     })
-}
-
-fn get_safe_range<T>(data: &[T], start: usize, len: usize) -> &[T] {
-    let data = &data[min(data.len(), start)..];
-    &data[..min(data.len(), len)]
 }

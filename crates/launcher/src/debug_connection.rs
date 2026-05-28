@@ -1,4 +1,4 @@
-use std::{future::Future, sync::Arc, time::Duration};
+use std::{ sync::Arc, time::Duration};
 
 use futures_util::{future::try_join, SinkExt, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
@@ -82,7 +82,7 @@ impl DebugConnection {
                         let write = Arc::new(tokio::sync::Mutex::new(write));
                         let write2 = write.clone();
                         tracing::info!("Creating launch task");
-                        let run_task = (async move {
+                        let run_task = async move {
                             tracing::info!("Launch task started");
                             let write3 = write2.clone();
                             let result = config
@@ -100,11 +100,11 @@ impl DebugConnection {
                             let _ = write3.lock().await.close().await;
                             tracing::info!("Launch task completed");
                             result
-                        });
+                        };
                         let write2 = write.clone();
                         tracing::info!("Creating ping task");
                         let ping_task  =
-                            (async move {
+                            async move {
                                 tracing::info!("Ping task started");
                                 let mut ping_interval = tokio::time::interval(PING_INTERVAL);
                                 loop {
@@ -129,7 +129,7 @@ impl DebugConnection {
                                         }
                                     }
                                 }
-                            });
+                            };
 
                         tracing::info!("Waiting for launch and ping tasks to complete");
                         try_join(

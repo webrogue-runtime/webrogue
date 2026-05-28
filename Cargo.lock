@@ -8487,6 +8487,7 @@ name = "webrogue-wasmtime"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "futures",
  "gdbstub_arch",
  "wasmtime",
  "webrogue-aot-data",

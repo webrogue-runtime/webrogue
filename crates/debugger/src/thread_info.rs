@@ -38,9 +38,7 @@ impl ThreadInfo {
 
 pub struct StoppedThread {
     pub wasm_call_stack: Vec<Frame>,
-    pub sender: tokio::sync::mpsc::UnboundedSender<ThreadMessage>,
-    pub module_addresses: Vec<(u32, usize)>, // (id, size)
-    pub memory_addresses: Vec<(u32, usize)>, // (id, size)
+    pub sender: futures::channel::mpsc::UnboundedSender<ThreadMessage>,
     pub resume_type: Option<ResumeType>,
 }
 

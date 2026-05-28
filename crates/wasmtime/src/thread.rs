@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     future::Future,
     num::NonZeroI32,
     pin::Pin,
@@ -9,8 +9,11 @@ use std::{
     },
 };
 
+use futures::future::try_join;
 use gdbstub_arch::wasm::addr::WasmAddr;
-use wasmtime::{AsContextMut as _, EngineWeak, Module, StoreContextMut, UpdateDeadline};
+use wasmtime::{
+    AsContext as _, AsContextMut as _, EngineWeak, Module, StoreContextMut, UpdateDeadline,
+};
 
 #[derive(Clone)]
 pub struct WasmThread(Arc<WasmThreadInner>);
@@ -27,6 +30,9 @@ struct WasmThreadInner {
     memories: Mutex<Option<Vec<(u32, Memory)>>>,
     latest_debug_frame: Mutex<Option<Vec<Frame>>>,
     modules: Mutex<Option<Vec<wasmtime::Module>>>,
+    call_state: Mutex<Option<CallState>>,
+    breakpoints_patch: Mutex<Option<Breakpoints>>,
+    single_stepping_patch: Mutex<Option<bool>>,
 }
 
 impl WasmThread {
@@ -78,8 +84,37 @@ impl WasmThread {
         ) -> Pin<Box<dyn Future<Output = R> + Send + 'a>>,
     ) -> wasmtime::Result<R> {
         self.dump_debug_frame(&mut caller.as_context_mut())?;
-        let result = f(caller).await;
-        Ok(result)
+
+        let (task_tx, mut task_rx) = futures::channel::mpsc::unbounded();
+        let call_state = CallState {
+            task_tx: task_tx.clone(),
+            // post_call_callbacks: Vec::new(),
+        };
+        *self.0.call_state.lock().unwrap() = Some(call_state);
+
+        let caller_ptr = caller as *mut _ as usize;
+
+        let result: wasmtime::Result<(R, ())> = try_join(
+            async {
+                let caller =
+                    unsafe { &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>) };
+                let result = f(caller).await;
+                let _ = task_tx.unbounded_send(None);
+                wasmtime::Result::Ok(result)
+            },
+            async {
+                while let Some(task) = task_rx.recv().await? {
+                    task.await?;
+                }
+                wasmtime::Result::Ok(())
+            },
+        )
+        .await;
+        *self.0.call_state.lock().unwrap() = None;
+        let caller = unsafe { &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>) };
+        self.apply_breakpoints_patch(caller.as_context_mut())?;
+        self.apply_single_stepping_patch(caller.as_context_mut())?;
+        Ok(result?.0)
     }
 
     pub fn dump_debug_frame<T>(&self, store: &mut StoreContextMut<'_, T>) -> wasmtime::Result<()> {
@@ -178,6 +213,85 @@ impl WasmThread {
     pub fn modules(&self) -> Option<Vec<Module>> {
         self.0.modules.lock().unwrap().clone()
     }
+
+    pub fn run_in_call(
+        &self,
+        fut: Pin<Box<dyn Future<Output = wasmtime::Result<()>> + Send>>,
+    ) -> bool {
+        let mut call_state = self.0.call_state.lock().unwrap();
+        let Some(call_state) = call_state.as_mut() else {
+            return false;
+        };
+        call_state.task_tx.unbounded_send(Some(fut)).is_ok()
+    }
+
+    pub fn set_breakpoints_patch(&self, breakpoints: Breakpoints) {
+        *self.0.breakpoints_patch.lock().unwrap() = Some(breakpoints);
+    }
+
+    pub fn apply_breakpoints_patch<T>(
+        &self,
+        mut store: wasmtime::StoreContextMut<'_, T>,
+    ) -> wasmtime::Result<()> {
+        let Some(mut breakpoints) = self.0.breakpoints_patch.lock().unwrap().take() else {
+            return Ok(());
+        };
+        let modules = store.as_context_mut().debug_all_modules();
+
+        let mut breakpoints_per_stores: BTreeMap<u64, BTreeSet<wasmtime::ModulePC>> =
+            BTreeMap::new();
+        for breakpoint in store.as_context().breakpoints().unwrap() {
+            if let Some(breakpoints) =
+                breakpoints_per_stores.get_mut(&breakpoint.module.debug_index_in_engine())
+            {
+                breakpoints.insert(breakpoint.pc);
+            } else {
+                let mut breakpoints = BTreeSet::new();
+                breakpoints.insert(breakpoint.pc);
+                breakpoints_per_stores
+                    .insert(breakpoint.module.debug_index_in_engine(), breakpoints);
+            }
+        }
+
+        for module in modules {
+            let module_id = module.debug_index_in_engine();
+            let current_breakpoints = breakpoints_per_stores
+                .remove(&module_id)
+                .unwrap_or_default();
+            let needed_breakpoints = breakpoints.0.remove(&module_id).unwrap_or_default();
+
+            let mut edit_breakpoint = store.as_context_mut().edit_breakpoints().unwrap();
+
+            for breakpoint in needed_breakpoints.difference(&current_breakpoints) {
+                // TODO make error in edit_breakpoint.add_breakpoint recoverable
+                edit_breakpoint.add_breakpoint(&module, *breakpoint)?;
+            }
+            for breakpoint in current_breakpoints.difference(&needed_breakpoints) {
+                edit_breakpoint.remove_breakpoint(&module, *breakpoint)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn set_single_stepping_patch(&self, single_stepping: bool) {
+        *self.0.single_stepping_patch.lock().unwrap() = Some(single_stepping);
+    }
+
+    pub fn apply_single_stepping_patch<T>(
+        &self,
+        store: wasmtime::StoreContextMut<'_, T>,
+    ) -> wasmtime::Result<()> {
+        let Some(single_stepping) = self.0.single_stepping_patch.lock().unwrap().take() else {
+            return Ok(());
+        };
+        store
+            .edit_breakpoints()
+            .unwrap()
+            .single_step(single_stepping)
+            .unwrap();
+        Ok(())
+    }
 }
 
 #[derive(Clone)]
@@ -225,6 +339,9 @@ impl WasmThreadRegistry {
             memories: Mutex::new(None),
             latest_debug_frame: Mutex::new(None),
             modules: Mutex::new(None),
+            call_state: Mutex::new(None),
+            breakpoints_patch: Mutex::new(None),
+            single_stepping_patch: Mutex::new(None),
         }));
         registry.threads.insert(tid, thread.clone());
         thread
@@ -335,3 +452,13 @@ fn get_memories<T>(store: &mut wasmtime::StoreContextMut<'_, T>) -> Vec<(u32, Me
         .collect::<Vec<_>>();
     memories
 }
+
+pub struct CallState {
+    task_tx: futures::channel::mpsc::UnboundedSender<
+        Option<Pin<Box<dyn Future<Output = wasmtime::Result<()>> + Send>>>,
+    >,
+    // post_call_callbacks: Vec<Box<dyn FnOnce()>>,
+}
+
+#[derive(Clone)]
+pub struct Breakpoints(pub BTreeMap<u64, BTreeSet<wasmtime::ModulePC>>);

@@ -83,7 +83,7 @@ impl WasiSched for SyncSched {
         Ok(())
     }
     async fn sleep(&self, duration: Duration) -> Result<(), Error> {
-        std::thread::sleep(duration);
+        tokio::time::sleep(duration).await;
         Ok(())
     }
 }
