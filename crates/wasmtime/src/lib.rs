@@ -12,7 +12,7 @@ pub use gfx_init_params::GFXInitParams;
 #[cfg(feature = "jit")]
 pub use runtime::JitProfile;
 pub use runtime::Runtime;
-pub use thread::WasmThread;
+pub use thread::{Frame, Memory, WasmThread};
 pub use webrogue_wrapp::{
     IVFSBuilder, RealVFSBuilder, RealVFSHandle, WrappVFSBuilder, WrappVFSHandle,
 };

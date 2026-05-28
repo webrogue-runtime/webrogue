@@ -255,6 +255,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         preview1_ctx: None,
         wasi_threads_ctx: None,
         gfx: None,
+        wasm_thread: None,
     };
     let gfx_builder = gfx_init_params.builder;
     #[cfg(feature = "async")]
@@ -271,6 +272,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 
     {
         let main_thread = main_thread.clone();
+        store.data_mut().wasm_thread = Some(main_thread.clone());
         store.epoch_deadline_callback(move |_| main_thread.on_epoch_update_deadline());
         store.set_epoch_deadline(1);
     }
@@ -283,18 +285,24 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 
     #[cfg(feature = "async")]
     if async_func_runner.is_some() {
-        bindings::not_sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
-            state.preview1_ctx.as_mut().unwrap()
-        })?;
+        bindings::not_sync::add_wasi_snapshot_preview1_to_linker(
+            &mut linker,
+            |state| state.preview1_ctx.as_mut().unwrap(),
+            |state| state.wasm_thread.as_ref().unwrap().clone(),
+        )?;
     } else {
-        bindings::sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
-            state.preview1_ctx.as_mut().unwrap()
-        })?;
+        bindings::sync::add_wasi_snapshot_preview1_to_linker(
+            &mut linker,
+            |state| state.preview1_ctx.as_mut().unwrap(),
+            |state| state.wasm_thread.as_ref().unwrap().clone(),
+        )?;
     }
     #[cfg(not(feature = "async"))]
-    bindings::sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
-        state.preview1_ctx.as_mut().unwrap()
-    })?;
+    bindings::sync::add_wasi_snapshot_preview1_to_linker(
+        &mut linker,
+        |state| state.preview1_ctx.as_mut().unwrap(),
+        |state| state.wasm_thread.as_ref().unwrap().clone(),
+    )?;
 
     #[cfg(not(target_os = "windows"))]
     unsafe {
@@ -321,7 +329,11 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         });
     }
 
-    bindings::add_webrogue_gfx_to_linker(&mut linker, |state| state.gfx.as_mut().unwrap())?;
+    bindings::add_webrogue_gfx_to_linker(
+        &mut linker,
+        |state| state.gfx.as_mut().unwrap(),
+        |state| state.wasm_thread.as_ref().unwrap().clone(),
+    )?;
     crate::wasi_threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
         host.wasi_threads_ctx.as_ref().unwrap()
     })?;
@@ -348,6 +360,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 
                 #[cfg(feature = "async")]
                 let call_result = if let Some(async_func_runner) = async_func_runner {
+                    let main_thread = main_thread.clone();
                     async_func_runner(
                         AsyncFuncRunnerParams {
                             store,
@@ -365,6 +378,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
                                     .edit_breakpoints()
                                     .as_mut()
                                     .map(|edit_breakpoints| edit_breakpoints.single_step(true));
+                                main_thread.debug_init(store)?;
                                 func.call_async(store.as_context_mut(), ())
                                     .await
                                     .map_err(|err| anyhow::anyhow!(err))
@@ -375,6 +389,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
                 } else {
                     let instance = pre.instantiate(&mut store)?;
                     let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
+                    main_thread.debug_init(&mut store)?;
                     func.call(&mut store, ())
                         .map_err(|err| anyhow::anyhow!(err))
                 };
@@ -382,6 +397,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
                 let call_result = {
                     let instance = pre.instantiate(&mut store)?;
                     let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
+                    main_thread.debug_init(&mut store)?;
                     func.call(&mut store, ())
                         .map_err(|err| anyhow::anyhow!(err))
                 };
@@ -408,12 +424,15 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 }
 
 mod bindings {
+    use crate::WasmThread;
+
     wiggle::wasmtime_integration!({
         target: webrogue_gfx,
         witx: ["../gfx/witx/webrogue_gfx.witx"],
     });
 
     pub mod sync {
+        use super::WasmThread;
         wiggle::wasmtime_integration!({
             target: webrogue_wasi_common::snapshots::preview_1,
             witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
@@ -423,6 +442,7 @@ mod bindings {
     #[cfg(feature = "async")]
     // Not gonna fight compiler again
     pub mod not_sync {
+        use super::WasmThread;
         wiggle::wasmtime_integration!({
             target: webrogue_wasi_common::snapshots::preview_1,
             witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],

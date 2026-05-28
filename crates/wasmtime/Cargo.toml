@@ -21,3 +21,4 @@ wasmtime = { workspace = true, default-features = false, features = ["runtime", 
 webrogue-wasi-common = { workspace = true, default-features = false, features = ["sync"] }
 wiggle = { workspace = true, default-features = false, features = ["wasmtime"] }
 webrogue-aot-data = { workspace = true, optional = true }
+gdbstub_arch = { workspace = true }

@@ -10,13 +10,14 @@ use gdbstub::target::{
     TargetError, TargetResult,
 };
 use gdbstub_arch::wasm::{addr::WasmAddr, reg::id::WasmRegId};
+use webrogue_wasmtime::Frame;
 
 use crate::{
     communication::{
         DebuggerLoopMessage, DebuggerLoopProxy, EditBreakpointMessage, ReadMemoryMessage,
         ReadWasmMessage, ResumeMessage, ThreadMessage,
     },
-    thread_info::{Frame, ResumeType, ThreadInfo},
+    thread_info::{ResumeType, ThreadInfo},
 };
 
 pub(crate) enum StopReason {
@@ -154,30 +155,20 @@ impl Wasm32Target {
         assert!(!self.has_running_threads() || self.skip_stale_threads);
         self.ensure_all_threads_are_paused()
             .map_err(TargetError::Fatal)?;
-        let mut is_ok = true;
         for thread in self.threads.values() {
             let Some(stopped_thread) = thread.stopped.as_ref() else {
                 continue;
             };
-            let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
             let send_result =
                 stopped_thread
                     .sender
                     .send(ThreadMessage::EditBreakpoint(EditBreakpointMessage {
                         breakpoints: self.breakpoints.clone(),
-                        sender,
                     }));
             assert!(send_result.is_ok());
-            is_ok &= tokio::runtime::Handle::current()
-                .block_on(receiver.recv())
-                .ok_or_else(|| {
-                    TargetError::Fatal(anyhow::anyhow!(
-                        "An error occurred while setting a breakpoint"
-                    ))
-                })?;
         }
 
-        Ok(is_ok)
+        Ok(true)
     }
 
     fn get_frame(&self, tid: NonZeroI32, index: usize) -> Option<&Frame> {

@@ -6,8 +6,7 @@ use std::{
     },
 };
 
-use gdbstub_arch::wasm::addr::WasmAddr;
-use webrogue_wasmtime::WasmThread;
+use webrogue_wasmtime::{Frame, WasmThread};
 
 use crate::communication::ThreadMessage;
 
@@ -52,13 +51,6 @@ impl StoppedThread {
             pc: frame.pc.as_raw(),
         })
     }
-}
-
-pub struct Frame {
-    pub pc: WasmAddr,
-    pub stack: Vec<wasmtime::Val>,
-    pub locals: Vec<wasmtime::Val>,
-    pub globals: Vec<wasmtime::Val>,
 }
 
 #[derive(Clone)]

@@ -9,7 +9,7 @@ use webrogue_wasmtime::WasmThread;
 
 use crate::{
     communication::{DebuggerLoopMessage, DebuggerLoopProxy, ThreadMessage, ThreadStopInfo},
-    thread_info::{Frame, StoppedThread, ThreadInfo},
+    thread_info::{StoppedThread, ThreadInfo},
 };
 
 pub fn runner<T: Send + 'static>(
@@ -54,78 +54,20 @@ pub fn runner<T: Send + 'static>(
                         wasmtime_internal_debugger::DebugRunResult::EpochYield
                         | wasmtime_internal_debugger::DebugRunResult::Breakpoint => {}
                     };
-
-                    let (wasm_call_stack, memory_addresses, module_addresses) = debuggee
-                        .with_store(move |mut store| -> anyhow::Result<_> {
-                            let mut maybe_frame = store.debug_exit_frames().next();
-                            let mut wasm_call_stack = Vec::new();
-                            while let Some(frame) = maybe_frame {
-                                let function_index_and_pc =
-                                    frame.wasm_function_index_and_pc(&mut store)?;
-                                if let Some(function_index_and_pc) = function_index_and_pc {
-                                    if let Some(pc) = gdbstub_arch::wasm::addr::WasmAddr::new(
-                                        gdbstub_arch::wasm::addr::WasmAddrType::Object,
-                                        frame
-                                            .module(store.as_context_mut())?
-                                            .unwrap()
-                                            .debug_index_in_engine()
-                                            as u32,
-                                        function_index_and_pc.1.raw(),
-                                    ) {
-                                        let mut stack = Vec::new();
-                                        for index in 0..frame.num_stacks(&mut store)? {
-                                            stack.push(frame.stack(&mut store, index)?);
-                                        }
-                                        let mut locals = Vec::new();
-                                        for index in 0..frame.num_locals(&mut store)? {
-                                            locals.push(frame.local(&mut store, index)?);
-                                        }
-                                        let mut index = 0;
-                                        let mut globals = Vec::new();
-                                        while let Some(global) = frame
-                                            .instance(&mut store)?
-                                            .debug_global(&mut store, index)
-                                        {
-                                            index += 1;
-                                            globals.push(global.get(&mut store));
-                                        }
-                                        wasm_call_stack.push(Frame {
-                                            pc,
-                                            stack,
-                                            locals,
-                                            globals,
-                                        });
-                                    }
-                                }
-                                maybe_frame = frame.parent(&mut store)?;
-                            }
-                            let memory_addresses = get_memories(&mut store)
-                                .into_iter()
-                                .map(|(id, memory)| {
-                                    let size = match memory {
-                                        Memory::Shared(shared_memory) => {
-                                            shared_memory.size() as usize
-                                        }
-                                        Memory::Unshared(memory) => {
-                                            memory.size(&mut store) as usize
-                                        }
-                                    };
-                                    (id, size)
-                                })
-                                .collect();
-
-                            let module_addresses = store
-                                .debug_all_modules()
-                                .into_iter()
-                                .map(|module| {
-                                    let size = module.debug_bytecode().unwrap().len();
-                                    (module.debug_index_in_engine() as u32, size)
-                                })
-                                .collect();
-
-                            Ok((wasm_call_stack, memory_addresses, module_addresses))
-                        })
-                        .await??;
+                    {
+                        let thread = thread.clone();
+                        debuggee
+                            .with_store(move |mut store| -> anyhow::Result<_> {
+                                thread.dump_debug_frame(&mut store)?;
+                                Ok(())
+                            })
+                            .await??;
+                    }
+                    let wasm_call_stack = thread.latest_debug_frame().unwrap();
+                    let memory_addresses = thread.memory_addresses().unwrap();
+                    let module_addresses = thread.module_addresses().unwrap();
+                    let memories = thread.memories().unwrap();
+                    let modules = thread.modules().unwrap();
 
                     let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
 
@@ -163,10 +105,9 @@ pub fn runner<T: Send + 'static>(
                                 }
                             }
                             Some(ThreadMessage::ReadMemory(message)) => {
+                                let memories = memories.clone();
                                 debuggee
                                     .with_store(move |mut store| -> anyhow::Result<()> {
-                                        let memories = get_memories(&mut store);
-
                                         let Some(memory) = memories
                                             .iter()
                                             .find(|(id, _)| *id == message.module)
@@ -183,20 +124,24 @@ pub fn runner<T: Send + 'static>(
                                         };
 
                                         let data = match memory {
-                                            Memory::Shared(shared_memory) => get_safe_range(
-                                                shared_memory.data(),
-                                                message.offset,
-                                                message.size,
-                                            )
-                                            .iter()
-                                            .map(|a| unsafe { *a.get() })
-                                            .collect(),
-                                            Memory::Unshared(memory) => get_safe_range(
-                                                memory.data(store.as_context_mut()),
-                                                message.offset,
-                                                message.size,
-                                            )
-                                            .to_vec(),
+                                            webrogue_wasmtime::Memory::Shared(shared_memory) => {
+                                                get_safe_range(
+                                                    shared_memory.data(),
+                                                    message.offset,
+                                                    message.size,
+                                                )
+                                                .iter()
+                                                .map(|a| unsafe { *a.get() })
+                                                .collect()
+                                            }
+                                            webrogue_wasmtime::Memory::Unshared(memory) => {
+                                                get_safe_range(
+                                                    memory.data(store.as_context_mut()),
+                                                    message.offset,
+                                                    message.size,
+                                                )
+                                                .to_vec()
+                                            }
                                         };
                                         message.sender.send(data)?;
                                         Ok(())
@@ -204,28 +149,19 @@ pub fn runner<T: Send + 'static>(
                                     .await??;
                             }
                             Some(ThreadMessage::ReadWasm(message)) => {
-                                debuggee
-                                    .with_store(move |store| -> anyhow::Result<()> {
-                                        let modules = store.debug_all_modules();
+                                let Some(module) = modules.iter().find(|module| {
+                                    (module.debug_index_in_engine() as u32) == message.module
+                                }) else {
+                                    return Ok(());
+                                };
 
-                                        let Some(module) = modules.iter().find(|module| {
-                                            (module.debug_index_in_engine() as u32)
-                                                == message.module
-                                        }) else {
-                                            return Ok(());
-                                        };
+                                let data = get_safe_range(
+                                    module.debug_bytecode().unwrap(),
+                                    message.offset,
+                                    message.size,
+                                );
 
-                                        let data = get_safe_range(
-                                            module.debug_bytecode().unwrap(),
-                                            message.offset,
-                                            message.size,
-                                        );
-
-                                        message.sender.send(data.to_vec())?;
-
-                                        Ok(())
-                                    })
-                                    .await??;
+                                message.sender.send(data.to_vec())?;
                             }
                             Some(ThreadMessage::EditBreakpoint(mut message)) => {
                                 debuggee
@@ -279,7 +215,6 @@ pub fn runner<T: Send + 'static>(
                                                     .remove_breakpoint(&module, *breakpoint)?;
                                             }
                                         }
-                                        message.sender.send(true)?;
 
                                         Ok(())
                                     })
@@ -297,43 +232,6 @@ pub fn runner<T: Send + 'static>(
                 Ok(())
             })())
     })
-}
-
-const MEMORY_ADDR_SHIFT: i32 = 4; // Who uses more than 16 memories in a single module?
-
-enum Memory {
-    Shared(wasmtime::SharedMemory),
-    Unshared(wasmtime::Memory),
-}
-
-fn get_memories<T>(store: &mut wasmtime::StoreContextMut<'_, T>) -> Vec<(u32, Memory)> {
-    let memories = store
-        .as_context_mut()
-        .debug_all_instances()
-        .into_iter()
-        .flat_map(|instance| {
-            let mut mems = Vec::new();
-            let mut index = 0;
-            loop {
-                let id = u32::from(instance.debug_index_in_store()) << MEMORY_ADDR_SHIFT
-                    | u32::from(index);
-                if let Some(mem) = instance.debug_memory(store.as_context_mut(), index) {
-                    mems.push((id, Memory::Unshared(mem.clone())));
-                    index += 1;
-                    continue;
-                }
-                if let Some(mem) = instance.debug_shared_memory(store.as_context_mut(), index) {
-                    mems.push((id, Memory::Shared(mem.clone())));
-                    index += 1;
-                    continue;
-                }
-                break;
-            }
-
-            mems.into_iter()
-        })
-        .collect::<Vec<_>>();
-    memories
 }
 
 fn get_safe_range<T>(data: &[T], start: usize, len: usize) -> &[T] {
