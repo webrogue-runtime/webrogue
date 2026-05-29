@@ -15,7 +15,7 @@ impl DebugMessageReceiver {
         let mut message = DebugMessage::from_bytes(data)?;
         anyhow::ensure!(message.version == crate::debug_messages::VERSION);
         self.fragment_buffer.append(&mut message.fragment);
-        if message.is_last_fragment {
+        if !message.is_last_fragment {
             return Ok(None);
         }
         Ok(Some(std::mem::replace(
