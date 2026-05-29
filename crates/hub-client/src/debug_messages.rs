@@ -1,4 +1,6 @@
-pub const VERSION: u32 = 1;
+use std::collections::HashMap;
+
+pub const VERSION: u32 = 2;
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct DebugMessage {
@@ -74,7 +76,9 @@ pub enum DebugResponseBody {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct ListFilesRequest {}
+pub struct ListFilesRequest {
+    pub file_paths_and_hashes: HashMap<String, String>,
+}
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct ListFilesResponse {
@@ -90,7 +94,6 @@ pub struct LaunchResponse {}
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugCommand {
     SetConfig(SetConfigCommand),
-    AppendFileHash(AppendFileHashCommand),
     SetFileChunk(SetFileChunkCommand),
     GDBData(GDBDataDebugCommand),
 }
@@ -98,12 +101,6 @@ pub enum DebugCommand {
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct SetConfigCommand {
     pub config: webrogue_wrapp::config::Config,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct AppendFileHashCommand {
-    pub path: String,
-    pub hash: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]

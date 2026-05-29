@@ -124,7 +124,6 @@ impl DebugRunnerConfig {
 
 pub struct DebugRunnerState {
     config: Arc<DebugRunnerConfig>,
-    file_hashes: Mutex<HashMap<String, String>>,
     actual_file_hashes_cache: std::sync::Mutex<HashMap<String, String>>,
     currently_constructed_file: Mutex<Option<(String, File)>>,
     wrapp_config: Mutex<Option<webrogue_wrapp::config::Config>>,
@@ -135,7 +134,6 @@ impl DebugRunnerState {
     pub fn new(config: Arc<DebugRunnerConfig>) -> Self {
         Self {
             config,
-            file_hashes: Mutex::new(HashMap::new()),
             actual_file_hashes_cache: std::sync::Mutex::new(HashMap::new()),
             currently_constructed_file: Mutex::new(None),
             wrapp_config: Mutex::new(None),
@@ -148,9 +146,9 @@ impl DebugRunnerState {
         request: DebugRequestBody,
     ) -> anyhow::Result<DebugResponseBody> {
         match request {
-            DebugRequestBody::ListFiles(_list_files_request) => {
+            DebugRequestBody::ListFiles(request) => {
                 drop(self.currently_constructed_file.lock().await.take());
-                let file_hashes = self.file_hashes.lock().await;
+                let file_hashes = request.file_paths_and_hashes;
                 self.visit_dir(&file_hashes, "")?;
 
                 let mut missing_files: Vec<String> = Vec::new();
@@ -168,7 +166,7 @@ impl DebugRunnerState {
                 }))
             }
 
-            DebugRequestBody::Launch(_launch_request) => {
+            DebugRequestBody::Launch(_request) => {
                 let Some(config) = self.wrapp_config.lock().await.clone() else {
                     anyhow::bail!("Launch command is executed before SetConfig");
                 };
@@ -221,13 +219,6 @@ impl DebugRunnerState {
 
     pub async fn process_command(&self, command: DebugCommand) -> anyhow::Result<()> {
         match command {
-            DebugCommand::AppendFileHash(command) => {
-                self.file_hashes
-                    .lock()
-                    .await
-                    .insert(command.path, command.hash);
-                Ok(())
-            }
             DebugCommand::SetFileChunk(command) => {
                 self.actual_file_hashes_cache
                     .lock()

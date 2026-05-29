@@ -1,4 +1,4 @@
-use std::io::Read as _;
+use std::{collections::HashMap, io::Read as _};
 
 use futures_util::{SinkExt as _, StreamExt as _};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -13,9 +13,8 @@ use webrogue_hub_client::{
     api_base_path::ws_api_url,
     debug_connection::OutgoingDebugConnection,
     debug_messages::{
-        AppendFileHashCommand, DebugCommand, DebugRequestBody, DebugResponseBody,
-        GDBDataDebugCommand, LaunchRequest, ListFilesRequest, SetConfigCommand,
-        SetFileChunkCommand,
+        DebugCommand, DebugRequestBody, DebugResponseBody, GDBDataDebugCommand, LaunchRequest,
+        ListFilesRequest, SetConfigCommand, SetFileChunkCommand,
     },
     ws_messages::{DebugDeviceWsCommand, DebugDeviceWsEvent},
 };
@@ -143,6 +142,7 @@ async fn launch_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
         .await?;
     let vfs = vfs_builder.into_vfs()?;
     let index = vfs.get_index().clone();
+    let mut file_paths_and_hashes = HashMap::new();
     for (path, position) in index {
         let file = vfs.open_pos(position)?;
         let hash = blake3::Hasher::new()
@@ -151,17 +151,14 @@ async fn launch_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
             .to_hex()
             .as_str()
             .to_owned();
-        connection
-            .command(DebugCommand::AppendFileHash(AppendFileHashCommand {
-                path,
-                hash,
-            }))
-            .await?;
+        file_paths_and_hashes.insert(path, hash);
     }
 
     loop {
         let DebugResponseBody::ListFiles(response) = connection
-            .request(DebugRequestBody::ListFiles(ListFilesRequest {}))
+            .request(DebugRequestBody::ListFiles(ListFilesRequest {
+                file_paths_and_hashes: file_paths_and_hashes.clone(),
+            }))
             .await?
         else {
             anyhow::bail!("ListFiles request returned response of wrong type")
@@ -177,7 +174,7 @@ async fn launch_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
             };
             println!("Sending {}", file_path);
             let mut pos: u64 = 0;
-            let mut buf = [0u8; 1024];
+            let mut buf = [0u8; 16 * 1024];
             loop {
                 let n = file.read(&mut buf)?;
                 if n == 0 {

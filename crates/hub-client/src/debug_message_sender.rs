@@ -4,7 +4,7 @@ use crate::debug_messages::DebugMessage;
 
 pub async fn send_debug_message(data_channel: &RTCDataChannel, data: &[u8]) -> anyhow::Result<()> {
     // TODO increase chunk size
-    let fragments = data.chunks(100).collect::<Vec<_>>();
+    let fragments = data.chunks(1100).collect::<Vec<_>>();
     for (i, fragment) in fragments.iter().enumerate() {
         let message = DebugMessage {
             version: crate::debug_messages::VERSION,
