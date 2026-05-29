@@ -53,9 +53,10 @@ impl OutgoingDebugConnection {
         };
         let peer_connection = Arc::new(api.new_peer_connection(config).await?);
         let done_tx2 = done_tx.clone();
+        let closed_tx2 = closed_tx.clone();
         peer_connection.on_peer_connection_state_change(Box::new(move |state| {
             let done_tx = done_tx2.clone();
-            let closed_tx2 = closed_tx.clone();
+            let closed_tx2 = closed_tx2.clone();
             Box::pin(async move {
                 match state {
                     RTCPeerConnectionState::Unspecified
@@ -82,6 +83,14 @@ impl OutgoingDebugConnection {
         let (gdb_tx, gdb_rx) = tokio::sync::mpsc::channel(8);
         let gdb_tx2 = gdb_tx.clone();
         let data_channel_weak = Arc::downgrade(&data_channel);
+        data_channel.on_close(Box::new(move || {
+            let done_tx = done_tx.clone();
+            let closed_tx = closed_tx.clone();
+            Box::pin(async move {
+                let _ = done_tx.send(anyhow::Ok(())).await;
+                closed_tx.send(true).unwrap();
+            })
+        }));
         data_channel.on_message(Box::new(move |msg: DataChannelMessage| {
             let senders2 = senders2.clone();
             let gdb_tx2 = gdb_tx2.clone();
@@ -106,9 +115,6 @@ impl OutgoingDebugConnection {
                                 let _ = gdb_tx2.send(event.data).await;
                             }
                         },
-                        DebugIncomingMessageBody::Error(error) => {
-                            anyhow::bail!("Remote debuggee returned error: {error}")
-                        }
                     }
                     anyhow::Ok(())
                 }

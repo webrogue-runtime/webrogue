@@ -39,7 +39,6 @@ impl DebugOutgoingMessageBody {
 pub enum DebugIncomingMessageBody {
     Response(DebugResponse),
     Event(DebugEvent),
-    Error(String),
 }
 
 impl DebugIncomingMessageBody {

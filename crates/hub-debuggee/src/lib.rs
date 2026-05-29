@@ -160,8 +160,6 @@ impl HubDebuggee {
                             tracing::error!("data_channel.on_message error: {}", err);
 
                             if let Some(data_channel) = data_channel_weak2.upgrade() {
-                                let error = err.to_string();
-                                data_channel.send(&error.as_bytes().to_vec().into()).await;
                                 let result = data_channel.close().await;
                                 if let Err(err) = result {
                                     tracing::error!("data_channel.on_message error while closing data_channel: {}", err);
