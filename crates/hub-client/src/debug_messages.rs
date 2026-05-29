@@ -1,10 +1,13 @@
+pub const VERSION: u32 = 1;
+
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub enum DebugOutgoingMessage {
-    Request(Box<DebugRequest>),
-    Command(Box<DebugCommand>),
+pub struct DebugMessage {
+    pub version: u32,
+    pub fragment: Vec<u8>,
+    pub is_last_fragment: bool,
 }
 
-impl DebugOutgoingMessage {
+impl DebugMessage {
     pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         Ok(postcard::to_stdvec(self)?)
     }
@@ -15,12 +18,28 @@ impl DebugOutgoingMessage {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub enum DebugIncomingMessage {
+pub enum DebugOutgoingMessageBody {
+    Request(Box<DebugRequest>),
+    Command(Box<DebugCommand>),
+}
+
+impl DebugOutgoingMessageBody {
+    pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(postcard::to_stdvec(self)?)
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
+        Ok(postcard::from_bytes::<Self>(bytes)?)
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub enum DebugIncomingMessageBody {
     Response(DebugResponse),
     Event(DebugEvent),
 }
 
-impl DebugIncomingMessage {
+impl DebugIncomingMessageBody {
     pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         Ok(postcard::to_stdvec(self)?)
     }

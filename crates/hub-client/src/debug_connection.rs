@@ -1,6 +1,10 @@
-use crate::debug_messages::{
-    DebugCommand, DebugIncomingMessage, DebugOutgoingMessage, DebugRequest, DebugRequestBody,
-    DebugResponseBody,
+use crate::{
+    debug_message_receiver::DebugMessageReceiver,
+    debug_message_sender::send_debug_message,
+    debug_messages::{
+        DebugCommand, DebugIncomingMessageBody, DebugOutgoingMessageBody, DebugRequest,
+        DebugRequestBody, DebugResponseBody,
+    },
 };
 use futures_util::future::select;
 use std::{collections::BTreeMap, sync::Arc};
@@ -68,6 +72,7 @@ impl OutgoingDebugConnection {
             })
         }));
         let data_channel = peer_connection.create_data_channel("data", None).await?;
+        let message_receiver = Arc::new(std::sync::Mutex::new(DebugMessageReceiver::new()));
 
         let senders = Arc::new(Mutex::new(BTreeMap::<
             u64,
@@ -79,23 +84,33 @@ impl OutgoingDebugConnection {
         data_channel.on_message(Box::new(move |msg: DataChannelMessage| {
             let senders2 = senders2.clone();
             let gdb_tx2 = gdb_tx2.clone();
+            let message_receiver = message_receiver.clone();
             Box::pin(async move {
-                let Ok(message) = DebugIncomingMessage::from_bytes(&msg.data) else {
-                    return;
-                };
-                match message {
-                    DebugIncomingMessage::Response(debug_response) => {
-                        if let Some(sender) =
-                            senders2.lock().await.remove(&debug_response.request_id)
-                        {
-                            let _ = sender.send(debug_response.body).await;
+                let result = async move {
+                    let Some(data) = message_receiver.lock().unwrap().receive(&msg.data)? else {
+                        return anyhow::Ok(());
+                    };
+                    let message = DebugIncomingMessageBody::from_bytes(&data)?;
+                    match message {
+                        DebugIncomingMessageBody::Response(debug_response) => {
+                            if let Some(sender) =
+                                senders2.lock().await.remove(&debug_response.request_id)
+                            {
+                                let _ = sender.send(debug_response.body).await;
+                            }
                         }
+                        DebugIncomingMessageBody::Event(event) => match event {
+                            crate::debug_messages::DebugEvent::GDBData(event) => {
+                                let _ = gdb_tx2.send(event.data).await;
+                            }
+                        },
                     }
-                    DebugIncomingMessage::Event(event) => match event {
-                        crate::debug_messages::DebugEvent::GDBData(event) => {
-                            let _ = gdb_tx2.send(event.data).await;
-                        }
-                    },
+                    anyhow::Ok(())
+                }
+                .await;
+
+                if let Err(err) = result {
+                    tracing::error!("data_channel.on_message error: {}", err);
                 }
             })
         }));
@@ -133,16 +148,12 @@ impl OutgoingDebugConnection {
         let data_channel = self.data_channel.clone();
         let result = select(
             Box::pin(async move {
-                data_channel
-                    .send(
-                        &DebugOutgoingMessage::Request(Box::new(DebugRequest {
-                            request_id,
-                            body: request,
-                        }))
-                        .to_bytes()?
-                        .into(),
-                    )
-                    .await?;
+                let data = DebugOutgoingMessageBody::Request(Box::new(DebugRequest {
+                    request_id,
+                    body: request,
+                }))
+                .to_bytes()?;
+                send_debug_message(&data_channel, &data).await?;
                 anyhow::Ok(response_rx.recv().await.unwrap())
             }),
             Box::pin(wait_until_closed(self.closed_rx.clone())),
@@ -160,13 +171,8 @@ impl OutgoingDebugConnection {
 
         let result = select(
             Box::pin(async move {
-                data_channel
-                    .send(
-                        &DebugOutgoingMessage::Command(Box::new(command))
-                            .to_bytes()?
-                            .into(),
-                    )
-                    .await?;
+                let data = DebugOutgoingMessageBody::Command(Box::new(command)).to_bytes()?;
+                send_debug_message(&data_channel, &data).await?;
                 anyhow::Ok(())
             }),
             Box::pin(wait_until_closed(self.closed_rx.clone())),

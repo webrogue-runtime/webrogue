@@ -4,8 +4,10 @@ use std::{
 };
 mod debug_runner_state;
 use webrogue_gfx_winit::WinitProxy;
-use webrogue_hub_client::debug_messages::{
-    DebugIncomingMessage, DebugOutgoingMessage, DebugResponse,
+use webrogue_hub_client::{
+    debug_message_receiver::DebugMessageReceiver,
+    debug_message_sender::send_debug_message,
+    debug_messages::{DebugIncomingMessageBody, DebugOutgoingMessageBody, DebugResponse},
 };
 mod webrtc_packet_sender;
 use webrtc::{
@@ -104,9 +106,12 @@ impl HubDebuggee {
         let runner_state = Arc::new(DebugRunnerState::new(debug_runner_config.clone()));
 
         let done_tx2 = done_tx.clone();
+        let message_receiver = Arc::new(std::sync::Mutex::new(DebugMessageReceiver::new()));
+
         peer_connection.on_data_channel(Box::new(move |data_channel| {
             let done_tx = done_tx2.clone();
             let runner_state = runner_state.clone();
+            let message_receiver = message_receiver.clone();
             let data_channel_weak = Arc::downgrade(&data_channel);
             let _ = debug_runner_config
                 .data_channel
@@ -117,29 +122,42 @@ impl HubDebuggee {
                 data_channel.on_message(Box::new(move |message| {
                     let runner_state = runner_state.clone();
                     let data_channel_weak = data_channel_weak.clone();
+                    let message_receiver = message_receiver.clone();
                     Box::pin(async move {
-                        let message = DebugOutgoingMessage::from_bytes(&message.data).unwrap();
-                        match message {
-                            DebugOutgoingMessage::Request(request) => {
-                                let Some(data_channel) = data_channel_weak.upgrade() else {
-                                    return;
-                                };
-                                let response_body =
-                                    runner_state.process_request(request.body).await.unwrap();
-                                let response = DebugIncomingMessage::Response(DebugResponse {
-                                    request_id: request.request_id,
-                                    body: response_body,
-                                });
-                                data_channel
-                                    .send(&response.to_bytes().unwrap().into())
-                                    .await
-                                    .unwrap();
-                            }
-                            DebugOutgoingMessage::Command(command) => {
-                                let runner_state = runner_state.clone();
-                                runner_state.process_command(*command).await.unwrap();
-                            }
-                        };
+                        let result = async move {
+                            let Some(data) =
+                                message_receiver.lock().unwrap().receive(&message.data)?
+                            else {
+                                return anyhow::Ok(());
+                            };
+                            let message = DebugOutgoingMessageBody::from_bytes(&data).unwrap();
+                            match message {
+                                DebugOutgoingMessageBody::Request(request) => {
+                                    let Some(data_channel) = data_channel_weak.upgrade() else {
+                                        anyhow::bail!("data_channel_weak.upgrade() failed");
+                                    };
+                                    let response_body =
+                                        runner_state.process_request(request.body).await.unwrap();
+                                    let response =
+                                        DebugIncomingMessageBody::Response(DebugResponse {
+                                            request_id: request.request_id,
+                                            body: response_body,
+                                        });
+                                    send_debug_message(&data_channel, &response.to_bytes()?)
+                                        .await?;
+                                }
+                                DebugOutgoingMessageBody::Command(command) => {
+                                    let runner_state = runner_state.clone();
+                                    runner_state.process_command(*command).await.unwrap();
+                                }
+                            };
+                            anyhow::Ok(())
+                        }
+                        .await;
+
+                        if let Err(err) = result {
+                            tracing::error!("data_channel.on_message error: {}", err);
+                        }
                     })
                 }));
 
