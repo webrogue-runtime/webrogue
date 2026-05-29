@@ -16,6 +16,7 @@ use crate::{
 
 #[cfg(feature = "jit")]
 pub enum JitProfile {
+    #[cfg(feature = "debug")]
     Debug,
     FastExecution,
     FastCompilation,
@@ -115,6 +116,7 @@ impl Runtime {
             // TODO config.enable_incremental_compilation(cache_store)
         }
         match &self.jit_profile {
+            #[cfg(feature = "debug")]
             JitProfile::Debug => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::None)
@@ -125,21 +127,25 @@ impl Runtime {
             JitProfile::FastExecution => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
-                    .guest_debug(false)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
                     .compiler_inlining(Inlining::Intrinsics);
             }
             JitProfile::FastCompilation => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
-                    .guest_debug(false)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
                     .compiler_inlining(Inlining::Intrinsics);
             }
         };
 
-        let enable_epoch_interruption =
-            !self.is_panic_allowed || matches!(self.jit_profile, JitProfile::Debug);
+        let enable_epoch_interruption = !self.is_panic_allowed || {
+            #[cfg(feature = "debug")]
+            {
+                matches!(self.jit_profile, JitProfile::Debug)
+            }
+            #[cfg(not(feature = "debug"))]
+            false
+        };
         self.wasmtime_config
             .epoch_interruption(enable_epoch_interruption);
         let engine = wasmtime::Engine::new(&self.wasmtime_config)?;
@@ -241,6 +247,7 @@ impl Runtime {
     }
 }
 
+#[cfg(any(feature = "jit", feature = "aot"))]
 fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
     gfx_init_params: GFXInitParams<Builder>,
     handle: VFSHandle,
@@ -283,25 +290,10 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         async_func_runner.clone(),
     )));
 
-    #[cfg(feature = "async")]
-    if async_func_runner.is_some() {
-        bindings::not_sync::add_wasi_snapshot_preview1_to_linker(
-            &mut linker,
-            |state| state.preview1_ctx.as_mut().unwrap(),
-            |state| state.wasm_thread.as_ref().unwrap().clone(),
-        )?;
-    } else {
-        bindings::sync::add_wasi_snapshot_preview1_to_linker(
-            &mut linker,
-            |state| state.preview1_ctx.as_mut().unwrap(),
-            |state| state.wasm_thread.as_ref().unwrap().clone(),
-        )?;
-    }
-    #[cfg(not(feature = "async"))]
-    bindings::sync::add_wasi_snapshot_preview1_to_linker(
+    add_wasip1_to_linker::<Builder>(
         &mut linker,
-        |state| state.preview1_ctx.as_mut().unwrap(),
-        |state| state.wasm_thread.as_ref().unwrap().clone(),
+        #[cfg(feature = "async")]
+        &async_func_runner,
     )?;
 
     #[cfg(not(target_os = "windows"))]
@@ -358,49 +350,48 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 
                 let pre = linker.instantiate_pre(&module)?;
 
-                #[cfg(feature = "async")]
-                let call_result = if let Some(async_func_runner) = async_func_runner {
-                    let main_thread = main_thread.clone();
-                    async_func_runner(
-                        AsyncFuncRunnerParams {
-                            store,
-                            thread: main_thread.clone(),
-                        },
-                        Box::new(move |store| {
-                            use wasmtime::AsContextMut as _;
+                let call_result = (|| {
+                    #[cfg(feature = "async")]
+                    if let Some(async_func_runner) = async_func_runner {
+                        let main_thread = main_thread.clone();
+                        return async_func_runner(
+                            AsyncFuncRunnerParams {
+                                store,
+                                thread: main_thread.clone(),
+                            },
+                            Box::new(move |store| {
+                                use wasmtime::AsContextMut as _;
 
-                            Box::pin(async move {
-                                let instance =
-                                    pre.instantiate_async(store.as_context_mut()).await?;
-                                let func = instance
-                                    .get_typed_func::<(), ()>(store.as_context_mut(), "_start")?;
-                                store
-                                    .edit_breakpoints()
-                                    .as_mut()
-                                    .map(|edit_breakpoints| edit_breakpoints.single_step(true));
-                                main_thread.debug_init(store)?;
-                                func.call_async(store.as_context_mut(), ())
-                                    .await
-                                    .map_err(|err| anyhow::anyhow!(err))
-                            })
-                        }),
-                    )
-                    .map(|_| ())
-                } else {
+                                Box::pin(async move {
+                                    let instance =
+                                        pre.instantiate_async(store.as_context_mut()).await?;
+                                    let func = instance.get_typed_func::<(), ()>(
+                                        store.as_context_mut(),
+                                        "_start",
+                                    )?;
+                                    #[cfg(feature = "debug")]
+                                    store
+                                        .edit_breakpoints()
+                                        .as_mut()
+                                        .map(|edit_breakpoints| edit_breakpoints.single_step(true));
+                                    #[cfg(feature = "debug")]
+                                    main_thread.debug_init(store)?;
+                                    func.call_async(store.as_context_mut(), ())
+                                        .await
+                                        .map_err(|err| anyhow::anyhow!(err))
+                                })
+                            }),
+                        )
+                        .map(|_| ());
+                    };
                     let instance = pre.instantiate(&mut store)?;
                     let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
+                    #[cfg(feature = "debug")]
                     main_thread.debug_init(&mut store)?;
                     func.call(&mut store, ())
                         .map_err(|err| anyhow::anyhow!(err))
-                };
-                #[cfg(not(feature = "async"))]
-                let call_result = {
-                    let instance = pre.instantiate(&mut store)?;
-                    let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
-                    main_thread.debug_init(&mut store)?;
-                    func.call(&mut store, ())
-                        .map_err(|err| anyhow::anyhow!(err))
-                };
+                })();
+
                 let tid = main_thread.tid();
                 thread_registry.remove_thread(main_thread);
                 thread_registry.stop_all_threads(
@@ -420,6 +411,29 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         wrapp_config.vulkan_requirement().to_bool_option(),
     )??;
 
+    Ok(())
+}
+
+fn add_wasip1_to_linker<Builder: webrogue_gfx::IBuilder>(
+    linker: &mut wasmtime::Linker<State<<Builder>::System>>,
+    #[cfg(feature = "async")] async_func_runner: &Option<
+        crate::AsyncFuncRunner<State<Builder::System>>,
+    >,
+) -> Result<(), anyhow::Error> {
+    #[cfg(feature = "async")]
+    if async_func_runner.is_some() {
+        bindings::not_sync::add_wasi_snapshot_preview1_to_linker(
+            linker,
+            |state| state.preview1_ctx.as_mut().unwrap(),
+            |state| state.wasm_thread.as_ref().unwrap().clone(),
+        )?;
+        return Ok(());
+    }
+    bindings::sync::add_wasi_snapshot_preview1_to_linker(
+        linker,
+        |state| state.preview1_ctx.as_mut().unwrap(),
+        |state| state.wasm_thread.as_ref().unwrap().clone(),
+    )?;
     Ok(())
 }
 

@@ -1,10 +1,7 @@
 // This file is a modified version of
 // https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-threads
 // Original code is under Apache-2.0 WITH LLVM-exception license
-use std::{
-    num::NonZeroI32,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use wasmtime::AsContextMut;
 
@@ -13,7 +10,6 @@ use crate::gfx_init_params::{AsyncFuncRunner, AsyncFuncRunnerParams};
 use crate::{
     state::State,
     thread::{StopReason, WasmThreadRegistry},
-    WasmThread,
 };
 
 pub struct WasiThreadsCtx<System: webrogue_gfx::ISystem + 'static> {
@@ -85,9 +81,9 @@ impl<System: webrogue_gfx::ISystem + 'static> WasiThreadsCtx<System> {
 
                 let result: Result<anyhow::Result<()>, Box<dyn std::any::Any + Send>> =
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        let thread = thread.clone();
                         #[cfg(feature = "async")]
                         if let Some(async_func_runner) = async_func_runner {
+                            let thread = thread.clone();
                             return async_func_runner(
                                 AsyncFuncRunnerParams {
                                     store,
@@ -105,6 +101,7 @@ impl<System: webrogue_gfx::ISystem + 'static> WasiThreadsCtx<System> {
                                                 WASI_ENTRY_POINT,
                                             )
                                             .unwrap();
+                                        #[cfg(feature = "debug")]
                                         thread.debug_init(&mut store)?;
                                         thread_entry_point
                                             .call_async(
@@ -122,6 +119,7 @@ impl<System: webrogue_gfx::ISystem + 'static> WasiThreadsCtx<System> {
                         let thread_entry_point = instance
                             .get_typed_func::<(i32, i32), ()>(&mut store, WASI_ENTRY_POINT)
                             .unwrap();
+                        #[cfg(feature = "debug")]
                         thread.debug_init(&mut store)?;
                         thread_entry_point
                             .call(&mut store, (wasi_thread_id, thread_start_arg))
@@ -162,10 +160,6 @@ impl<System: webrogue_gfx::ISystem + 'static> WasiThreadsCtx<System> {
             Ok(v) => Some(v + 1),
             Err(_) => None,
         }
-    }
-
-    pub fn get_thread(&self, tid: NonZeroI32) -> Option<WasmThread> {
-        self.thread_registry.get_thread(tid)
     }
 }
 

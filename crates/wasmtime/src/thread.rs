@@ -1,5 +1,7 @@
+#[cfg(feature = "debug")]
+use std::collections::BTreeSet;
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     future::Future,
     num::NonZeroI32,
     pin::Pin,
@@ -9,11 +11,13 @@ use std::{
     },
 };
 
+#[cfg(feature = "debug")]
 use futures::future::try_join;
+#[cfg(feature = "debug")]
 use gdbstub_arch::wasm::addr::WasmAddr;
-use wasmtime::{
-    AsContext as _, AsContextMut as _, EngineWeak, Module, StoreContextMut, UpdateDeadline,
-};
+#[cfg(feature = "debug")]
+use wasmtime::{AsContext as _, AsContextMut as _, Module, StoreContextMut};
+use wasmtime::{EngineWeak, UpdateDeadline};
 
 #[derive(Clone)]
 pub struct WasmThread(Arc<WasmThreadInner>);
@@ -25,13 +29,21 @@ struct WasmThreadInner {
     #[cfg(feature = "async")]
     is_async: bool,
     epoch_interruption: bool,
+    #[cfg(feature = "debug")]
     memory_addresses: Mutex<Option<Vec<(u32, usize)>>>,
+    #[cfg(feature = "debug")]
     module_addresses: Mutex<Option<Vec<(u32, usize)>>>,
+    #[cfg(feature = "debug")]
     memories: Mutex<Option<Vec<(u32, Memory)>>>,
+    #[cfg(feature = "debug")]
     latest_debug_frame: Mutex<Option<Vec<Frame>>>,
+    #[cfg(feature = "debug")]
     modules: Mutex<Option<Vec<wasmtime::Module>>>,
+    #[cfg(feature = "debug")]
     call_state: Mutex<Option<CallState>>,
+    #[cfg(feature = "debug")]
     breakpoints_patch: Mutex<Option<Breakpoints>>,
+    #[cfg(feature = "debug")]
     single_stepping_patch: Mutex<Option<bool>>,
 }
 
@@ -83,40 +95,49 @@ impl WasmThread {
             &'a mut wiggle::wasmtime_crate::Caller<'_, T>,
         ) -> Pin<Box<dyn Future<Output = R> + Send + 'a>>,
     ) -> wasmtime::Result<R> {
-        self.dump_debug_frame(&mut caller.as_context_mut())?;
+        #[cfg(not(feature = "debug"))]
+        {
+            return wasmtime::Result::Ok(f(caller).await);
+        }
+        #[cfg(feature = "debug")]
+        {
+            self.dump_debug_frame(&mut caller.as_context_mut())?;
 
-        let (task_tx, mut task_rx) = futures::channel::mpsc::unbounded();
-        let call_state = CallState {
-            task_tx: task_tx.clone(),
-            // post_call_callbacks: Vec::new(),
-        };
-        *self.0.call_state.lock().unwrap() = Some(call_state);
+            let (task_tx, mut task_rx) = futures::channel::mpsc::unbounded();
+            let call_state = CallState {
+                task_tx: task_tx.clone(),
+                // post_call_callbacks: Vec::new(),
+            };
+            *self.0.call_state.lock().unwrap() = Some(call_state);
 
-        let caller_ptr = caller as *mut _ as usize;
+            let caller_ptr = caller as *mut _ as usize;
 
-        let result: wasmtime::Result<(R, ())> = try_join(
-            async {
-                let caller =
-                    unsafe { &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>) };
-                let result = f(caller).await;
-                let _ = task_tx.unbounded_send(None);
-                wasmtime::Result::Ok(result)
-            },
-            async {
-                while let Some(task) = task_rx.recv().await? {
-                    task.await?;
-                }
-                wasmtime::Result::Ok(())
-            },
-        )
-        .await;
-        *self.0.call_state.lock().unwrap() = None;
-        let caller = unsafe { &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>) };
-        self.apply_breakpoints_patch(caller.as_context_mut())?;
-        self.apply_single_stepping_patch(caller.as_context_mut())?;
-        Ok(result?.0)
+            let result: wasmtime::Result<(R, ())> = try_join(
+                async {
+                    let caller =
+                        unsafe { &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>) };
+                    let result = f(caller).await;
+                    let _ = task_tx.unbounded_send(None);
+                    wasmtime::Result::Ok(result)
+                },
+                async {
+                    while let Some(task) = task_rx.recv().await? {
+                        task.await?;
+                    }
+                    wasmtime::Result::Ok(())
+                },
+            )
+            .await;
+            *self.0.call_state.lock().unwrap() = None;
+            let caller =
+                unsafe { &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>) };
+            self.apply_breakpoints_patch(caller.as_context_mut())?;
+            self.apply_single_stepping_patch(caller.as_context_mut())?;
+            Ok(result?.0)
+        }
     }
 
+    #[cfg(feature = "debug")]
     pub fn dump_debug_frame<T>(&self, store: &mut StoreContextMut<'_, T>) -> wasmtime::Result<()> {
         let mut maybe_frame = store.debug_exit_frames().next();
         let mut wasm_call_stack = Vec::new();
@@ -164,6 +185,7 @@ impl WasmThread {
         Ok(())
     }
 
+    #[cfg(feature = "debug")]
     pub fn debug_init<T>(&self, store: &mut wasmtime::Store<T>) -> wasmtime::Result<()> {
         let memories = get_memories(&mut store.as_context_mut());
         *self.0.memories.lock().unwrap() = Some(memories.clone());
@@ -194,26 +216,32 @@ impl WasmThread {
         Ok(())
     }
 
+    #[cfg(feature = "debug")]
     pub fn memory_addresses(&self) -> Option<Vec<(u32, usize)>> {
         self.0.memory_addresses.lock().unwrap().clone()
     }
 
+    #[cfg(feature = "debug")]
     pub fn module_addresses(&self) -> Option<Vec<(u32, usize)>> {
         self.0.module_addresses.lock().unwrap().clone()
     }
 
+    #[cfg(feature = "debug")]
     pub fn memories(&self) -> Option<Vec<(u32, Memory)>> {
         self.0.memories.lock().unwrap().clone()
     }
 
+    #[cfg(feature = "debug")]
     pub fn latest_debug_frame(&self) -> Option<Vec<Frame>> {
         self.0.latest_debug_frame.lock().unwrap().clone()
     }
 
+    #[cfg(feature = "debug")]
     pub fn modules(&self) -> Option<Vec<Module>> {
         self.0.modules.lock().unwrap().clone()
     }
 
+    #[cfg(feature = "debug")]
     pub fn run_in_call(
         &self,
         fut: Pin<Box<dyn Future<Output = wasmtime::Result<()>> + Send>>,
@@ -225,10 +253,12 @@ impl WasmThread {
         call_state.task_tx.unbounded_send(Some(fut)).is_ok()
     }
 
+    #[cfg(feature = "debug")]
     pub fn set_breakpoints_patch(&self, breakpoints: Breakpoints) {
         *self.0.breakpoints_patch.lock().unwrap() = Some(breakpoints);
     }
 
+    #[cfg(feature = "debug")]
     pub fn apply_breakpoints_patch<T>(
         &self,
         mut store: wasmtime::StoreContextMut<'_, T>,
@@ -274,10 +304,12 @@ impl WasmThread {
         Ok(())
     }
 
+    #[cfg(feature = "debug")]
     pub fn set_single_stepping_patch(&self, single_stepping: bool) {
         *self.0.single_stepping_patch.lock().unwrap() = Some(single_stepping);
     }
 
+    #[cfg(feature = "debug")]
     pub fn apply_single_stepping_patch<T>(
         &self,
         store: wasmtime::StoreContextMut<'_, T>,
@@ -334,13 +366,21 @@ impl WasmThreadRegistry {
             #[cfg(feature = "async")]
             is_async: registry.is_async,
             epoch_interruption: registry.epoch_interruption,
+            #[cfg(feature = "debug")]
             memory_addresses: Mutex::new(None),
+            #[cfg(feature = "debug")]
             module_addresses: Mutex::new(None),
+            #[cfg(feature = "debug")]
             memories: Mutex::new(None),
+            #[cfg(feature = "debug")]
             latest_debug_frame: Mutex::new(None),
+            #[cfg(feature = "debug")]
             modules: Mutex::new(None),
+            #[cfg(feature = "debug")]
             call_state: Mutex::new(None),
+            #[cfg(feature = "debug")]
             breakpoints_patch: Mutex::new(None),
+            #[cfg(feature = "debug")]
             single_stepping_patch: Mutex::new(None),
         }));
         registry.threads.insert(tid, thread.clone());
@@ -387,10 +427,6 @@ impl WasmThreadRegistry {
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }
-
-    pub fn get_thread(&self, tid: NonZeroI32) -> Option<WasmThread> {
-        self.0.lock().unwrap().threads.get(&tid).cloned()
-    }
 }
 
 struct WasmThreadRegistryInner {
@@ -407,6 +443,7 @@ pub enum StopReason {
     ThreadError(NonZeroI32, anyhow::Error),
 }
 
+#[cfg(feature = "debug")]
 #[derive(Clone)]
 pub struct Frame {
     pub pc: WasmAddr,
@@ -415,14 +452,17 @@ pub struct Frame {
     pub globals: Vec<wasmtime::Val>,
 }
 
+#[cfg(feature = "debug")]
 const MEMORY_ADDR_SHIFT: i32 = 4; // Who uses more than 16 memories in a single module?
 
+#[cfg(feature = "debug")]
 #[derive(Clone)]
 pub enum Memory {
     Shared(wasmtime::SharedMemory),
     Unshared(wasmtime::Memory),
 }
 
+#[cfg(feature = "debug")]
 fn get_memories<T>(store: &mut wasmtime::StoreContextMut<'_, T>) -> Vec<(u32, Memory)> {
     let memories = store
         .as_context_mut()
@@ -453,6 +493,7 @@ fn get_memories<T>(store: &mut wasmtime::StoreContextMut<'_, T>) -> Vec<(u32, Me
     memories
 }
 
+#[cfg(feature = "debug")]
 pub struct CallState {
     task_tx: futures::channel::mpsc::UnboundedSender<
         Option<Pin<Box<dyn Future<Output = wasmtime::Result<()>> + Send>>>,
@@ -460,5 +501,6 @@ pub struct CallState {
     // post_call_callbacks: Vec<Box<dyn FnOnce()>>,
 }
 
+#[cfg(feature = "debug")]
 #[derive(Clone)]
 pub struct Breakpoints(pub BTreeMap<u64, BTreeSet<wasmtime::ModulePC>>);
