@@ -124,6 +124,7 @@ impl HubDebuggee {
                     let data_channel_weak = data_channel_weak.clone();
                     let message_receiver = message_receiver.clone();
                     Box::pin(async move {
+                        let data_channel_weak2 = data_channel_weak.clone();
                         let result = async move {
                             let Some(data) =
                                 message_receiver.lock().unwrap().receive(&message.data)?
@@ -157,6 +158,15 @@ impl HubDebuggee {
 
                         if let Err(err) = result {
                             tracing::error!("data_channel.on_message error: {}", err);
+
+                            if let Some(data_channel) = data_channel_weak2.upgrade() {
+                                let error = err.to_string();
+                                data_channel.send(&error.as_bytes().to_vec().into()).await;
+                                let result = data_channel.close().await;
+                                if let Err(err) = result {
+                                    tracing::error!("data_channel.on_message error while closing data_channel: {}", err);
+                                }
+                            };
                         }
                     })
                 }));

@@ -81,10 +81,12 @@ impl OutgoingDebugConnection {
         let senders2 = senders.clone();
         let (gdb_tx, gdb_rx) = tokio::sync::mpsc::channel(8);
         let gdb_tx2 = gdb_tx.clone();
+        let data_channel_weak = Arc::downgrade(&data_channel);
         data_channel.on_message(Box::new(move |msg: DataChannelMessage| {
             let senders2 = senders2.clone();
             let gdb_tx2 = gdb_tx2.clone();
             let message_receiver = message_receiver.clone();
+            let data_channel_weak = data_channel_weak.clone();
             Box::pin(async move {
                 let result = async move {
                     let Some(data) = message_receiver.lock().unwrap().receive(&msg.data)? else {
@@ -104,6 +106,9 @@ impl OutgoingDebugConnection {
                                 let _ = gdb_tx2.send(event.data).await;
                             }
                         },
+                        DebugIncomingMessageBody::Error(error) => {
+                            anyhow::bail!("Remote debuggee returned error: {error}")
+                        }
                     }
                     anyhow::Ok(())
                 }
@@ -111,6 +116,16 @@ impl OutgoingDebugConnection {
 
                 if let Err(err) = result {
                     tracing::error!("data_channel.on_message error: {}", err);
+
+                    if let Some(data_channel) = data_channel_weak.upgrade() {
+                        let result = data_channel.close().await;
+                        if let Err(err) = result {
+                            tracing::error!(
+                                "data_channel.on_message error while closing data_channel: {}",
+                                err
+                            );
+                        }
+                    };
                 }
             })
         }));
