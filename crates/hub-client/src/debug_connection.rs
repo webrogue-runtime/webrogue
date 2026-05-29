@@ -83,7 +83,17 @@ impl OutgoingDebugConnection {
         let (gdb_tx, gdb_rx) = tokio::sync::mpsc::channel(8);
         let gdb_tx2 = gdb_tx.clone();
         let data_channel_weak = Arc::downgrade(&data_channel);
+        let done_tx2 = done_tx.clone();
+        let closed_tx2 = closed_tx.clone();
         data_channel.on_close(Box::new(move || {
+            let done_tx2 = done_tx2.clone();
+            let closed_tx2 = closed_tx2.clone();
+            Box::pin(async move {
+                let _ = done_tx2.send(anyhow::Ok(())).await;
+                closed_tx2.send(true).unwrap();
+            })
+        }));
+        data_channel.on_error(Box::new(move |_error| {
             let done_tx = done_tx.clone();
             let closed_tx = closed_tx.clone();
             Box::pin(async move {

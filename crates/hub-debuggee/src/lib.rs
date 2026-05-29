@@ -169,7 +169,15 @@ impl HubDebuggee {
                     })
                 }));
 
+                let done_tx2 = done_tx.clone();
                 data_channel.on_close(Box::new(move || {
+                    let done_tx2 = done_tx2.clone();
+                    Box::pin(async move {
+                        let _ = done_tx2.send(Ok(())).await;
+                    })
+                }));
+
+                data_channel.on_error(Box::new(move |_error| {
                     let done_tx = done_tx.clone();
                     Box::pin(async move {
                         let _ = done_tx.send(Ok(())).await;
