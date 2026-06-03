@@ -80,6 +80,8 @@ pub struct App {
     proxy_container: Arc<Mutex<Option<WinitProxy>>>,
     window_registry: WindowRegistry,
     launch_finish_indicator: Arc<Mutex<Option<()>>>,
+    #[cfg(target_os = "linux")]
+    is_gtk_initialized: bool,
 }
 
 impl App {
@@ -95,14 +97,26 @@ impl App {
             proxy_container: Arc::new(Mutex::new(None)),
             window_registry: WindowRegistry::new(),
             launch_finish_indicator: Arc::new(Mutex::new(None)),
+            #[cfg(target_os = "linux")]
+            is_gtk_initialized: false,
         }
+    }
+
+    #[cfg(target_os = "linux")]
+    fn initialize_gtk_if_needed(&mut self) {
+        if self.is_gtk_initialized {
+            return;
+        }
+        std::env::set_var("NO_AT_BRIDGE", "1");
+        gtk::init().unwrap();
+        self.is_gtk_initialized = true;
     }
 }
 
 impl ApplicationHandler for App {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         #[cfg(target_os = "linux")]
-        gtk::init().unwrap();
+        self.initialize_gtk_if_needed();
 
         let window = event_loop
             .create_window(WindowAttributes::default().with_title("Webrogue"))
@@ -157,6 +171,8 @@ impl ApplicationHandler for App {
         window_id: WindowId,
         event: WindowEvent,
     ) {
+        #[cfg(target_os = "linux")]
+        self.initialize_gtk_if_needed();
         if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
             proxy.window_event(&mut self.window_registry, window_id, event.clone());
             return;
@@ -206,12 +222,16 @@ impl ApplicationHandler for App {
 
     fn about_to_wait(&mut self, _event_loop: &dyn ActiveEventLoop) {
         #[cfg(target_os = "linux")]
+        self.initialize_gtk_if_needed();
+        #[cfg(target_os = "linux")]
         while gtk::events_pending() {
             gtk::main_iteration_do(false);
         }
     }
 
     fn proxy_wake_up(&mut self, event_loop: &dyn ActiveEventLoop) {
+        #[cfg(target_os = "linux")]
+        self.initialize_gtk_if_needed();
         #[cfg(target_os = "linux")]
         gtk::main_iteration_do(false);
 
