@@ -1,4 +1,4 @@
-use std::io::Read as _;
+use std::{collections::HashMap, io::Read as _};
 
 use futures_util::{SinkExt as _, StreamExt as _};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -13,9 +13,8 @@ use webrogue_hub_client::{
     api_base_path::ws_api_url,
     debug_connection::OutgoingDebugConnection,
     debug_messages::{
-        AppendFileHashCommand, DebugCommand, DebugRequestBody, DebugResponseBody,
-        GDBDataDebugCommand, LaunchCommand, ListFilesRequest, SetConfigCommand,
-        SetFileChunkCommand,
+        DebugCommand, DebugRequestBody, DebugResponseBody, GDBDataDebugCommand, LaunchRequest,
+        ListFilesRequest, SetConfigCommand, SetFileChunkCommand,
     },
     ws_messages::{DebugDeviceWsCommand, DebugDeviceWsEvent},
 };
@@ -61,12 +60,6 @@ pub async fn debug(
                 Message::Frame(_frame) => todo!(),
             };
         };
-        ws_stream
-            .close(Some(CloseFrame {
-                code: CloseCode::Normal,
-                reason: "Ok".into(),
-            }))
-            .await?;
         let response = serde_json::from_str::<DebugDeviceWsEvent>(response.as_str())?;
         let sdp_answer = response.sdp_answer;
         connection.set_answer(&sdp_answer).await?;
@@ -115,8 +108,29 @@ pub async fn debug(
                     };
                     return result;
                 }
+                packet = ws_stream.next() => {
+                    let Some(packet) = packet else {
+                        break 'tcp_loop;
+                    };
+                    let packet = packet?;
+                    match packet {
+                        Message::Text(_utf8_bytes) => todo!(),
+                        Message::Binary(_bytes) => todo!(),
+                        Message::Ping(bytes) => ws_stream.send(Message::Pong(bytes)).await?,
+                        Message::Pong(bytes) => {},
+                        Message::Close(close_frame) => break 'tcp_loop,
+                        Message::Frame(frame) => unreachable!(),
+                    };
+                }
             };
         }
+
+        ws_stream
+            .close(Some(CloseFrame {
+                code: CloseCode::Normal,
+                reason: "Ok".into(),
+            }))
+            .await?;
         anyhow::Ok(())
     }
     .await;
@@ -130,12 +144,20 @@ async fn launch_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     mut vfs_builder: VFSBuilder,
     connection: &mut OutgoingDebugConnection,
 ) -> anyhow::Result<()> {
-    let config = vfs_builder.config()?.clone();
+    let mut config = vfs_builder.config()?.clone();
+    config.filesystem.iter_mut().for_each(|filesystem| {
+        filesystem.resources.iter_mut().for_each(|resource| {
+            resource
+                .iter_mut()
+                .for_each(|resource| resource.real_path = resource.mapped_path.clone())
+        });
+    });
     connection
         .command(DebugCommand::SetConfig(SetConfigCommand { config }))
         .await?;
     let vfs = vfs_builder.into_vfs()?;
     let index = vfs.get_index().clone();
+    let mut file_paths_and_hashes = HashMap::new();
     for (path, position) in index {
         let file = vfs.open_pos(position)?;
         let hash = blake3::Hasher::new()
@@ -144,55 +166,53 @@ async fn launch_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
             .to_hex()
             .as_str()
             .to_owned();
-        connection
-            .command(DebugCommand::AppendFileHash(AppendFileHashCommand {
-                path,
-                hash,
-            }))
-            .await?;
+        file_paths_and_hashes.insert(path, hash);
     }
 
-    let DebugResponseBody::ListFiles(response) = connection
-        .request(DebugRequestBody::ListFiles(ListFilesRequest {}))
-        .await?
-    // else {
-    //     anyhow::bail!("ListFiles request returned response of wrong type")
-    // }
-    ;
-
-    for file_path in response.missing_files.iter() {
-        let Some(mut file) = vfs.open_file(file_path.as_str())? else {
-            anyhow::bail!("Couldn't open {}", file_path)
+    loop {
+        let DebugResponseBody::ListFiles(response) = connection
+            .request(DebugRequestBody::ListFiles(ListFilesRequest {
+                file_paths_and_hashes: file_paths_and_hashes.clone(),
+            }))
+            .await?
+        else {
+            anyhow::bail!("ListFiles request returned response of wrong type")
         };
-        println!("Sending {}", file_path);
-        let mut pos: u64 = 0;
-        let mut buf = [0u8; 8 * 1024];
-        loop {
-            let n = file.read(&mut buf)?;
-            if n == 0 {
-                break;
+
+        if response.missing_files.is_empty() {
+            break;
+        }
+
+        for file_path in response.missing_files.iter() {
+            let Some(mut file) = vfs.open_file(file_path.as_str())? else {
+                anyhow::bail!("Couldn't open {}", file_path)
+            };
+            println!("Sending {}", file_path);
+            let mut pos: u64 = 0;
+            let mut buf = [0u8; 16 * 1024];
+            loop {
+                let n = file.read(&mut buf)?;
+                if n == 0 {
+                    break;
+                }
+                connection
+                    .command(DebugCommand::SetFileChunk(SetFileChunkCommand {
+                        path: file_path.clone(),
+                        pos,
+                        data: buf[..n].to_vec(),
+                    }))
+                    .await?;
+                pos += n as u64;
             }
-            connection
-                .command(DebugCommand::SetFileChunk(SetFileChunkCommand {
-                    path: file_path.clone(),
-                    pos,
-                    data: buf[..n].to_vec(),
-                }))
-                .await?;
-            pos += n as u64;
         }
     }
 
-    let DebugResponseBody::ListFiles(_response) = connection
-        .request(DebugRequestBody::ListFiles(ListFilesRequest {}))
+    let DebugResponseBody::Launch(_response) = connection
+        .request(DebugRequestBody::Launch(LaunchRequest {}))
         .await?
-    // else {
-    //     anyhow::bail!("ListFiles request returned response of wrong type")
-    // }
-    ;
-    connection
-        .command(DebugCommand::Launch(LaunchCommand {}))
-        .await?;
+    else {
+        anyhow::bail!("Launch request returned response of wrong type")
+    };
 
     Ok(())
 }

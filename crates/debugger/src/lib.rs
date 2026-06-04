@@ -32,6 +32,12 @@ pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send 
     let (mut target, target_proxy) = gdb_stub_target::create_wasm32_target(skip_stale_threads);
 
     let threads: Arc<Mutex<Vec<WasmThread>>> = Arc::default();
+    let threads2 = threads.clone();
+    let drop_callback = DropCallback(Some(move || {
+        for thread in threads2.lock().unwrap().iter() {
+            thread.trap();
+        }
+    }));
     gfx_init_params.async_func_runner(code_runner_loop::runner(target_proxy, threads.clone()));
 
     let wasi_main_join_handle = rt_handle.spawn_blocking(|| func(runtime, gfx_init_params));
@@ -46,9 +52,7 @@ pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send 
         }
         Err(error) => Err(error),
     };
-    for thread in threads.lock().unwrap().iter() {
-        thread.trap();
-    }
+    drop(drop_callback);
     let wasi_main_error = wasi_main_join_handle.await?;
     match (wasi_main_error, debugger_error) {
         (Ok(result), Ok(_)) => Ok(result),
@@ -61,5 +65,12 @@ pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send 
                 Err(wasi_main_error)
             }
         }
+    }
+}
+struct DropCallback<F: FnOnce()>(Option<F>);
+
+impl<F: FnOnce()> Drop for DropCallback<F> {
+    fn drop(&mut self) {
+        (self.0.take().unwrap())();
     }
 }

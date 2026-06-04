@@ -7,22 +7,25 @@ use wasmtime::AsContextMut;
 
 #[cfg(feature = "async")]
 use crate::gfx_init_params::{AsyncFuncRunner, AsyncFuncRunnerParams};
-use crate::thread::{StopReason, WasmThreadRegistry};
+use crate::{
+    state::State,
+    thread::{StopReason, WasmThreadRegistry},
+};
 
-pub struct WasiThreadsCtx<T: 'static> {
-    instance_pre: Mutex<Option<Arc<wasmtime::InstancePre<T>>>>,
+pub struct WasiThreadsCtx<System: webrogue_gfx::ISystem + 'static> {
+    instance_pre: Mutex<Option<Arc<wasmtime::InstancePre<State<System>>>>>,
     tid: std::sync::atomic::AtomicI32,
     thread_registry: WasmThreadRegistry,
     #[cfg(feature = "async")]
-    async_func_runner: Option<AsyncFuncRunner<T>>,
+    async_func_runner: Option<AsyncFuncRunner<State<System>>>,
 }
 
 const WASI_ENTRY_POINT: &str = "wasi_thread_start";
 
-impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
+impl<System: webrogue_gfx::ISystem + 'static> WasiThreadsCtx<System> {
     pub fn new(
         thread_registry: WasmThreadRegistry,
-        #[cfg(feature = "async")] async_func_runner: Option<AsyncFuncRunner<T>>,
+        #[cfg(feature = "async")] async_func_runner: Option<AsyncFuncRunner<State<System>>>,
     ) -> Self {
         let tid = std::sync::atomic::AtomicI32::new(1);
         Self {
@@ -37,14 +40,14 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
     pub fn fill(
         &self,
         module: wasmtime::Module,
-        linker: Arc<wasmtime::Linker<T>>,
+        linker: Arc<wasmtime::Linker<State<System>>>,
     ) -> anyhow::Result<()> {
         let instance_pre = Arc::new(linker.instantiate_pre(&module)?);
         *self.instance_pre.lock().unwrap() = Some(instance_pre);
         Ok(())
     }
 
-    pub fn spawn(&self, host: T, thread_start_arg: i32) -> anyhow::Result<i32> {
+    pub fn spawn(&self, host: State<System>, thread_start_arg: i32) -> anyhow::Result<i32> {
         let instance_pre = self.instance_pre.lock().unwrap().as_ref().unwrap().clone();
         if !has_entry_point(instance_pre.module()) {
             return Ok(-1);
@@ -71,6 +74,7 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
                 let thread = thread_registry.make_thread(store.engine().weak());
                 {
                     let thread = thread.clone();
+                    store.data_mut().wasm_thread = Some(thread.clone());
                     store.epoch_deadline_callback(move |_| thread.on_epoch_update_deadline());
                     store.set_epoch_deadline(1);
                 }
@@ -79,6 +83,7 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         #[cfg(feature = "async")]
                         if let Some(async_func_runner) = async_func_runner {
+                            let thread = thread.clone();
                             return async_func_runner(
                                 AsyncFuncRunnerParams {
                                     store,
@@ -96,6 +101,8 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
                                                 WASI_ENTRY_POINT,
                                             )
                                             .unwrap();
+                                        #[cfg(feature = "debug")]
+                                        thread.debug_init(&mut store)?;
                                         thread_entry_point
                                             .call_async(
                                                 &mut store,
@@ -112,6 +119,8 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
                         let thread_entry_point = instance
                             .get_typed_func::<(i32, i32), ()>(&mut store, WASI_ENTRY_POINT)
                             .unwrap();
+                        #[cfg(feature = "debug")]
+                        thread.debug_init(&mut store)?;
                         thread_entry_point
                             .call(&mut store, (wasi_thread_id, thread_start_arg))
                             .map_err(|err| anyhow::anyhow!(err))
@@ -155,17 +164,17 @@ impl<T: Clone + Send + 'static> WasiThreadsCtx<T> {
 }
 
 // TODO use remove Send constraint from T and exchange between threads using intermediate sendable object
-pub fn add_to_linker_sync<T: Clone + Send + 'static>(
-    linker: &mut wasmtime::Linker<T>,
-    store: &mut wasmtime::Store<T>,
+pub fn add_to_linker_sync<System: webrogue_gfx::ISystem + 'static>(
+    linker: &mut wasmtime::Linker<State<System>>,
+    store: &mut wasmtime::Store<State<System>>,
     module: &wasmtime::Module,
     // async_func_runner: Option<Arc<dyn Fn(wasmtime::Store<T>) + Send + Sync>>,
-    get_cx: impl Fn(&mut T) -> &WasiThreadsCtx<T> + Send + Sync + Copy + 'static,
+    get_cx: impl Fn(&mut State<System>) -> &WasiThreadsCtx<System> + Send + Sync + Copy + 'static,
 ) -> anyhow::Result<()> {
     linker.func_wrap(
         "wasi",
         "thread-spawn",
-        move |mut caller: wasmtime::Caller<'_, T>, start_arg: i32| -> i32 {
+        move |mut caller: wasmtime::Caller<'_, State<System>>, start_arg: i32| -> i32 {
             let host = caller.data().clone();
             let ctx = get_cx(caller.data_mut());
             match ctx.spawn(host, start_arg) {

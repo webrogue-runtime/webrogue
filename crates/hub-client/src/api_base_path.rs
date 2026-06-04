@@ -10,13 +10,13 @@ fn localhost_api_addr_port() -> &'static str {
 }
 
 fn use_localhost_api() -> bool {
-    cfg!(debug_assertions)
-    // false
+    // cfg!(debug_assertions)
+    false
 }
 
 fn use_localhost_ui() -> bool {
-    cfg!(debug_assertions)
-    // false
+    // cfg!(debug_assertions)
+    false
 }
 
 pub fn http_api_url() -> String {

@@ -1,4 +1,5 @@
 use std::{
+    cmp::min,
     collections::{BTreeMap, BTreeSet},
     num::{NonZero, NonZeroI32},
     ops::Add,
@@ -10,13 +11,14 @@ use gdbstub::target::{
     TargetError, TargetResult,
 };
 use gdbstub_arch::wasm::{addr::WasmAddr, reg::id::WasmRegId};
+use webrogue_wasmtime::{Breakpoints, Frame};
 
 use crate::{
     communication::{
-        DebuggerLoopMessage, DebuggerLoopProxy, EditBreakpointMessage, ReadMemoryMessage,
-        ReadWasmMessage, ResumeMessage, ThreadMessage,
+        DebuggerLoopMessage, DebuggerLoopProxy, EditBreakpointMessage, ResumeMessage,
+        ThreadMessage, ThreadStopInfo,
     },
-    thread_info::{Frame, ResumeType, ThreadInfo},
+    thread_info::{ResumeType, StoppedThread, ThreadInfo},
 };
 
 pub(crate) enum StopReason {
@@ -29,8 +31,9 @@ pub(crate) enum StopReason {
 
 pub(crate) struct Wasm32Target {
     receiver: tokio::sync::mpsc::UnboundedReceiver<DebuggerLoopMessage>,
+    sender: tokio::sync::mpsc::UnboundedSender<DebuggerLoopMessage>,
     threads: BTreeMap<NonZeroI32, ThreadInfo>,
-    breakpoints: BTreeMap<u64, BTreeSet<wasmtime::ModulePC>>,
+    breakpoints: Breakpoints,
     default_resume_type: Option<ResumeType>,
     skip_stale_threads: bool,
 }
@@ -115,12 +118,12 @@ impl Wasm32Target {
     pub fn pause_a_thread(&mut self) -> anyhow::Result<Option<StopReason>> {
         let Some(unpaused_thread) = self
             .threads
-            .values()
+            .values_mut()
             .find(|thread| thread.stopped.is_none())
         else {
             return Ok(None);
         };
-        unpaused_thread.async_yield();
+        pause_thread(self.sender.clone(), unpaused_thread)?;
         Ok(Some(self.wain_for_a_stop_sync()?))
     }
 
@@ -134,10 +137,10 @@ impl Wasm32Target {
 
             while let Some(thread) = self
                 .threads
-                .values()
+                .values_mut()
                 .find(|thread| thread.stopped.is_none())
             {
-                thread.async_yield();
+                pause_thread(self.sender.clone(), thread)?;
                 let is_timeout = tokio::select! {
                     message = self.receive_message() => {message?; false} ,
                     _ = tokio::time::sleep_until(deadline), if self.skip_stale_threads => true,
@@ -154,30 +157,19 @@ impl Wasm32Target {
         assert!(!self.has_running_threads() || self.skip_stale_threads);
         self.ensure_all_threads_are_paused()
             .map_err(TargetError::Fatal)?;
-        let mut is_ok = true;
         for thread in self.threads.values() {
             let Some(stopped_thread) = thread.stopped.as_ref() else {
                 continue;
             };
-            let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
-            let send_result =
-                stopped_thread
-                    .sender
-                    .send(ThreadMessage::EditBreakpoint(EditBreakpointMessage {
-                        breakpoints: self.breakpoints.clone(),
-                        sender,
-                    }));
+            let send_result = stopped_thread
+                .sender
+                .unbounded_send(ThreadMessage::EditBreakpoint(EditBreakpointMessage {
+                    breakpoints: self.breakpoints.clone(),
+                }));
             assert!(send_result.is_ok());
-            is_ok &= tokio::runtime::Handle::current()
-                .block_on(receiver.recv())
-                .ok_or_else(|| {
-                    TargetError::Fatal(anyhow::anyhow!(
-                        "An error occurred while setting a breakpoint"
-                    ))
-                })?;
         }
 
-        Ok(is_ok)
+        Ok(true)
     }
 
     fn get_frame(&self, tid: NonZeroI32, index: usize) -> Option<&Frame> {
@@ -196,7 +188,7 @@ impl Drop for Wasm32Target {
             let _ = thread
                 .stopped
                 .as_ref()
-                .map(|stopped_thread| stopped_thread.sender.send(ThreadMessage::Kill));
+                .map(|stopped_thread| stopped_thread.sender.unbounded_send(ThreadMessage::Kill));
         }
     }
 }
@@ -205,8 +197,9 @@ pub(crate) fn create_wasm32_target(skip_stale_threads: bool) -> (Wasm32Target, D
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
     let target = Wasm32Target {
         receiver,
+        sender: sender.clone(),
         threads: BTreeMap::new(),
-        breakpoints: BTreeMap::new(),
+        breakpoints: Breakpoints(BTreeMap::new()),
         default_resume_type: Some(ResumeType::Continue),
         skip_stale_threads,
     };
@@ -315,12 +308,12 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         let module_index = wasm_addr.module_index() as u64;
         let pc = wasm_addr.offset();
 
-        if let Some(breakpoints) = self.breakpoints.get_mut(&module_index) {
+        if let Some(breakpoints) = self.breakpoints.0.get_mut(&module_index) {
             breakpoints.insert(wasmtime::ModulePC::new(pc));
         } else {
             let mut breakpoints = BTreeSet::new();
             breakpoints.insert(wasmtime::ModulePC::new(pc));
-            self.breakpoints.insert(module_index, breakpoints);
+            self.breakpoints.0.insert(module_index, breakpoints);
         }
 
         let is_ok = self.edit_breakpoint()?;
@@ -343,7 +336,7 @@ impl gdbstub::target::ext::breakpoints::SwBreakpoint for Wasm32Target {
         let module_index = wasm_addr.module_index() as u64;
         let pc = wasm_addr.offset();
 
-        let Some(breakpoints) = self.breakpoints.get_mut(&module_index) else {
+        let Some(breakpoints) = self.breakpoints.0.get_mut(&module_index) else {
             return Ok(true);
         };
         if !breakpoints.remove(&wasmtime::ModulePC::new(pc)) {
@@ -381,44 +374,57 @@ impl gdbstub::target::ext::base::multithread::MultiThreadBase for Wasm32Target {
         let Some(thread_info) = self.threads.get(&tid.try_into().unwrap()) else {
             return Err(TargetError::NonFatal);
         };
-        let Some(stopped_thread) = thread_info.stopped.as_ref() else {
-            return Err(TargetError::NonFatal);
-        };
         let wasm_addr = WasmAddr::from_raw(start_addr).ok_or(TargetError::NonFatal)?;
         match wasm_addr.addr_type() {
             gdbstub_arch::wasm::addr::WasmAddrType::Memory => {
-                let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
-                stopped_thread
-                    .sender
-                    .send(ThreadMessage::ReadMemory(ReadMemoryMessage {
-                        module: wasm_addr.module_index(),
-                        offset: wasm_addr.offset() as usize,
-                        size: data.len(),
-                        sender,
-                    }))
-                    .map_err(|_| TargetError::NonFatal)?;
-                let response = tokio::runtime::Handle::current()
-                    .block_on(receiver.recv())
-                    .ok_or(TargetError::NonFatal)?;
-                data[..response.len()].copy_from_slice(&response);
-                Ok(response.len())
+                let memories = thread_info.wasm_thread.memories().unwrap();
+                let Some(memory) = memories
+                    .iter()
+                    .find(|(id, _)| *id == wasm_addr.module_index())
+                    .or_else(|| {
+                        if memories.len() == 1 {
+                            memories.first()
+                        } else {
+                            None
+                        }
+                    })
+                    .map(|(_, memory)| memory)
+                else {
+                    return Err(TargetError::NonFatal);
+                };
+
+                let memory_data: Vec<u8> = match memory {
+                    webrogue_wasmtime::Memory::Shared(shared_memory) => get_safe_range(
+                        shared_memory.data(),
+                        wasm_addr.offset() as usize,
+                        data.len(),
+                    )
+                    .iter()
+                    .map(|a| unsafe { *a.get() })
+                    .collect(),
+                    webrogue_wasmtime::Memory::Unshared(_memory) => {
+                        return Err(TargetError::NonFatal)
+                    }
+                };
+                data[..memory_data.len()].copy_from_slice(&memory_data);
+                Ok(memory_data.len())
             }
             gdbstub_arch::wasm::addr::WasmAddrType::Object => {
-                let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
-                stopped_thread
-                    .sender
-                    .send(ThreadMessage::ReadWasm(ReadWasmMessage {
-                        module: wasm_addr.module_index(),
-                        offset: wasm_addr.offset() as usize,
-                        size: data.len(),
-                        sender,
-                    }))
-                    .map_err(|_| TargetError::NonFatal)?;
-                let response = tokio::runtime::Handle::current()
-                    .block_on(receiver.recv())
-                    .ok_or(TargetError::NonFatal)?;
-                data[..response.len()].copy_from_slice(&response);
-                Ok(response.len())
+                let modules = thread_info.wasm_thread.modules().unwrap();
+
+                let Some(module) = modules.iter().find(|module| {
+                    (module.debug_index_in_engine() as u32) == wasm_addr.module_index()
+                }) else {
+                    return Err(TargetError::NonFatal);
+                };
+
+                let module_data = get_safe_range(
+                    module.debug_bytecode().unwrap(),
+                    wasm_addr.offset() as usize,
+                    data.len(),
+                );
+                data[..module_data.len()].copy_from_slice(&module_data);
+                Ok(module_data.len())
             }
         }
     }
@@ -525,11 +531,12 @@ impl gdbstub::target::ext::base::multithread::MultiThreadResume for Wasm32Target
                 continue;
             };
 
-            let send_result = stopped_thread
-                .sender
-                .send(ThreadMessage::Resume(ResumeMessage {
-                    is_step: matches!(resume_type, ResumeType::Step),
-                }));
+            let send_result =
+                stopped_thread
+                    .sender
+                    .unbounded_send(ThreadMessage::Resume(ResumeMessage {
+                        is_step: matches!(resume_type, ResumeType::Step),
+                    }));
 
             assert!(send_result.is_ok());
         }
@@ -608,12 +615,8 @@ impl<'a> gdbstub::target::ext::memory_map::MemoryMap for Wasm32Target {
 
         let mut module_addresses = BTreeMap::new();
         for thread in self.threads.values() {
-            let Some(stopped_thread) = thread.stopped.as_ref() else {
-                return Err(TargetError::NonFatal);
-            };
-
-            for (id, size) in &stopped_thread.module_addresses {
-                module_addresses.insert(*id, *size);
+            for (id, size) in thread.wasm_thread.module_addresses().unwrap() {
+                module_addresses.insert(id, size);
             }
         }
         for (id, size) in module_addresses {
@@ -632,12 +635,8 @@ impl<'a> gdbstub::target::ext::memory_map::MemoryMap for Wasm32Target {
 
         let mut memory_addresses = BTreeMap::new();
         for thread in self.threads.values() {
-            let Some(stopped_thread) = thread.stopped.as_ref() else {
-                continue;
-            };
-
-            for (id, size) in &stopped_thread.memory_addresses {
-                memory_addresses.insert(*id, *size);
+            for (id, size) in thread.wasm_thread.memory_addresses().unwrap() {
+                memory_addresses.insert(id, size);
             }
         }
         for (id, size) in memory_addresses {
@@ -677,12 +676,8 @@ impl<'a> gdbstub::target::ext::libraries::Libraries for Wasm32Target {
         let mut xml = String::from("<library-list>");
         let mut addresses = BTreeMap::new();
         for thread in self.threads.values() {
-            let Some(stopped_thread) = thread.stopped.as_ref() else {
-                continue;
-            };
-
-            for (id, size) in &stopped_thread.module_addresses {
-                addresses.insert(*id, *size);
+            for (id, size) in thread.wasm_thread.module_addresses().unwrap() {
+                addresses.insert(id, size);
             }
         }
         for (id, _size) in addresses {
@@ -859,4 +854,46 @@ fn write_val(val: &wasmtime::Val, buf: &mut [u8]) -> usize {
         buf[..bytes.len()].copy_from_slice(&bytes);
     }
     bytes.len()
+}
+
+fn get_safe_range<T>(data: &[T], start: usize, len: usize) -> &[T] {
+    let data = &data[min(data.len(), start)..];
+    &data[..min(data.len(), len)]
+}
+
+fn pause_thread(
+    sender: tokio::sync::mpsc::UnboundedSender<DebuggerLoopMessage>,
+    thread: &mut ThreadInfo,
+) -> anyhow::Result<()> {
+    let (tx, mut rx) = futures::channel::mpsc::unbounded();
+    let wasm_thread = thread.wasm_thread.clone();
+
+    if thread.wasm_thread.run_in_call(Box::pin(async move {
+        match rx.recv().await? {
+            ThreadMessage::Resume(resume_message) => {
+                wasm_thread.set_single_stepping_patch(resume_message.is_step);
+                return Ok(());
+            }
+            ThreadMessage::EditBreakpoint(message) => {
+                wasm_thread.set_breakpoints_patch(message.breakpoints);
+            }
+            ThreadMessage::Kill => {
+                wasmtime::bail!("Killed during imported function invocation");
+            }
+        };
+        wasmtime::bail!("Debugger disconnected during imported function invocation")
+    })) {
+        sender.send(DebuggerLoopMessage::ThreadStopped(ThreadStopInfo {
+            tid: thread.tid,
+            is_step: false,
+            stopped_thread: StoppedThread {
+                wasm_call_stack: thread.wasm_thread.latest_debug_frame().unwrap(),
+                sender: tx,
+                resume_type: None,
+            },
+        }))?;
+    } else {
+        thread.async_yield();
+    };
+    Ok(())
 }

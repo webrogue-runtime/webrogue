@@ -1,7 +1,6 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    num::NonZeroI32,
-};
+use std::num::NonZeroI32;
+
+use webrogue_wasmtime::Breakpoints;
 
 use crate::thread_info::{StoppedThread, ThreadInfo};
 
@@ -38,8 +37,6 @@ pub struct ThreadStopInfo {
 
 pub enum ThreadMessage {
     Resume(ResumeMessage),
-    ReadMemory(ReadMemoryMessage),
-    ReadWasm(ReadWasmMessage),
     EditBreakpoint(EditBreakpointMessage),
     Kill,
 }
@@ -48,21 +45,6 @@ pub struct ResumeMessage {
     pub is_step: bool,
 }
 
-pub struct ReadMemoryMessage {
-    pub module: u32,
-    pub offset: usize,
-    pub size: usize,
-    pub sender: tokio::sync::mpsc::UnboundedSender<Vec<u8>>,
-}
-
-pub struct ReadWasmMessage {
-    pub module: u32,
-    pub offset: usize,
-    pub size: usize,
-    pub sender: tokio::sync::mpsc::UnboundedSender<Vec<u8>>,
-}
-
 pub struct EditBreakpointMessage {
-    pub breakpoints: BTreeMap<u64, BTreeSet<wasmtime::ModulePC>>, // (module, offset)
-    pub sender: tokio::sync::mpsc::UnboundedSender<bool>,
+    pub breakpoints: Breakpoints, // (module, offset)
 }

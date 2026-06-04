@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{ sync::Arc, time::Duration};
 
 use futures_util::{future::try_join, SinkExt, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
@@ -24,7 +24,7 @@ async fn send_sdp_answer(
     sdp_answer: String,
 ) {
     let result: anyhow::Result<()> = (async move || {
-        tracing::debug!("Sending SDP answer to server");
+        tracing::info!("Sending SDP answer to server");
         let command = ConnectDeviceWsCommand {
             name: None,
             sdp_answer: Some(sdp_answer),
@@ -36,7 +36,7 @@ async fn send_sdp_answer(
             .send(Message::Text(command.into()))
             .await
             .map_err(|_| anyhow::anyhow!("Failed to send message"))?;
-        tracing::debug!("SDP answer sent successfully");
+        tracing::info!("SDP answer sent successfully");
         Ok(())
     })()
     .await;
@@ -52,7 +52,7 @@ impl DebugConnection {
                 let auth_token = auth_token.clone();
                 let device_name = device_name.clone();
                 let config = config.clone();
-                tracing::debug!("Starting new debug connection attempt");
+                tracing::info!("Starting new debug connection attempt");
                 let result =
                     async move {
                         let url = format!(
@@ -60,35 +60,36 @@ impl DebugConnection {
                             ws_api_url(),
                             auth_token
                         );
-                        tracing::debug!("Connecting to WebSocket: {}", url);
+                        tracing::info!("Connecting to WebSocket: {}", url);
                         let (ws_stream, _) = connect_async(url).await?;
-                        tracing::debug!("WebSocket connected, splitting streams");
-                        let (mut write, mut read) = ws_stream.split();
+                        tracing::info!("WebSocket connected, splitting streams");
+                        let (mut write, mut read) = ws_stream.split(); 
 
                         let command = ConnectDeviceWsCommand {
                             name: Some(device_name.clone()),
                             sdp_answer: None,
                         };
                         let command_str = serde_json::to_string(&command)?;
-                        tracing::debug!("Sending initial command: {}", device_name);
+                        tracing::info!("Sending initial command: {}", device_name);
 
                         write.send(Message::Text(command_str.into())).await?;
-                        tracing::debug!("Initial command sent, waiting for event");
+                        tracing::info!("Initial command sent, waiting for event");
 
                         let event_str = wait_for_text_message_with_pings(&mut read, &mut write, "during initial connection").await?;
                         let event: ConnectDeviceWsEvent = serde_json::from_str(event_str.as_str())?;
-                        tracing::debug!("Parsed ConnectDeviceWsEvent");
+                        tracing::info!("Parsed ConnectDeviceWsEvent");
 
                         let write = Arc::new(tokio::sync::Mutex::new(write));
                         let write2 = write.clone();
-                        tracing::debug!("Creating launch task");
-                        let run_task = tokio::spawn(async move {
-                            tracing::debug!("Launch task started");
+                        tracing::info!("Creating launch task");
+                        let run_task = async move {
+                            tracing::info!("Launch task started");
+                            let write3 = write2.clone();
                             let result = config
                                 .launch(
                                     event.sdp_offer,
                                     Box::new(move |sdp_answer| {
-                                        tracing::debug!("SDP answer callback triggered");
+                                        tracing::info!("SDP answer callback triggered");
                                         let write_clone = write2.clone();
                                         tokio::spawn(async move {
                                             send_sdp_answer(&write_clone, sdp_answer).await;
@@ -96,30 +97,31 @@ impl DebugConnection {
                                     }),
                                 )
                                 .await;
-                            tracing::debug!("Launch task completed");
+                            let _ = write3.lock().await.close().await;
+                            tracing::info!("Launch task completed");
                             result
-                        });
+                        };
                         let write2 = write.clone();
-                        tracing::debug!("Creating ping task");
-                        let ping_task: tokio::task::JoinHandle<anyhow::Result<()>> =
-                            tokio::spawn(async move {
-                                tracing::debug!("Ping task started");
+                        tracing::info!("Creating ping task");
+                        let ping_task  =
+                            async move {
+                                tracing::info!("Ping task started");
                                 let mut ping_interval = tokio::time::interval(PING_INTERVAL);
                                 loop {
                                     tokio::select! {
                                         _ = ping_interval.tick() => {
-                                            tracing::debug!("Sending periodic ping");
+                                            tracing::info!("Sending periodic ping");
                                             write2.lock().await.send(Message::Ping(vec![].into())).await?;
                                         }
                                         message = read.next() => {
                                             let Some(message) = message else {
-                                                tracing::debug!("Stream ended, ping task exiting");
+                                                tracing::info!("Stream ended, ping task exiting");
                                                 return Ok(());
                                             };
                                             let mut locked_write = write2.lock().await;
                                             match handle_websocket_message(message?, &mut *locked_write).await? {
                                                 MessageHandleResult::TextBreak(_) => {
-                                                    tracing::debug!("Received text in ping task, not yet implemented");
+                                                    tracing::info!("Received text in ping task, not yet implemented");
                                                     todo!()
                                                 }
                                                 MessageHandleResult::Continue => {}
@@ -127,28 +129,28 @@ impl DebugConnection {
                                         }
                                     }
                                 }
-                            });
+                            };
 
-                        tracing::debug!("Waiting for launch and ping tasks to complete");
+                        tracing::info!("Waiting for launch and ping tasks to complete");
                         try_join(
-                            async { anyhow::Ok(run_task.await??) },
-                            async { anyhow::Ok(ping_task.await??) }
+                            async { run_task.await },
+                            async { ping_task.await }
                         ).await?;
-                        tracing::debug!("Both tasks completed successfully");
+                        tracing::info!("Both tasks completed successfully");
                         anyhow::Ok(())
                     }
                     .await;
 
                 if let Err(err) = result {
-                    tracing::error!("Error in debug connection: {:#}\n Backtrace: {:#}", err, err.backtrace())
+                    tracing::error!("Error in debug connection: {:#}", err)
                 }
 
-                tracing::debug!("Sleeping before reconnection attempt");
+                tracing::info!("Sleeping before reconnection attempt");
                 tokio::time::sleep(RECONNECT_DELAY).await;
             }
         })
         .abort_handle();
-        tracing::debug!("DebugConnection initialized with abort handle");
+        tracing::info!("DebugConnection initialized with abort handle");
         DebugConnection { abort_handle }
     }
 }

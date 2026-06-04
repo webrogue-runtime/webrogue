@@ -17,7 +17,9 @@ webrtc = { workspace = true }
 winit = { workspace = true, default-features = false }
 async-trait = { workspace = true }
 serde_json = { workspace = true }
-webrogue-wasmtime = { workspace = true, features = ["jit"] }
+webrogue-wasmtime = { workspace = true, features = ["jit", "debug"] }
 tokio-util = { workspace = true, features = ["rt", "io"] }
 tokio-stream = { workspace = true }
 blake3 = { workspace = true }
+tracing = { workspace = true }
+futures = { workspace = true }

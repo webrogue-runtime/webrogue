@@ -16,6 +16,7 @@ use crate::{
 
 #[cfg(feature = "jit")]
 pub enum JitProfile {
+    #[cfg(feature = "debug")]
     Debug,
     FastExecution,
     FastCompilation,
@@ -115,6 +116,7 @@ impl Runtime {
             // TODO config.enable_incremental_compilation(cache_store)
         }
         match &self.jit_profile {
+            #[cfg(feature = "debug")]
             JitProfile::Debug => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::None)
@@ -125,21 +127,25 @@ impl Runtime {
             JitProfile::FastExecution => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
-                    .guest_debug(false)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
                     .compiler_inlining(Inlining::Intrinsics);
             }
             JitProfile::FastCompilation => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
-                    .guest_debug(false)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
                     .compiler_inlining(Inlining::Intrinsics);
             }
         };
 
-        let enable_epoch_interruption =
-            !self.is_panic_allowed || matches!(self.jit_profile, JitProfile::Debug);
+        let enable_epoch_interruption = !self.is_panic_allowed || {
+            #[cfg(feature = "debug")]
+            {
+                matches!(self.jit_profile, JitProfile::Debug)
+            }
+            #[cfg(not(feature = "debug"))]
+            false
+        };
         self.wasmtime_config
             .epoch_interruption(enable_epoch_interruption);
         let engine = wasmtime::Engine::new(&self.wasmtime_config)?;
@@ -241,6 +247,7 @@ impl Runtime {
     }
 }
 
+#[cfg(any(feature = "jit", feature = "aot"))]
 fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
     gfx_init_params: GFXInitParams<Builder>,
     handle: VFSHandle,
@@ -255,6 +262,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         preview1_ctx: None,
         wasi_threads_ctx: None,
         gfx: None,
+        wasm_thread: None,
     };
     let gfx_builder = gfx_init_params.builder;
     #[cfg(feature = "async")]
@@ -271,6 +279,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 
     {
         let main_thread = main_thread.clone();
+        store.data_mut().wasm_thread = Some(main_thread.clone());
         store.epoch_deadline_callback(move |_| main_thread.on_epoch_update_deadline());
         store.set_epoch_deadline(1);
     }
@@ -281,20 +290,11 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         async_func_runner.clone(),
     )));
 
-    #[cfg(feature = "async")]
-    if async_func_runner.is_some() {
-        bindings::not_sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
-            state.preview1_ctx.as_mut().unwrap()
-        })?;
-    } else {
-        bindings::sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
-            state.preview1_ctx.as_mut().unwrap()
-        })?;
-    }
-    #[cfg(not(feature = "async"))]
-    bindings::sync::add_wasi_snapshot_preview1_to_linker(&mut linker, |state| {
-        state.preview1_ctx.as_mut().unwrap()
-    })?;
+    add_wasip1_to_linker::<Builder>(
+        &mut linker,
+        #[cfg(feature = "async")]
+        &async_func_runner,
+    )?;
 
     #[cfg(not(target_os = "windows"))]
     unsafe {
@@ -321,7 +321,11 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         });
     }
 
-    bindings::add_webrogue_gfx_to_linker(&mut linker, |state| state.gfx.as_mut().unwrap())?;
+    bindings::add_webrogue_gfx_to_linker(
+        &mut linker,
+        |state| state.gfx.as_mut().unwrap(),
+        |state| state.wasm_thread.as_ref().unwrap().clone(),
+    )?;
     crate::wasi_threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
         host.wasi_threads_ctx.as_ref().unwrap()
     })?;
@@ -346,45 +350,48 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
 
                 let pre = linker.instantiate_pre(&module)?;
 
-                #[cfg(feature = "async")]
-                let call_result = if let Some(async_func_runner) = async_func_runner {
-                    async_func_runner(
-                        AsyncFuncRunnerParams {
-                            store,
-                            thread: main_thread.clone(),
-                        },
-                        Box::new(move |store| {
-                            use wasmtime::AsContextMut as _;
+                let call_result = (|| {
+                    #[cfg(feature = "async")]
+                    if let Some(async_func_runner) = async_func_runner {
+                        let main_thread = main_thread.clone();
+                        return async_func_runner(
+                            AsyncFuncRunnerParams {
+                                store,
+                                thread: main_thread.clone(),
+                            },
+                            Box::new(move |store| {
+                                use wasmtime::AsContextMut as _;
 
-                            Box::pin(async move {
-                                let instance =
-                                    pre.instantiate_async(store.as_context_mut()).await?;
-                                let func = instance
-                                    .get_typed_func::<(), ()>(store.as_context_mut(), "_start")?;
-                                store
-                                    .edit_breakpoints()
-                                    .as_mut()
-                                    .map(|edit_breakpoints| edit_breakpoints.single_step(true));
-                                func.call_async(store.as_context_mut(), ())
-                                    .await
-                                    .map_err(|err| anyhow::anyhow!(err))
-                            })
-                        }),
-                    )
-                    .map(|_| ())
-                } else {
+                                Box::pin(async move {
+                                    let instance =
+                                        pre.instantiate_async(store.as_context_mut()).await?;
+                                    let func = instance.get_typed_func::<(), ()>(
+                                        store.as_context_mut(),
+                                        "_start",
+                                    )?;
+                                    #[cfg(feature = "debug")]
+                                    store
+                                        .edit_breakpoints()
+                                        .as_mut()
+                                        .map(|edit_breakpoints| edit_breakpoints.single_step(true));
+                                    #[cfg(feature = "debug")]
+                                    main_thread.debug_init(store)?;
+                                    func.call_async(store.as_context_mut(), ())
+                                        .await
+                                        .map_err(|err| anyhow::anyhow!(err))
+                                })
+                            }),
+                        )
+                        .map(|_| ());
+                    };
                     let instance = pre.instantiate(&mut store)?;
                     let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
+                    #[cfg(feature = "debug")]
+                    main_thread.debug_init(&mut store)?;
                     func.call(&mut store, ())
                         .map_err(|err| anyhow::anyhow!(err))
-                };
-                #[cfg(not(feature = "async"))]
-                let call_result = {
-                    let instance = pre.instantiate(&mut store)?;
-                    let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
-                    func.call(&mut store, ())
-                        .map_err(|err| anyhow::anyhow!(err))
-                };
+                })();
+
                 let tid = main_thread.tid();
                 thread_registry.remove_thread(main_thread);
                 thread_registry.stop_all_threads(
@@ -407,13 +414,39 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
     Ok(())
 }
 
+fn add_wasip1_to_linker<Builder: webrogue_gfx::IBuilder>(
+    linker: &mut wasmtime::Linker<State<<Builder>::System>>,
+    #[cfg(feature = "async")] async_func_runner: &Option<
+        crate::AsyncFuncRunner<State<Builder::System>>,
+    >,
+) -> Result<(), anyhow::Error> {
+    #[cfg(feature = "async")]
+    if async_func_runner.is_some() {
+        bindings::not_sync::add_wasi_snapshot_preview1_to_linker(
+            linker,
+            |state| state.preview1_ctx.as_mut().unwrap(),
+            |state| state.wasm_thread.as_ref().unwrap().clone(),
+        )?;
+        return Ok(());
+    }
+    bindings::sync::add_wasi_snapshot_preview1_to_linker(
+        linker,
+        |state| state.preview1_ctx.as_mut().unwrap(),
+        |state| state.wasm_thread.as_ref().unwrap().clone(),
+    )?;
+    Ok(())
+}
+
 mod bindings {
+    use crate::WasmThread;
+
     wiggle::wasmtime_integration!({
         target: webrogue_gfx,
         witx: ["../gfx/witx/webrogue_gfx.witx"],
     });
 
     pub mod sync {
+        use super::WasmThread;
         wiggle::wasmtime_integration!({
             target: webrogue_wasi_common::snapshots::preview_1,
             witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
@@ -423,6 +456,7 @@ mod bindings {
     #[cfg(feature = "async")]
     // Not gonna fight compiler again
     pub mod not_sync {
+        use super::WasmThread;
         wiggle::wasmtime_integration!({
             target: webrogue_wasi_common::snapshots::preview_1,
             witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],

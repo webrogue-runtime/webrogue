@@ -47,6 +47,14 @@ impl LauncherConfigImpl {
     }
 }
 
+struct DropCallback<F: FnOnce()>(Option<F>);
+
+impl<F: FnOnce()> Drop for DropCallback<F> {
+    fn drop(&mut self) {
+        (self.0.take().unwrap())();
+    }
+}
+
 #[async_trait::async_trait]
 impl LauncherConfig for LauncherConfigImpl {
     fn storage_path(&self) -> PathBuf {
@@ -58,13 +66,16 @@ impl LauncherConfig for LauncherConfigImpl {
         sdp_offer: String,
         on_sdp_answer: Box<dyn FnOnce(String) + Send>,
     ) -> anyhow::Result<()> {
+        let drop_callback = DropCallback(Some(move || {
+            let old_indicator = self.launch_finish_indicator.lock().unwrap().replace(());
+            debug_assert!(
+                old_indicator.is_none(),
+                "Trying to set launch_finish_indicator, but it's already set"
+            );
+            self.event_loop_proxy.wake_up();
+        }));
         let result = self.hub_debuggee.launch(sdp_offer, on_sdp_answer).await;
-        let old_indicator = self.launch_finish_indicator.lock().unwrap().replace(());
-        debug_assert!(
-            old_indicator.is_none(),
-            "Trying to set launch_finish_indicator, but it's already set"
-        );
-        self.event_loop_proxy.wake_up();
+        drop(drop_callback);
         result
     }
 }
@@ -80,6 +91,8 @@ pub struct App {
     proxy_container: Arc<Mutex<Option<WinitProxy>>>,
     window_registry: WindowRegistry,
     launch_finish_indicator: Arc<Mutex<Option<()>>>,
+    #[cfg(target_os = "linux")]
+    is_gtk_initialized: bool,
 }
 
 impl App {
@@ -95,14 +108,26 @@ impl App {
             proxy_container: Arc::new(Mutex::new(None)),
             window_registry: WindowRegistry::new(),
             launch_finish_indicator: Arc::new(Mutex::new(None)),
+            #[cfg(target_os = "linux")]
+            is_gtk_initialized: false,
         }
+    }
+
+    #[cfg(target_os = "linux")]
+    fn initialize_gtk_if_needed(&mut self) {
+        if self.is_gtk_initialized {
+            return;
+        }
+        std::env::set_var("NO_AT_BRIDGE", "1");
+        gtk::init().unwrap();
+        self.is_gtk_initialized = true;
     }
 }
 
 impl ApplicationHandler for App {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         #[cfg(target_os = "linux")]
-        gtk::init().unwrap();
+        self.initialize_gtk_if_needed();
 
         let window = event_loop
             .create_window(WindowAttributes::default().with_title("Webrogue"))
@@ -132,6 +157,7 @@ impl ApplicationHandler for App {
             let should_quit = self.should_quit.clone();
 
             std::thread::Builder::new()
+                .name("gtk-ticker".to_string())
                 .spawn(move || {
                     use std::time::Duration;
 
@@ -147,7 +173,6 @@ impl ApplicationHandler for App {
     fn destroy_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
             proxy.destroy_surfaces(event_loop);
-            return;
         }
     }
 
@@ -157,46 +182,48 @@ impl ApplicationHandler for App {
         window_id: WindowId,
         event: WindowEvent,
     ) {
+        #[cfg(target_os = "linux")]
+        self.initialize_gtk_if_needed();
         if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
             proxy.window_event(&mut self.window_registry, window_id, event.clone());
-            return;
         }
-
-        match event {
-            // WindowEvent::ActivationTokenDone { serial, token } => todo!(),
-            WindowEvent::SurfaceResized(physical_size) => {
-                self.resize_webview(physical_size);
+        if Some(window_id) == self.window.as_ref().map(|window| window.id()) {
+            match event {
+                // WindowEvent::ActivationTokenDone { serial, token } => todo!(),
+                WindowEvent::SurfaceResized(physical_size) => {
+                    self.resize_webview(physical_size);
+                }
+                // WindowEvent::Moved(physical_position) => todo!(),
+                WindowEvent::CloseRequested => {
+                    #[cfg(target_os = "linux")]
+                    self.should_quit.store(true, Ordering::Relaxed);
+                    event_loop.exit();
+                }
+                // WindowEvent::Destroyed => todo!(),
+                // WindowEvent::DragEntered { paths, position } => todo!(),
+                // WindowEvent::DragMoved { position } => todo!(),
+                // WindowEvent::DragDropped { paths, position } => todo!(),
+                // WindowEvent::DragLeft { position } => todo!(),
+                // WindowEvent::Focused(_) => todo!(),
+                // WindowEvent::KeyboardInput { device_id, event, is_synthetic } => todo!(),
+                // WindowEvent::ModifiersChanged(modifiers) => todo!(),
+                // WindowEvent::Ime(ime) => todo!(),
+                // WindowEvent::PointerMoved { device_id, position, primary, source } => todo!(),
+                // WindowEvent::PointerEntered { device_id, position, primary, kind } => todo!(),
+                // WindowEvent::PointerLeft { device_id, position, primary, kind } => todo!(),
+                // WindowEvent::MouseWheel { device_id, delta, phase } => todo!(),
+                // WindowEvent::PointerButton { device_id, state, position, primary, button } => todo!(),
+                // WindowEvent::PinchGesture { device_id, delta, phase } => todo!(),
+                // WindowEvent::PanGesture { device_id, delta, phase } => todo!(),
+                // WindowEvent::DoubleTapGesture { device_id } => todo!(),
+                // WindowEvent::RotationGesture { device_id, delta, phase } => todo!(),
+                // WindowEvent::TouchpadPressure { device_id, pressure, stage } => todo!(),
+                // WindowEvent::ScaleFactorChanged { scale_factor, surface_size_writer } => todo!(),
+                // WindowEvent::ThemeChanged(theme) => todo!(),
+                // WindowEvent::Occluded(_) => todo!(),
+                // WindowEvent::RedrawRequested => todo!(),
+                _ => {}
             }
-            // WindowEvent::Moved(physical_position) => todo!(),
-            WindowEvent::CloseRequested => {
-                #[cfg(target_os = "linux")]
-                self.should_quit.store(true, Ordering::Relaxed);
-                event_loop.exit();
-            }
-            // WindowEvent::Destroyed => todo!(),
-            // WindowEvent::DragEntered { paths, position } => todo!(),
-            // WindowEvent::DragMoved { position } => todo!(),
-            // WindowEvent::DragDropped { paths, position } => todo!(),
-            // WindowEvent::DragLeft { position } => todo!(),
-            // WindowEvent::Focused(_) => todo!(),
-            // WindowEvent::KeyboardInput { device_id, event, is_synthetic } => todo!(),
-            // WindowEvent::ModifiersChanged(modifiers) => todo!(),
-            // WindowEvent::Ime(ime) => todo!(),
-            // WindowEvent::PointerMoved { device_id, position, primary, source } => todo!(),
-            // WindowEvent::PointerEntered { device_id, position, primary, kind } => todo!(),
-            // WindowEvent::PointerLeft { device_id, position, primary, kind } => todo!(),
-            // WindowEvent::MouseWheel { device_id, delta, phase } => todo!(),
-            // WindowEvent::PointerButton { device_id, state, position, primary, button } => todo!(),
-            // WindowEvent::PinchGesture { device_id, delta, phase } => todo!(),
-            // WindowEvent::PanGesture { device_id, delta, phase } => todo!(),
-            // WindowEvent::DoubleTapGesture { device_id } => todo!(),
-            // WindowEvent::RotationGesture { device_id, delta, phase } => todo!(),
-            // WindowEvent::TouchpadPressure { device_id, pressure, stage } => todo!(),
-            // WindowEvent::ScaleFactorChanged { scale_factor, surface_size_writer } => todo!(),
-            // WindowEvent::ThemeChanged(theme) => todo!(),
-            // WindowEvent::Occluded(_) => todo!(),
-            // WindowEvent::RedrawRequested => todo!(),
-            _ => {}
         }
 
         // todo!()
@@ -206,12 +233,16 @@ impl ApplicationHandler for App {
 
     fn about_to_wait(&mut self, _event_loop: &dyn ActiveEventLoop) {
         #[cfg(target_os = "linux")]
+        self.initialize_gtk_if_needed();
+        #[cfg(target_os = "linux")]
         while gtk::events_pending() {
             gtk::main_iteration_do(false);
         }
     }
 
     fn proxy_wake_up(&mut self, event_loop: &dyn ActiveEventLoop) {
+        #[cfg(target_os = "linux")]
+        self.initialize_gtk_if_needed();
         #[cfg(target_os = "linux")]
         gtk::main_iteration_do(false);
 

@@ -6,8 +6,7 @@ use std::{
     },
 };
 
-use gdbstub_arch::wasm::addr::WasmAddr;
-use webrogue_wasmtime::WasmThread;
+use webrogue_wasmtime::{Frame, WasmThread};
 
 use crate::communication::ThreadMessage;
 
@@ -39,9 +38,7 @@ impl ThreadInfo {
 
 pub struct StoppedThread {
     pub wasm_call_stack: Vec<Frame>,
-    pub sender: tokio::sync::mpsc::UnboundedSender<ThreadMessage>,
-    pub module_addresses: Vec<(u32, usize)>, // (id, size)
-    pub memory_addresses: Vec<(u32, usize)>, // (id, size)
+    pub sender: futures::channel::mpsc::UnboundedSender<ThreadMessage>,
     pub resume_type: Option<ResumeType>,
 }
 
@@ -52,13 +49,6 @@ impl StoppedThread {
             pc: frame.pc.as_raw(),
         })
     }
-}
-
-pub struct Frame {
-    pub pc: WasmAddr,
-    pub stack: Vec<wasmtime::Val>,
-    pub locals: Vec<wasmtime::Val>,
-    pub globals: Vec<wasmtime::Val>,
 }
 
 #[derive(Clone)]

@@ -85,7 +85,7 @@ fn visit_dir(
         let entry = entry?;
         let ty = entry.file_type()?;
         let name = entry.file_name().to_str().unwrap().to_owned();
-        let new_mapped_path = mapped_path.clone() + "/" + &name;
+        let new_mapped_path = (mapped_path.clone() + "/" + &name).replace("//", "/");
         let new_real_path = real_path.join(&name);
         if ty.is_file() {
             paths.insert(

@@ -1,10 +1,15 @@
+use std::collections::HashMap;
+
+pub const VERSION: u32 = 2;
+
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub enum DebugOutgoingMessage {
-    Request(Box<DebugRequest>),
-    Command(Box<DebugCommand>),
+pub struct DebugMessage {
+    pub version: u32,
+    pub fragment: Vec<u8>,
+    pub is_last_fragment: bool,
 }
 
-impl DebugOutgoingMessage {
+impl DebugMessage {
     pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         Ok(postcard::to_stdvec(self)?)
     }
@@ -15,12 +20,28 @@ impl DebugOutgoingMessage {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub enum DebugIncomingMessage {
+pub enum DebugOutgoingMessageBody {
+    Request(Box<DebugRequest>),
+    Command(Box<DebugCommand>),
+}
+
+impl DebugOutgoingMessageBody {
+    pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(postcard::to_stdvec(self)?)
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
+        Ok(postcard::from_bytes::<Self>(bytes)?)
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub enum DebugIncomingMessageBody {
     Response(DebugResponse),
     Event(DebugEvent),
 }
 
-impl DebugIncomingMessage {
+impl DebugIncomingMessageBody {
     pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         Ok(postcard::to_stdvec(self)?)
     }
@@ -45,15 +66,19 @@ pub struct DebugResponse {
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugRequestBody {
     ListFiles(ListFilesRequest),
+    Launch(LaunchRequest),
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugResponseBody {
     ListFiles(ListFilesResponse),
+    Launch(LaunchResponse),
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct ListFilesRequest {}
+pub struct ListFilesRequest {
+    pub file_paths_and_hashes: HashMap<String, String>,
+}
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct ListFilesResponse {
@@ -61,11 +86,15 @@ pub struct ListFilesResponse {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct LaunchRequest {}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct LaunchResponse {}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugCommand {
     SetConfig(SetConfigCommand),
-    AppendFileHash(AppendFileHashCommand),
     SetFileChunk(SetFileChunkCommand),
-    Launch(LaunchCommand),
     GDBData(GDBDataDebugCommand),
 }
 
@@ -75,20 +104,11 @@ pub struct SetConfigCommand {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct AppendFileHashCommand {
-    pub path: String,
-    pub hash: String,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct SetFileChunkCommand {
     pub path: String,
     pub pos: u64,
     pub data: Vec<u8>,
 }
-
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct LaunchCommand {}
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct GDBDataDebugCommand {

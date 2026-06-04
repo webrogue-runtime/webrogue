@@ -12,7 +12,7 @@ use tokio::{
 };
 use webrogue_gfx_winit::ProxiedWinitBuilder;
 use webrogue_hub_client::debug_messages::{
-    DebugCommand, DebugRequestBody, DebugResponseBody, ListFilesResponse,
+    DebugCommand, DebugRequestBody, DebugResponseBody, LaunchResponse, ListFilesResponse,
 };
 use webrogue_wrapp::IVFSBuilder as _;
 use webrtc::data_channel::RTCDataChannel;
@@ -23,7 +23,7 @@ pub struct DebugRunnerConfig {
     pub storage: PathBuf,
     pub gfx: std::sync::Mutex<Option<HubDebuggeeGFX>>,
     pub data_channel: std::sync::Mutex<Option<std::sync::Weak<RTCDataChannel>>>,
-    pub done_tx: Sender<anyhow::Result<()>>,
+    pub done_tx: futures::channel::mpsc::UnboundedSender<anyhow::Result<()>>,
 }
 
 impl DebugRunnerConfig {
@@ -31,17 +31,19 @@ impl DebugRunnerConfig {
         self.storage.clone()
     }
 
-    fn run(
+    async fn run(
         &self,
         mut vfs_builder: webrogue_wrapp::RealVFSBuilder,
         receiver: Box<dyn AsyncRead + std::marker::Send>,
+        abort_handle: Arc<std::sync::Mutex<Option<DropCallback>>>,
     ) -> anyhow::Result<()> {
         let storage = self.storage.clone();
         let gfx = self.gfx.lock().unwrap().take().unwrap();
         let data_channel = self.data_channel.lock().unwrap().take().unwrap();
         let done_tx = self.done_tx.clone();
+        let (launched_tx, mut launched_rx) = tokio::sync::mpsc::unbounded_channel();
 
-        tokio::task::spawn(async move {
+        let task = tokio::task::spawn(async move {
             let config = vfs_builder.config().unwrap().clone();
             let persistent_path = storage.join("persistent").join(&config.id);
             let mut runtime = webrogue_wasmtime::Runtime::new(&persistent_path);
@@ -49,80 +51,99 @@ impl DebugRunnerConfig {
             let handle = vfs_builder.into_vfs().unwrap();
             let sender = WebRTCPacketSender { data_channel };
 
-            let result = tokio_util::task::LocalPoolHandle::new(1)
+            tokio_util::task::LocalPoolHandle::new(1)
                 .spawn_pinned(async move || {
-                    match &gfx {
-                        HubDebuggeeGFX::ProxiedWinit(gfx) => {
-                            let (builder, proxy) =
-                                ProxiedWinitBuilder::new(gfx.event_loop_proxy.clone());
-                            *gfx.proxy_container.lock().unwrap() = Some(proxy);
-                            let gfx_init_params = webrogue_wasmtime::GFXInitParams::new(builder);
-                            webrogue_debugger::debug(
-                                tokio::runtime::Handle::current(),
-                                runtime,
-                                gfx_init_params,
-                                webrogue_debugger::premade_connection(
-                                    Box::new(sender),
-                                    Box::into_pin(receiver),
-                                ),
-                                false,
-                                move |runtime, gfx_init_params| {
-                                    runtime.run_jit(gfx_init_params, handle, &config)
-                                },
-                            )
-                            .await?;
+                    let result = async {
+                        match &gfx {
+                            HubDebuggeeGFX::ProxiedWinit(gfx) => {
+                                let (builder, proxy) =
+                                    ProxiedWinitBuilder::new(gfx.event_loop_proxy.clone());
+                                *gfx.proxy_container.lock().unwrap() = Some(proxy);
+                                let gfx_init_params =
+                                    webrogue_wasmtime::GFXInitParams::new(builder);
+                                webrogue_debugger::debug(
+                                    tokio::runtime::Handle::current(),
+                                    runtime,
+                                    gfx_init_params,
+                                    webrogue_debugger::premade_connection(
+                                        Box::new(sender),
+                                        Box::into_pin(receiver),
+                                        move || launched_tx.send(()).unwrap(),
+                                    ),
+                                    true,
+                                    move |runtime, gfx_init_params| {
+                                        runtime.run_jit(gfx_init_params, handle, &config)
+                                    },
+                                )
+                                .await?;
+                            }
+                            HubDebuggeeGFX::WinitSystem(gfx) => {
+                                let gfx_init_params = webrogue_wasmtime::GFXInitParams::new(
+                                    webrogue_gfx::ChildBuilder::new(
+                                        gfx.gfx_system.lock().unwrap().take().unwrap(),
+                                    ),
+                                );
+                                webrogue_debugger::debug(
+                                    tokio::runtime::Handle::current(),
+                                    runtime,
+                                    gfx_init_params,
+                                    webrogue_debugger::premade_connection(
+                                        Box::new(sender),
+                                        Box::into_pin(receiver),
+                                        move || launched_tx.send(()).unwrap(),
+                                    ),
+                                    true,
+                                    move |runtime, gfx_init_params| {
+                                        runtime.run_jit(gfx_init_params, handle, &config)
+                                    },
+                                )
+                                .await?;
+                            }
                         }
-                        HubDebuggeeGFX::WinitSystem(gfx) => {
-                            let gfx_init_params = webrogue_wasmtime::GFXInitParams::new(
-                                webrogue_gfx::ChildBuilder::new(
-                                    gfx.gfx_system.lock().unwrap().take().unwrap(),
-                                ),
-                            );
-                            webrogue_debugger::debug(
-                                tokio::runtime::Handle::current(),
-                                runtime,
-                                gfx_init_params,
-                                webrogue_debugger::premade_connection(
-                                    Box::new(sender),
-                                    Box::into_pin(receiver),
-                                ),
-                                false,
-                                move |runtime, gfx_init_params| {
-                                    runtime.run_jit(gfx_init_params, handle, &config)
-                                },
-                            )
-                            .await?;
-                        }
+                        anyhow::Ok(())
                     }
-
-                    anyhow::Ok(())
+                    .await;
+                    if let Err(err) = result {
+                        tracing::error!("Error: {:#}", err);
+                        println!("Error: {:#}", err)
+                    }
                 })
                 .await?;
 
-            done_tx.send(result).await?;
+            // Disconnected?
+            let _ = done_tx.unbounded_send(Ok(()));
 
             anyhow::Ok(())
         });
+
+        *abort_handle.lock().unwrap() = Some(DropCallback(Some(Box::new(move || task.abort()))));
+
+        let Some(_) = launched_rx.recv().await else {
+            anyhow::bail!("launched_tx dropped at DebugRunnerConfig::run");
+        };
+
         Ok(())
     }
 }
 
 pub struct DebugRunnerState {
     config: Arc<DebugRunnerConfig>,
-    file_hashes: Mutex<HashMap<String, String>>,
+    actual_file_hashes_cache: std::sync::Mutex<HashMap<String, String>>,
     currently_constructed_file: Mutex<Option<(String, File)>>,
     wrapp_config: Mutex<Option<webrogue_wrapp::config::Config>>,
     gdb_data_tx: Mutex<Option<Sender<Result<VecDeque<u8>, std::io::Error>>>>,
+    abort_handle: Arc<std::sync::Mutex<Option<DropCallback>>>,
 }
 
 impl DebugRunnerState {
     pub fn new(config: Arc<DebugRunnerConfig>) -> Self {
         Self {
             config,
-            file_hashes: Mutex::new(HashMap::new()),
+            actual_file_hashes_cache: std::sync::Mutex::new(HashMap::new()),
             currently_constructed_file: Mutex::new(None),
             wrapp_config: Mutex::new(None),
             gdb_data_tx: Mutex::new(None),
+            abort_handle: Arc::new(std::sync::Mutex::new(None)),
         }
     }
 
@@ -131,21 +152,42 @@ impl DebugRunnerState {
         request: DebugRequestBody,
     ) -> anyhow::Result<DebugResponseBody> {
         match request {
-            DebugRequestBody::ListFiles(_list_files_request) => {
+            DebugRequestBody::ListFiles(request) => {
                 drop(self.currently_constructed_file.lock().await.take());
-                let file_hashes = self.file_hashes.lock().await;
+                let file_hashes = request.file_paths_and_hashes;
                 self.visit_dir(&file_hashes, "")?;
 
                 let mut missing_files: Vec<String> = Vec::new();
                 for (rel_path, hash) in file_hashes.clone() {
                     if self.is_file_missing(&rel_path, &hash)? {
                         missing_files.push(rel_path);
+                        if missing_files.len() >= 16 {
+                            break;
+                        }
                     }
                 }
 
                 Ok(DebugResponseBody::ListFiles(ListFilesResponse {
                     missing_files,
                 }))
+            }
+
+            DebugRequestBody::Launch(_request) => {
+                let Some(config) = self.wrapp_config.lock().await.clone() else {
+                    anyhow::bail!("Launch command is executed before SetConfig");
+                };
+                let (tx, rx) = tokio::sync::mpsc::channel(1024);
+                let _ = self.gdb_data_tx.lock().await.insert(tx);
+                let rx = tokio_util::io::StreamReader::new(
+                    tokio_stream::wrappers::ReceiverStream::new(rx),
+                );
+
+                let vfs_builder =
+                    webrogue_wrapp::RealVFSBuilder::new(self.constructed_wrapp_dir()?, config)?;
+                self.config
+                    .run(vfs_builder, Box::new(rx), self.abort_handle.clone())
+                    .await?;
+                Ok(DebugResponseBody::Launch(LaunchResponse {}))
             }
         }
     }
@@ -185,14 +227,11 @@ impl DebugRunnerState {
 
     pub async fn process_command(&self, command: DebugCommand) -> anyhow::Result<()> {
         match command {
-            DebugCommand::AppendFileHash(command) => {
-                self.file_hashes
-                    .lock()
-                    .await
-                    .insert(command.path, command.hash);
-                Ok(())
-            }
             DebugCommand::SetFileChunk(command) => {
+                self.actual_file_hashes_cache
+                    .lock()
+                    .unwrap()
+                    .remove(&command.path);
                 let mut currently_constructed_file = self.currently_constructed_file.lock().await;
                 let old_file: Option<anyhow::Result<File>> = currently_constructed_file
                     .take()
@@ -223,24 +262,6 @@ impl DebugRunnerState {
                 *self.wrapp_config.lock().await = Some(config);
                 Ok(())
             }
-            DebugCommand::Launch(_launch_command) => {
-                let Some(config) = self.wrapp_config.lock().await.clone() else {
-                    anyhow::bail!("Launch command is executed before SetConfig");
-                };
-                let (tx, rx) = tokio::sync::mpsc::channel(1024);
-                let _ = self.gdb_data_tx.lock().await.insert(tx);
-                let rx = tokio_util::io::StreamReader::new(
-                    tokio_stream::wrappers::ReceiverStream::new(rx),
-                );
-
-                // let (gdb_data_tx, gdb_data_rx) = tokio::sync::mpsc::channel(1024);
-                //     gdb_data_tx,
-                //     gdb_reader: Some(),
-                let vfs_builder =
-                    webrogue_wrapp::RealVFSBuilder::new(self.constructed_wrapp_dir()?, config)?;
-                self.config.run(vfs_builder, Box::new(rx))?;
-                Ok(())
-            }
             DebugCommand::GDBData(command) => {
                 let gdb_data_tx = self.gdb_data_tx.lock().await;
                 let Some(gdb_data_tx) = gdb_data_tx.as_ref() else {
@@ -253,25 +274,29 @@ impl DebugRunnerState {
     }
 
     fn is_file_missing(&self, rel_path: &str, hash: &str) -> anyhow::Result<bool> {
-        let path = self.rel_to_absolute_path(rel_path)?;
-        if !path.exists() {
-            return Ok(true);
-        }
-        let Ok(file) = File::open(path) else {
-            return Ok(true);
+        let mut actual_file_hashes_cache = self.actual_file_hashes_cache.lock().unwrap();
+        let actual_hash = if let Some(actual_hash) = actual_file_hashes_cache.get(rel_path) {
+            actual_hash.clone()
+        } else {
+            let path = self.rel_to_absolute_path(rel_path)?;
+            if !path.exists() {
+                return Ok(true);
+            }
+            let Ok(file) = File::open(path) else {
+                return Ok(true);
+            };
+
+            let mut hasher = blake3::Hasher::new();
+
+            if hasher.update_reader(file).is_err() {
+                return Ok(true);
+            }
+
+            let actual_hash = hasher.finalize().to_hex().as_str().to_owned();
+            actual_file_hashes_cache.insert(rel_path.to_owned(), actual_hash.clone());
+            actual_hash
         };
-
-        let mut hasher = blake3::Hasher::new();
-
-        if hasher.update_reader(file).is_err() {
-            return Ok(true);
-        }
-
-        let actual_hash = hasher.finalize().to_hex().as_str().to_owned();
-        if actual_hash != hash {
-            return Ok(true);
-        }
-        Ok(false)
+        Ok(actual_hash != hash)
     }
 
     fn constructed_wrapp_dir(&self) -> anyhow::Result<PathBuf> {
@@ -292,5 +317,19 @@ impl DebugRunnerState {
         }
 
         Ok(path)
+    }
+}
+
+pub struct DropCallback(Option<Box<dyn FnOnce() + Send>>);
+
+impl DropCallback {
+    pub fn new(f: Box<dyn FnOnce() + Send>) -> Self {
+        Self(Some(f))
+    }
+}
+
+impl Drop for DropCallback {
+    fn drop(&mut self) {
+        (self.0.take().unwrap())();
     }
 }
