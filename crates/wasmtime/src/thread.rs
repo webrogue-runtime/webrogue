@@ -86,6 +86,7 @@ impl WasmThread {
         if let Some(engine) = self.0.engine.upgrade() {
             engine.increment_epoch();
         }
+        #[cfg(feature = "debug")]
         if let Some(call_state) = self.0.call_state.lock().unwrap().as_mut() {
             let _ = call_state
                 .trap_tx
