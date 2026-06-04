@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{future::Future, pin::Pin, sync::Arc};
 
 use bytes::Bytes;
 use futures_util::stream::TryStreamExt;
@@ -14,11 +14,32 @@ use wry::{
 
 use crate::{mailbox::Mailbox, server::make_router, LauncherConfig, MailboxInternal};
 
+type Task = Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send>;
+
 lazy_static! {
-    static ref RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
+    static ref RUNTIME: futures::channel::mpsc::UnboundedSender<Task> = make_runtime();
+}
+
+fn make_runtime() -> futures::channel::mpsc::UnboundedSender<Task> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::Builder::new()
+        .name("webview_ipc".to_string())
+        .spawn(move || {
+            let (task_tx, mut task_rx) = futures::channel::mpsc::unbounded::<Task>();
+            tx.send(task_tx).unwrap();
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .name("webview_ipc")
+                .build()
+                .unwrap()
+                .block_on(async {
+                    while let Ok(task) = task_rx.recv().await {
+                        tokio::spawn((task)());
+                    }
+                });
+        })
         .unwrap();
+    rx.recv().unwrap()
 }
 
 pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
@@ -27,7 +48,17 @@ pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
     launcher_config: Arc<dyn LauncherConfig>,
     mailbox_factory: impl FnOnce(MailboxInternal) -> MailboxImpl,
 ) -> Result<(WebView, MailboxImpl), wry::Error> {
-    let router = RUNTIME.block_on(async { make_router(launcher_config).await.unwrap() });
+    let (router_tx, router_rx) = std::sync::mpsc::channel();
+    RUNTIME
+        .unbounded_send(Box::new(move || {
+            Box::pin(async move {
+                router_tx
+                    .send(make_router(launcher_config).await.unwrap())
+                    .unwrap()
+            })
+        }))
+        .unwrap();
+    let router = router_rx.recv().unwrap();
     let router1 = router.clone();
 
     let mailbox_internal = MailboxInternal::new();
@@ -41,91 +72,98 @@ pub fn build_webview<W: HasWindowHandle, MailboxImpl: Mailbox + 'static>(
         .with_ipc_handler(move |request| {
             let mailbox_2 = mailbox_1.clone();
             let mut local_router = router1.clone();
-            RUNTIME.spawn(async move {
-                #[derive(serde::Serialize)]
-                struct IPCResponse {
-                    id: u64,
-                    status: u64,
-                    body: Option<String>,
-                }
+            RUNTIME
+                .unbounded_send(Box::new(move || {
+                    Box::pin(async move {
+                        #[derive(serde::Serialize)]
+                        struct IPCResponse {
+                            id: u64,
+                            status: u64,
+                            body: Option<String>,
+                        }
 
-                #[derive(serde::Deserialize)]
-                struct IPCRequest {
-                    id: u64,
-                    path: String,
-                    method: String,
-                    body: Option<String>,
-                    headers: Vec<(String, String)>,
-                }
-                let Ok(request) = serde_json::from_str::<IPCRequest>(&request.into_body()) else {
-                    return;
-                };
+                        #[derive(serde::Deserialize)]
+                        struct IPCRequest {
+                            id: u64,
+                            path: String,
+                            method: String,
+                            body: Option<String>,
+                            headers: Vec<(String, String)>,
+                        }
+                        let Ok(request) = serde_json::from_str::<IPCRequest>(&request.into_body())
+                        else {
+                            return;
+                        };
 
-                let response: anyhow::Result<IPCResponse> = async {
-                    let body = request
-                        .body
-                        .unwrap_or_else(|| "".to_string())
-                        .as_bytes()
-                        .to_vec();
-                    let method = Method::from_bytes(request.method.as_bytes())?;
-                    let uri = Uri::builder()
-                        .scheme("wrlauncher")
-                        .authority("api")
-                        .path_and_query(request.path)
-                        .build()?;
+                        let response: anyhow::Result<IPCResponse> = async {
+                            let body = request
+                                .body
+                                .unwrap_or_else(|| "".to_string())
+                                .as_bytes()
+                                .to_vec();
+                            let method = Method::from_bytes(request.method.as_bytes())?;
+                            let uri = Uri::builder()
+                                .scheme("wrlauncher")
+                                .authority("api")
+                                .path_and_query(request.path)
+                                .build()?;
 
-                    let stream: tokio_stream::Iter<
-                        std::vec::IntoIter<Result<Bytes, anyhow::Error>>,
-                    > = tokio_stream::iter(vec![Ok(Bytes::from(body))]);
-                    let mut mapped_request_builder = Request::builder().method(method).uri(uri);
-                    for (header_name, header_value) in request.headers {
-                        mapped_request_builder =
-                            mapped_request_builder.header(header_name, header_value);
-                    }
-                    mapped_request_builder = mapped_request_builder.header("Host", "api");
-                    let mapped_request = mapped_request_builder
-                        .body(axum::body::Body::from_stream(stream))
-                        .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;
+                            let stream: tokio_stream::Iter<
+                                std::vec::IntoIter<Result<Bytes, anyhow::Error>>,
+                            > = tokio_stream::iter(vec![Ok(Bytes::from(body))]);
+                            let mut mapped_request_builder =
+                                Request::builder().method(method).uri(uri);
+                            for (header_name, header_value) in request.headers {
+                                mapped_request_builder =
+                                    mapped_request_builder.header(header_name, header_value);
+                            }
+                            mapped_request_builder = mapped_request_builder.header("Host", "api");
+                            let mapped_request = mapped_request_builder
+                                .body(axum::body::Body::from_stream(stream))
+                                .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;
 
-                    let response = local_router
-                        .call(mapped_request)
-                        .await
-                        .map_err(|e| anyhow::anyhow!("Router call failed: {}", e))?;
-                    let status = response.status();
-                    let body_stream = response.into_body().into_data_stream();
-                    let body_vec: Vec<u8> = body_stream
-                        .map(|result| {
-                            result.map_err(|e| anyhow::anyhow!("Body stream error: {}", e))
+                            let response = local_router
+                                .call(mapped_request)
+                                .await
+                                .map_err(|e| anyhow::anyhow!("Router call failed: {}", e))?;
+                            let status = response.status();
+                            let body_stream = response.into_body().into_data_stream();
+                            let body_vec: Vec<u8> = body_stream
+                                .map(|result| {
+                                    result.map_err(|e| anyhow::anyhow!("Body stream error: {}", e))
+                                })
+                                .try_collect::<Vec<bytes::Bytes>>()
+                                .await?
+                                .into_iter()
+                                .flat_map(|bytes| bytes.into_iter())
+                                .collect();
+
+                            Ok(IPCResponse {
+                                id: request.id,
+                                status: status.as_u16() as u64,
+                                body: Some(String::from_utf8(body_vec)?),
+                            })
+                        }
+                        .await;
+
+                        let response = match response {
+                            Ok(response) => response,
+                            Err(e) => IPCResponse {
+                                id: request.id,
+                                status: 500,
+                                body: Some(e.to_string()),
+                            },
+                        };
+                        let Ok(response) = serde_json::to_string(&response) else {
+                            return;
+                        };
+                        crate::mailbox::execute(mailbox_2.1, mailbox_2.0, |webview| {
+                            let _ = webview
+                                .evaluate_script(&format!("onWRLauncherMessage({})", response));
                         })
-                        .try_collect::<Vec<bytes::Bytes>>()
-                        .await?
-                        .into_iter()
-                        .flat_map(|bytes| bytes.into_iter())
-                        .collect();
-
-                    Ok(IPCResponse {
-                        id: request.id,
-                        status: status.as_u16() as u64,
-                        body: Some(String::from_utf8(body_vec)?),
                     })
-                }
-                .await;
-
-                let response = match response {
-                    Ok(response) => response,
-                    Err(e) => IPCResponse {
-                        id: request.id,
-                        status: 500,
-                        body: Some(e.to_string()),
-                    },
-                };
-                let Ok(response) = serde_json::to_string(&response) else {
-                    return;
-                };
-                crate::mailbox::execute(mailbox_2.1, mailbox_2.0, |webview| {
-                    let _ = webview.evaluate_script(&format!("onWRLauncherMessage({})", response));
-                })
-            });
+                }))
+                .unwrap();
         });
 
     builder = builder.with_initialization_script(format!(

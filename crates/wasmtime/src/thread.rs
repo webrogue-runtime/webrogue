@@ -86,6 +86,11 @@ impl WasmThread {
         if let Some(engine) = self.0.engine.upgrade() {
             engine.increment_epoch();
         }
+        if let Some(call_state) = self.0.call_state.lock().unwrap().as_mut() {
+            let _ = call_state
+                .trap_tx
+                .unbounded_send(wasmtime::format_err!("WASM thread terminated by host"));
+        };
     }
 
     pub async fn wrap_async_fn<'a, T, R>(
@@ -101,39 +106,54 @@ impl WasmThread {
         }
         #[cfg(feature = "debug")]
         {
+            use futures::future::{select, Either};
+
             self.dump_debug_frame(&mut caller.as_context_mut())?;
 
             let (task_tx, mut task_rx) = futures::channel::mpsc::unbounded();
+            let (trap_tx, mut trap_rx) = futures::channel::mpsc::unbounded();
             let call_state = CallState {
                 task_tx: task_tx.clone(),
+                trap_tx: trap_tx.clone(),
                 // post_call_callbacks: Vec::new(),
             };
             *self.0.call_state.lock().unwrap() = Some(call_state);
 
             let caller_ptr = caller as *mut _ as usize;
 
-            let result: wasmtime::Result<(R, ())> = try_join(
-                async {
-                    let caller =
-                        unsafe { &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>) };
-                    let result = f(caller).await;
-                    let _ = task_tx.unbounded_send(None);
-                    wasmtime::Result::Ok(result)
-                },
-                async {
-                    while let Some(task) = task_rx.recv().await? {
-                        task.await?;
-                    }
-                    wasmtime::Result::Ok(())
-                },
+            let select_result = select(
+                Box::pin(try_join(
+                    async {
+                        let caller = unsafe {
+                            &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>)
+                        };
+                        let result = f(caller).await;
+                        let _ = task_tx.unbounded_send(None);
+                        wasmtime::Result::Ok(result)
+                    },
+                    async {
+                        while let Some(task) = task_rx.recv().await? {
+                            task.await?;
+                        }
+                        wasmtime::Result::Ok(())
+                    },
+                )),
+                trap_rx.recv(),
             )
             .await;
-            *self.0.call_state.lock().unwrap() = None;
-            let caller =
-                unsafe { &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>) };
-            self.apply_breakpoints_patch(caller.as_context_mut())?;
-            self.apply_single_stepping_patch(caller.as_context_mut())?;
-            Ok(result?.0)
+
+            match select_result {
+                Either::Left((try_join_result, _)) => {
+                    let try_join_result: wasmtime::Result<(R, ())> = try_join_result;
+                    *self.0.call_state.lock().unwrap() = None;
+                    let caller =
+                        unsafe { &mut *(caller_ptr as *mut wiggle::wasmtime_crate::Caller<'_, T>) };
+                    self.apply_breakpoints_patch(caller.as_context_mut())?;
+                    self.apply_single_stepping_patch(caller.as_context_mut())?;
+                    Ok(try_join_result?.0)
+                }
+                Either::Right((recv_result, _)) => Err(recv_result.unwrap()),
+            }
         }
     }
 
@@ -498,6 +518,7 @@ pub struct CallState {
     task_tx: futures::channel::mpsc::UnboundedSender<
         Option<Pin<Box<dyn Future<Output = wasmtime::Result<()>> + Send>>>,
     >,
+    trap_tx: futures::channel::mpsc::UnboundedSender<wasmtime::Error>,
     // post_call_callbacks: Vec<Box<dyn FnOnce()>>,
 }
 

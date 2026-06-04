@@ -23,7 +23,7 @@ pub struct DebugRunnerConfig {
     pub storage: PathBuf,
     pub gfx: std::sync::Mutex<Option<HubDebuggeeGFX>>,
     pub data_channel: std::sync::Mutex<Option<std::sync::Weak<RTCDataChannel>>>,
-    pub done_tx: Sender<anyhow::Result<()>>,
+    pub done_tx: futures::channel::mpsc::UnboundedSender<anyhow::Result<()>>,
 }
 
 impl DebugRunnerConfig {
@@ -35,6 +35,7 @@ impl DebugRunnerConfig {
         &self,
         mut vfs_builder: webrogue_wrapp::RealVFSBuilder,
         receiver: Box<dyn AsyncRead + std::marker::Send>,
+        abort_handle: Arc<std::sync::Mutex<Option<DropCallback>>>,
     ) -> anyhow::Result<()> {
         let storage = self.storage.clone();
         let gfx = self.gfx.lock().unwrap().take().unwrap();
@@ -42,7 +43,7 @@ impl DebugRunnerConfig {
         let done_tx = self.done_tx.clone();
         let (launched_tx, mut launched_rx) = tokio::sync::mpsc::unbounded_channel();
 
-        tokio::task::spawn(async move {
+        let task = tokio::task::spawn(async move {
             let config = vfs_builder.config().unwrap().clone();
             let persistent_path = storage.join("persistent").join(&config.id);
             let mut runtime = webrogue_wasmtime::Runtime::new(&persistent_path);
@@ -109,10 +110,13 @@ impl DebugRunnerConfig {
                 })
                 .await?;
 
-            done_tx.send(Ok(())).await?;
+            // Disconnected?
+            let _ = done_tx.unbounded_send(Ok(()));
 
             anyhow::Ok(())
         });
+
+        *abort_handle.lock().unwrap() = Some(DropCallback(Some(Box::new(move || task.abort()))));
 
         let Some(_) = launched_rx.recv().await else {
             anyhow::bail!("launched_tx dropped at DebugRunnerConfig::run");
@@ -128,6 +132,7 @@ pub struct DebugRunnerState {
     currently_constructed_file: Mutex<Option<(String, File)>>,
     wrapp_config: Mutex<Option<webrogue_wrapp::config::Config>>,
     gdb_data_tx: Mutex<Option<Sender<Result<VecDeque<u8>, std::io::Error>>>>,
+    abort_handle: Arc<std::sync::Mutex<Option<DropCallback>>>,
 }
 
 impl DebugRunnerState {
@@ -138,6 +143,7 @@ impl DebugRunnerState {
             currently_constructed_file: Mutex::new(None),
             wrapp_config: Mutex::new(None),
             gdb_data_tx: Mutex::new(None),
+            abort_handle: Arc::new(std::sync::Mutex::new(None)),
         }
     }
 
@@ -178,7 +184,9 @@ impl DebugRunnerState {
 
                 let vfs_builder =
                     webrogue_wrapp::RealVFSBuilder::new(self.constructed_wrapp_dir()?, config)?;
-                self.config.run(vfs_builder, Box::new(rx)).await?;
+                self.config
+                    .run(vfs_builder, Box::new(rx), self.abort_handle.clone())
+                    .await?;
                 Ok(DebugResponseBody::Launch(LaunchResponse {}))
             }
         }
@@ -309,5 +317,19 @@ impl DebugRunnerState {
         }
 
         Ok(path)
+    }
+}
+
+pub struct DropCallback(Option<Box<dyn FnOnce() + Send>>);
+
+impl DropCallback {
+    pub fn new(f: Box<dyn FnOnce() + Send>) -> Self {
+        Self(Some(f))
+    }
+}
+
+impl Drop for DropCallback {
+    fn drop(&mut self) {
+        (self.0.take().unwrap())();
     }
 }

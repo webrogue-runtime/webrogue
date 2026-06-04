@@ -23,7 +23,7 @@ use webrtc::{
 };
 use winit::event_loop::EventLoopProxy;
 
-use crate::debug_runner_state::{DebugRunnerConfig, DebugRunnerState};
+use crate::debug_runner_state::{DebugRunnerConfig, DebugRunnerState, DropCallback};
 
 pub struct HubDebuggee {
     storage_path: PathBuf,
@@ -76,7 +76,7 @@ impl HubDebuggee {
             Arc::new(api.new_peer_connection(config).await?)
         };
 
-        let (done_tx, mut done_rx) = tokio::sync::mpsc::channel::<anyhow::Result<()>>(1);
+        let (done_tx, mut done_rx) = futures::channel::mpsc::unbounded::<anyhow::Result<()>>();
 
         let done_tx2 = done_tx.clone();
         peer_connection.on_peer_connection_state_change(Box::new(move |state| {
@@ -90,7 +90,7 @@ impl HubDebuggee {
                     RTCPeerConnectionState::Disconnected
                     | RTCPeerConnectionState::Failed
                     | RTCPeerConnectionState::Closed => {
-                        let _ = done_tx.send(Ok(())).await;
+                        let _ = done_tx.unbounded_send(Ok(()));
                     }
                 }
             })
@@ -107,6 +107,16 @@ impl HubDebuggee {
 
         let done_tx2 = done_tx.clone();
         let message_receiver = Arc::new(std::sync::Mutex::new(DebugMessageReceiver::new()));
+
+        let dp = {
+            let rt = tokio::runtime::Handle::current();
+            let peer_connection = peer_connection.clone();
+            DropCallback::new(Box::new(move || {
+                rt.spawn(async move {
+                    peer_connection.close().await.unwrap();
+                });
+            }))
+        };
 
         peer_connection.on_data_channel(Box::new(move |data_channel| {
             let done_tx = done_tx2.clone();
@@ -173,14 +183,14 @@ impl HubDebuggee {
                 data_channel.on_close(Box::new(move || {
                     let done_tx2 = done_tx2.clone();
                     Box::pin(async move {
-                        let _ = done_tx2.send(Ok(())).await;
+                        let _ = done_tx2.unbounded_send(Ok(()));
                     })
                 }));
 
                 data_channel.on_error(Box::new(move |_error| {
                     let done_tx = done_tx.clone();
                     Box::pin(async move {
-                        let _ = done_tx.send(Ok(())).await;
+                        let _ = done_tx.unbounded_send(Ok(()));
                     })
                 }));
             })
@@ -206,10 +216,12 @@ impl HubDebuggee {
 
         on_sdp_answer(sdp_answer);
 
-        done_rx.recv().await;
+        let done_result = done_rx.recv().await;
 
         let _ = tokio::time::timeout(std::time::Duration::from_secs(1), peer_connection.close());
+        done_result??;
 
+        drop(dp);
         Ok(())
     }
 }

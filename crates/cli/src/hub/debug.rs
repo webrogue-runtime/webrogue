@@ -60,12 +60,6 @@ pub async fn debug(
                 Message::Frame(_frame) => todo!(),
             };
         };
-        ws_stream
-            .close(Some(CloseFrame {
-                code: CloseCode::Normal,
-                reason: "Ok".into(),
-            }))
-            .await?;
         let response = serde_json::from_str::<DebugDeviceWsEvent>(response.as_str())?;
         let sdp_answer = response.sdp_answer;
         connection.set_answer(&sdp_answer).await?;
@@ -114,8 +108,29 @@ pub async fn debug(
                     };
                     return result;
                 }
+                packet = ws_stream.next() => {
+                    let Some(packet) = packet else {
+                        break 'tcp_loop;
+                    };
+                    let packet = packet?;
+                    match packet {
+                        Message::Text(_utf8_bytes) => todo!(),
+                        Message::Binary(_bytes) => todo!(),
+                        Message::Ping(bytes) => ws_stream.send(Message::Pong(bytes)).await?,
+                        Message::Pong(bytes) => {},
+                        Message::Close(close_frame) => break 'tcp_loop,
+                        Message::Frame(frame) => unreachable!(),
+                    };
+                }
             };
         }
+
+        ws_stream
+            .close(Some(CloseFrame {
+                code: CloseCode::Normal,
+                reason: "Ok".into(),
+            }))
+            .await?;
         anyhow::Ok(())
     }
     .await;
