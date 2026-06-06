@@ -2,9 +2,8 @@
 set -ex
 
 REPO_ROOT="$(dirname $(dirname $(realpath $0)))"
-ARCHES="x86_64 aarch64"
-# ARCHES="aarch64"
-# ARCHES=$(uname -m)
+# ARCHES="x86_64 aarch64"
+ARCHES=$(uname -m)
 
 cd "$REPO_ROOT"
 WRAPP_PATH=webrogue-sdk/examples/empty/empty.wrapp
@@ -12,9 +11,9 @@ WRAPP_PATH=webrogue-sdk/examples/empty/empty.wrapp
 if test -f $WRAPP_PATH
 then
     cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.gnu.x86_64.o x86_64-linux-gnu
-    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.musl.x86_64.o x86_64-linux-musl
-    
     cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.gnu.aarch64.o aarch64-linux-gnu
+    
+    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.musl.x86_64.o x86_64-linux-musl
     cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.musl.aarch64.o aarch64-linux-musl
 fi
 

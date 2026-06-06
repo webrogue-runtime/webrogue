@@ -21,8 +21,13 @@ jobs:
 
     - uses: actions/download-artifact@v4
       with: 
-        name: Artifacts-Linux
-        path: aot_artifacts
+        name: Artifacts-Linux-x86_64
+        path: aot_artifacts/x86_64
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: Artifacts-Linux-aarch64
+        path: aot_artifacts/aarch64
 
     - uses: actions/download-artifact@v4
       with: 
@@ -41,13 +46,18 @@ jobs:
 
     - name: Archive artifacts
       run: |
-        cd aot_artifacts && zip -r ../aot_artifacts.zip android_gradle x86_64-linux-gnu x86_64-windows-msvc && cd ..
-        cd aot_artifacts && zip -r ../aot_artifacts_macos.zip apple_xcode android_gradle x86_64-linux-gnu x86_64-windows-msvc && cd ..
+        cd aot_artifacts && zip -r ../aot_artifacts.zip x86_64/linux-gnu aarch64/linux-gnu x86_64-windows-msvc && cd ..
+        cd aot_artifacts && zip -r ../aot_artifacts_macos.zip apple_xcode x86_64/linux-gnu aarch64/linux-gnu x86_64-windows-msvc && cd ..
 
     - uses: actions/download-artifact@v4
       with: 
         name: CLI-linux-x86_64-glibc-raw
         path: webrogue_linux_x86_64_glibc_raw
+
+    - uses: actions/download-artifact@v4
+      with: 
+        name: CLI-linux-aarch64-glibc-raw
+        path: webrogue_linux_aarch64_glibc_raw
 
     - uses: actions/download-artifact@v4
       with: 
@@ -70,6 +80,11 @@ jobs:
         python3 append_artifacts.py webrogue_linux_x86_64_glibc_raw/webrogue aot_artifacts.zip webrogue-cli-linux-x86_64/webrogue
         chmod +x webrogue-cli-linux-x86_64/webrogue
         tar czf webrogue-cli-linux-x86_64.tar.gz webrogue-cli-linux-x86_64/
+
+        mkdir webrogue-cli-linux-aarch64
+        python3 append_artifacts.py webrogue_linux_aarch64_glibc_raw/webrogue aot_artifacts.zip webrogue-cli-linux-aarch64/webrogue
+        chmod +x webrogue-cli-linux-aarch64/webrogue
+        tar czf webrogue-cli-linux-aarch64.tar.gz webrogue-cli-linux-aarch64/
 
         mkdir webrogue-cli-windows-x86_64
         python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-x86_64/webrogue.exe
@@ -96,6 +111,7 @@ jobs:
       with:
         artifacts: |
           webrogue-cli-linux-x86_64.tar.gz
+          webrogue-cli-linux-aarch64.tar.gz
           webrogue-cli-windows-x86_64.zip
           webrogue-cli-macos-arm64.tar.gz
           webrogue-cli-macos-x86_64.tar.gz
@@ -111,6 +127,14 @@ jobs:
         if-no-files-found: error
         path: |
           webrogue-cli-linux-x86_64.tar.gz
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: CLI-linux-aarch64-glibc
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          webrogue-cli-linux-aarch64.tar.gz
 
     - uses: actions/upload-artifact@v4
       with:
