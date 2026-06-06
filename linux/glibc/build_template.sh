@@ -2,7 +2,7 @@ cd $(dirname $(dirname $0))
 set -ex
 
 OUT_DIR="../aot_artifacts/$ARCH-linux-gnu"
-# rm -rf "$OUT_DIR"
+rm -rf "$OUT_DIR"
 
 export NUM_JOBS=$(nproc)
 
