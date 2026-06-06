@@ -40,14 +40,13 @@ do
         sh linux/glibc/build_template.sh
 done
 
-# MUSL builds are temporary disabled
-# cd "$REPO_ROOT/linux/alpine"
-# IMAGE_NAME=webrogue/webrogue-linux-musl-builder
-# docker build --tag $IMAGE_NAME .
-# docker run \
-#     --rm \
-#     --user "$(id -u)":"$(id -g)" \
-#     -v "$REPO_ROOT":/usr/src/myapp \
-#     -w /usr/src/myapp \
-#     $IMAGE_NAME \
-#     sh linux/alpine/build_template.sh
+cd "$REPO_ROOT/linux/musl"
+IMAGE_NAME=webrogue/webrogue-linux-musl-builder
+docker build --tag $IMAGE_NAME .
+docker run \
+    --rm \
+    --user "$(id -u)":"$(id -g)" \
+    -v "$REPO_ROOT":/usr/src/myapp \
+    -w /usr/src/myapp \
+    $IMAGE_NAME \
+    sh linux/musl/build_template.sh
