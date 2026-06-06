@@ -1,41 +1,65 @@
 cd $(dirname $(dirname $0))
 set -ex
 
-OUT_DIR="../aot_artifacts/x86_64-linux-gnu"
+OUT_DIR="../aot_artifacts/$ARCH-linux-gnu"
 rm -rf "$OUT_DIR"
 
 export NUM_JOBS=$(nproc)
 
-CARGO_FLAGS="--target-dir=./target --target=x86_64-unknown-linux-gnu --profile aot"
+TARGET_DIR=./glibc/$ARCH/target
+CARGO_FLAGS="--target-dir=$TARGET_DIR --target=$ARCH-unknown-linux-gnu --profile aot"
 mkdir -p "$OUT_DIR"
-# rustup target add x86_64-unknown-linux-gnu
+# rustup target add $ARCH-unknown-linux-gnu
 
 
 cargo build --manifest-path=../crates/aot-lib/Cargo.toml $CARGO_FLAGS
-cp target/x86_64-unknown-linux-gnu/aot/libwebrogue_aot_lib.a "$OUT_DIR"
+cp $TARGET_DIR/$ARCH-unknown-linux-gnu/aot/libwebrogue_aot_lib.a "$OUT_DIR"
 
 for GFXSTREAM_LIB_TYPE in stub impl
 do
     cargo build --manifest-path=../crates/gfxstream-lib/Cargo.toml --features=$GFXSTREAM_LIB_TYPE $CARGO_FLAGS
-    cp target/x86_64-unknown-linux-gnu/aot/libwebrogue_gfxstream_lib.rlib  "$OUT_DIR/libwebrogue_gfxstream_lib_$GFXSTREAM_LIB_TYPE.a"
+    cp $TARGET_DIR/$ARCH-unknown-linux-gnu/aot/libwebrogue_gfxstream_lib.rlib  "$OUT_DIR/libwebrogue_gfxstream_lib_$GFXSTREAM_LIB_TYPE.a"
 done
 
-clang main.c -nostdlib -c -o main.o
+clang --gcc-install-dir=/opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION main.c -nostdlib -c -o main.o
 
 
 rm -f process_dump*
 # strace -s 1000 -o process_dump -ff \
-# clang++ \
-#     main.o \
-#     ../aot_artifacts/x86_64-linux-gnu/libwebrogue_aot_lib.a \
-#     empty.gnu.o \
-#     -static-libstdc++ \
-#     -lm \
-#     -lpthread \
-#     -ldl \
-#     -o a.out \
-#     -fuse-ld=lld \
-#     -Wl,--threads=1
+clang++ \
+    -v \
+    --gcc-install-dir=/opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION \
+    main.o \
+    $OUT_DIR/libwebrogue_aot_lib.a \
+    $OUT_DIR/libwebrogue_gfxstream_lib_impl.a \
+    empty.gnu.$ARCH.o \
+    -static-libstdc++ \
+    -lm \
+    -lpthread \
+    -ldl \
+    -o a.out \
+    -fuse-ld=lld \
+    -Wl,--threads=1 \
+    >glibc/$ARCH/clang.out.log \
+    2>glibc/$ARCH/clang.err.log
+
+    # -Wl,--reproduce=reproduce.tar \
+
+case "$ARCH" in
+    x86_64)
+        INTERPRETER_PATH=/lib64/ld-linux-x86_64.so.2
+        LLD_ARCH_ARGS="-m elf_x86_64"
+        ;;
+    aarch64)
+        INTERPRETER_PATH=/lib/ld-linux-aarch64.so.1
+        cp $INTERPRETER_PATH "$OUT_DIR"
+        LLD_ARCH_ARGS="-EL -m aarch64linux $OUT_DIR/ld-linux-aarch64.so.1"
+        ;;
+    *) 
+        echo "Unsupported ARCH: $ARCH" >&2
+        exit 1
+        ;;
+esac
 
 llvm-ar q \
     "$OUT_DIR/libwebrogue_aot_lib.a" \
@@ -44,27 +68,25 @@ llvm-ar q \
 
 llvm-ar qLs \
     "$OUT_DIR/libwebrogue_aot_lib.a" \
-    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/x86_64-redhat-linux/$GCC_VERSION/libstdc++.a \
-    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/x86_64-redhat-linux/$GCC_VERSION/libstdc++_nonshared.a
+    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/libstdc++.a \
+    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/libstdc++_nonshared.a
 
 cp \
     /lib/../lib64/crt1.o \
     /lib/../lib64/crti.o \
-    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/x86_64-redhat-linux/$GCC_VERSION/crtbegin.o \
+    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/crtbegin.o \
     /lib64/libm.so.6 \
     /lib/../lib64/libpthread.so \
     /lib/../lib64/libdl.so \
     /lib64/libgcc_s.so.1 \
-    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/x86_64-redhat-linux/$GCC_VERSION/libgcc.a \
+    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/libgcc.a \
     /lib64/libc.so.6 \
     /usr/lib64/libc_nonshared.a \
-    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/x86_64-redhat-linux/$GCC_VERSION/crtend.o \
+    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/crtend.o \
     /lib/../lib64/crtn.o \
     "$OUT_DIR"
 
 strip --strip-debug $OUT_DIR/libwebrogue_aot_lib.a
-
-rm main.o
 
 # ld.lld \
 #     -pie \
@@ -73,11 +95,11 @@ rm main.o
 #     --build-id \
 #     --eh-frame-hdr \
 #     -m \
-#     elf_x86_64 \
+#     elf_$ARCH \
 #     --strip-all \
 #     --gc-sections \
 #     -dynamic-linker \
-#     /lib64/ld-linux-x86-64.so.2 \
+#     /lib64/ld-linux-$ARCH.so.2 \
 #     -z \
 #     relro \
 #     -o \
@@ -107,15 +129,15 @@ do
         --hash-style=gnu \
         --build-id \
         --eh-frame-hdr \
-        -m elf_x86_64 \
-        -dynamic-linker /lib64/ld-linux-x86-64.so.2 \
+        -dynamic-linker $INTERPRETER_PATH \
         -o aot \
+        $LLD_ARCH_ARGS \
         "$OUT_DIR/crt1.o" \
         "$OUT_DIR/crti.o" \
         "$OUT_DIR/crtbegin.o" \
         "$OUT_DIR/libwebrogue_aot_lib.a" \
         "$OUT_DIR/libwebrogue_gfxstream_lib_$GFXSTREAM_LIB_TYPE.a" \
-        "empty.gnu.o" \
+        "empty.gnu.$ARCH.o" \
         "$OUT_DIR/libm.so.6" \
         "$OUT_DIR/libpthread.so" \
         "$OUT_DIR/libdl.so" \
@@ -128,3 +150,5 @@ do
 
     rm aot
 done
+
+rm main.o

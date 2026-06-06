@@ -5,7 +5,14 @@ on:
 
 jobs:
   linux_artifacts:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+        - artifact: Artifacts-Linux-x86_64
+          runner: ubuntu-24.04
+        - artifact: Artifacts-Linux-aarch64
+          runner: ubuntu-24.04-arm
 
     steps:
     - uses: actions/checkout@v4
@@ -21,7 +28,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: Artifacts-Linux
+        name: ${{ matrix.artifact }}
         retention-days: 1
         if-no-files-found: error
         path: aot_artifacts
@@ -115,8 +122,17 @@ jobs:
         if-no-files-found: error
         path: aot_artifacts
 
-  linux-x86_64-glibc-cli:
-    runs-on: ubuntu-latest
+  linux-cli:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+        - arch: x86_64
+          runner: ubuntu-24.04
+          artifact: CLI-linux-x86_64-glibc-raw
+        - arch: aarch64
+          runner: ubuntu-24.04-arm
+          artifact: CLI-linux-aarch64-glibc-raw
 
     steps:
     - uses: actions/checkout@v4
@@ -132,10 +148,10 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: CLI-linux-x86_64-glibc-raw
+        name: ${{ matrix.artifact }}
         retention-days: 1
         if-no-files-found: error
-        path: linux/target/x86_64-unknown-linux-gnu/cli/webrogue
+        path: linux/glibc/${{ matrix.arch }}/target/${{ matrix.arch }}-unknown-linux-gnu/cli/webrogue
 
   macos-arm64-cli:
     runs-on: macos-latest

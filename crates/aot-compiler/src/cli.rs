@@ -12,6 +12,10 @@ pub enum Commands {
         /// Defaults to glibc.
         #[arg(long)]
         libc: Option<crate::linux::LibC>,
+        /// CPU architecture to compile for.
+        /// Defaults to x86_64.
+        #[arg(long)]
+        arch: Option<crate::linux::LinuxArch>,
     },
     /// Build Android app using Gradle project
     Android {
@@ -133,11 +137,13 @@ impl Commands {
                 wrapp_path,
                 out_path,
                 libc,
+                arch,
             } => {
                 crate::linux::build_linux(
                     wrapp_path,
                     out_path,
                     libc.clone().unwrap_or(crate::linux::LibC::GLibC),
+                    arch.clone().unwrap_or(crate::linux::LinuxArch::X86_64),
                     cache,
                 )?;
             }

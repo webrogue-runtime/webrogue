@@ -12,6 +12,7 @@ pub enum LibC {
     GLibC,
     Musl,
 }
+
 impl clap::ValueEnum for LibC {
     fn value_variants<'a>() -> &'a [Self] {
         &[Self::GLibC, Self::Musl]
@@ -25,10 +26,30 @@ impl clap::ValueEnum for LibC {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum LinuxArch {
+    X86_64,
+    Aarch64,
+}
+
+impl clap::ValueEnum for LinuxArch {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::X86_64, Self::Aarch64]
+    }
+
+    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
+        match self {
+            Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64")),
+            Self::Aarch64 => Some(clap::builder::PossibleValue::new("aarch64")),
+        }
+    }
+}
+
 pub fn build_linux(
     wrapp_file_path: &std::path::PathBuf,
     output_file_path: &std::path::PathBuf,
     libc: LibC,
+    arch: LinuxArch,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
     let object_file = crate::utils::TemporaryFile::for_tmp_object(output_file_path)?;
@@ -40,14 +61,17 @@ pub fn build_linux(
                 crate::compile::compile_wrapp_to_object(
                     wrapp_file_path,
                     object_file.path(),
-                    crate::Target::X86_64LinuxGNU,
+                    match &arch {
+                        LinuxArch::X86_64 => crate::Target::X86_64LinuxGNU,
+                        LinuxArch::Aarch64 => crate::Target::Aarch64LinuxGNU,
+                    },
                     cache,
                     false,
                     false,
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_glibc(&object_file, output_file_path, vulkan)
+                link::link_glibc(&object_file, output_file_path, arch, vulkan)
             })?;
         }
         LibC::Musl => {
