@@ -2,3 +2,4 @@
 /main.o
 /a.out
 /process_dump.*
+/*/*/clang.*.log

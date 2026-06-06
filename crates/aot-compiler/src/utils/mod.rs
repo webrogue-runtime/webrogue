@@ -4,7 +4,7 @@ use anyhow::Context as _;
 pub use artifacts::*;
 use std::{fmt::Display, fs::File};
 
-pub(crate) fn _run_lld(_args: Vec<String>) -> anyhow::Result<()> {
+pub(crate) fn run_lld(_args: Vec<String>) -> anyhow::Result<()> {
     #[cfg(feature = "llvm")]
     return webrogue_lld::run_lld(_args);
     #[cfg(not(feature = "llvm"))]
@@ -13,7 +13,7 @@ pub(crate) fn _run_lld(_args: Vec<String>) -> anyhow::Result<()> {
 
 macro_rules! lld {
     ($($x:expr),+ $(,)?) => (
-        $crate::utils::_run_lld(vec![$($x.to_string()),+])
+        $crate::utils::run_lld(vec![$($x.to_string()),+])
     );
 }
 

@@ -8,8 +8,11 @@ WRAPP_PATH=examples/empty/empty.wrapp
 
 if test -f $WRAPP_PATH
 then
-    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.gnu.o x86_64-linux-gnu
-    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.musl.o x86_64-linux-musl --pic
+    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.gnu.x86_64.o x86_64-linux-gnu
+    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.musl.x86_64.o x86_64-linux-musl --pic
+
+    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.gnu.aarch64.o aarch64-linux-gnu
+    cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.musl.aarch64.o aarch64-linux-musl --pic
 fi
 
 docker --version | grep podman >/dev/null || {
