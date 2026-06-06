@@ -9,12 +9,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - variant: x86_64
+          - artifact: Artifacts-Linux-x86_64
             runner: ubuntu-24.04
-            artifact: Artifacts-Linux-x86_64
-          - variant: aarch64
+          - artifact: Artifacts-Linux-aarch64
             runner: ubuntu-24.04-arm
-            artifact: Artifacts-Linux-aarch64
 
     steps:
     - uses: actions/checkout@v4
@@ -129,13 +127,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - variant: x86_64
+          - artifact: CLI-linux-x86_64-glibc-raw
             runner: ubuntu-24.04
-            artifact: CLI-linux-x86_64-glibc-raw
             target: x86_64-unknown-linux-gnu
-          - variant: aarch64
+          - artifact: CLI-linux-aarch64-glibc-raw
             runner: ubuntu-24.04-arm
-            artifact: CLI-linux-aarch64-glibc-raw
             target: aarch64-unknown-linux-gnu
 
     steps:

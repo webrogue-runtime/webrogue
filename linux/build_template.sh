@@ -33,7 +33,6 @@ do
     docker run \
         --rm \
         $DOCKER_USER_FLAGS \
-        -e ARCH=$ARCH \
         --platform linux/$ARCH \
         -v "$REPO_ROOT":/usr/src/myapp \
         -w /usr/src/myapp \

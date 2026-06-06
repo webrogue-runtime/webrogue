@@ -124,22 +124,6 @@ pub fn link_glibc(
         ),
     )?;
 
-    //     case "$ARCH" in
-    //     x86_64)
-    //         INTERPRETER_PATH=/lib64/ld-linux-x86_64.so.2
-    //         LLD_ARCH_ARGS="-m elf_x86_64"
-    //         ;;
-    //     aarch64)
-    //         INTERPRETER_PATH=/lib/ld-linux-aarch64.so.1
-    //         cp $INTERPRETER_PATH "$OUT_DIR"
-    //         LLD_ARCH_ARGS="-EL -m aarch64linux $OUT_DIR/ld-linux-aarch64.so.1"
-    //         ;;
-    //     *)
-    //         echo "Unsupported ARCH: $ARCH" >&2
-    //         exit 1
-    //         ;;
-    // esac
-
     let mut args = vec![
         "ld.lld".to_string(),
         "--hash-style=gnu".to_string(),
@@ -192,34 +176,4 @@ pub fn link_glibc(
     run_lld(args)?;
     drop(ld_tmp);
     Ok(())
-
-    // crate::utils::lld!(
-    //     "ld.lld",
-    //     "--hash-style=gnu",
-    //     "--build-id",
-    //     "--eh-frame-hdr",
-    //     "-m",
-    //     "elf_x86_64",
-    //     "--strip-all",
-    //     "--gc-sections",
-    //     "-dynamic-linker",
-    //     "/lib64/ld-linux-x86-64.so.2",
-    //     "-o",
-    //     crate::utils::path_to_arg(output_file_path)?,
-    //     crt1_tmp.as_arg()?,
-    //     crti_tmp.as_arg()?,
-    //     crtbegin_tmp.as_arg()?,
-    //     libwebrogue_aot_lib_tmp.as_arg()?,
-    //     gfxstream_lib.as_arg()?,
-    //     object_file,
-    //     libm_tmp.as_arg()?,
-    //     libpthread_tmp.as_arg()?,
-    //     libdl_tmp.as_arg()?,
-    //     libgcc_s_tmp.as_arg()?,
-    //     libgcc_tmp.as_arg()?,
-    //     libc_tmp.as_arg()?,
-    //     libc_nonshared_tmp.as_arg()?,
-    //     crtend_tmp.as_arg()?,
-    //     crtn_tmp.as_arg()?,
-    // )
 }

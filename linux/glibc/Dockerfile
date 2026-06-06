@@ -1,5 +1,6 @@
-ARG ARCH=
+ARG ARCH
 FROM quay.io/pypa/manylinux_2_28_${ARCH}
+ARG ARCH
 
 # https://github.com/libsdl-org/SDL/blob/main/docs/README-linux.md#build-dependencies
 # following libs are missing! pipewire-jack-audio-connection-kit-devel libdecor-devel nas-devel
