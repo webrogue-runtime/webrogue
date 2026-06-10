@@ -3,4 +3,4 @@ set -ex
 
 export NUM_JOBS=$(nproc)
 
-cargo build --target-dir=./glibc/$ARCH/target --target=$ARCH-unknown-linux-gnu --features=full --profile cli
+cargo build --target-dir=./gnu/$ARCH/target --target=$ARCH-unknown-linux-gnu --features=full --profile cli
