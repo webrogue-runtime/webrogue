@@ -4,7 +4,7 @@ REPO_ROOT="$(dirname $(dirname $(realpath $0)))"
 # ARCHES="x86_64 aarch64"
 ARCHES=$(uname -m)
 # LIBCS="gnu musl"
-COMPONENTS="template cli"
+# COMPONENTS="template cli"
 
 cd "$REPO_ROOT"
 WRAPP_PATH=webrogue-sdk/examples/empty/empty.wrapp
