@@ -169,7 +169,7 @@ jobs:
         name: ${{ matrix.artifact }}
         retention-days: 1
         if-no-files-found: error
-        path: linux/${{ matrix.libc }}/${{ matrix.arch }}/target/${{ matrix.arch }}-unknown-linux-gnu/cli/webrogue
+        path: linux/${{ matrix.libc }}/${{ matrix.arch }}/target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/cli/webrogue
 
   macos-arm64-cli:
     runs-on: macos-latest
