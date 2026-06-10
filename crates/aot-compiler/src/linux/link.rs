@@ -5,10 +5,9 @@ use crate::{linux::LinuxArch, utils::run_lld};
 pub fn link_musl(
     object_file: &crate::utils::TemporaryFile,
     output_file_path: &std::path::PathBuf,
+    arch: LinuxArch,
     vulkan: bool,
 ) -> anyhow::Result<()> {
-    anyhow::bail!("musl libc is temporary disabled");
-
     let mut artifacts = crate::utils::Artifacts::new()?;
     let build_dir = object_file
         .path()
@@ -16,48 +15,80 @@ pub fn link_musl(
         .ok_or_else(|| anyhow::anyhow!("Path error"))?
         .to_path_buf();
 
-    let crt1_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crt1.o")?;
-    let crti_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crti.o")?;
-    let crtbegin_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crtbeginT.o")?;
-    let libwebrogue_aot_lib_tmp =
-        artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/libwebrogue_aot_lib.a")?;
-    let crtend_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crtend.o")?;
-    let crtn_tmp = artifacts.extract_tmp(&build_dir, "x86_64-linux-musl/crtn.o")?;
+    let arch_str = match &arch {
+        LinuxArch::X86_64 => "x86_64",
+        LinuxArch::Aarch64 => "aarch64",
+    };
+
+    let crt1_tmp = artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/crt1.o", arch_str))?;
+    let crti_tmp = artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/crti.o", arch_str))?;
+    let crtbegin_tmp =
+        artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/crtbeginT.o", arch_str))?;
+    let libwebrogue_aot_lib_tmp = artifacts.extract_tmp(
+        &build_dir,
+        &format!("{}-linux-musl/libwebrogue_aot_lib.a", arch_str),
+    )?;
+    let libstdcplusplus_tmp =
+        artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/libstdc++.so", arch_str))?;
+    let libgcc_s_tmp = artifacts.extract_tmp(
+        &build_dir,
+        &format!("{}-linux-musl/libgcc_s.so.1", arch_str),
+    )?;
+    let libc_tmp =
+        artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/libc.so", arch_str))?;
+    let crtend_tmp =
+        artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/crtend.o", arch_str))?;
+    let crtn_tmp = artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/crtn.o", arch_str))?;
+
     let gfxstream_lib = artifacts.extract_tmp(
         &build_dir,
-        if vulkan {
-            "x86_64-linux-musl/libwebrogue_gfxstream_lib_impl.a"
-        } else {
-            "x86_64-linux-musl/libwebrogue_gfxstream_lib_stub.a"
-        },
+        &format!(
+            "{}-linux-musl/libwebrogue_gfxstream_lib_{}.a",
+            arch_str,
+            if vulkan { "impl" } else { "stub" }
+        ),
     )?;
 
-    crate::utils::lld!(
-        "ld.lld",
-        "-z",
-        "now",
-        "-z",
-        "relro",
-        "--hash-style=gnu",
-        "--build-id",
-        "--eh-frame-hdr",
-        "-m",
-        "elf_x86_64",
-        "--strip-all",
-        "--gc-sections",
-        "-static",
-        "-o",
-        crate::utils::path_to_arg(output_file_path)?,
-        crt1_tmp.as_arg()?,
-        crti_tmp.as_arg()?,
-        crtbegin_tmp.as_arg()?,
-        "--no-as-needed",
-        libwebrogue_aot_lib_tmp.as_arg()?,
-        gfxstream_lib.as_arg()?,
-        object_file,
-        crtend_tmp.as_arg()?,
-        crtn_tmp.as_arg()?,
-    )
+    let args = vec![
+        "ld.lld".to_string(),
+        "-z".to_string(),
+        "now".to_string(),
+        "-z".to_string(),
+        "relro".to_string(),
+        "--hash-style=gnu".to_string(),
+        "--build-id".to_string(),
+        "--eh-frame-hdr".to_string(),
+        "-m".to_string(),
+        match &arch {
+            LinuxArch::X86_64 => "elf_x86_64",
+            LinuxArch::Aarch64 => "aarch64linux",
+        }
+        .to_string(),
+        "-dynamic-linker".to_string(),
+        match &arch {
+            LinuxArch::X86_64 => "/lib/ld-musl-x86_64.so.1",
+            LinuxArch::Aarch64 => "/lib/ld-musl-aarch64.so.1",
+        }
+        .to_string(),
+        "--strip-all".to_string(),
+        "--gc-sections".to_string(),
+        "-o".to_string(),
+        crate::utils::path_to_arg(output_file_path)?.to_string(),
+        "--no-as-needed".to_string(),
+        crt1_tmp.as_arg()?.to_string(),
+        crti_tmp.as_arg()?.to_string(),
+        crtbegin_tmp.as_arg()?.to_string(),
+        libwebrogue_aot_lib_tmp.as_arg()?.to_string(),
+        gfxstream_lib.as_arg()?.to_string(),
+        object_file.to_string(),
+        libstdcplusplus_tmp.as_arg()?.to_string(),
+        libgcc_s_tmp.as_arg()?.to_string(),
+        libc_tmp.as_arg()?.to_string(),
+        crtend_tmp.as_arg()?.to_string(),
+        crtn_tmp.as_arg()?.to_string(),
+    ];
+    run_lld(args)?;
+    Ok(())
 }
 
 pub fn link_glibc(
