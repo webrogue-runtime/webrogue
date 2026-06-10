@@ -4,9 +4,23 @@ rustflags = [
     # "-C", "link-arg=-fuse-ld=lld",
 ]
 [target.x86_64-pc-windows-msvc]
+# Enable static CTR on Windows
 rustflags = [
     "-C", "target-feature=+crt-static",
 ]
+
+[target.x86_64-unknown-linux-musl]
+# And disable it on musl Linux since we will need to dlopen graphics drivers and other shared libraries
+rustflags = [
+    "-C", "target-feature=-crt-static"
+]
+
+[target.aarch64-unknown-linux-musl]
+# same for AArch64
+rustflags = [
+    "-C", "target-feature=-crt-static"
+]
+
 [target.wasm32-unknown-unknown]
 rustflags = [
     "-C", "target-feature=+atomics,+bulk-memory,+mutable-globals",
