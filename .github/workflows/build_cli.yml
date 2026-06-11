@@ -9,10 +9,18 @@ jobs:
     strategy:
       matrix:
         include:
-        - artifact: Artifacts-Linux-x86_64
+        - artifact: Artifacts-Linux-GNU-x86_64
           runner: ubuntu-24.04
-        - artifact: Artifacts-Linux-aarch64
+          libc: gnu
+        - artifact: Artifacts-Linux-GNU-aarch64
           runner: ubuntu-24.04-arm
+          libc: gnu
+        - artifact: Artifacts-Linux-MUSL-x86_64
+          runner: ubuntu-24.04
+          libc: musl
+        - artifact: Artifacts-Linux-MUSL-aarch64
+          runner: ubuntu-24.04-arm
+          libc: musl
 
     steps:
     - uses: actions/checkout@v4
@@ -24,7 +32,7 @@ jobs:
 
     - name: Build AOT artifacts
       run: |
-        sh linux/build_template.sh
+        COMPONENTS=template LIBCS=${{ matrix.libc }} sh linux/build.sh
 
     - uses: actions/upload-artifact@v4
       with:
@@ -130,9 +138,19 @@ jobs:
         - arch: x86_64
           runner: ubuntu-24.04
           artifact: CLI-linux-x86_64-glibc-raw
+          libc: gnu
         - arch: aarch64
           runner: ubuntu-24.04-arm
           artifact: CLI-linux-aarch64-glibc-raw
+          libc: gnu
+        - arch: x86_64
+          runner: ubuntu-24.04
+          artifact: CLI-linux-x86_64-musl-raw
+          libc: musl
+        - arch: aarch64
+          runner: ubuntu-24.04-arm
+          artifact: CLI-linux-aarch64-musl-raw
+          libc: musl
 
     steps:
     - uses: actions/checkout@v4
@@ -144,14 +162,14 @@ jobs:
 
     - name: Build
       run: |
-        sh linux/build_cli.sh
+        COMPONENTS=cli LIBCS=${{ matrix.libc }} sh linux/build.sh
 
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.artifact }}
         retention-days: 1
         if-no-files-found: error
-        path: linux/glibc/${{ matrix.arch }}/target/${{ matrix.arch }}-unknown-linux-gnu/cli/webrogue
+        path: linux/${{ matrix.libc }}/${{ matrix.arch }}/target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/cli/webrogue
 
   macos-arm64-cli:
     runs-on: macos-latest

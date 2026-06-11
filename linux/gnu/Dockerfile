@@ -20,6 +20,10 @@ ENV PATH="/fakehome/.cargo/bin:$PATH"
 ENV RUSTUP_HOME=/fakehome/rustup
 ENV CARGO_HOME=/fakehome/.cargo
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | HOME=/fakehome sh -s -- -y --no-modify-path
+RUN mkdir -p /fakehome/.cargo/registry/cache \
+    /fakehome/.cargo/registry/index \
+    /fakehome/.cargo/registry/src \
+    /fakehome/.cargo/git/db
 RUN chmod -R a+rwx /fakehome/.cargo/
 
 ENV GCC_VERSION=14
