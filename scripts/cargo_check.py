@@ -78,7 +78,7 @@ if is_component_selected("aot-lib"):
             check(package="webrogue-gfxstream-lib", target=target, features=[gfxstream_type])
 
 if is_component_selected("android"):
-    os.environ["CARGO_NDK_PLATFORM"] = open(repo_dir.join("android", "android_api_version.txt")).read().strip()
+    os.environ["CARGO_NDK_PLATFORM"] = open(repo_dir.join("android").join("android_api_version.txt")).read().strip()
     for ndk_target in ["arm64-v8a", "x86_64"]:
         for features in [["launcher"], ["runner"]]:
             check(package="webrogue-android", ndk_target=ndk_target, features=features)
