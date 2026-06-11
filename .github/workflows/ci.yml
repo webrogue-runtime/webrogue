@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  tests:
+  checks_and_tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -28,9 +28,15 @@ jobs:
         git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
+    - uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-ndk
+
     - name: Cargo test (UNIX)
       if: startsWith(matrix.os, 'windows') == false
       run: |
+        export CARGO_NDK_PLATFORM=$(cat android/android_api_version.txt)
+        python3 scripts/cargo_check.py
         cargo test --package webrogue-wasip1
 
     - name: Cargo test (Windows)
@@ -40,29 +46,8 @@ jobs:
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
         REM gfxstream doesn't seem to support MSVC
         set CXX=clang-cl
+        python3 scripts\cargo_check.py
         cargo test --package webrogue-wasip1
-
-  cargo_checks:
-    runs-on: ubuntu-24.04
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Submodules
-      run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
-        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
-
-
-    - name: Install cargo-ndk
-      run: |
-        curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-        cargo binstall cargo-ndk
-
-    - name: Cargo check
-      run: |
-        export CARGO_NDK_PLATFORM=$(cat android/android_api_version.txt)
-        python3 scripts/cargo_check.py
 
   typos:
     runs-on: ubuntu-24.04

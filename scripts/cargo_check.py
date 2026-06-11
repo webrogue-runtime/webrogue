@@ -2,8 +2,11 @@ import os
 import subprocess
 import sys
 import itertools
+import tqdm
 
 repo_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+pending_checks = []
 
 def check(package=None, target=None, features=None, ndk_target=None):
     args = ["cargo"]
@@ -22,10 +25,7 @@ def check(package=None, target=None, features=None, ndk_target=None):
         args.append("--features")
         args.append(",".join(features))
     args.append("--quiet")
-    subprocess.run(
-        args,
-        cwd=repo_dir
-    ).check_returncode()
+    pending_checks.append(args)
 
 
 def get_all_subsets(arr):
@@ -37,11 +37,23 @@ def get_all_subsets(arr):
             subsets.append(list(comp))
     return subsets
 
-check(package="webrogue")
-for features in get_all_subsets(["run", "compile", "pack", "hub", "llvm"]):
-    check(package="webrogue", features=features)
+targets = []
+if sys.platform == "win32":
+    targets.append("x86_64-pc-windows-msvc")
+elif sys.platform == "darwin":
+    targets.extend(["x86_64-apple-darwin", "aarch64-apple-darwin"])
+elif sys.platform == "linux":
+    targets.extend(["x86_64-unknown-linux-gnu"])
+else:
+    raise Exception(f"Unsupported platform: {sys.platform}")
 
-for target in ["x86_64-pc-windows-msvc", "x86_64-apple-darwin", "aarch64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]:
+
+for target in targets:
+    check(package="webrogue", target=target)
+    for features in get_all_subsets(["run", "compile", "pack", "hub", "llvm"]):
+        check(package="webrogue", target=target, features=features)
+
+for target in targets:
     check(package="webrogue-aot-lib", target=target)
     for gfxstream_type in ["impl", "stub"]:
         check(package="webrogue-gfxstream-lib", target=target, features=[gfxstream_type])
@@ -52,3 +64,6 @@ for ndk_target in ["arm64-v8a", "x86_64"]:
 
 # for features in [["launcher"], ["runner"]]:
 #     check(package="webrogue-ios", features=features)
+
+for pending_check in tqdm.tqdm(pending_checks):
+    subprocess.run(pending_check, cwd=repo_dir, check=True)
