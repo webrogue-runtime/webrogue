@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  checks_and_tests:
+  tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -32,14 +32,31 @@ jobs:
       with:
         tool: cargo-ndk
 
-    - name: Cargo test (UNIX)
+    - name: Install Rust toolchains (Linux)
+      if: startsWith(matrix.os, 'ubuntu') == true
+      run: |
+        rustup target add x86_64-unknown-linux-gnu
+
+    - name: Install Rust toolchains (macOS)
+      if: startsWith(matrix.os, 'macos') == true
+      run: |
+        rustup target add x86_64-apple-darwin
+        rustup target add aarch64-apple-darwin
+
+    - name: Install Rust toolchains (Windows)
+      if: startsWith(matrix.os, 'windows') == true
+      run: |
+        rustup target add x86_64-pc-windows-msvc
+
+
+    - name: Run test scripts (UNIX)
       if: startsWith(matrix.os, 'windows') == false
       run: |
         export CARGO_NDK_PLATFORM=$(cat android/android_api_version.txt)
         python3 scripts/cargo_check.py
         cargo test --package webrogue-wasip1
 
-    - name: Cargo test (Windows)
+    - name: Run test scripts (Windows)
       if: startsWith(matrix.os, 'windows') == true
       shell: cmd
       run: |
@@ -62,5 +79,5 @@ jobs:
         typos
 
   build_cli:
-    needs: [ checks_and_tests, typos ]
+    needs: [ tests, typos ]
     uses: ./.github/workflows/build_cli.yml
