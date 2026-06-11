@@ -32,6 +32,10 @@ jobs:
       with:
         tool: cargo-ndk
 
+    - name: Python dependencies
+      run: |
+        python3 -m pip install tqdm
+
     - name: Cargo test (UNIX)
       if: startsWith(matrix.os, 'windows') == false
       run: |
