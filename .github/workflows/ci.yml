@@ -35,7 +35,7 @@ jobs:
     - name: Python dependencies (macOS)
       if: startsWith(matrix.os, 'macos') == true
       run: |
-        brew install python3-tqdm
+        brew install python-tqdm
 
     - name: Python dependencies (Windows/Linux)
       if: startsWith(matrix.os, 'macos') == false
@@ -72,4 +72,5 @@ jobs:
         typos
 
   build_cli:
+    needs: [ checks_and_tests, typos ]
     uses: ./.github/workflows/build_cli.yml
