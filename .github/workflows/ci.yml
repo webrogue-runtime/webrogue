@@ -2,11 +2,19 @@ name: Webrogue CI
 
 on: 
   pull_request:
+    branches: [ main ]
   merge_group:
+    types: [ checks_requested ]
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - os: ubuntu-24.04
+        - os: windows-latest
+        - os: macos-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -16,22 +24,13 @@ jobs:
         git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
-    - name: Cargo test
+    - name: Cargo test (UNIX)
+      if: startsWith(matrix.os, 'windows') == false
       run: |
         cargo test --package webrogue-wasip1
 
-  windows:
-    runs-on: windows-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Submodules
-      run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
-        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
-
-    - name: Cargo test
+    - name: Cargo test (Windows)
+      if: startsWith(matrix.os, 'windows') == true
       shell: cmd
       run: |
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
@@ -39,8 +38,8 @@ jobs:
         set CXX=clang-cl
         cargo test --package webrogue-wasip1
 
-  macos:
-    runs-on: macos-latest
+  cargo_checks:
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v4
@@ -50,12 +49,13 @@ jobs:
         git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
-    - name: Cargo test
+    - name: Cargo check
       run: |
-        cargo test --package webrogue-wasip1
+        export CARGO_NDK_PLATFORM=$(cat android/android_api_version.txt)
+        python3 scripts/cargo_check.py
 
   typos:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v4

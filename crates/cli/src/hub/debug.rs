@@ -117,9 +117,9 @@ pub async fn debug(
                         Message::Text(_utf8_bytes) => todo!(),
                         Message::Binary(_bytes) => todo!(),
                         Message::Ping(bytes) => ws_stream.send(Message::Pong(bytes)).await?,
-                        Message::Pong(bytes) => {},
-                        Message::Close(close_frame) => break 'tcp_loop,
-                        Message::Frame(frame) => unreachable!(),
+                        Message::Pong(_bytes) => {},
+                        Message::Close(_close_frame) => break 'tcp_loop,
+                        Message::Frame(_frame) => unreachable!(),
                     };
                 }
             };
