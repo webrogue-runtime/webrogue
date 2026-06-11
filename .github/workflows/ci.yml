@@ -32,7 +32,13 @@ jobs:
       with:
         tool: cargo-ndk
 
-    - name: Python dependencies
+    - name: Python dependencies (macOS)
+      if: startsWith(matrix.os, 'macos') == true
+      run: |
+        brew install python3-tqdm
+
+    - name: Python dependencies (Windows/Linux)
+      if: startsWith(matrix.os, 'macos') == false
       run: |
         python3 -m pip install tqdm
 
