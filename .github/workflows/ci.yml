@@ -17,8 +17,15 @@ jobs:
       matrix:
         include:
         - os: ubuntu-24.04
+          components: cli,aot-lib
         - os: windows-latest
+          components: cli,aot-lib
         - os: macos-latest
+          components: cli,aot-lib
+        - os: ubuntu-24.04
+          components: android
+        # - os: macos-latest
+        #   components: ios
 
     steps:
     - uses: actions/checkout@v4
@@ -32,28 +39,35 @@ jobs:
       with:
         tool: cargo-ndk
 
-    - name: Install Rust toolchains (Linux)
-      if: startsWith(matrix.os, 'ubuntu') == true
-      run: |
-        rustup target add x86_64-unknown-linux-gnu
-
     - name: Install Rust toolchains (macOS)
-      if: startsWith(matrix.os, 'macos') == true
+      if: startsWith(matrix.os, 'macos') == true && contains(matrix.components, 'cli') == true
       run: |
         rustup target add x86_64-apple-darwin
         rustup target add aarch64-apple-darwin
 
     - name: Install Rust toolchains (Windows)
-      if: startsWith(matrix.os, 'windows') == true
+      if: startsWith(matrix.os, 'windows') == true && contains(matrix.components, 'cli') == true
       run: |
         rustup target add x86_64-pc-windows-msvc
 
+    - name: Install Rust toolchains (Android)
+      if: contains(matrix.components, 'android') == true
+      run: |
+        rustup target add aarch64-linux-android
+        rustup target add x86_64-linux-android
+
+    - name: Install Rust toolchains (iOS)
+      if: contains(matrix.components, 'ios') == true
+      run: |
+        rustup target add aarch64-apple-ios
+        rustup target add aarch64-apple-ios-sim
+        rustup target add x86_64-apple-ios
 
     - name: Run test scripts (UNIX)
       if: startsWith(matrix.os, 'windows') == false
       run: |
         export CARGO_NDK_PLATFORM=$(cat android/android_api_version.txt)
-        python3 scripts/cargo_check.py
+        COMPONENTS=${{ matrix.components }} python3 scripts/cargo_check.py
         cargo test --package webrogue-wasip1
 
     - name: Run test scripts (Windows)
@@ -63,7 +77,7 @@ jobs:
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
         REM gfxstream doesn't seem to support MSVC
         set CXX=clang-cl
-        python3 scripts\cargo_check.py
+        COMPONENTS=${{ matrix.components }} python3 scripts\cargo_check.py
         cargo test --package webrogue-wasip1
 
   typos:
