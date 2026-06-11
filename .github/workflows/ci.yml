@@ -73,6 +73,8 @@ jobs:
 
     - name: Run test scripts (UNIX)
       if: startsWith(matrix.os, 'windows') == false
+      env:
+        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       run: |
         COMPONENTS=${{ matrix.components }} python3 scripts/cargo_check.py
         cargo test --package webrogue-wasip1

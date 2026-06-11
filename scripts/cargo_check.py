@@ -60,7 +60,7 @@ if sys.platform == "win32":
 elif sys.platform == "darwin":
     native_targets.extend(["x86_64-apple-darwin", "aarch64-apple-darwin"])
 elif sys.platform == "linux":
-    # Omit --target options for native Linux builds
+    # Omit --target option for native Linux builds
     native_targets.append(None)
 else:
     raise Exception(f"Unsupported platform: {sys.platform}")
