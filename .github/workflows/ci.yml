@@ -63,10 +63,17 @@ jobs:
         rustup target add aarch64-apple-ios-sim
         rustup target add x86_64-apple-ios
 
+
+    - name: Setup Android NDK
+      if: contains(matrix.components, 'android') == true
+      uses: nttld/setup-ndk@v1
+      id: setup-ndk
+      with:
+        ndk-version: r29
+
     - name: Run test scripts (UNIX)
       if: startsWith(matrix.os, 'windows') == false
       run: |
-        export CARGO_NDK_PLATFORM=$(cat android/android_api_version.txt)
         COMPONENTS=${{ matrix.components }} python3 scripts/cargo_check.py
         cargo test --package webrogue-wasip1
 

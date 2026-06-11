@@ -13,15 +13,15 @@ except ImportError:
 repo_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 components = set(os.getenv("COMPONENTS", "all").split(","))
+checked_components = set()
 
 def is_component_selected(component):
     if "all" in components:
+        checked_components.add("all")
         return True
-    try:
-        components.remove(component)
-        return True
-    except KeyError:
-        return False
+    if component in components:
+        checked_components.add(component)
+    return component in components
 
 pending_checks = []
 
@@ -90,5 +90,5 @@ if is_component_selected("android"):
 for pending_check in tqdm_func(pending_checks):
     subprocess.run(pending_check, cwd=repo_dir, check=True)
 
-if components and components != set(["all"]):
-    raise Exception(f"Some specified components were not checked: {components}")
+if components != checked_components:
+    raise Exception(f"Some specified components were not checked. Specified components :{components}")
