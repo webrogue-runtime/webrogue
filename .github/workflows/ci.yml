@@ -18,14 +18,12 @@ jobs:
         include:
         - os: ubuntu-24.04
           components: cli,aot-lib
-        - os: windows-latest
-          components: cli,aot-lib
-        - os: macos-latest
+        - os: windows-2025
+          components: cli,aot-lib,ios,macos
+        - os: macos-26
           components: cli,aot-lib
         - os: ubuntu-24.04
           components: android
-        # - os: macos-latest
-        #   components: ios
 
     steps:
     - uses: actions/checkout@v4
@@ -42,8 +40,8 @@ jobs:
     - name: Install Rust toolchains (macOS)
       if: startsWith(matrix.os, 'macos') == true && contains(matrix.components, 'cli') == true
       run: |
-        rustup target add x86_64-apple-darwin
         rustup target add aarch64-apple-darwin
+        # rustup target add x86_64-apple-darwin
 
     - name: Install Rust toolchains (Windows)
       if: startsWith(matrix.os, 'windows') == true && contains(matrix.components, 'cli') == true

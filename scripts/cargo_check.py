@@ -58,7 +58,8 @@ native_targets = []
 if sys.platform == "win32":
     native_targets.append("x86_64-pc-windows-msvc")
 elif sys.platform == "darwin":
-    native_targets.extend(["x86_64-apple-darwin", "aarch64-apple-darwin"])
+    native_targets.append("aarch64-apple-darwin")
+    # native_targets.append("x86_64-apple-darwin")
 elif sys.platform == "linux":
     # Omit --target option for native Linux builds
     native_targets.append(None)
@@ -83,9 +84,13 @@ if is_component_selected("android"):
         for features in [["launcher"], ["runner"]]:
             check(package="webrogue-android", ndk_target=ndk_target, features=features)
 
-# if is_component_selected("ios"):
-#     for features in [["launcher"], ["runner"]]:
-#         check(package="webrogue-ios", features=features)
+if is_component_selected("ios"):
+    for features in [["launcher"], ["runner"]]:
+        check(package="webrogue-ios", features=features)
+
+if is_component_selected("macos"):
+    for features in [["runtime"], ["runner"]]:
+        check(package="webrogue-macos", features=features)
 
 for pending_check in tqdm_func(pending_checks):
     subprocess.run(pending_check, cwd=repo_dir, check=True)
