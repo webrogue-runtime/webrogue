@@ -41,6 +41,11 @@ check(package="webrogue")
 for features in get_all_subsets(["run", "compile", "pack", "hub", "llvm"]):
     check(package="webrogue", features=features)
 
+for target in ["x86_64-pc-windows-msvc", "x86_64-apple-darwin", "aarch64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]:
+    check(package="webrogue-aot-lib", target=target)
+    for gfxstream_type in ["impl", "stub"]:
+        check(package="webrogue-gfxstream-lib", target=target, features=[gfxstream_type])
+
 for ndk_target in ["arm64-v8a", "x86_64"]:
     for features in [["launcher"], ["runner"]]:
         check(package="webrogue-android", ndk_target=ndk_target, features=features)
