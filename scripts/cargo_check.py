@@ -2,7 +2,13 @@ import os
 import subprocess
 import sys
 import itertools
-import tqdm
+
+try:
+    import tqdm
+    tqdm_func = tqdm.tqdm
+except ImportError:
+    def tqdm_func(x):
+        return x
 
 repo_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -65,5 +71,5 @@ for ndk_target in ["arm64-v8a", "x86_64"]:
 # for features in [["launcher"], ["runner"]]:
 #     check(package="webrogue-ios", features=features)
 
-for pending_check in tqdm.tqdm(pending_checks):
+for pending_check in tqdm_func(pending_checks):
     subprocess.run(pending_check, cwd=repo_dir, check=True)
