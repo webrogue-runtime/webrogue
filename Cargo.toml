@@ -137,7 +137,7 @@ proc-macro2 = { version = "1.0", default-features = false }
 witx = { version = "0.9.1", default-features = false }
 dirs = { version = "6.0.0" }
 zip = { version = "8.6", default-features = false }
-libc = { version = "0.2.112", default-features = false }
+libc = { version = "0.2.186", default-features = false }
 lazy_static = { version = "1.5.0" }
 rustix = { version = "1", default-features = false }
 cfg_aliases = { version = "0.2.1" }
