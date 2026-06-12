@@ -97,7 +97,7 @@ jobs:
         path: aot_artifacts
 
   apple_artifacts:
-    runs-on: macos-latest
+    runs-on: macos-26
 
     steps:
     - uses: actions/checkout@v4
@@ -172,7 +172,7 @@ jobs:
         path: linux/${{ matrix.libc }}/${{ matrix.arch }}/target/${{ matrix.arch }}-unknown-linux-${{ matrix.libc }}/cli/webrogue
 
   macos-arm64-cli:
-    runs-on: macos-latest
+    runs-on: macos-26
 
     steps:
     - uses: actions/checkout@v4
@@ -198,7 +198,7 @@ jobs:
         path: target/aarch64-apple-darwin/cli/webrogue
 
   macos-x86_64-cli:
-    runs-on: macos-latest
+    runs-on: macos-26
 
     steps:
     - uses: actions/checkout@v4

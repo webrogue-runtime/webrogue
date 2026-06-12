@@ -3,8 +3,10 @@ name: Release Webrogue CLI
 on:
   push:
     tags:
-      - 'v*.*.*'
+    - 'v*.*.*'
   workflow_dispatch:
+  schedule:
+  - cron: "37 13 * * 0"
 
 jobs:
   build:

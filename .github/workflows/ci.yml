@@ -2,11 +2,28 @@ name: Webrogue CI
 
 on: 
   pull_request:
+    branches: [ main ]
   merge_group:
+    types: [ checks_requested ]
+
+concurrency:
+  group: ci-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - os: ubuntu-24.04
+          components: cli,aot-lib
+        - os: windows-2025
+          components: cli,aot-lib,ios,macos
+        - os: macos-26
+          components: cli,aot-lib
+        - os: ubuntu-24.04
+          components: android
 
     steps:
     - uses: actions/checkout@v4
@@ -16,46 +33,62 @@ jobs:
         git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
-    - name: Cargo test
+    - uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-ndk
+
+    - name: Install Rust toolchains (macOS)
+      if: startsWith(matrix.os, 'macos') == true && contains(matrix.components, 'cli') == true
       run: |
+        rustup target add aarch64-apple-darwin
+        # rustup target add x86_64-apple-darwin
+
+    - name: Install Rust toolchains (Windows)
+      if: startsWith(matrix.os, 'windows') == true && contains(matrix.components, 'cli') == true
+      run: |
+        rustup target add x86_64-pc-windows-msvc
+
+    - name: Install Rust toolchains (Android)
+      if: contains(matrix.components, 'android') == true
+      run: |
+        rustup target add aarch64-linux-android
+        rustup target add x86_64-linux-android
+
+    - name: Install Rust toolchains (iOS)
+      if: contains(matrix.components, 'ios') == true
+      run: |
+        rustup target add aarch64-apple-ios
+        rustup target add aarch64-apple-ios-sim
+        rustup target add x86_64-apple-ios
+
+
+    - name: Setup Android NDK
+      if: contains(matrix.components, 'android') == true
+      uses: nttld/setup-ndk@v1
+      id: setup-ndk
+      with:
+        ndk-version: r29
+
+    - name: Run test scripts (UNIX)
+      if: startsWith(matrix.os, 'windows') == false
+      env:
+        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+      run: |
+        COMPONENTS=${{ matrix.components }} python3 scripts/cargo_check.py
         cargo test --package webrogue-wasip1
 
-  windows:
-    runs-on: windows-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Submodules
-      run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
-        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
-
-    - name: Cargo test
+    - name: Run test scripts (Windows)
+      if: startsWith(matrix.os, 'windows') == true
       shell: cmd
       run: |
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
         REM gfxstream doesn't seem to support MSVC
         set CXX=clang-cl
-        cargo test --package webrogue-wasip1
-
-  macos:
-    runs-on: macos-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Submodules
-      run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/gfxstream external/zstd-rs
-        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
-
-    - name: Cargo test
-      run: |
+        COMPONENTS=${{ matrix.components }} python3 scripts\cargo_check.py
         cargo test --package webrogue-wasip1
 
   typos:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v4
@@ -66,5 +99,7 @@ jobs:
         cargo binstall --locked typos-cli
         typos
 
-  build_cli:
-    uses: ./.github/workflows/build_cli.yml
+  # Additional checks
+  # build_cli:
+  #   needs: [ tests, typos ]
+  #   uses: ./.github/workflows/build_cli.yml
