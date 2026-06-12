@@ -4,7 +4,7 @@ case "$OSTYPE" in
     *) CMDLINE_TOOLS_VERSION=linux-13114758_latest ;;
 esac
 NDK_VERSION=29.0.14206865
-ANDROID_API_VERSION=30
+ANDROID_API_VERSION=$(cat android_api_version.txt)
 
 if test -z $ANDROID_SDK_ROOT
 then
