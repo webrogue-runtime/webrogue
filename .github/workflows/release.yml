@@ -21,37 +21,37 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: Artifacts-Linux-GNU-x86_64
         path: aot_artifacts
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: Artifacts-Linux-GNU-aarch64
         path: aot_artifacts
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: Artifacts-Linux-MUSL-x86_64
         path: aot_artifacts
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: Artifacts-Linux-MUSL-aarch64
         path: aot_artifacts
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: Artifacts-Windows
         path: aot_artifacts
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: Artifacts-Android
         path: aot_artifacts
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: Artifacts-Apple
         path: aot_artifacts
@@ -67,37 +67,37 @@ jobs:
         cp aot_artifacts.zip aot_artifacts_macos.zip
         cd aot_artifacts && zip -r ../aot_artifacts_macos.zip apple_xcode && cd ..
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: CLI-linux-x86_64-glibc-raw
         path: webrogue_linux_x86_64_glibc_raw
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: CLI-linux-aarch64-glibc-raw
         path: webrogue_linux_aarch64_glibc_raw
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: CLI-linux-x86_64-musl-raw
         path: webrogue_linux_x86_64_musl_raw
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: CLI-linux-aarch64-musl-raw
         path: webrogue_linux_aarch64_musl_raw
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: CLI-macOS-arm64-raw
         path: webrogue_macos_arm64_raw
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: CLI-macOS-x86_64-raw
         path: webrogue_macos_x86_64_raw
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with: 
         name: CLI-windows-x86_64-raw
         path: webrogue_windows_x86_64_raw
