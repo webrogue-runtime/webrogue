@@ -154,7 +154,7 @@ jobs:
         commit: ${{ github.ref }}
         makeLatest: true
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: CLI-linux-x86_64-glibc
         retention-days: 1
@@ -162,7 +162,7 @@ jobs:
         path: |
           webrogue-cli-linux-glibc-x86_64.tar.gz
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: CLI-linux-aarch64-glibc
         retention-days: 1
@@ -170,7 +170,7 @@ jobs:
         path: |
           webrogue-cli-linux-glibc-aarch64.tar.gz
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: CLI-linux-x86_64-musl
         retention-days: 1
@@ -178,7 +178,7 @@ jobs:
         path: |
           webrogue-cli-linux-musl-x86_64.tar.gz
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: CLI-linux-aarch64-musl
         retention-days: 1
@@ -186,7 +186,7 @@ jobs:
         path: |
           webrogue-cli-linux-musl-aarch64.tar.gz
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: CLI-windows-x86_64
         retention-days: 1
@@ -194,7 +194,7 @@ jobs:
         path: |
           webrogue-cli-windows-x86_64.zip
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: CLI-macOS-arm64
         retention-days: 1
@@ -202,7 +202,7 @@ jobs:
         path: |
           webrogue-cli-macos-arm64.tar.gz
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: CLI-macOS-x86_64
         retention-days: 1
