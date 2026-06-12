@@ -6,11 +6,10 @@ rm -rf "$OUT_DIR"
 
 export NUM_JOBS=$(nproc)
 
-TARGET_DIR=./glibc/$ARCH/target
+TARGET_DIR=./gnu/$ARCH/target
 CARGO_FLAGS="--target-dir=$TARGET_DIR --target=$ARCH-unknown-linux-gnu --profile aot"
 mkdir -p "$OUT_DIR"
 # rustup target add $ARCH-unknown-linux-gnu
-
 
 cargo build --manifest-path=../crates/aot-lib/Cargo.toml $CARGO_FLAGS
 cp $TARGET_DIR/$ARCH-unknown-linux-gnu/aot/libwebrogue_aot_lib.a "$OUT_DIR"
@@ -40,10 +39,11 @@ clang++ \
     -o a.out \
     -fuse-ld=lld \
     -Wl,--threads=1 \
-    >glibc/$ARCH/clang.out.log \
-    2>glibc/$ARCH/clang.err.log
+    >gnu/$ARCH/clang.out.log \
+    2>gnu/$ARCH/clang.err.log
 
     # -Wl,--reproduce=reproduce.tar \
+rm a.out
 
 case "$ARCH" in
     x86_64)

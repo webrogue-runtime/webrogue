@@ -86,7 +86,7 @@ pub fn build_linux(
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_musl(&object_file, output_file_path, vulkan)
+                link::link_musl(&object_file, output_file_path, arch, vulkan)
             })?;
         }
     }
