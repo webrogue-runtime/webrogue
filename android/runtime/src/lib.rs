@@ -48,20 +48,27 @@ fn android_main(app: android_activity::AndroidApp) {
 
     #[cfg(feature = "launcher")]
     {
+        use jni::objects::JString;
         use std::str::FromStr as _;
         use webrogue_gfx::IBuilder as _;
 
         let activity = app.activity_as_ptr() as jni::sys::jobject;
 
-        let vm =
-            unsafe { jni::JavaVM::from_raw(app.vm_as_ptr() as *mut jni::sys::JavaVM) }.unwrap();
-        let mut env = vm.attach_current_thread().unwrap();
+        let vm = unsafe { jni::JavaVM::from_raw(app.vm_as_ptr() as *mut jni::sys::JavaVM) };
+        let mut scope = jni::ScopeToken::default();
+        let mut env = unsafe {
+            vm.attach_current_thread_guard(|| jni::vm::AttachConfig::new(), &mut scope)
+                .unwrap()
+        };
+
+        let activity = unsafe { jni::objects::JObject::from_raw(env.borrow_env_mut(), activity) };
 
         let intent = env
+            .borrow_env_mut()
             .call_method(
-                unsafe { jni::objects::JObject::from_raw(activity) },
-                "getIntent",
-                "()Landroid/content/Intent;",
+                &activity,
+                jni::jni_str!("getIntent"),
+                jni::jni_sig!(() -> android.content.Intent),
                 &[],
             )
             .unwrap()
@@ -69,25 +76,32 @@ fn android_main(app: android_activity::AndroidApp) {
             .unwrap();
 
         let extra = env
-            .call_method(intent, "getExtras", "()Landroid/os/Bundle;", &[])
+            .borrow_env_mut()
+            .call_method(
+                intent,
+                jni::jni_str!("getExtras"),
+                jni::jni_sig!(() -> android.os.Bundle),
+                &[],
+            )
             .unwrap()
             .l()
             .unwrap();
 
-        let key = env.new_string("data").unwrap();
-        let default_value = env.new_string("default_value").unwrap();
-        let data = env
+        let key = env.borrow_env_mut().new_string("data").unwrap();
+        let default_value = env.borrow_env_mut().new_string("default_value").unwrap();
+        let data_object = env
+            .borrow_env_mut()
             .call_method(
                 extra,
-                "getString",
-                "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+                jni::jni_str!("getString"),
+                jni::jni_sig!((key: JString, default_value: JString) -> JString),
                 &[(&key).into(), (&default_value).into()],
             )
             .unwrap()
             .l()
             .unwrap();
 
-        let data = env.get_string((&data).into()).unwrap();
+        let data = JString::cast_local(env.borrow_env_mut(), data_object).unwrap();
 
         // Keep in sync with android/runtime/launcher/src/lib.rs
         #[derive(serde::Serialize, serde::Deserialize)]
@@ -97,12 +111,10 @@ fn android_main(app: android_activity::AndroidApp) {
         }
 
         let launch_intent_data: LaunchIntentData =
-            serde_json::from_str(data.to_str().unwrap()).unwrap();
+            serde_json::from_str(&data.try_to_string(env.borrow_env_mut()).unwrap()).unwrap();
 
-        let vm = env.get_java_vm().unwrap();
-        let activity = env
-            .new_global_ref(unsafe { jni::objects::JObject::from_raw(activity) })
-            .unwrap();
+        let vm = env.borrow_env_mut().get_java_vm().unwrap();
+        let activity = env.borrow_env_mut().new_global_ref(activity).unwrap();
 
         gfx_builder
             .run(
@@ -142,29 +154,48 @@ fn android_main(app: android_activity::AndroidApp) {
 }
 
 #[cfg(all(target_os = "android", feature = "launcher"))]
-fn on_sdp_answer(sdp_answer: String, vm: jni::JavaVM, activity: jni::objects::GlobalRef) {
-    let mut env = vm.attach_current_thread().unwrap();
-    let intent_class = env.find_class("android/content/Intent").unwrap();
-    let class_name = env.new_string("dev.webrogue.launcher.DEBUG_EVENT").unwrap();
+fn on_sdp_answer(
+    sdp_answer: String,
+    vm: jni::JavaVM,
+    activity: jni::objects::Global<jni::objects::JObject<'_>>,
+) {
+    let mut scope = jni::ScopeToken::default();
+    let mut env = unsafe {
+        vm.attach_current_thread_guard(|| jni::vm::AttachConfig::new(), &mut scope)
+            .unwrap()
+    };
+    let intent_class = env
+        .borrow_env_mut()
+        .find_class(jni::jni_str!("android/content/Intent"))
+        .unwrap();
+    let class_name = env
+        .borrow_env_mut()
+        .new_string("dev.webrogue.launcher.DEBUG_EVENT")
+        .unwrap();
     let intent = env
+        .borrow_env_mut()
         .new_object(
             &intent_class,
-            "(Ljava/lang/String;)V",
+            jni::jni_sig!((className: JString)),
             &[(&class_name).into()],
         )
         .unwrap();
 
-    let key = env.new_string("data").unwrap();
-    let value = env.new_string(sdp_answer).unwrap();
-    env.call_method(
-        &intent,
-        "putExtra",
-        "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
-        &[(&key).into(), (&value).into()],
-    )
-    .unwrap();
-    let package_name = env.new_string("dev.webrogue.launcher").unwrap();
-    // env.call_method(
+    let key = env.borrow_env_mut().new_string("data").unwrap();
+    let value = env.borrow_env_mut().new_string(sdp_answer).unwrap();
+    env.borrow_env_mut()
+        .call_method(
+            &intent,
+            jni::jni_str!("putExtra"),
+            jni::jni_sig!((key: JString, value: JString) -> android.content.Intent),
+            &[(&key).into(), (&value).into()],
+        )
+        .unwrap();
+    let package_name = env
+        .borrow_env_mut()
+        .new_string("dev.webrogue.launcher")
+        .unwrap();
+    // env.borrow_env_mut().call_method(
     //     &intent,
     //     "setPackage",
     //     "(Ljava/lang/String;)Landroid/content/Intent;",
@@ -172,27 +203,31 @@ fn on_sdp_answer(sdp_answer: String, vm: jni::JavaVM, activity: jni::objects::Gl
     // )
     // .unwrap();
     let component_class = env
+        .borrow_env_mut()
         .new_string("dev.webrogue.launcher.DebugEventBroadcastReceiver")
         .unwrap();
     let component_name = env
+        .borrow_env_mut()
         .new_object(
-            "android/content/ComponentName",
-            "(Ljava/lang/String;Ljava/lang/String;)V",
+            jni::jni_str!("android/content/ComponentName"),
+            jni::jni_sig!((packageName: JString, componentClass: JString)),
             &[(&package_name).into(), (&component_class).into()],
         )
         .unwrap();
-    env.call_method(
-        &intent,
-        "setComponent",
-        "(Landroid/content/ComponentName;)Landroid/content/Intent;",
-        &[(&component_name).into()],
-    )
-    .unwrap();
-    env.call_method(
-        &activity,
-        "sendBroadcast",
-        "(Landroid/content/Intent;)V",
-        &[(&intent).into()],
-    )
-    .unwrap();
+    env.borrow_env_mut()
+        .call_method(
+            &intent,
+            jni::jni_str!("setComponent"),
+            jni::jni_sig!((componentName: android.content.ComponentName) -> android.content.Intent),
+            &[(&component_name).into()],
+        )
+        .unwrap();
+    env.borrow_env_mut()
+        .call_method(
+            &activity,
+            jni::jni_str!("sendBroadcast"),
+            jni::jni_sig!((intent: android.content.Intent)),
+            &[(&intent).into()],
+        )
+        .unwrap();
 }

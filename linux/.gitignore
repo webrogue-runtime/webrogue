@@ -3,3 +3,5 @@
 /a.out
 /process_dump.*
 /*/*/clang.*.log
+/*/*/target
+/mounts
