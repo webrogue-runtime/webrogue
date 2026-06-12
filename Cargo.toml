@@ -165,7 +165,7 @@ webrtc = { version = "0.17.1" }
 base64 = { version = "0.22.1" }
 tokio-tungstenite = { version = "*" }
 futures-util = { version = "0.3" }
-uuid = { version = "^1.8", default-features = false }
+uuid = { version = "^1.23", default-features = false }
 blake3 = { version = "1.8.2" }
 async-trait = { version = "0.1.89" }
 rand = { version = "0.10", default-features = false }
