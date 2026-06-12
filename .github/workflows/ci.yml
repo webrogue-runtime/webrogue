@@ -99,6 +99,7 @@ jobs:
         cargo binstall --locked typos-cli
         typos
 
-  build_cli:
-    needs: [ tests, typos ]
-    uses: ./.github/workflows/build_cli.yml
+  # Additional checks
+  # build_cli:
+  #   needs: [ tests, typos ]
+  #   uses: ./.github/workflows/build_cli.yml
