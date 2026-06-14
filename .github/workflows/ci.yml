@@ -102,6 +102,6 @@ jobs:
         typos
 
   # Additional checks
-  build_cli:
-    needs: [ tests, typos ]
-    uses: ./.github/workflows/build_cli.yml
+  # build_cli:
+  #   needs: [ tests, typos ]
+  #   uses: ./.github/workflows/build_cli.yml

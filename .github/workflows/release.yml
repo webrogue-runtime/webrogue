@@ -151,7 +151,6 @@ jobs:
           webrogue-cli-macos-x86_64.tar.gz
         name: Release ${{ github.ref_name }}
         tag: ${{ github.ref_name }}
-        commit: ${{ github.ref }}
         makeLatest: true
 
     - uses: actions/upload-artifact@v7
