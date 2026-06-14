@@ -33,7 +33,7 @@ anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Artem Borovik"]
 license = "Apache-2.0 WITH LLVM-exception"
 edition = "2021"
@@ -61,6 +61,7 @@ members = [
   "crates/launcher",
   "crates/launcher/server-openapi",
   "crates/launcher-dev",
+  "crates/licenses",
   "crates/lld",
   "crates/wasi-common",
   "crates/wasip1",
@@ -104,6 +105,7 @@ webrogue-wasip1 = { path = "crates/wasip1" }
 webrogue-wrapp = { path = "crates/wrapp" }
 webrogue-launcher = { path = "crates/launcher" }
 webrogue-launcher-server-openapi = { path = "crates/launcher/server-openapi", default-features = false }
+webrogue-licenses = { path = "crates/licenses" }
 
 # Wasmtime crates
 wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }

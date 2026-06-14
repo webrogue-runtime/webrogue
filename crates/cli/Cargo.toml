@@ -63,6 +63,7 @@ async-trait = { workspace = true, optional = true }
 tokio-util = { workspace = true, features = ["rt", "io"], optional = true }
 webrogue-cli-goodies = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true, features = ["aws_lc_rs"] }
+webrogue-licenses = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 webrogue-gfx-winit = { workspace = true, features = ["static-vk"], optional = true }
