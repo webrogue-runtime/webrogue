@@ -81,7 +81,7 @@ jobs:
       if: startsWith(matrix.os, 'windows') == true
       shell: cmd
       run: |
-        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+        call "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\Common7\Tools\VsDevCmd.bat"
         REM gfxstream doesn't seem to support MSVC
         set CXX=clang-cl
         COMPONENTS=${{ matrix.components }} python3 scripts\cargo_check.py
