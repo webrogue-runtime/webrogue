@@ -8051,7 +8051,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -8060,7 +8060,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-android"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "android-activity",
  "android_logger",
@@ -8083,7 +8083,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-android-launcher"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "android-activity",
  "android_logger",
@@ -8106,7 +8106,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-aot-compiler"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -8125,11 +8125,11 @@ dependencies = [
 
 [[package]]
 name = "webrogue-aot-data"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "webrogue-aot-lib"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "blake3",
@@ -8142,7 +8142,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8166,13 +8166,14 @@ dependencies = [
  "webrogue-gfxstream",
  "webrogue-hub-client",
  "webrogue-hub-debuggee",
+ "webrogue-licenses",
  "webrogue-wasmtime",
  "webrogue-wrapp",
 ]
 
 [[package]]
 name = "webrogue-cli-goodies"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -8182,7 +8183,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-debugger"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8200,14 +8201,14 @@ dependencies = [
 
 [[package]]
 name = "webrogue-events"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
 ]
 
 [[package]]
 name = "webrogue-events-apigen"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -8218,7 +8219,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-events-macro"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "proc-macro2",
@@ -8228,7 +8229,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-gfx"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "ash",
@@ -8239,7 +8240,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-gfx-winit"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "ash",
@@ -8255,7 +8256,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-gfxstream"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ash",
  "cfg_aliases",
@@ -8268,14 +8269,14 @@ dependencies = [
 
 [[package]]
 name = "webrogue-gfxstream-lib"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cc",
 ]
 
 [[package]]
 name = "webrogue-hub-client"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -8305,7 +8306,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-hub-debuggee"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8328,7 +8329,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-icons"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "ico",
@@ -8340,7 +8341,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-ios"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "webrogue-gfx-winit",
@@ -8352,7 +8353,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-launcher"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8394,7 +8395,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-launcher-dev"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "tracing",
  "tracing-subscriber",
@@ -8434,8 +8435,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "webrogue-licenses"
+version = "0.2.0"
+
+[[package]]
 name = "webrogue-lld"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "reqwest",
@@ -8443,7 +8448,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-macos"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "webrogue-gfx-winit",
@@ -8452,7 +8457,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wasi-common"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "bitflags 2.13.0",
@@ -8469,7 +8474,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wasip1"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8486,7 +8491,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wasmtime"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -8527,7 +8532,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wrapp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "image",
@@ -8540,7 +8545,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wrapp-reader"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "image",

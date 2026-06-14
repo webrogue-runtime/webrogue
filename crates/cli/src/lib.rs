@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use clap::Parser;
 #[cfg(feature = "hub")]
 mod hub;
+mod licenses;
 #[cfg(feature = "run")]
 mod run;
 
@@ -42,6 +43,10 @@ enum Cli {
         #[command(subcommand)]
         command: crate::hub::HubCommand,
     },
+    Licenses {
+        #[command(flatten)]
+        command: crate::licenses::LicensesCommand,
+    },
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -69,6 +74,10 @@ pub fn main() -> anyhow::Result<()> {
         }
         #[cfg(feature = "hub")]
         Cli::Hub { command } => {
+            command.run()?;
+            Ok(())
+        }
+        Cli::Licenses { command } => {
             command.run()?;
             Ok(())
         }
