@@ -59,7 +59,9 @@ jobs:
     - name: Build AOT artifacts
       shell: cmd 
       run: |
-        call "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\Common7\Tools\VsDevCmd.bat"
+        for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
+          call "%%i"
+        )
         python3 windows/msvc/build_template.py
 
     - uses: actions/upload-artifact@v7
@@ -237,7 +239,9 @@ jobs:
     - name: Build
       shell: cmd 
       run: |
-        call "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\Common7\Tools\VsDevCmd.bat"
+        for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
+          call "%%i"
+        )
         REM gfxstream doesn't seem to support MSVC
         set CXX=clang-cl
         cargo build --target=x86_64-pc-windows-msvc --features=full --profile cli
