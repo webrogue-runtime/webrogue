@@ -81,7 +81,9 @@ jobs:
       if: startsWith(matrix.os, 'windows') == true
       shell: cmd
       run: |
-        call "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\Common7\Tools\VsDevCmd.bat"
+        for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
+          call "%%i"
+        )
         REM gfxstream doesn't seem to support MSVC
         set CXX=clang-cl
         COMPONENTS=${{ matrix.components }} python3 scripts\cargo_check.py
@@ -100,6 +102,6 @@ jobs:
         typos
 
   # Additional checks
-  # build_cli:
-  #   needs: [ tests, typos ]
-  #   uses: ./.github/workflows/build_cli.yml
+  build_cli:
+    needs: [ tests, typos ]
+    uses: ./.github/workflows/build_cli.yml
