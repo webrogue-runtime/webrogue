@@ -1,5 +1,6 @@
 use std::{fs::File, io::Cursor};
 
+use base64::{engine::general_purpose::STANDARD, Engine};
 use webrogue_icons::IconsData;
 
 wit_bindgen::generate!({
@@ -9,8 +10,8 @@ wit_bindgen::generate!({
 struct WRAPPReader;
 
 impl Guest for WRAPPReader {
-    fn read(i: Input) -> Result<Output, String> {
-        let result: anyhow::Result<vscode::example::types::Output> = (|| {
+    fn analyze(i: AnalyzeInput) -> AnalyzeOutputResult {
+        let result: anyhow::Result<vscode::example::types::AnalyzeOutput> = (|| {
             if webrogue_wrapp::is_path_a_wrapp(&i.path)? {
                 Ok(extract_config(webrogue_wrapp::WrappVFSBuilder::from_file(
                     File::open(i.path)?,
@@ -21,13 +22,16 @@ impl Guest for WRAPPReader {
                 )?)
             }
         })();
-        result.map_err(|e| e.to_string())
+        match result {
+            Ok(output) => AnalyzeOutputResult::Success(output),
+            Err(e) => AnalyzeOutputResult::Error(e.to_string()),
+        }
     }
 }
 
 fn extract_config<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     mut builder: VFSBuilder,
-) -> anyhow::Result<vscode::example::types::Output> {
+) -> anyhow::Result<vscode::example::types::AnalyzeOutput> {
     let config = builder.config()?.clone();
     let icons_data = IconsData::from_vfs_builder(&mut builder)?;
     let macos_icon = icons_data.macos_image()?;
@@ -38,10 +42,14 @@ fn extract_config<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
         .write_with_encoder(image::codecs::png::PngEncoder::new(Cursor::new(
             &mut macos_icon_data,
         )))?;
+    let macos_icon_data_url = format!("data:image/png;base64,{}", STANDARD.encode(macos_icon_data));
 
-    Ok(Output {
+    Ok(vscode::example::types::AnalyzeOutput {
         data: serde_json::to_string(&config)?,
-        macos_icon: macos_icon_data,
+        id: config.id.clone(),
+        name: config.name.clone(),
+        version: config.version.to_string(),
+        macos_icon_data_url,
     })
 }
 

@@ -197,7 +197,10 @@ impl crate::IVFSBuilder for RealVFSBuilder {
             return Ok(None);
         };
         let mut content = Vec::new();
-        std::fs::File::open(path)?.read_to_end(&mut content)?;
+        std::fs::File::open(path)
+            .with_context(|| format!("Unable to open {:?}", path))?
+            .read_to_end(&mut content)
+            .with_context(|| format!("Unable to read {:?}", path))?;
         Ok(Some(content))
     }
 }

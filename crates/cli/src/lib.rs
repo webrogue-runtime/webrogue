@@ -7,6 +7,7 @@ mod hub;
 mod licenses;
 #[cfg(feature = "run")]
 mod run;
+mod schema_dump;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -27,7 +28,6 @@ enum Cli {
         #[command(subcommand)]
         command: webrogue_aot_compiler::Commands,
     },
-    #[cfg(feature = "pack")]
     Pack {
         /// Path to webrogue.json file
         #[arg(short, long)]
@@ -43,9 +43,15 @@ enum Cli {
         #[command(subcommand)]
         command: crate::hub::HubCommand,
     },
+    /// Show licenses of Webrogue CLI and of it's dependencies and embedded resources
     Licenses {
         #[command(flatten)]
         command: crate::licenses::LicensesCommand,
+    },
+    /// An internal command to to dump JSON schemas
+    SchemaDump {
+        #[command(flatten)]
+        command: crate::schema_dump::SchemaDumpCommand,
     },
 }
 
@@ -67,7 +73,6 @@ pub fn main() -> anyhow::Result<()> {
             command.run(cache.as_ref())?;
             Ok(())
         }
-        #[cfg(feature = "pack")]
         Cli::Pack { config, output } => {
             webrogue_wrapp::archive(&config, &output)?;
             Ok(())
@@ -78,6 +83,10 @@ pub fn main() -> anyhow::Result<()> {
             Ok(())
         }
         Cli::Licenses { command } => {
+            command.run()?;
+            Ok(())
+        }
+        Cli::SchemaDump { command } => {
             command.run()?;
             Ok(())
         }

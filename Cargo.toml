@@ -13,12 +13,11 @@ path = "main.rs"
 doc = false
 
 [features]
-default = ["run", "compile", "pack", "hub", "llvm"]
-full = ["run", "compile", "pack", "hub", "llvm", "appended_artifacts"]
+default = ["run", "compile", "hub", "llvm"]
+full = ["run", "compile", "hub", "llvm", "appended_artifacts"]
 
 run = ["webrogue-cli/run"]
 compile = ["webrogue-cli/compile"]
-pack = ["webrogue-cli/pack"]
 hub = ["webrogue-cli/hub"]
 llvm = ["webrogue-cli/llvm"]
 
@@ -196,6 +195,7 @@ headers = "0.4"
 axum-extra = { version = "0.12" }
 rustls = { version = "0.23", default-features = false }
 bitflags = "2.11.1"
+schemars = "1.2.1"
 
 # To remove
 thiserror = "2.0.17"

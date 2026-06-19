@@ -2,18 +2,25 @@
 package vscode:example;
 
 interface types {
-	record input {
+	record analyze-input {
 		path: string,
 	}
-	record output {
+	record analyze-output {
 		data: string,
-		macos-icon: list<u8>
+		name: string,
+		id: string,
+		version: string,
+		macos-icon-data-url: string
+	}
+	variant analyze-output-result {
+		success(analyze-output),
+		error(string),
 	}
 }
 world wrapp-reader {
-	use types.{ input, output };
+	use types.{ analyze-input, analyze-output-result };
 
 	import log: func(msg: string);
 
-	export read: func(i: input) -> result<output, string>;
+	export analyze: func(i: analyze-input) -> analyze-output-result;
 }

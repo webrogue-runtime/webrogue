@@ -12,21 +12,18 @@ run = [
     "dep:webrogue-gfx",
     "dep:webrogue-gfxstream",
     "webrogue-gfxstream/lib-impl",
-    "dep:webrogue-wrapp",
     "dep:webrogue-debugger",
     "dep:tokio",
     "dep:async-trait",
     "dep:tokio-util"
 ]
 compile = ["dep:webrogue-aot-compiler"]
-pack = ["dep:webrogue-wrapp"]
 hub = [
     "dep:webrogue-hub-client",
     "dep:tokio",
     "dep:blake3",
     "dep:tokio-tungstenite",
     "dep:futures-util",
-    "dep:serde_json",
     "dep:serde",
     "dep:rand",
     "dep:webrogue-cli-goodies",
@@ -48,7 +45,7 @@ webrogue-gfx-winit = { workspace = true, optional = true }
 webrogue-gfx = { workspace = true, optional = true }
 webrogue-gfxstream = { workspace = true, optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }
-webrogue-wrapp = { workspace = true, features = ["write"], optional = true }
+webrogue-wrapp = { workspace = true, features = ["write"] }
 webrogue-hub-client = { workspace = true, optional = true }
 webrogue-hub-debuggee = { workspace = true, optional = true }
 webrogue-debugger = { workspace = true, optional = true }
@@ -56,7 +53,7 @@ tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"], opt
 blake3 = { workspace = true, optional = true }
 tokio-tungstenite = { workspace = true, optional = true, features = ["rustls-tls-webpki-roots"] }
 futures-util = { workspace = true, optional = true }
-serde_json = { workspace = true, optional = true }
+serde_json = { workspace = true }
 serde = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 async-trait = { workspace = true, optional = true }
@@ -64,6 +61,7 @@ tokio-util = { workspace = true, features = ["rt", "io"], optional = true }
 webrogue-cli-goodies = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true, features = ["aws_lc_rs"] }
 webrogue-licenses = { workspace = true }
+schemars = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 webrogue-gfx-winit = { workspace = true, features = ["static-vk"], optional = true }

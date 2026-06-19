@@ -1,14 +1,45 @@
+use schemars::JsonSchema;
+use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
+
 pub mod icons;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct Config {
+    #[schemars(
+        title = "Human-readable application name",
+        description = "This parameter is also used as application name on Android, macOS and iOS"
+    )]
     pub name: String,
+    #[schemars(
+        title = "Application identifier",
+        description = "Apple-style application identifier. Same value will be used as bundle ID for macOS and iOS applications. Lowercased value will be used as Android Application ID."
+    )]
     pub id: String,
+    #[schemars(
+        title = "Application entrypoint file path",
+        description = "Relative path to WebAssembly module file. 'main.wasm' is assumed if this value is not specified."
+    )]
     pub main: Option<String>,
+    #[schemars(title = "Filesystem configuration")]
     pub filesystem: Option<FilesystemConfig>,
+    #[schemars(
+        title = "Icons's configuration",
+        description = "This field is required to build for Android,  macOS and iOS."
+    )]
     pub icons: Option<icons::Icons>,
+    #[schemars(
+        title = "Application version",
+        description = "Application's semantic version. Read https://semver.org/ to learn about format of this value."
+    )]
     pub version: semver::Version,
-    pub env: Option<std::collections::HashMap<String, String>>,
+    #[schemars(
+        title = "Environment variables",
+        description = "These values are passed to your application"
+    )]
+    pub env: Option<HashMap<String, String>>,
+    #[schemars(title = "Graphics configuration")]
     pub graphics_api: Option<GraphicsApiConfig>,
 }
 impl Config {
@@ -33,9 +64,17 @@ impl Config {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct FilesystemConfig {
+    #[schemars(
+        title = "Resources configuration",
+        description = "Resources (a.k.a Assets), are read-only files and directories packaged with your application"
+    )]
     pub resources: Option<Vec<FilesystemResourceConfig>>,
+    #[schemars(
+        title = "Persistent storage configuration",
+        description = "Persistent storages (a.k.a Volumes), are read-write directories where your application can store data. This data is persisted between runs. Directory is empty by default."
+    )]
     pub persistent: Option<Vec<FilesystemPersistentConfig>>,
 }
 impl FilesystemConfig {
@@ -52,15 +91,31 @@ impl FilesystemConfig {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct FilesystemResourceConfig {
+    #[schemars(
+        title = "Path to resource",
+        description = "This path must lead to file or directory relatively to directory where your configuration files is stored."
+    )]
     pub real_path: String,
+    #[schemars(
+        title = "Mapped path to resource",
+        description = "This is the absolute path where your application can find this resource"
+    )]
     pub mapped_path: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct FilesystemPersistentConfig {
+    #[schemars(
+        title = "Persistent storage name",
+        description = "Persistent storages are identified by this name. Same name can be reused to mount the same persistent storage at different paths"
+    )]
     pub name: String,
+    #[schemars(
+        title = "Mapped path to resource",
+        description = "This is the absolute path where your application can find this persistent storage"
+    )]
     pub mapped_path: String,
 }
 impl FilesystemPersistentConfig {
@@ -69,13 +124,21 @@ impl FilesystemPersistentConfig {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct GraphicsApiConfig {
+    #[schemars(
+        title = "Enablement of CPU rendering API",
+        description = "CPU rendering (a.k.a software rendering) is a way to just display an array of pixels stored directly in memory. This is the simpliest and the most widely supported way to present something as it may bypass GPU entriely, but performance is expected to be low, so it is mostly used as a fallback if Vulkan is unsupported. This property actually does nothing, as CPU rendering is always available."
+    )]
     pub cpu_rendering: Option<Requirement>,
+    #[schemars(
+        title = "Enablement of Vulkan API",
+        description = "These value determines weather your applications is able to use Vulkan, and weather it deppends on it. Some platforms like Web browsers, old/virtualized Windows machines and iOS simulators may not support Vulkan, so your application will fail early if Vulkan is required but unsupported. On the other hand, disabling Vulkan entriely can strip away GFXStream library and save some size of final application"
+    )]
     pub vulkan: Option<Requirement>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub enum Requirement {
     #[serde(rename = "disabled")]
     Disabled,

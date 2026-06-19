@@ -69,7 +69,7 @@ else:
 if is_component_selected("cli"):
     for target in native_targets:
         check(package="webrogue", target=target)
-        for features in get_all_subsets(["run", "compile", "pack", "hub", "llvm"]):
+        for features in get_all_subsets(["run", "compile", "hub", "llvm"]):
             check(package="webrogue", target=target, features=features)
 
 if is_component_selected("aot-lib"):

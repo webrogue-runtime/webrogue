@@ -16,3 +16,4 @@ zstd-safe = { workspace = true, features = ["seekable", "std"] }
 zstd = { workspace = true }
 image = { workspace = true, optional = true, default-features = false, features = ["png", "rayon"] }
 semver = { workspace = true, default-features = false, features = ["serde"] }
+schemars = { workspace = true, features = ["semver1"] }
