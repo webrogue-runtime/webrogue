@@ -24,7 +24,7 @@ pub struct NormalIcon {
     pub path: Option<String>,
     #[schemars(
         title = "Icon's relative inset",
-        description = "It is relative to size of the whole icon, so it should be in range of [0..0.5)"
+        description = "It is relative to size of the whole icon. Should be in range of [0..1)"
     )]
     pub inset: f32,
     #[schemars(

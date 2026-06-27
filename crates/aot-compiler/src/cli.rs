@@ -65,10 +65,11 @@ pub enum Commands {
         #[arg(long)]
         console: bool,
         /// Don't add vk_swiftshader.dll.
-        /// SwiftShader is used as a fallback renderer on system that have no Vulkan drivers installed.
+        /// Some Windows machines may lack support of Vulkan due to missing or outdated drivers or unsupported hardware.
+        /// SwiftShader is used as a fallback renderer if Vulkan is unsupported.
         /// Webrogue places SwiftShader in the same directory resulting executable is in.
-        /// It's recommended to keep SwiftShader in most cases, but you can use this option to skip this
-        /// step, so you app will fail to start if hardware-accelerated rendering is unavailable.
+        /// This option skips bundling SwiftShader and makes your app fail to start if hardware-accelerated rendering is required but unavailable.
+        /// It's recommended to keep SwiftShader
         #[arg(long)]
         no_swiftshader: bool,
     },

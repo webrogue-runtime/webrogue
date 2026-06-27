@@ -154,19 +154,30 @@ impl Wasm32Target {
     }
 
     fn edit_breakpoint(&mut self) -> Result<bool, TargetError<anyhow::Error>> {
-        assert!(!self.has_running_threads() || self.skip_stale_threads);
-        self.ensure_all_threads_are_paused()
-            .map_err(TargetError::Fatal)?;
-        for thread in self.threads.values() {
-            let Some(stopped_thread) = thread.stopped.as_ref() else {
-                continue;
+        let tids = self.threads.keys().cloned().collect::<Vec<_>>();
+
+        for tid in tids {
+            let was_stopped = self.threads.get(&tid).unwrap().stopped.is_some();
+
+            if !was_stopped {
+                pause_thread(self.sender.clone(), self.threads.get_mut(&tid).unwrap()).unwrap();
+                self.wain_for_a_stop_sync().unwrap();
+            }
+            let Some(stopped_thread) = self.threads.get(&tid).unwrap().stopped.as_ref() else {
+                todo!()
             };
             let send_result = stopped_thread
                 .sender
                 .unbounded_send(ThreadMessage::EditBreakpoint(EditBreakpointMessage {
                     breakpoints: self.breakpoints.clone(),
                 }));
-            assert!(send_result.is_ok());
+            debug_assert!(send_result.is_ok());
+            if !was_stopped {
+                let send_result = stopped_thread
+                    .sender
+                    .unbounded_send(ThreadMessage::Resume(ResumeMessage { is_step: false }));
+                debug_assert!(send_result.is_ok());
+            }
         }
 
         Ok(true)
@@ -869,19 +880,23 @@ fn pause_thread(
     let wasm_thread = thread.wasm_thread.clone();
 
     if thread.wasm_thread.run_in_call(Box::pin(async move {
-        match rx.recv().await? {
-            ThreadMessage::Resume(resume_message) => {
-                wasm_thread.set_single_stepping_patch(resume_message.is_step);
-                return Ok(());
-            }
-            ThreadMessage::EditBreakpoint(message) => {
-                wasm_thread.set_breakpoints_patch(message.breakpoints);
-            }
-            ThreadMessage::Kill => {
-                wasmtime::bail!("Killed during imported function invocation");
-            }
-        };
-        wasmtime::bail!("Debugger disconnected during imported function invocation")
+        loop {
+            match rx.recv().await {
+                Ok(ThreadMessage::Resume(resume_message)) => {
+                    wasm_thread.set_single_stepping_patch(resume_message.is_step);
+                    return Ok(());
+                }
+                Ok(ThreadMessage::EditBreakpoint(message)) => {
+                    wasm_thread.set_breakpoints_patch(message.breakpoints);
+                }
+                Ok(ThreadMessage::Kill) => {
+                    wasmtime::bail!("Killed during imported function invocation");
+                }
+                Err(_) => {
+                    wasmtime::bail!("Debugger disconnected during imported function invocation")
+                }
+            };
+        }
     })) {
         sender.send(DebuggerLoopMessage::ThreadStopped(ThreadStopInfo {
             tid: thread.tid,

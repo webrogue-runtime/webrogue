@@ -6,15 +6,20 @@ interface types {
 		path: string,
 	}
 	record analyze-output {
-		data: string,
 		name: string,
 		id: string,
 		version: string,
-		macos-icon-data-url: string
+		macos-icon-data-url: string,
+		vulkan-requirement: requirement,
 	}
 	variant analyze-output-result {
 		success(analyze-output),
 		error(string),
+	}
+	variant requirement {
+		disabled,
+		optional,
+		required,
 	}
 }
 world wrapp-reader {

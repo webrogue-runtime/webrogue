@@ -11,7 +11,7 @@ pub struct MyTransform;
 impl Transform for MyTransform {
     fn transform(&mut self, schema: &mut Schema) {
         transform_subschemas(self, schema);
-        let mut schema_object = schema.as_object_mut().unwrap();
+        let schema_object = schema.as_object_mut().unwrap();
         let Some(ty) = schema_object.get("type") else {
             return;
         };
@@ -30,13 +30,11 @@ impl Transform for MyTransform {
                 serde_json::Value::Bool(false),
             );
         }
-        // schema.insert("my_property".to_string(), "hello world".into());
     }
 }
 
 #[derive(Args, Debug, Clone)]
 pub struct SchemaDumpCommand {}
-// "additionalProperties": false
 impl SchemaDumpCommand {
     pub fn run(&self) -> anyhow::Result<()> {
         let schema = SchemaGenerator::new(SchemaSettings::default().with_transform(MyTransform))
