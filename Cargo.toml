@@ -196,6 +196,8 @@ axum-extra = { version = "0.12" }
 rustls = { version = "0.23", default-features = false }
 bitflags = "2.11.1"
 schemars = "1.2.1"
+rcgen = "0.14.8"
+p12 = "0.6.3"
 
 # To remove
 thiserror = "2.0.17"
