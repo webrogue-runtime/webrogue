@@ -3,6 +3,8 @@ use std::{fs::File, io::Cursor};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use webrogue_icons::IconsData;
 
+use crate::vscode::example::types::Requirement;
+
 wit_bindgen::generate!({
     world: "wrapp-reader",
 });
@@ -45,11 +47,15 @@ fn extract_config<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     let macos_icon_data_url = format!("data:image/png;base64,{}", STANDARD.encode(macos_icon_data));
 
     Ok(vscode::example::types::AnalyzeOutput {
-        data: serde_json::to_string(&config)?,
         id: config.id.clone(),
         name: config.name.clone(),
         version: config.version.to_string(),
         macos_icon_data_url,
+        vulkan_requirement: match config.vulkan_requirement() {
+            webrogue_wrapp::config::Requirement::Disabled => Requirement::Disabled,
+            webrogue_wrapp::config::Requirement::Optional => Requirement::Optional,
+            webrogue_wrapp::config::Requirement::Required => Requirement::Required,
+        },
     })
 }
 

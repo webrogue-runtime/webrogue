@@ -2,6 +2,8 @@
 use std::path::PathBuf;
 
 use clap::Parser;
+#[cfg(feature = "compile")]
+mod android_gen_key;
 #[cfg(feature = "hub")]
 mod hub;
 mod licenses;
@@ -53,6 +55,18 @@ enum Cli {
         #[command(flatten)]
         command: crate::schema_dump::SchemaDumpCommand,
     },
+    // Some sort of bug in Clap prevents using command(flatten) here
+    /// Generate keystore file usable for signing android applications.
+    /// Note that you can do the same using "keytool" and "openssl" utilities
+    #[cfg(feature = "compile")]
+    AndroidGenKey {
+        /// Path (usually with .p12 file extension) to put resulting PKCS12 keystore file to
+        output: PathBuf,
+        #[arg(long)]
+        alias: String,
+        #[arg(long)]
+        password: String,
+    },
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -88,6 +102,20 @@ pub fn main() -> anyhow::Result<()> {
         }
         Cli::SchemaDump { command } => {
             command.run()?;
+            Ok(())
+        }
+        #[cfg(feature = "compile")]
+        Cli::AndroidGenKey {
+            output,
+            alias,
+            password,
+        } => {
+            crate::android_gen_key::AndroidKeygen {
+                output,
+                alias,
+                password,
+            }
+            .run()?;
             Ok(())
         }
     }

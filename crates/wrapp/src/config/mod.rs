@@ -128,7 +128,7 @@ impl FilesystemPersistentConfig {
 pub struct GraphicsApiConfig {
     #[schemars(
         title = "Enablement of CPU rendering API",
-        description = "CPU rendering (a.k.a software rendering) is a way to just display an array of pixels stored directly in memory. This is the simpliest and the most widely supported way to present something as it may bypass GPU entriely, but performance is expected to be low, so it is mostly used as a fallback if Vulkan is unsupported. This property actually does nothing, as CPU rendering is always available."
+        description = "CPU rendering (a.k.a software rendering) is a way to just display an array of pixels stored directly in memory. This is the simplest and the most widely supported way to present something as it may bypass GPU entriely, but performance is expected to be low, so it is mostly used as a fallback if Vulkan is unsupported. This property actually does nothing, as CPU rendering is always available."
     )]
     pub cpu_rendering: Option<Requirement>,
     #[schemars(

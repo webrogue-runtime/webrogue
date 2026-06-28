@@ -79,7 +79,10 @@ pub fn build_linux(
                 crate::compile::compile_wrapp_to_object(
                     wrapp_file_path,
                     object_file.path(),
-                    crate::Target::X86_64LinuxMUSL,
+                    match &arch {
+                        LinuxArch::X86_64 => crate::Target::X86_64LinuxMUSL,
+                        LinuxArch::Aarch64 => crate::Target::Aarch64LinuxMUSL,
+                    },
                     cache,
                     true,
                     false,

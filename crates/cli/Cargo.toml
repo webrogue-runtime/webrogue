@@ -17,7 +17,11 @@ run = [
     "dep:async-trait",
     "dep:tokio-util"
 ]
-compile = ["dep:webrogue-aot-compiler"]
+compile = [
+    "dep:webrogue-aot-compiler",
+    "dep:rcgen",
+    "dep:p12",
+]
 hub = [
     "dep:webrogue-hub-client",
     "dep:tokio",
@@ -62,6 +66,8 @@ webrogue-cli-goodies = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true, features = ["aws_lc_rs"] }
 webrogue-licenses = { workspace = true }
 schemars = { workspace = true }
+rcgen = { workspace = true, optional = true }
+p12 = { workspace = true, optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 webrogue-gfx-winit = { workspace = true, features = ["static-vk"], optional = true }

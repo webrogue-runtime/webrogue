@@ -59,7 +59,10 @@ pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send 
         (Ok(_), Err(err)) => Err(err),
         (Err(err), Ok(_)) => Err(err),
         (Err(wasi_main_error), Err(debugger_error)) => {
-            if wasi_main_error.root_cause().to_string() == "Debugger disconnected" {
+            let root_cause = wasi_main_error.root_cause().to_string();
+            if root_cause == "Debugger disconnected"
+                || root_cause == "Debugger disconnected during imported function invocation"
+            {
                 Err(debugger_error)
             } else {
                 Err(wasi_main_error)

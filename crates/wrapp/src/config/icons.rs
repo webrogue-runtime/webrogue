@@ -19,12 +19,12 @@ impl Icons {
 pub struct NormalIcon {
     #[schemars(
         title = "Relative path to application icon",
-        description = "Despite being marked as not required, ommiting this field may cause unexpected errors buring builds mentioning missing 'normal_icon' or something like that"
+        description = "Despite being marked as not required, omitting this field may cause unexpected errors during builds mentioning missing 'normal_icon' or something like that"
     )]
     pub path: Option<String>,
     #[schemars(
         title = "Icon's relative inset",
-        description = "It is relative to size of the whole icon, so it should be in range of [0..0.5)"
+        description = "It is relative to size of the whole icon. Should be in range of [0..1)"
     )]
     pub inset: f32,
     #[schemars(
