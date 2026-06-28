@@ -19,7 +19,7 @@ impl Icons {
 pub struct NormalIcon {
     #[schemars(
         title = "Relative path to application icon",
-        description = "Despite being marked as not required, ommiting this field may cause unexpected errors buring builds mentioning missing 'normal_icon' or something like that"
+        description = "Despite being marked as not required, omitting this field may cause unexpected errors during builds mentioning missing 'normal_icon' or something like that"
     )]
     pub path: Option<String>,
     #[schemars(
