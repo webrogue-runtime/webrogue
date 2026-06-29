@@ -9,7 +9,7 @@ interface types {
 		name: string,
 		id: string,
 		version: string,
-		macos-icon-data-url: string,
+		windows-icon-data-url: string,
 		vulkan-requirement: requirement,
 	}
 	variant analyze-output-result {

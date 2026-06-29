@@ -3,6 +3,8 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::config::icons::{ColoredIcon, IconBrightness};
+
 pub mod icons;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
@@ -61,6 +63,21 @@ impl Config {
             .as_ref()
             .and_then(|graphics_api| graphics_api.vulkan.clone())
             .unwrap_or(Requirement::Required)
+    }
+
+    pub fn light_icon(&self) -> Option<ColoredIcon> {
+        self.icons.as_ref()?.light.clone()
+    }
+
+    pub fn dark_icon(&self) -> Option<ColoredIcon> {
+        self.icons.as_ref()?.dark.clone()
+    }
+
+    pub fn default_icon_brightness(&self) -> IconBrightness {
+        self.icons
+            .as_ref()
+            .and_then(|icons| icons.default_brightness.clone())
+            .unwrap_or(IconBrightness::LIGHT)
     }
 }
 

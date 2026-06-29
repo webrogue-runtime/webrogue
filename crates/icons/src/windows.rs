@@ -4,8 +4,8 @@ use image::imageops::FilterType;
 
 use crate::IconsData;
 
-pub fn generate_res(config: IconsData, writer: &mut impl std::io::Write) -> anyhow::Result<()> {
-    let image = config.macos_image()?; // Bruh. TODO something smarter
+pub fn generate_res(icons_data: IconsData, writer: &mut impl std::io::Write) -> anyhow::Result<()> {
+    let image = icons_data.windows_icon()?;
     let sizes = [16, 32, 48, 256];
 
     let mut png_data_list = Vec::new();

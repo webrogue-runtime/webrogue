@@ -1,5 +1,7 @@
 use std::io::Write as _;
 
+use crate::{combined_image, foreground_image};
+
 pub fn generate_icons(
     build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
@@ -14,9 +16,11 @@ fn generate_icon(
     build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> Result<(), anyhow::Error> {
+    let icon_config = icons_data.default_config().clone();
+    let icon_bytes = icons_data.default_bytes().to_vec();
+
     std::fs::create_dir_all(build_dir.join("AppIcon.icon").join("Assets"))?;
-    icons_data
-        .foreground_image()?
+    foreground_image(&icon_bytes)?
         .resize(1024, 1024, image::imageops::FilterType::Lanczos3)
         .write_with_encoder(image::codecs::png::PngEncoder::new(std::fs::File::create(
             build_dir
@@ -83,7 +87,7 @@ fn generate_icon(
 }}
 
 "#,
-        (1.0 - icons_data.config.normal.inset)
+        (1.0 - icon_config.inset)
     ))?;
     Ok(())
 }
@@ -92,7 +96,10 @@ fn generate_ios_splash_screen(
     build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> anyhow::Result<()> {
-    let combined_image = icons_data.combined_image(1024)?;
+    let icon_config = icons_data.default_config().clone();
+    let icon_bytes = icons_data.default_bytes().to_vec();
+
+    let combined_image = combined_image(&icon_config, &icon_bytes, 1024)?;
     combined_image.write_with_encoder(image::codecs::png::PngEncoder::new(
         std::fs::File::create(
             build_dir
@@ -136,9 +143,9 @@ fn generate_ios_splash_screen(
   }}
 }}
 "#,
-        (icons_data.config.normal.background.blue * 255.0) as u8,
-        (icons_data.config.normal.background.green * 255.0) as u8,
-        (icons_data.config.normal.background.red * 255.0) as u8,
+        (icon_config.background.blue * 255.0) as u8,
+        (icon_config.background.green * 255.0) as u8,
+        (icon_config.background.red * 255.0) as u8,
     ))?;
 
     Ok(())

@@ -1,5 +1,7 @@
 use std::io::Write as _;
 
+use crate::{background_image, combined_image, foreground_image};
+
 fn write_icon_image(
     icon_image: &image::DynamicImage,
     size: u32,
@@ -27,6 +29,8 @@ pub fn generate_icons(
     build_dir: &std::path::Path,
     icons_data: &crate::IconsData,
 ) -> anyhow::Result<()> {
+    let icon_config = icons_data.default_config().clone();
+    let icon_bytes = icons_data.default_bytes().to_vec();
     for dir in [
         "drawable",
         "mipmap-anydpi-v26",
@@ -46,7 +50,7 @@ pub fn generate_icons(
         );
     }
     write_icon_image(
-        &icons_data.foreground_image()?,
+        &foreground_image(&icon_bytes)?,
         1024,
         build_dir,
         "drawable",
@@ -54,14 +58,14 @@ pub fn generate_icons(
     )?;
 
     write_icon_image(
-        &icons_data.background_image(1024),
+        &background_image(&icon_config, 1024),
         1024,
         build_dir,
         "drawable",
         "ic_launcher_background.webp",
     )?;
 
-    let icon = icons_data.combined_image(1024)?;
+    let icon = combined_image(&icon_config, &icon_bytes, 1024)?;
 
     for (dir, size) in [
         ("mipmap-hdpi", 72),
@@ -77,7 +81,7 @@ pub fn generate_icons(
         let absolute_inset = 174;
 
         let target_size = 1024 - 2 * absolute_inset;
-        let target_size = ((target_size as f32) * (1.0 - icons_data.config.normal.inset)) as u32;
+        let target_size = ((target_size as f32) * (1.0 - icon_config.inset)) as u32;
         (0.5 - (target_size as f32) / 2048.0) * 100.0
     };
 

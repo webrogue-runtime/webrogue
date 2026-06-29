@@ -81,10 +81,10 @@ rpngconvert -size 512x512 xc:white ../../android/runtime/launcher/src/main/res/d
 # ofsize 64 | to_svg ../../platforms/Linux/TemplateAppDir/webrogue.svg
 
 # # For Web
-ofsize 61 | stroke_width 2.5 | to_ico ../../web/root/logo.ico "16,24,32,64"
-ofsize 62 | to_png_transparent 1024 ../../web/logo.png
-ofsize 62 | to_png_transparent 1024 vscode_extension_logo.png
-ofsize 51 | to_png_transparent 128 microsoft_marketplace_logo.png
+# ofsize 61 | stroke_width 2.5 | to_ico ../../web/root/logo.ico "16,24,32,64"
+# ofsize 62 | to_png_transparent 1024 ../../web/logo.png
+# ofsize 62 | to_png_transparent 1024 vscode_extension_logo.png
+# ofsize 51 | to_png_transparent 128 microsoft_marketplace_logo.png
 
 # # For Windows
 # ofsize 64 | margin -6 | to_ico ../../platforms/Windows/logo.ico "16,32,48,256"
@@ -100,3 +100,7 @@ ofsize 51 | to_png_transparent 128 microsoft_marketplace_logo.png
 ofsize 44 | to_png_transparent 1024 ../../apple/runtime/AppIcon.icon/Assets/icon_normal.png
 ofsize 44 | parse_colors | outer_fill_color 000000 | inner_fill_color ffffff | stroke_color ffffff | default_colors | to_png_transparent 1024 ../../apple/runtime/AppIcon.icon/Assets/icon_dark.png
 ofsize 44 | parse_colors | outer_fill_color ffffff80 | inner_fill_color ffffff | stroke_color ffffff | default_colors | to_png_transparent 1024 ../../apple/runtime/AppIcon.icon/Assets/icon_mono.png
+
+# Embedded default icon
+ofsize 62 | to_png_transparent 1024 ../../crates/icons/media/logo_default_embedded.png
+ofsize 62 | parse_colors | outer_fill_color 000000 | inner_fill_color ffffff | stroke_color ffffff | default_colors | to_png_transparent 1024 ../../crates/icons/media/logo_default_embedded_dark.png
