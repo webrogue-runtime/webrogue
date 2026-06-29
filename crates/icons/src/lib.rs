@@ -1,7 +1,10 @@
+use anyhow::Context as _;
 use image::DynamicImage;
 use webrogue_wrapp::config::icons::{
     ColoredIcon, IconBrightness, DARK_ICON_UNCOMPRESSED_NAME, LIGHT_ICON_UNCOMPRESSED_NAME,
 };
+
+use crate::utils::Color;
 
 pub mod android;
 mod utils;
@@ -9,25 +12,22 @@ pub mod windows;
 pub mod xcode;
 
 const DEFAULT_LIGHT_ICON: &[u8] = include_bytes!("../media/logo_default_embedded.png");
-const DEFAULT_LIGHT_ICON_CONFIGURATION: ColoredIcon = ColoredIcon {
-    path: None,
-    inset: 0.28,
-    background: webrogue_wrapp::config::icons::Background {
-        red: 1.0,
-        green: 1.0,
-        blue: 1.0,
-    },
-};
+fn default_light_icon_configuration() -> ColoredIcon {
+    ColoredIcon {
+        path: None,
+        inset: 0.28,
+        background: "#FFFFFF".to_owned(),
+    }
+}
+
 const DEFAULT_DARK_ICON: &[u8] = include_bytes!("../media/logo_default_embedded_dark.png");
-const DEFAULT_DARK_ICON_CONFIGURATION: ColoredIcon = ColoredIcon {
-    path: None,
-    inset: 0.28,
-    background: webrogue_wrapp::config::icons::Background {
-        red: 0.0,
-        green: 0.0,
-        blue: 0.0,
-    },
-};
+fn default_dark_icon_configuration() -> ColoredIcon {
+    ColoredIcon {
+        path: None,
+        inset: 0.28,
+        background: "#000000".to_owned(),
+    }
+}
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Clone)]
 pub struct IconsData {
@@ -55,9 +55,9 @@ impl IconsData {
         dark_config = dark_config.or_else(|| light_config.clone());
 
         Ok(Self {
-            light_config: light_config.unwrap_or(DEFAULT_LIGHT_ICON_CONFIGURATION),
+            light_config: light_config.unwrap_or_else(default_light_icon_configuration),
             light_bytes: light_bytes.unwrap_or_else(|| DEFAULT_LIGHT_ICON.to_vec()),
-            dark_config: dark_config.unwrap_or(DEFAULT_DARK_ICON_CONFIGURATION),
+            dark_config: dark_config.unwrap_or_else(default_dark_icon_configuration),
             dark_bytes: dark_bytes.unwrap_or_else(|| DEFAULT_DARK_ICON.to_vec()),
             default_brightness: config.default_icon_brightness(),
         })
@@ -85,15 +85,20 @@ impl IconsData {
     }
 }
 
-pub fn background_image(icon_config: &ColoredIcon, size: u32) -> image::DynamicImage {
-    crate::utils::solid_color(
+pub fn background_image(
+    icon_config: &ColoredIcon,
+    size: u32,
+) -> anyhow::Result<image::DynamicImage> {
+    let color =
+        Color::parse(&icon_config.background).context("Failed to parse icon's background color")?;
+    Ok(crate::utils::solid_color(
         size,
         size,
-        (icon_config.background.red * 255.0) as u8,
-        (icon_config.background.green * 255.0) as u8,
-        (icon_config.background.blue * 255.0) as u8,
+        color.red,
+        color.green,
+        color.blue,
         255,
-    )
+    ))
 }
 
 pub fn foreground_image(icon_bytes: &[u8]) -> anyhow::Result<image::DynamicImage> {
@@ -108,7 +113,7 @@ pub fn combined_image(
     size: u32,
 ) -> anyhow::Result<image::DynamicImage> {
     let icon_image = foreground_image(icon_bytes)?;
-    let mut old_image = background_image(icon_config, size);
+    let mut old_image = background_image(icon_config, size)?;
 
     crate::utils::blend(
         icon_image,
@@ -123,10 +128,13 @@ pub fn macos_image(
     icon_config: &ColoredIcon,
     icon_bytes: &[u8],
 ) -> anyhow::Result<image::DynamicImage> {
+    let background_color =
+        Color::parse(&icon_config.background).context("Failed to parse icon's background color")?;
+
     let background_color = image::Rgba([
-        (icon_config.background.red * 255.0) as u8,
-        (icon_config.background.green * 255.0) as u8,
-        (icon_config.background.blue * 255.0) as u8,
+        background_color.red,
+        background_color.green,
+        background_color.blue,
         255,
     ]);
     let mut combined_image = crate::utils::solid_color(1024, 1024, 0, 0, 0, 0);

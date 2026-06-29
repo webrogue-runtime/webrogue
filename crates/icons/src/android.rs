@@ -58,7 +58,7 @@ pub fn generate_icons(
     )?;
 
     write_icon_image(
-        &background_image(&icon_config, 1024),
+        &background_image(&icon_config, 1024)?,
         1024,
         build_dir,
         "drawable",

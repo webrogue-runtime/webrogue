@@ -32,7 +32,7 @@ impl Icons {
 pub struct ColoredIcon {
     #[schemars(
         title = "Relative path to application icon",
-        description = "Despite being marked as not required, omitting this field may cause unexpected errors during builds mentioning missing 'normal_icon' or something like that"
+        description = "Icons fall back to path from another brightness or Webrogue logo if this field is not specified."
     )]
     pub path: Option<String>,
     #[schemars(
@@ -42,47 +42,25 @@ pub struct ColoredIcon {
     pub inset: f32,
     #[schemars(
         title = "Icon's background color",
-        description = "This color will be used to fill insets and transparent parts of your icon"
+        description = "This color will be used to fill insets and transparent parts of your icon. Specified as six-digit hexadecimal web color.",
+        regex(pattern = r"^#?([a-fA-F0-9]{6})$")
     )]
-    pub background: Background,
+    pub background: String,
 }
 impl ColoredIcon {
     pub fn strip(self) -> Self {
         Self {
             path: None,
             inset: self.inset,
-            background: self.background.strip(),
+            background: self.background,
         }
     }
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
-pub struct Background {
-    #[schemars(
-        title = "Red component of color",
-        description = "Should be in range of [0..1]"
-    )]
-    pub red: f32,
-    #[schemars(
-        title = "Green component of color",
-        description = "Should be in range of [0..1]"
-    )]
-    pub green: f32,
-    #[schemars(
-        title = "Blue component of color",
-        description = "Should be in range of [0..1]"
-    )]
-    pub blue: f32,
-}
-
-impl Background {
-    pub fn strip(self) -> Self {
-        self
-    }
-}
-
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub enum IconBrightness {
+    #[serde(rename = "light")]
     LIGHT,
+    #[serde(rename = "dark")]
     DARK,
 }

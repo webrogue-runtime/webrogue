@@ -1,6 +1,8 @@
 use std::io::Write as _;
 
-use crate::{combined_image, foreground_image};
+use anyhow::Context as _;
+
+use crate::{combined_image, foreground_image, utils::Color};
 
 pub fn generate_icons(
     build_dir: &std::path::Path,
@@ -98,6 +100,8 @@ fn generate_ios_splash_screen(
 ) -> anyhow::Result<()> {
     let icon_config = icons_data.default_config().clone();
     let icon_bytes = icons_data.default_bytes().to_vec();
+    let icon_background_color =
+        Color::parse(&icon_config.background).context("Failed to parse icon's background color")?;
 
     let combined_image = combined_image(&icon_config, &icon_bytes, 1024)?;
     combined_image.write_with_encoder(image::codecs::png::PngEncoder::new(
@@ -143,9 +147,7 @@ fn generate_ios_splash_screen(
   }}
 }}
 "#,
-        (icon_config.background.blue * 255.0) as u8,
-        (icon_config.background.green * 255.0) as u8,
-        (icon_config.background.red * 255.0) as u8,
+        icon_background_color.blue, icon_background_color.green, icon_background_color.red,
     ))?;
 
     Ok(())

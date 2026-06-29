@@ -27,7 +27,7 @@ impl Guest for WRAPPReader {
         })();
         match result {
             Ok(output) => AnalyzeOutputResult::Success(output),
-            Err(e) => AnalyzeOutputResult::Error(e.to_string()),
+            Err(e) => AnalyzeOutputResult::Error(format!("{:#}", e)),
         }
     }
 }
