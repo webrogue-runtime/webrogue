@@ -2,7 +2,7 @@ use std::{fs::File, io::Cursor};
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use image::DynamicImage;
-use webrogue_icons::{background_image, foreground_image, insetted_foreground_image, IconsData};
+use webrogue_icons::{background_image, insetted_foreground_image, IconsData};
 
 use crate::vscode::example::types::Requirement;
 

@@ -97,7 +97,7 @@ pub fn generate_icons(
             ("drawable-night", dark_icon_config, dark_icon_bytes),
         ] {
             let xml_inset = {
-                // It looks like Android reserves a third of foreground's wight and heigh for shake animations
+                // It looks like Android reserves a third of foreground's wight and height for shake animations
                 let android_offset = 1.0 / 3.0;
                 let inset = icon_config.inset;
                 let inset = android_offset + inset * (1.0 - android_offset);
