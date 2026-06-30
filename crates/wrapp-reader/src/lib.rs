@@ -2,7 +2,7 @@ use std::{fs::File, io::Cursor};
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use image::DynamicImage;
-use webrogue_icons::IconsData;
+use webrogue_icons::{background_image, foreground_image, insetted_foreground_image, IconsData};
 
 use crate::vscode::example::types::Requirement;
 
@@ -38,11 +38,34 @@ fn extract_config<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     let config = builder.config()?.clone();
     let icons_data = IconsData::from_vfs_builder(&mut builder)?;
 
+    let android_light_icon_bytes = &icons_data.light_bytes;
+    let android_light_icon_config = &icons_data.light_config;
+    let android_dark_icon_bytes = &icons_data.dark_bytes;
+    let android_dark_icon_config = &icons_data.dark_config;
+
     Ok(vscode::example::types::AnalyzeOutput {
         id: config.id.clone(),
         name: config.name.clone(),
         version: config.version.to_string(),
         windows_icon_data_url: as_data_url(&icons_data.windows_icon()?)?,
+        android_light_icon_data_url: as_data_url(&insetted_foreground_image(
+            android_light_icon_config,
+            android_light_icon_bytes,
+            1024,
+        )?)?,
+        android_light_background_data_url: as_data_url(&background_image(
+            android_light_icon_config,
+            1024,
+        )?)?,
+        android_dark_icon_data_url: as_data_url(&insetted_foreground_image(
+            android_dark_icon_config,
+            android_dark_icon_bytes,
+            1024,
+        )?)?,
+        android_dark_background_data_url: as_data_url(&background_image(
+            android_dark_icon_config,
+            1024,
+        )?)?,
         vulkan_requirement: match config.vulkan_requirement() {
             webrogue_wrapp::config::Requirement::Disabled => Requirement::Disabled,
             webrogue_wrapp::config::Requirement::Optional => Requirement::Optional,

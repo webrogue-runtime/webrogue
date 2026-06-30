@@ -107,19 +107,32 @@ pub fn foreground_image(icon_bytes: &[u8]) -> anyhow::Result<image::DynamicImage
     Ok(image::DynamicImage::ImageRgba8(reader.decode()?.to_rgba8()))
 }
 
-pub fn combined_image(
+pub fn insetted_foreground_image(
     icon_config: &ColoredIcon,
     icon_bytes: &[u8],
     size: u32,
 ) -> anyhow::Result<image::DynamicImage> {
     let icon_image = foreground_image(icon_bytes)?;
-    let mut old_image = background_image(icon_config, size)?;
+    let mut old_image = crate::utils::solid_color(size, size, 0, 0, 0, 0);
 
     crate::utils::blend(
         icon_image,
         &mut old_image,
         (size as f32 * (1.0 - icon_config.inset)) as u32,
     );
+
+    Ok(old_image)
+}
+
+pub fn combined_image(
+    icon_config: &ColoredIcon,
+    icon_bytes: &[u8],
+    size: u32,
+) -> anyhow::Result<image::DynamicImage> {
+    let insetted_image = insetted_foreground_image(icon_config, icon_bytes, size)?;
+    let mut old_image = background_image(icon_config, size)?;
+
+    crate::utils::blend(insetted_image, &mut old_image, size);
 
     Ok(old_image)
 }

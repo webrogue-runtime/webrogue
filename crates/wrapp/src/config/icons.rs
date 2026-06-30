@@ -37,7 +37,7 @@ pub struct ColoredIcon {
     pub path: Option<String>,
     #[schemars(
         title = "Icon's relative inset",
-        description = "It is relative to size of the whole icon. Should be in range of [0..1)"
+        description = "It is relative to size of the whole icon. Should be in range of [0..1). Android guarantees that you icon is not clipped if inset is 0.28 or more"
     )]
     pub inset: f32,
     #[schemars(
