@@ -1,7 +1,7 @@
 use anyhow::Context as _;
 use semver::Version;
-use std::io::Write;
-use webrogue_cli_goodies::{note, step, warning};
+use std::{io::Write, path::absolute};
+use webrogue_cli_goodies::{note, step};
 use webrogue_wrapp::config::Config;
 
 mod icons;
@@ -25,7 +25,6 @@ pub fn build(
     container_path: &std::path::PathBuf,
     build_dir: &std::path::PathBuf,
     signing: Signing,
-    debug: bool,
     output: Option<std::path::PathBuf>,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
@@ -42,7 +41,6 @@ pub fn build(
             container_path,
             build_dir,
             signing,
-            debug,
             output,
             cache,
         )
@@ -54,7 +52,6 @@ pub fn build(
             container_path,
             build_dir,
             signing,
-            debug,
             output,
             cache,
         )
@@ -69,7 +66,6 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     container_path: &std::path::Path,
     build_dir: &std::path::PathBuf,
     signing: Signing,
-    debug: bool,
     output: Option<std::path::PathBuf>,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
@@ -148,7 +144,6 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
             java_home_env,
             build_dir,
             signing,
-            debug,
             output,
             config,
             version,
@@ -171,7 +166,6 @@ fn gradle_build(
     java_home_env: Option<&std::path::PathBuf>,
     build_dir: &std::path::PathBuf,
     signing: Signing,
-    debug: bool,
     output: Option<std::path::PathBuf>,
     config: Config,
     version: Version,
@@ -181,6 +175,7 @@ fn gradle_build(
     #[cfg(not(target_os = "windows"))]
     let (gradle_shell, gradle_script) = ("sh", "gradlew");
 
+    let debug = matches!(signing, Signing::Unsigned);
     let mut properties_file =
         std::fs::File::create(build_dir.join("app").join("gradle.properties"))?;
     set_gradle_property(
@@ -226,11 +221,12 @@ fn gradle_build(
         )?;
         set_gradle_property(&mut properties_file, "webrogueKeyPassword", key_password)?;
         set_gradle_property(&mut properties_file, "webrogueKeyAlias", key_alias)?;
-    } else if !debug {
-        warning(
-        "warning: Using debug signature. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signature",
-      );
     }
+    // else if !debug {
+    //     warning(
+    //     "warning: Using debug signature. Specify --keystore-path, --store-password, --key-password & --key-alias arguments to use release signature",
+    //   );
+    // }
     drop(properties_file);
     let mut command = std::process::Command::new(gradle_shell);
     command
@@ -243,7 +239,7 @@ fn gradle_build(
         })
         .current_dir(build_dir);
     if let Some(sdk_env) = sdk_env {
-        command.env("ANDROID_SDK_ROOT", sdk_env);
+        command.env("ANDROID_SDK_ROOT", absolute(sdk_env)?);
     }
     if let Some(java_home_env) = java_home_env {
         command.env("JAVA_HOME", java_home_env);

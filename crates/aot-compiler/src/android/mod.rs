@@ -12,7 +12,6 @@ pub fn build(
     store_password: &Option<String>,
     key_password: &Option<String>,
     key_alias: &Option<String>,
-    debug: bool,
     output: &Option<std::path::PathBuf>,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
@@ -68,7 +67,6 @@ pub fn build(
         wrapp_path,
         build_dir,
         signing,
-        debug,
         output.clone(),
         cache,
     )?;

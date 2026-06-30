@@ -12,6 +12,18 @@ impl Transform for MyTransform {
     fn transform(&mut self, schema: &mut Schema) {
         transform_subschemas(self, schema);
         let schema_object = schema.as_object_mut().unwrap();
+
+        if schema_object.get("pattern")
+            == Some(&serde_json::Value::String(
+                "^#?([a-fA-F0-9]{6})$".to_string(),
+            ))
+        {
+            schema_object.insert(
+                "format".to_owned(),
+                serde_json::Value::String("color".to_string()),
+            );
+        }
+
         let Some(ty) = schema_object.get("type") else {
             return;
         };

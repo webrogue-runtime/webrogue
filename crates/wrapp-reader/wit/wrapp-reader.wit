@@ -9,7 +9,11 @@ interface types {
 		name: string,
 		id: string,
 		version: string,
-		macos-icon-data-url: string,
+		windows-icon-data-url: string,
+		android-light-icon-data-url: string,
+		android-light-background-data-url: string,
+		android-dark-icon-data-url: string,
+		android-dark-background-data-url: string,
 		vulkan-requirement: requirement,
 	}
 	variant analyze-output-result {

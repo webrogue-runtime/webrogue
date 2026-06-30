@@ -419,7 +419,8 @@ impl WasmThreadRegistry {
             match reason {
                 StopReason::MainFinished => std::process::exit(0),
                 StopReason::ThreadError(tid, error) => {
-                    panic!("An error occurred in WASI thread #{tid}: {:#}", error)
+                    eprintln!("An error occurred in WASI thread #{tid}: {:#}", error);
+                    std::process::exit(1);
                 }
             }
         } else {

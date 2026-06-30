@@ -1,10 +1,7 @@
 use std::{fs::File, io::Write as _, path::PathBuf};
 
 use clap::Args;
-use rcgen::{
-    CertificateParams, DistinguishedName, DnType, KeyPair, SignatureAlgorithm,
-    PKCS_ECDSA_P256_SHA256,
-};
+use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair, PKCS_ECDSA_P256_SHA256};
 
 #[derive(Args, Debug, Clone)]
 pub struct AndroidKeygen {

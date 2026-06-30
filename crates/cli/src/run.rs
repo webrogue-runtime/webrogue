@@ -50,7 +50,13 @@ pub fn run_builder(
 
     let config = vfs_builder.config()?.clone();
 
-    let persistent_path = std::env::current_dir()?
+    let persistent_path_base = if let Some(home_dir) = std::env::home_dir() {
+        home_dir
+    } else {
+        std::env::current_dir()?
+    };
+
+    let persistent_path = persistent_path_base
         .join(".webrogue")
         .join(&config.id)
         .join("persistent");

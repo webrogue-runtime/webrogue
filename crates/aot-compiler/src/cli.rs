@@ -46,9 +46,6 @@ pub enum Commands {
         /// Release key password
         #[arg(long, value_name = "ALIAS")]
         key_alias: Option<String>,
-        /// Debug build. Applies only to Java code. Resulting APK will be slightly larger.
-        #[arg(long)]
-        debug: bool,
         /// Path to place resulting APK
         #[arg(short, long, value_name = "PATH")]
         output: Option<std::path::PathBuf>,
@@ -157,7 +154,6 @@ impl Commands {
                 store_password,
                 key_password,
                 key_alias,
-                debug,
                 output,
             } => crate::android::build(
                 wrapp_path,
@@ -168,7 +164,6 @@ impl Commands {
                 store_password,
                 key_password,
                 key_alias,
-                *debug,
                 output,
                 cache,
             )?,

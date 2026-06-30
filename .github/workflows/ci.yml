@@ -19,9 +19,9 @@ jobs:
         - os: ubuntu-24.04
           components: cli,aot-lib
         - os: windows-2025
-          components: cli,aot-lib,ios,macos
-        - os: macos-26
           components: cli,aot-lib
+        - os: macos-26
+          components: cli,aot-lib,ios,macos
         - os: ubuntu-24.04
           components: android
 

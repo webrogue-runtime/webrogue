@@ -2,6 +2,8 @@ use std::{fmt::Debug, io::Read, sync::Arc};
 
 use anyhow::{Context, Ok};
 
+use crate::config::icons::{DARK_ICON_UNCOMPRESSED_NAME, LIGHT_ICON_UNCOMPRESSED_NAME};
+
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct RealFilePosition {
     pub path: std::path::PathBuf,
@@ -158,16 +160,31 @@ impl RealVFSBuilder {
         }
 
         let mut uncompressed_paths = std::collections::HashMap::<String, std::path::PathBuf>::new();
-        if let Some(icon_path) = config
+
+        if let Some(light_icon_path) = config
             .icons
             .as_ref()
-            .and_then(|icons| icons.normal.path.clone())
+            .and_then(|icons| icons.light.clone())
+            .and_then(|icon| icon.path.clone())
         {
             let mut real_icon_path = root_path.clone();
-            for part in icon_path.split('/') {
+            for part in light_icon_path.split('/') {
                 real_icon_path = real_icon_path.join(part);
             }
-            uncompressed_paths.insert("normal_icon".to_owned(), real_icon_path);
+            uncompressed_paths.insert(LIGHT_ICON_UNCOMPRESSED_NAME.to_owned(), real_icon_path);
+        }
+
+        if let Some(dark_icon_path) = config
+            .icons
+            .as_ref()
+            .and_then(|icons| icons.dark.clone())
+            .and_then(|icon| icon.path.clone())
+        {
+            let mut real_icon_path = root_path.clone();
+            for part in dark_icon_path.split('/') {
+                real_icon_path = real_icon_path.join(part);
+            }
+            uncompressed_paths.insert(DARK_ICON_UNCOMPRESSED_NAME.to_owned(), real_icon_path);
         }
 
         Ok(Self {
