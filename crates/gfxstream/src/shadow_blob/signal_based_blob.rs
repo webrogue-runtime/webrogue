@@ -2,6 +2,8 @@ use std::{collections::BTreeMap, sync::Mutex};
 
 use lazy_static::lazy_static;
 
+use crate::shadow_blob::utils::{copy_guest_blob_part_to_host, copy_host_blob_part_to_guest};
+
 type Ptr = usize;
 
 struct Page {
@@ -42,9 +44,9 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     let page_size = storage.page_size;
     let base_page_addr = segfault_addr & !(page_size - 1);
     let mut matching_pages = 0;
-    // TODO adjust number of preloaded pages
     let mut blob_id = 0;
     let mut offset = 0;
+    // TODO adjust number of preloaded pages
     for page_index in 0..1 {
         let page_addr = base_page_addr + page_size * page_index;
         let Some(page) = storage.pages.get_mut(&page_addr) else {
@@ -70,12 +72,10 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     unsafe {
         mem_ops::mprotect(base_page_addr, page_size, matching_pages, true, true);
 
-        crate::ffi::webrogue_gfxstream_ffi_shadow_blob_copy(
+        copy_host_blob_part_to_guest(
             blob_id,
-            base_page_addr as *mut (),
             offset,
-            page_size as u64,
-            0,
+            std::slice::from_raw_parts_mut(base_page_addr as *mut u8, page_size * matching_pages),
         );
     };
     return true;
@@ -97,12 +97,10 @@ pub fn flush_all() {
         unsafe {
             mem_ops::mprotect(loaded_page_addr, page_size, 1, true, false);
 
-            crate::ffi::webrogue_gfxstream_ffi_shadow_blob_copy(
+            copy_guest_blob_part_to_host(
                 page.blob_id,
-                loaded_page_addr as *mut (),
                 page.blob_offset,
-                page_size as u64,
-                1,
+                std::slice::from_raw_parts_mut(loaded_page_addr as *mut u8, page_size),
             );
 
             mem_ops::mprotect(loaded_page_addr, page_size, 1, false, false);
@@ -208,10 +206,10 @@ mod mem_ops {
 
         let mut flags = MprotectFlags::empty();
         if can_read {
-            flags |= MprotectFlags::READ
+            flags |= MprotectFlags::READ;
         }
         if can_write {
-            flags |= MprotectFlags::WRITE
+            flags |= MprotectFlags::WRITE;
         }
         unsafe {
             rustix::mm::mprotect(

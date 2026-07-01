@@ -33,16 +33,7 @@ extern "C" {
         callback: unsafe extern "C" fn(*const ()),
         userdata: *const (),
     );
-    #[cfg(signal_bases_shadow_blob)]
-    pub fn webrogue_gfxstream_ffi_shadow_blob_copy(
-        blob_id: u64,
-        data: *mut (),
-        blob_offset: u64,
-        size: u64,
-        // 0 means device -> vm, 1 means vm -> device
-        direction: u32,
-    );
-    #[cfg(signal_bases_shadow_blob)]
+    pub fn webrogue_gfxstream_ffi_get_host_blob(blob_id: u64) -> *mut u8;
     pub fn webrogue_gfxstream_ffi_set_register_shadow_blob_callback(
         callback: unsafe extern "C" fn(*const (), u64, u64),
     );
