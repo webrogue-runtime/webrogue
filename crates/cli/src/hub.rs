@@ -58,6 +58,7 @@ impl HubCommand {
                             })
                     },
                     Some(true),
+                    true,
                 )??;
                 Ok(())
             }

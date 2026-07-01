@@ -104,6 +104,7 @@ impl webrogue_gfx::IBuilder for ProxiedWinitBuilder {
         self,
         body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static,
         vulkan_requirement: Option<bool>,
+        debug: bool,
     ) -> anyhow::Result<Output>
     where
         Output: Send + 'static,
@@ -114,6 +115,7 @@ impl webrogue_gfx::IBuilder for ProxiedWinitBuilder {
             mailbox,
             vulkan_requirement,
             self.window_attributes_fn.clone(),
+            debug,
         )?;
         drop(proxy);
 

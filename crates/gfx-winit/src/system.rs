@@ -17,6 +17,7 @@ pub struct WinitSystem {
     pub(crate) vulkan_entry: Option<Arc<Entry>>,
     pub(crate) window_attributes_fn:
         Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
+    pub(crate) debug: bool,
 }
 
 impl Drop for WinitSystem {
@@ -34,6 +35,7 @@ impl WinitSystem {
         window_attributes_fn: Option<
             Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>,
         >,
+        debug: bool,
     ) -> anyhow::Result<Self> {
         #[cfg(not(target_arch = "wasm32"))]
         let vulkan_entry =
@@ -59,6 +61,7 @@ impl WinitSystem {
             #[cfg(not(target_arch = "wasm32"))]
             vulkan_entry: vulkan_entry.map(Arc::new),
             window_attributes_fn,
+            debug,
         })
     }
 }
@@ -105,7 +108,8 @@ impl webrogue_gfx::ISystem for WinitSystem {
             if let Some(gfxstream_system) = owned_gfxstream_system.as_ref() {
                 gfxstream_system.clone()
             } else {
-                let gfxstream_system = Arc::new(webrogue_gfx::GFXStreamSystem::new(vulkan_entry));
+                let gfxstream_system =
+                    Arc::new(webrogue_gfx::GFXStreamSystem::new(vulkan_entry, self.debug));
 
                 owned_gfxstream_system.replace(gfxstream_system.clone());
                 gfxstream_system

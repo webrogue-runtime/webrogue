@@ -24,6 +24,7 @@ struct App {
     pub proxy: Option<WinitProxy>,
     pub vulkan_requirement: Option<bool>,
     pub window_registry: WindowRegistry,
+    pub debug: bool,
 }
 
 impl ApplicationHandler for App {
@@ -39,6 +40,7 @@ impl ApplicationHandler for App {
         };
         let (builder, proxy) = create_system_fn(event_loop.create_proxy());
         let error_mailbox = proxy.get_mailbox();
+        let debug = self.debug;
         self.proxy = Some(proxy);
         let vulkan_requirement = self.vulkan_requirement;
         std::thread::Builder::new()
@@ -51,6 +53,7 @@ impl ApplicationHandler for App {
                         mailbox.execute(|event_loop, _window_registry| event_loop.exit());
                     },
                     vulkan_requirement,
+                    debug,
                 );
                 if let Err(error) = result {
                     set_error_fn(error);
@@ -117,6 +120,7 @@ impl webrogue_gfx::IBuilder for SimpleWinitBuilder {
         self,
         body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static,
         vulkan_requirement: Option<bool>,
+        debug: bool,
     ) -> anyhow::Result<Output>
     where
         Output: Send + 'static,
@@ -144,6 +148,7 @@ impl webrogue_gfx::IBuilder for SimpleWinitBuilder {
             })),
             proxy: None,
             window_registry: WindowRegistry::new(),
+            debug,
         };
         self.event_loop.run_app(app).unwrap();
         let output = output.lock().unwrap().as_mut().unwrap().take();

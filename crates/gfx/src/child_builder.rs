@@ -11,6 +11,7 @@ impl<ParentSystem: ISystem + 'static> IBuilder for ChildBuilder<ParentSystem> {
         self,
         body_fn: impl FnOnce(Self::System) -> Output + Send + 'static,
         _vulkan_requirement: Option<bool>,
+        _debug: bool,
     ) -> anyhow::Result<Output>
     where
         Output: Send + 'static,

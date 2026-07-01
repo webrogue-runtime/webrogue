@@ -18,7 +18,7 @@ pub struct System {}
 
 impl System {
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // conflicts with "unnecessary `unsafe` block" warning, maybe clippy bug
-    pub fn new(vk_lib: Arc<Entry>) -> Self {
+    pub fn new(vk_lib: Arc<Entry>, debug: bool) -> Self {
         #[cfg(feature = "_lib")]
         webrogue_gfxstream_lib::stub_fn();
 
@@ -31,8 +31,7 @@ impl System {
                 get_proc_address as *const _ as *const (),
             )
         };
-        #[cfg(not(target_arch = "wasm32"))]
-        shadow_blob::init();
+        shadow_blob::init(debug);
         Self {}
     }
 }

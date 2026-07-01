@@ -72,6 +72,7 @@ pub fn run_builder(
     } else {
         webrogue_wasmtime::JitProfile::FastCompilation
     });
+    let debug = connection_factory.is_some();
 
     unsafe {
         // Let it crash. It's just a CLI utility
@@ -116,6 +117,7 @@ pub fn run_builder(
             }
         },
         vulkan_requirement,
+        debug,
     )??;
 
     Ok(())

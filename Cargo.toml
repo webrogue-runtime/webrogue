@@ -198,6 +198,7 @@ bitflags = "2.11.1"
 schemars = "1.2.1"
 rcgen = "0.14.8"
 p12 = "0.6.3"
+xxhash-rust = "0.8.16"
 
 # To remove
 thiserror = "2.0.17"
