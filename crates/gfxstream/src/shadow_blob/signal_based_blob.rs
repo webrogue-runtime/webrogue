@@ -223,3 +223,72 @@ mod mem_ops {
 }
 
 pub use mem_ops::get_segfault_addr;
+
+pub fn install_signal_handler() -> bool {
+    #[cfg(unix)]
+    {
+        static mut PREV_SIGSEGV: libc::sigaction = unsafe { std::mem::zeroed() };
+
+        if (unsafe { PREV_SIGSEGV } != unsafe { std::mem::zeroed() }) {
+            return true;
+        }
+        unsafe extern "C" fn trap_handler(
+            signum: libc::c_int,
+            siginfo: *mut libc::siginfo_t,
+            context: *mut libc::c_void,
+        ) {
+            let previous = &raw const PREV_SIGSEGV;
+            let handled = (|| {
+                let Some(addr) = get_segfault_addr(signum, siginfo) else {
+                    return false;
+                };
+                handle_segfault(addr)
+            })();
+
+            if handled {
+                return;
+            }
+
+            unsafe { delegate_signal_to_previous_handler(previous, signum, siginfo, context) }
+        }
+        pub unsafe fn delegate_signal_to_previous_handler(
+            previous: *const libc::sigaction,
+            signum: libc::c_int,
+            siginfo: *mut libc::siginfo_t,
+            context: *mut libc::c_void,
+        ) {
+            unsafe {
+                let previous = *previous;
+                if previous.sa_flags & libc::SA_SIGINFO != 0 {
+                    std::mem::transmute::<
+                        usize,
+                        extern "C" fn(libc::c_int, *mut libc::siginfo_t, *mut libc::c_void),
+                    >(previous.sa_sigaction)(signum, siginfo, context)
+                } else if previous.sa_sigaction == libc::SIG_DFL
+                    || previous.sa_sigaction == libc::SIG_IGN
+                {
+                    libc::sigaction(signum, &previous as *const _, std::ptr::null_mut());
+                } else {
+                    std::mem::transmute::<usize, extern "C" fn(libc::c_int)>(previous.sa_sigaction)(
+                        signum,
+                    )
+                }
+            }
+        }
+        let mut handler: libc::sigaction = unsafe { std::mem::zeroed() };
+        handler.sa_flags = libc::SA_SIGINFO | libc::SA_NODEFER | libc::SA_ONSTACK;
+        handler.sa_sigaction = (trap_handler as *const ()).addr();
+        unsafe {
+            libc::sigemptyset(&mut handler.sa_mask);
+            if libc::sigaction(libc::SIGSEGV, &handler, &raw mut PREV_SIGSEGV) != 0 {
+                panic!(
+                    "unable to install signal handler: {}",
+                    std::io::Error::last_os_error(),
+                );
+            }
+        }
+        return true;
+    }
+    #[allow(unreachable_code)]
+    return false;
+}

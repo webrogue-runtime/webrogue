@@ -40,7 +40,11 @@ impl ShadowBlobImpl {
 pub fn init(debug: bool) {
     #[cfg(signal_based_shadow_blob)]
     if debug {
-        ShadowBlobImpl::Hash
+        if signal_based_blob::install_signal_handler() {
+            ShadowBlobImpl::Signal
+        } else {
+            ShadowBlobImpl::Hash
+        }
     } else {
         ShadowBlobImpl::Signal
     }
