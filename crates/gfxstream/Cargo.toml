@@ -14,6 +14,7 @@ lib-impl = ["_lib", "webrogue-gfxstream-lib/impl"]
 lazy_static = { workspace = true }
 ash = { workspace = true, default-features = false }
 webrogue-gfxstream-lib = { workspace = true, optional = true }
+xxhash-rust = { workspace = true, features = ["xxh3"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { workspace = true, default-features = false, features = ["Win32_System_Memory", "Win32_System_SystemInformation", "Win32_System_Kernel", "Win32_System_Diagnostics_Debug"] }

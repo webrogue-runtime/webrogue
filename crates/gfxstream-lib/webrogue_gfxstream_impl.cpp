@@ -341,15 +341,9 @@ void webrogue_gfxstream_ffi_set_presentation_callback(
   auto state = gfxstream::host::vk::VkDecoderGlobalState::get();
   state->setPresentCallback(callback, userdata);
 }
-void webrogue_gfxstream_ffi_shadow_blob_copy(
-  uint64_t blob_id,
-  void* data,
-  uint64_t blob_offset,
-  uint64_t size,
-  uint32_t direction
-) {
+void *webrogue_gfxstream_ffi_get_host_blob(uint64_t blob_id) {
   auto state = gfxstream::host::vk::VkDecoderGlobalState::get();
-  state->copyWebrogueShadowBlob(blob_id, data, blob_offset, size, direction);
+  return state->getWebrogueHostBlob(blob_id);
 }
 
 void webrogue_gfxstream_ffi_set_register_shadow_blob_callback(

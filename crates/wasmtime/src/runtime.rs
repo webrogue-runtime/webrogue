@@ -128,13 +128,17 @@ impl Runtime {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
-                    .compiler_inlining(Inlining::Intrinsics);
+                    .compiler_inlining(Inlining::Intrinsics)
+                    .signals_based_traps(true);
+                webrogue_gfxstream::shadow_blob::external_signal_handler_installed();
             }
             JitProfile::FastCompilation => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
-                    .compiler_inlining(Inlining::Intrinsics);
+                    .compiler_inlining(Inlining::Intrinsics)
+                    .signals_based_traps(true);
+                webrogue_gfxstream::shadow_blob::external_signal_handler_installed();
             }
         };
 
@@ -203,6 +207,8 @@ impl Runtime {
             crate::static_code_memory::StaticCodeMemory {},
         )));
         self.wasmtime_config.epoch_interruption(false);
+        self.wasmtime_config.signals_based_traps(true);
+        webrogue_gfxstream::shadow_blob::external_signal_handler_installed();
         let engine = wasmtime::Engine::new(&self.wasmtime_config)?;
         let module = unsafe {
             wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?

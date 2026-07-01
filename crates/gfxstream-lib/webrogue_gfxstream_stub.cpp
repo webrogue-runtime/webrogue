@@ -53,13 +53,7 @@ void webrogue_gfxstream_ffi_set_presentation_callback(
 ) {
   abort();
 }
-void webrogue_gfxstream_ffi_shadow_blob_copy(
-  uint64_t blob_id,
-  void* data,
-  uint64_t blob_offset,
-  uint64_t size,
-  uint32_t direction
-) {
+void *webrogue_gfxstream_ffi_get_host_blob(uint64_t blob_id) {
   abort();
 }
 

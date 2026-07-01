@@ -2,6 +2,8 @@ use std::{collections::BTreeMap, sync::Mutex};
 
 use lazy_static::lazy_static;
 
+use crate::shadow_blob::utils::{copy_guest_blob_part_to_host, copy_host_blob_part_to_guest};
+
 type Ptr = usize;
 
 struct Page {
@@ -42,9 +44,9 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     let page_size = storage.page_size;
     let base_page_addr = segfault_addr & !(page_size - 1);
     let mut matching_pages = 0;
-    // TODO adjust number of preloaded pages
     let mut blob_id = 0;
     let mut offset = 0;
+    // TODO adjust number of preloaded pages
     for page_index in 0..1 {
         let page_addr = base_page_addr + page_size * page_index;
         let Some(page) = storage.pages.get_mut(&page_addr) else {
@@ -70,12 +72,10 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     unsafe {
         mem_ops::mprotect(base_page_addr, page_size, matching_pages, true, true);
 
-        crate::ffi::webrogue_gfxstream_ffi_shadow_blob_copy(
+        copy_host_blob_part_to_guest(
             blob_id,
-            base_page_addr as *mut (),
             offset,
-            page_size as u64,
-            0,
+            std::slice::from_raw_parts_mut(base_page_addr as *mut u8, page_size * matching_pages),
         );
     };
     return true;
@@ -97,12 +97,10 @@ pub fn flush_all() {
         unsafe {
             mem_ops::mprotect(loaded_page_addr, page_size, 1, true, false);
 
-            crate::ffi::webrogue_gfxstream_ffi_shadow_blob_copy(
+            copy_guest_blob_part_to_host(
                 page.blob_id,
-                loaded_page_addr as *mut (),
                 page.blob_offset,
-                page_size as u64,
-                1,
+                std::slice::from_raw_parts_mut(loaded_page_addr as *mut u8, page_size),
             );
 
             mem_ops::mprotect(loaded_page_addr, page_size, 1, false, false);
@@ -133,16 +131,6 @@ extern "C" fn register_blob(ptr: *const (), len: u64, blob_id: u64) {
 
 #[cfg(target_os = "windows")]
 mod mem_ops {
-    pub fn get_segfault_addr(
-        exception_info: *mut windows_sys::Win32::System::Diagnostics::Debug::EXCEPTION_POINTERS,
-    ) -> Option<*const ()> {
-        let record = unsafe { &*(*exception_info).ExceptionRecord };
-        if record.ExceptionCode != windows_sys::Win32::Foundation::EXCEPTION_ACCESS_VIOLATION {
-            return None;
-        }
-        Some(record.ExceptionInformation[1] as *const ())
-    }
-
     pub fn get_page_size() -> usize {
         let mut info = std::mem::MaybeUninit::uninit();
         unsafe {
@@ -183,16 +171,6 @@ mod mem_ops {
 
 #[cfg(not(target_os = "windows"))]
 mod mem_ops {
-    pub fn get_segfault_addr(
-        signum: libc::c_int,
-        siginfo: *const libc::siginfo_t,
-    ) -> Option<*const ()> {
-        if libc::SIGSEGV != signum && libc::SIGBUS != signum {
-            return None;
-        }
-        Some(unsafe { (*siginfo).si_addr() } as *const ())
-    }
-
     pub fn get_page_size() -> usize {
         rustix::param::page_size()
     }
@@ -208,10 +186,10 @@ mod mem_ops {
 
         let mut flags = MprotectFlags::empty();
         if can_read {
-            flags |= MprotectFlags::READ
+            flags |= MprotectFlags::READ;
         }
         if can_write {
-            flags |= MprotectFlags::WRITE
+            flags |= MprotectFlags::WRITE;
         }
         unsafe {
             rustix::mm::mprotect(
@@ -224,4 +202,75 @@ mod mem_ops {
     }
 }
 
-pub use mem_ops::get_segfault_addr;
+pub fn install_signal_handler() -> bool {
+    #[cfg(unix)]
+    {
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        static IS_CUSTOM_SIGNAL_HANDLER_INSTALLED: AtomicBool = AtomicBool::new(false);
+        static mut PREV_SIGSEGV: libc::sigaction = unsafe { std::mem::zeroed() };
+
+        if IS_CUSTOM_SIGNAL_HANDLER_INSTALLED.load(Ordering::SeqCst) {
+            return true;
+        }
+        unsafe extern "C" fn trap_handler(
+            signum: libc::c_int,
+            siginfo: *mut libc::siginfo_t,
+            context: *mut libc::c_void,
+        ) {
+            let previous = &raw const PREV_SIGSEGV;
+            let handled = (|| {
+                let Some(addr) = crate::shadow_blob::get_segfault_addr(signum, siginfo) else {
+                    return false;
+                };
+                handle_segfault(addr)
+            })();
+
+            if handled {
+                return;
+            }
+
+            unsafe { delegate_signal_to_previous_handler(previous, signum, siginfo, context) }
+        }
+        pub unsafe fn delegate_signal_to_previous_handler(
+            previous: *const libc::sigaction,
+            signum: libc::c_int,
+            siginfo: *mut libc::siginfo_t,
+            context: *mut libc::c_void,
+        ) {
+            unsafe {
+                let previous = *previous;
+                if previous.sa_flags & libc::SA_SIGINFO != 0 {
+                    std::mem::transmute::<
+                        usize,
+                        extern "C" fn(libc::c_int, *mut libc::siginfo_t, *mut libc::c_void),
+                    >(previous.sa_sigaction)(signum, siginfo, context)
+                } else if previous.sa_sigaction == libc::SIG_DFL
+                    || previous.sa_sigaction == libc::SIG_IGN
+                {
+                    libc::sigaction(signum, &previous as *const _, std::ptr::null_mut());
+                } else {
+                    std::mem::transmute::<usize, extern "C" fn(libc::c_int)>(previous.sa_sigaction)(
+                        signum,
+                    )
+                }
+            }
+        }
+        let mut handler: libc::sigaction = unsafe { std::mem::zeroed() };
+        handler.sa_flags = libc::SA_SIGINFO | libc::SA_NODEFER | libc::SA_ONSTACK;
+        handler.sa_sigaction = (trap_handler as *const ()).addr();
+        unsafe {
+            libc::sigemptyset(&mut handler.sa_mask);
+            if libc::sigaction(libc::SIGSEGV, &handler, &raw mut PREV_SIGSEGV) != 0 {
+                panic!(
+                    "unable to install signal handler: {}",
+                    std::io::Error::last_os_error(),
+                );
+            }
+        }
+        IS_CUSTOM_SIGNAL_HANDLER_INSTALLED.store(true, Ordering::SeqCst);
+        return true;
+    }
+    #[allow(unreachable_code)]
+    return false;
+}
