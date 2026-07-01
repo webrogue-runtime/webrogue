@@ -8,7 +8,7 @@ pub(crate) mod utils;
 use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
 
 static SHADOW_BLOB_IMPL: AtomicIsize = AtomicIsize::new(-1);
-static EXTERNAL_SIGNAL_HANDLER_INSTALLED: AtomicBool = AtomicBool::new(false);
+static IS_EXTERNAL_SIGNAL_HANDLER_INSTALLED: AtomicBool = AtomicBool::new(false);
 
 enum ShadowBlobImpl {
     Hash,
@@ -40,7 +40,7 @@ impl ShadowBlobImpl {
 
 pub fn init() {
     #[cfg(signal_based_shadow_blob)]
-    if EXTERNAL_SIGNAL_HANDLER_INSTALLED.load(Ordering::SeqCst) {
+    if IS_EXTERNAL_SIGNAL_HANDLER_INSTALLED.load(Ordering::SeqCst) {
         ShadowBlobImpl::Signal
     } else if signal_based_blob::install_signal_handler() {
         ShadowBlobImpl::Signal
@@ -58,7 +58,7 @@ pub fn init() {
 }
 
 pub fn external_signal_handler_installed() {
-    EXTERNAL_SIGNAL_HANDLER_INSTALLED.store(true, Ordering::SeqCst);
+    IS_EXTERNAL_SIGNAL_HANDLER_INSTALLED.store(true, Ordering::SeqCst);
 }
 
 pub fn flush_all() {

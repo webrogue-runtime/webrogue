@@ -227,9 +227,12 @@ pub use mem_ops::get_segfault_addr;
 pub fn install_signal_handler() -> bool {
     #[cfg(unix)]
     {
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        static IS_CUSTOM_SIGNAL_HANDLER_INSTALLED: AtomicBool = AtomicBool::new(false);
         static mut PREV_SIGSEGV: libc::sigaction = unsafe { std::mem::zeroed() };
 
-        if (unsafe { PREV_SIGSEGV } != unsafe { std::mem::zeroed() }) {
+        if IS_CUSTOM_SIGNAL_HANDLER_INSTALLED.load(Ordering::SeqCst) {
             return true;
         }
         unsafe extern "C" fn trap_handler(
@@ -287,6 +290,7 @@ pub fn install_signal_handler() -> bool {
                 );
             }
         }
+        IS_CUSTOM_SIGNAL_HANDLER_INSTALLED.store(true, Ordering::SeqCst);
         return true;
     }
     #[allow(unreachable_code)]
