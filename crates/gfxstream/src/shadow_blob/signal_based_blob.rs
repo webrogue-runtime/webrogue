@@ -131,16 +131,6 @@ extern "C" fn register_blob(ptr: *const (), len: u64, blob_id: u64) {
 
 #[cfg(target_os = "windows")]
 mod mem_ops {
-    pub fn get_segfault_addr(
-        exception_info: *mut windows_sys::Win32::System::Diagnostics::Debug::EXCEPTION_POINTERS,
-    ) -> Option<*const ()> {
-        let record = unsafe { &*(*exception_info).ExceptionRecord };
-        if record.ExceptionCode != windows_sys::Win32::Foundation::EXCEPTION_ACCESS_VIOLATION {
-            return None;
-        }
-        Some(record.ExceptionInformation[1] as *const ())
-    }
-
     pub fn get_page_size() -> usize {
         let mut info = std::mem::MaybeUninit::uninit();
         unsafe {
@@ -181,16 +171,6 @@ mod mem_ops {
 
 #[cfg(not(target_os = "windows"))]
 mod mem_ops {
-    pub fn get_segfault_addr(
-        signum: libc::c_int,
-        siginfo: *const libc::siginfo_t,
-    ) -> Option<*const ()> {
-        if libc::SIGSEGV != signum && libc::SIGBUS != signum {
-            return None;
-        }
-        Some(unsafe { (*siginfo).si_addr() } as *const ())
-    }
-
     pub fn get_page_size() -> usize {
         rustix::param::page_size()
     }
@@ -222,8 +202,6 @@ mod mem_ops {
     }
 }
 
-pub use mem_ops::get_segfault_addr;
-
 pub fn install_signal_handler() -> bool {
     #[cfg(unix)]
     {
@@ -242,7 +220,7 @@ pub fn install_signal_handler() -> bool {
         ) {
             let previous = &raw const PREV_SIGSEGV;
             let handled = (|| {
-                let Some(addr) = get_segfault_addr(signum, siginfo) else {
+                let Some(addr) = crate::shadow_blob::get_segfault_addr(signum, siginfo) else {
                     return false;
                 };
                 handle_segfault(addr)

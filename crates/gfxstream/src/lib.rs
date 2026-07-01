@@ -67,7 +67,6 @@ impl Decoder {
 
     pub fn commit(&self, buf: &[u8]) {
         // Seem to be the best place to call this function so far
-        #[cfg(not(target_arch = "wasm32"))]
         crate::shadow_blob::flush_all();
 
         unsafe {
