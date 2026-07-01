@@ -37,16 +37,14 @@ impl ShadowBlobImpl {
     }
 }
 
-pub fn init(debug: bool) {
+pub fn init(signal_based_traps: bool) {
     #[cfg(signal_based_shadow_blob)]
-    if debug {
-        if signal_based_blob::install_signal_handler() {
-            ShadowBlobImpl::Signal
-        } else {
-            ShadowBlobImpl::Hash
-        }
-    } else {
+    if signal_based_traps {
         ShadowBlobImpl::Signal
+    } else if signal_based_blob::install_signal_handler() {
+        ShadowBlobImpl::Signal
+    } else {
+        ShadowBlobImpl::Hash
     }
     .set();
     #[cfg(not(signal_based_shadow_blob))]

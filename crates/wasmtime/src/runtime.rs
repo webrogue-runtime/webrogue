@@ -115,7 +115,7 @@ impl Runtime {
                 .cache(Some(wasmtime::Cache::new(cache)?));
             // TODO config.enable_incremental_compilation(cache_store)
         }
-        let debug;
+        let signal_based_traps;
         match &self.jit_profile {
             #[cfg(feature = "debug")]
             JitProfile::Debug => {
@@ -124,23 +124,24 @@ impl Runtime {
                     .guest_debug(true)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
                     .compiler_inlining(Inlining::No);
-                debug = true;
+                signal_based_traps = false;
             }
             JitProfile::FastExecution => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
                     .compiler_inlining(Inlining::Intrinsics);
-                debug = false;
+                signal_based_traps = true;
             }
             JitProfile::FastCompilation => {
                 self.wasmtime_config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
                     .compiler_inlining(Inlining::Intrinsics);
-                debug = false;
+                signal_based_traps = true;
             }
         };
+        self.wasmtime_config.signals_based_traps(signal_based_traps);
 
         let enable_epoch_interruption = !self.is_panic_allowed || {
             #[cfg(feature = "debug")]
@@ -174,7 +175,7 @@ impl Runtime {
             engine,
             enable_epoch_interruption,
             module,
-            debug,
+            signal_based_traps,
         )
     }
 }
@@ -208,6 +209,8 @@ impl Runtime {
             crate::static_code_memory::StaticCodeMemory {},
         )));
         self.wasmtime_config.epoch_interruption(false);
+        let signal_based_traps = true;
+        self.wasmtime_config.signals_based_traps(signal_based_traps);
         let engine = wasmtime::Engine::new(&self.wasmtime_config)?;
         let module = unsafe {
             wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
@@ -221,7 +224,7 @@ impl Runtime {
             engine,
             false,
             module,
-            false,
+            signal_based_traps,
         )
     }
 }
@@ -262,7 +265,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
     engine: wasmtime::Engine,
     epoch_interruption: bool,
     module: wasmtime::Module,
-    debug: bool,
+    signal_based_traps: bool,
 ) -> anyhow::Result<()> {
     let mut linker: wasmtime::Linker<State<Builder::System>> = wasmtime::Linker::new(&engine);
     let state = State {
@@ -416,7 +419,7 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
             })
         },
         wrapp_config.vulkan_requirement().to_bool_option(),
-        debug,
+        signal_based_traps,
     )??;
 
     Ok(())
