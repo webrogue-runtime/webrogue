@@ -148,7 +148,6 @@ fn android_main(app: android_activity::AndroidApp) {
                         });
                 },
                 Some(true),
-                false,
             )
             .unwrap();
     };

@@ -23,7 +23,6 @@ pub trait IBuilder {
         self,
         body_fn: impl FnOnce(Self::System) -> Output + Send + 'static,
         vulkan_requirement: Option<bool>,
-        signal_based_traps: bool,
     ) -> anyhow::Result<Output>
     where
         Output: Send + 'static;

@@ -72,7 +72,6 @@ pub fn run_builder(
     } else {
         webrogue_wasmtime::JitProfile::FastCompilation
     });
-    let signal_based_traps = connection_factory.is_none();
 
     unsafe {
         // Let it crash. It's just a CLI utility
@@ -117,7 +116,6 @@ pub fn run_builder(
             }
         },
         vulkan_requirement,
-        signal_based_traps,
     )??;
 
     Ok(())

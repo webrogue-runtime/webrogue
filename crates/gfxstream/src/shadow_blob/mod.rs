@@ -5,9 +5,10 @@ mod signal_based_blob;
 pub use signal_based_blob::get_segfault_addr;
 pub(crate) mod utils;
 
-use std::sync::atomic::{AtomicIsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
 
 static SHADOW_BLOB_IMPL: AtomicIsize = AtomicIsize::new(-1);
+static EXTERNAL_SIGNAL_HANDLER_INSTALLED: AtomicBool = AtomicBool::new(false);
 
 enum ShadowBlobImpl {
     Hash,
@@ -37,9 +38,9 @@ impl ShadowBlobImpl {
     }
 }
 
-pub fn init(signal_based_traps: bool) {
+pub fn init() {
     #[cfg(signal_based_shadow_blob)]
-    if signal_based_traps {
+    if EXTERNAL_SIGNAL_HANDLER_INSTALLED.load(Ordering::SeqCst) {
         ShadowBlobImpl::Signal
     } else if signal_based_blob::install_signal_handler() {
         ShadowBlobImpl::Signal
@@ -54,6 +55,10 @@ pub fn init(signal_based_traps: bool) {
         #[cfg(signal_based_shadow_blob)]
         ShadowBlobImpl::Signal => signal_based_blob::init(),
     }
+}
+
+pub fn external_signal_handler_installed() {
+    EXTERNAL_SIGNAL_HANDLER_INSTALLED.store(true, Ordering::SeqCst);
 }
 
 pub fn flush_all() {
