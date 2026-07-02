@@ -203,16 +203,15 @@ mod mem_ops {
 }
 
 pub fn install_signal_handler() -> bool {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static IS_CUSTOM_SIGNAL_HANDLER_INSTALLED: AtomicBool = AtomicBool::new(false);
+    if IS_CUSTOM_SIGNAL_HANDLER_INSTALLED.load(Ordering::SeqCst) {
+        return true;
+    }
     #[cfg(unix)]
     {
-        use std::sync::atomic::{AtomicBool, Ordering};
-
-        static IS_CUSTOM_SIGNAL_HANDLER_INSTALLED: AtomicBool = AtomicBool::new(false);
         static mut PREV_SIGSEGV: libc::sigaction = unsafe { std::mem::zeroed() };
 
-        if IS_CUSTOM_SIGNAL_HANDLER_INSTALLED.load(Ordering::SeqCst) {
-            return true;
-        }
         unsafe extern "C" fn trap_handler(
             signum: libc::c_int,
             siginfo: *mut libc::siginfo_t,
@@ -267,6 +266,69 @@ pub fn install_signal_handler() -> bool {
                     std::io::Error::last_os_error(),
                 );
             }
+        }
+        IS_CUSTOM_SIGNAL_HANDLER_INSTALLED.store(true, Ordering::SeqCst);
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        use std::sync::atomic::AtomicUsize;
+
+        use windows_sys::Win32::Foundation::EXCEPTION_ACCESS_VIOLATION;
+        use windows_sys::Win32::System::Diagnostics::Debug::{
+            AddVectoredContinueHandler, AddVectoredExceptionHandler, EXCEPTION_CONTINUE_EXECUTION,
+            EXCEPTION_CONTINUE_SEARCH, EXCEPTION_POINTERS,
+        };
+
+        std::thread_local! {
+            static LAST_EXCEPTION_PC: AtomicUsize = AtomicUsize::new(0);
+        }
+
+        unsafe extern "system" fn exception_handler(
+            exception_info: *mut EXCEPTION_POINTERS,
+        ) -> i32 {
+            let exception_info = unsafe { exception_info.as_mut().unwrap() };
+            let record = unsafe { &*exception_info.ExceptionRecord };
+            if record.ExceptionCode != EXCEPTION_ACCESS_VIOLATION {
+                return EXCEPTION_CONTINUE_SEARCH;
+            }
+
+            let Some(addr) = crate::shadow_blob::get_segfault_addr(exception_info) else {
+                return EXCEPTION_CONTINUE_SEARCH;
+            };
+            if handle_segfault(addr) {
+                LAST_EXCEPTION_PC.with(|s| s.store(addr as usize, Ordering::SeqCst));
+                EXCEPTION_CONTINUE_EXECUTION
+            } else {
+                EXCEPTION_CONTINUE_SEARCH
+            }
+        }
+
+        unsafe extern "system" fn continue_handler(exception_info: *mut EXCEPTION_POINTERS) -> i32 {
+            let Some(addr) = crate::shadow_blob::get_segfault_addr(exception_info) else {
+                return EXCEPTION_CONTINUE_SEARCH;
+            };
+
+            if LAST_EXCEPTION_PC.with(|s| s.load(Ordering::SeqCst)) == addr as usize {
+                EXCEPTION_CONTINUE_EXECUTION
+            } else {
+                EXCEPTION_CONTINUE_SEARCH
+            }
+        }
+
+        let exception_handler = unsafe { AddVectoredExceptionHandler(1, Some(exception_handler)) };
+        if exception_handler.is_null() {
+            panic!(
+                "failed to add exception handler: {}",
+                std::io::Error::last_os_error()
+            );
+        }
+        let continue_handler = unsafe { AddVectoredContinueHandler(1, Some(continue_handler)) };
+        if continue_handler.is_null() {
+            panic!(
+                "failed to add continue handler: {}",
+                std::io::Error::last_os_error()
+            );
         }
         IS_CUSTOM_SIGNAL_HANDLER_INSTALLED.store(true, Ordering::SeqCst);
         return true;

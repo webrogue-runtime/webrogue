@@ -1,4 +1,3 @@
-#[cfg(feature = "compile")]
 use std::path::PathBuf;
 
 use clap::Parser;
