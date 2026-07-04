@@ -6,3 +6,5 @@
 /lib_content.txt
 /webrogue_aot_lib.lib
 /swiftshader
+/target
+/empty-*.obj

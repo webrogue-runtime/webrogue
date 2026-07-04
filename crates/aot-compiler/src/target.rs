@@ -7,6 +7,7 @@ pub enum Target {
     Aarch64LinuxMUSL,
     x86_64WindowsGNU,
     x86_64WindowsMSVC,
+    Aarch64WindowsMSVC,
     x86_64AppleDarwin,
     ARM64AppleDarwin,
     X86_64AppleIOSSIM,
@@ -41,6 +42,7 @@ impl Target {
             Aarch64LinuxMUSL,
             x86_64WindowsGNU,
             x86_64WindowsMSVC,
+            Aarch64WindowsMSVC,
             x86_64AppleDarwin,
             ARM64AppleDarwin,
             X86_64AppleIOSSIM,
@@ -61,6 +63,7 @@ impl Target {
             Aarch64LinuxMUSL => "aarch64-linux-musl",
             x86_64WindowsGNU => "x86_64-windows-gnu",
             x86_64WindowsMSVC => "x86_64-windows-msvc",
+            Aarch64WindowsMSVC => "aarch64-windows-msvc",
             x86_64AppleDarwin => "x86_64-apple-darwin",
             ARM64AppleDarwin => "arm64-apple-darwin",
             X86_64AppleIOSSIM => "x86_64-apple-ios",
@@ -93,6 +96,7 @@ impl Target {
             X86_64LinuxAndroid => (Elf, X86_64, Little),
             x86_64WindowsGNU => (Coff, X86_64, Little),
             x86_64WindowsMSVC => (Coff, X86_64, Little),
+            Aarch64WindowsMSVC => (Coff, Aarch64, Little),
             x86_64AppleDarwin => (MachO, X86_64, Little),
             ARM64AppleDarwin => (MachO, Aarch64, Little),
             X86_64AppleIOSSIM => (MachO, X86_64, Little),
@@ -126,13 +130,13 @@ impl Target {
         match (self, is_pic) {
             (
                 X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL | x86_64AppleDarwin | x86_64WindowsGNU
-                | x86_64WindowsMSVC | X86_64LinuxAndroid,
+                | x86_64WindowsMSVC | Aarch64WindowsMSVC | X86_64LinuxAndroid,
                 false,
             ) => (-4, Relative, Generic, 32),
             (
                 X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL | x86_64AppleDarwin | X86_64AppleIOSSIM
                 | ARM64AppleDarwin | ARM64AppleIOSSIM | ARM64AppleIOS | x86_64WindowsGNU
-                | x86_64WindowsMSVC | ARM64LinuxAndroid,
+                | x86_64WindowsMSVC | Aarch64WindowsMSVC | ARM64LinuxAndroid,
                 true,
             ) => (-4, GotRelative, Generic, 32),
             _ => unimplemented!("target: {}, is_pic: {}", self.name(), is_pic),

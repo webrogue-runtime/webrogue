@@ -37,5 +37,8 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     } else if target_os == "macos" {
         println!("cargo:rustc-link-lib=dylib=c++");
-    }
+    } 
+    // else if target_os == "windows" {
+    //     println!("cargo:rustc-link-lib=libcpmt");
+    // }
 }
