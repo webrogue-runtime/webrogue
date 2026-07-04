@@ -199,7 +199,7 @@ for gfxstream_type in ["impl", "stub"]:
                 f"-out:{exe_path}",
                 "-nologo",
                 f"-machine:{win_arch}",
-                os.path.join(template_dir, "empty.obj"),
+                os.path.join(template_dir, f"empty-{rust_arch}.obj"),
                 obj_out_path,
                 webrogue_aot_lib_path,
                 os.path.join(
@@ -268,6 +268,7 @@ os.rename(
     webrogue_aot_lib_path,
     webrogue_aot_lib_out_path,
 )
-with zipfile.ZipFile(os.path.join(template_dir, "swiftshader", "x64.zip"), "r") as zip_ref:
-    with open(os.path.join(out_dir, "vk_swiftshader.dll"), "wb") as destination:
-        destination.write(zip_ref.read("x64/vk_swiftshader.dll"))
+if rust_arch == "x86_64":
+    with zipfile.ZipFile(os.path.join(template_dir, "swiftshader", "x64.zip"), "r") as zip_ref:
+        with open(os.path.join(out_dir, "vk_swiftshader.dll"), "wb") as destination:
+            destination.write(zip_ref.read("x64/vk_swiftshader.dll"))
