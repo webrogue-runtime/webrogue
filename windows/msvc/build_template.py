@@ -263,6 +263,26 @@ os.rename(
     webrogue_aot_lib_path,
     webrogue_aot_lib_out_path,
 )
+
+mesa_version = "26.1.4"
+if not os.path.exists(os.path.join(template_dir, "lavapipe")):
+    os.makedirs(os.path.join(template_dir, "lavapipe"))
+lavapipe_archive_path = os.path.join(template_dir, "lavapipe", f"{win_arch}.7z")
+if not os.path.exists(os.path.join(template_dir, "lavapipe", f"{win_arch}.zip")):
+    response = requests.get(f"https://github.com/mmozeiko/build-mesa/releases/download/{mesa_version}/mesa-lavapipe-{win_arch}-{mesa_version}.7z")
+    with open(lavapipe_archive_path, "bw") as destination:
+        destination.write(response.content)
+subprocess.run(
+    [
+        "C:\\Program Files\\7-Zip\\7z.exe",
+        "e",
+        str(lavapipe_archive_path),
+        "-o" + str(out_dir),
+        "vulkan_lvp.dll"
+    ],
+    cwd=str(template_dir),
+).check_returncode()
+
 if rust_arch == "x86_64":
     if not os.path.exists(os.path.join(template_dir, "swiftshader")):
         os.makedirs(os.path.join(template_dir, "swiftshader"))

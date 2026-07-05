@@ -81,7 +81,7 @@ pub fn load_vulkan_entry(required: bool) -> Option<Entry> {
     loop {
         let result = load_normal_vulkan_entry()
             .and_then(filter_vulkan_library)
-            .or_else(|| webrogue_gfx::swiftshader::load().and_then(filter_vulkan_library));
+            .or_else(|| webrogue_gfx::fallback::load().and_then(filter_vulkan_library));
         if result.is_some() {
             return result;
         };
@@ -101,7 +101,7 @@ pub fn load_vulkan_entry(required: bool) -> Option<Entry> {
                 let mut message = r"
 This application requires a Vulkan-compatible graphics driver to run. To resolve this, try the following options one by one
 
-1. If you are an application developer, you can bundle vk_swiftshader.dll with you executable to provide fallback driver.
+1. If you are an application developer, you can bundle vulkan_dzn.dll with you executable to provide fallback driver.
 
 2. Update you GPU driver to the latest version. Visit you manufacturer website (NVIDIA, AMD, INTEL) for detailed instructions.
 

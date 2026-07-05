@@ -8415,6 +8415,8 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "ash",
+ "lazy_static",
+ "libloading",
  "webrogue-events-macro",
  "webrogue-gfxstream",
  "wiggle",

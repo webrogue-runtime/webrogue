@@ -13,3 +13,7 @@ wiggle = { workspace = true, default-features = false }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ash = { workspace = true, features = ["std", "loaded"], default-features = false }
 webrogue-gfxstream = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+libloading = { workspace = true }
+lazy_static = { workspace = true }
