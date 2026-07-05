@@ -24,7 +24,7 @@ jobs:
           components: cli,aot-lib
         - os: macos-26
           components: ios,macos
-        - os: ubuntu-24.04-arm
+        - os: ubuntu-24.04 # There is no NDK build for AArch64 Linux. Shame on you, Google.
           components: android
 
     steps:
@@ -49,16 +49,6 @@ jobs:
       if: startsWith(matrix.os, 'windows') == true && contains(matrix.components, 'cli') == true
       run: |
         rustup target add x86_64-pc-windows-msvc
-
-    - name: Install Android NDK
-      if: contains(matrix.components, 'android') == true
-      run: |
-        NDK_VERSION=r29
-        NDK_URL="https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
-        NDK_HOME="${RUNNER_TEMP}/android-ndk-${NDK_VERSION}"
-        curl -fsSL -o "${RUNNER_TEMP}/ndk.zip" "${NDK_URL}"
-        unzip -q "${RUNNER_TEMP}/ndk.zip" -d "${RUNNER_TEMP}"
-        echo "ANDROID_NDK_HOME=${NDK_HOME}" >> "${GITHUB_ENV}"
 
     - name: Install Rust toolchains (Android)
       if: contains(matrix.components, 'android') == true
