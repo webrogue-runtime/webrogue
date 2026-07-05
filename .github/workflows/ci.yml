@@ -16,13 +16,15 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-24.04
+        - os: ubuntu-24.04-arm
           components: cli,aot-lib
-        - os: windows-2025
+        - os: windows-11-arm
           components: cli,aot-lib
         - os: macos-26
-          components: cli,aot-lib,ios,macos
-        - os: ubuntu-24.04
+          components: cli,aot-lib
+        - os: macos-26
+          components: ios,macos
+        - os: ubuntu-24.04 # There is no NDK build for AArch64 Linux. Shame on you, Google.
           components: android
 
     steps:
@@ -53,6 +55,7 @@ jobs:
       run: |
         rustup target add aarch64-linux-android
         rustup target add x86_64-linux-android
+        echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> $GITHUB_ENV
 
     - name: Install Rust toolchains (iOS)
       if: contains(matrix.components, 'ios') == true
@@ -61,23 +64,13 @@ jobs:
         rustup target add aarch64-apple-ios-sim
         rustup target add x86_64-apple-ios
 
-
-    - name: Setup Android NDK
-      if: contains(matrix.components, 'android') == true
-      uses: nttld/setup-ndk@v1
-      id: setup-ndk
-      with:
-        ndk-version: r29
-
-    - name: Run test scripts (UNIX)
+    - name: Run test scripts (on UNIX)
       if: startsWith(matrix.os, 'windows') == false
-      env:
-        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       run: |
         COMPONENTS=${{ matrix.components }} python3 scripts/cargo_check.py
         cargo test --package webrogue-wasip1
 
-    - name: Run test scripts (Windows)
+    - name: Run test scripts (on Windows)
       if: startsWith(matrix.os, 'windows') == true
       shell: cmd
       run: |
@@ -86,8 +79,9 @@ jobs:
         )
         REM gfxstream doesn't seem to support MSVC
         set CXX=clang-cl
-        COMPONENTS=${{ matrix.components }} python3 scripts\cargo_check.py
-        cargo test --package webrogue-wasip1
+        set COMPONENTS=${{ matrix.components }}
+        python3 scripts\cargo_check.py || exit /b 1
+        cargo test --package webrogue-wasip1 || exit /b 1
 
   typos:
     runs-on: ubuntu-24.04

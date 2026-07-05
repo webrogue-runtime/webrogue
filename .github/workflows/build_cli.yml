@@ -87,7 +87,7 @@ jobs:
         path: aot_artifacts
 
   android_artifacts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
 
     steps:
     - uses: actions/checkout@v7
