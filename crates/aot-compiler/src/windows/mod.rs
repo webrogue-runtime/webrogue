@@ -5,9 +5,29 @@ use webrogue_cli_goodies::step;
 
 use crate::utils::TemporaryFile;
 
+#[derive(Clone, Debug)]
+pub enum WindowsArch {
+    X86_64,
+    AArch64,
+}
+
+impl clap::ValueEnum for WindowsArch {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::X86_64, Self::AArch64]
+    }
+
+    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
+        match self {
+            Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64")),
+            Self::AArch64 => Some(clap::builder::PossibleValue::new("aarch64")),
+        }
+    }
+}
+
 pub fn build(
     wrapp_file_path: &std::path::PathBuf,
     output_file_path: &std::path::PathBuf,
+    arch: WindowsArch,
     is_console: bool,
     cache: Option<&std::path::PathBuf>,
     with_swiftshader: bool,
@@ -22,6 +42,7 @@ pub fn build(
             || webrogue_wrapp::WrappVFSBuilder::from_file_path(wrapp_file_path),
             wrapp_file_path,
             output_file_path,
+            arch,
             is_console,
             cache,
             with_swiftshader,
@@ -31,6 +52,7 @@ pub fn build(
             || webrogue_wrapp::RealVFSBuilder::from_config_path(wrapp_file_path),
             wrapp_file_path,
             output_file_path,
+            arch,
             is_console,
             cache,
             with_swiftshader,
@@ -42,6 +64,7 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
     wrapp_file_path: &std::path::PathBuf,
     output_file_path: &std::path::PathBuf,
+    arch: WindowsArch,
     is_console: bool,
     cache: Option<&std::path::PathBuf>,
     with_swiftshader: bool,
@@ -56,7 +79,10 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
         crate::compile::compile_wrapp_to_object(
             wrapp_file_path,
             object_file.path(),
-            crate::Target::x86_64WindowsMSVC,
+            match arch {
+                WindowsArch::X86_64 => crate::Target::x86_64WindowsMSVC,
+                WindowsArch::AArch64 => crate::Target::Aarch64WindowsMSVC,
+            },
             cache,
             false, // TODO check
             false,
@@ -80,6 +106,7 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
             &object_file,
             output_file_path,
             &mut artifacts,
+            arch,
             &build_dir,
             res_tmp.path(),
             is_console,
@@ -121,6 +148,7 @@ fn link_windows_msvc(
     object_file_path: &crate::utils::TemporaryFile,
     output_file_path: &std::path::Path,
     artifacts: &mut crate::utils::Artifacts,
+    arch: WindowsArch,
     build_dir: &std::path::Path,
     res_tmp: &std::path::Path,
     is_console: bool,
@@ -128,24 +156,35 @@ fn link_windows_msvc(
 ) -> anyhow::Result<()> {
     use crate::utils::path_to_arg;
 
+    let arch_str = match arch {
+        WindowsArch::X86_64 => "x86_64",
+        WindowsArch::AArch64 => "aarch64",
+    };
+    let win_arch_str = match arch {
+        WindowsArch::X86_64 => "x64",
+        WindowsArch::AArch64 => "arm64",
+    };
     let obj = if is_console { "console.obj" } else { "gui.obj" };
-    let obj_tmp = artifacts.extract_tmp(build_dir, &format!("x86_64-windows-msvc/{}", obj))?;
-    let webrogue_aot_lib_tmp =
-        artifacts.extract_tmp(build_dir, "x86_64-windows-msvc/webrogue_aot_lib.lib")?;
+    let obj_tmp =
+        artifacts.extract_tmp(build_dir, &format!("{}-windows-msvc/{}", arch_str, obj))?;
+    let webrogue_aot_lib_tmp = artifacts.extract_tmp(
+        build_dir,
+        &format!("{}-windows-msvc/webrogue_aot_lib.lib", arch_str),
+    )?;
     let gfxstream_lib_tmp = artifacts.extract_tmp(
         build_dir,
-        if vulkan {
-            "x86_64-windows-msvc/webrogue_gfxstream_lib_impl.a"
-        } else {
-            "x86_64-windows-msvc/webrogue_gfxstream_lib_stub.a"
-        },
+        &format!(
+            "{}-windows-msvc/webrogue_gfxstream_lib_{}.a",
+            arch_str,
+            if vulkan { "impl" } else { "stub" }
+        ),
     )?;
 
     crate::utils::lld!(
         "lld-link",
         format!("-out:{}", path_to_arg(output_file_path)?),
         "-nologo",
-        "-machine:x64",
+        &format!("-machine:{}", win_arch_str),
         object_file_path,
         path_to_arg(res_tmp)?,
         obj_tmp.as_arg()?,
