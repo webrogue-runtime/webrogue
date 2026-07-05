@@ -63,23 +63,13 @@ jobs:
         rustup target add aarch64-apple-ios-sim
         rustup target add x86_64-apple-ios
 
-
-    - name: Setup Android NDK
-      if: contains(matrix.components, 'android') == true
-      uses: nttld/setup-ndk@v1
-      id: setup-ndk
-      with:
-        ndk-version: r29
-
-    - name: Run test scripts (UNIX)
+    - name: Run test scripts (on UNIX)
       if: startsWith(matrix.os, 'windows') == false
-      env:
-        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       run: |
         COMPONENTS=${{ matrix.components }} python3 scripts/cargo_check.py
         cargo test --package webrogue-wasip1
 
-    - name: Run test scripts (Windows)
+    - name: Run test scripts (on Windows)
       if: startsWith(matrix.os, 'windows') == true
       shell: cmd
       run: |
@@ -88,8 +78,8 @@ jobs:
         )
         REM gfxstream doesn't seem to support MSVC
         set CXX=clang-cl
-        COMPONENTS=${{ matrix.components }} python3 scripts\cargo_check.py
-        cargo test --package webrogue-wasip1
+        COMPONENTS=${{ matrix.components }} python3 scripts\cargo_check.py || exit /b 1
+        cargo test --package webrogue-wasip1 || exit /b 1
 
   typos:
     runs-on: ubuntu-24.04
