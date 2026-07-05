@@ -77,7 +77,7 @@ jobs:
         for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
           call "%%i"
         )
-        python3 windows/msvc/build_template.py ${{ matrix.rust_arch }} ${{ matrix.win_arch }}
+        python3 windows/msvc/build_template.py ${{ matrix.rust_arch }} ${{ matrix.win_arch }} || exit /b 1
 
     - uses: actions/upload-artifact@v7
       with:
@@ -273,7 +273,7 @@ jobs:
         REM gfxstream doesn't seem to support MSVC
         set CC=clang-cl
         set CXX=clang-cl
-        cargo build --target=${{ matrix.arch }}-pc-windows-msvc --features=full --profile cli
+        cargo build --target=${{ matrix.arch }}-pc-windows-msvc --features=full --profile cli  || exit /b 1
 
     - uses: actions/upload-artifact@v7
       with:

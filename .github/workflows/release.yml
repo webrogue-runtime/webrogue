@@ -210,6 +210,14 @@ jobs:
 
     - uses: actions/upload-artifact@v7
       with:
+        name: CLI-windows-aarch64
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          webrogue-cli-windows-aarch64.zip
+
+    - uses: actions/upload-artifact@v7
+      with:
         name: CLI-macOS-arm64
         retention-days: 1
         if-no-files-found: error
