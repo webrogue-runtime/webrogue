@@ -55,6 +55,7 @@ jobs:
       run: |
         rustup target add aarch64-linux-android
         rustup target add x86_64-linux-android
+        echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> $GITHUB_ENV
 
     - name: Install Rust toolchains (iOS)
       if: contains(matrix.components, 'ios') == true
