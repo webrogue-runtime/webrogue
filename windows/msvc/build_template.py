@@ -2,23 +2,45 @@
 # New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
 import os
+import sys
 import subprocess
 import requests
 import zipfile
 
 template_dir = os.path.dirname(os.path.realpath(__file__))
 repo_dir = os.path.dirname(os.path.dirname(template_dir))
+rust_arch = sys.argv[1]
+win_arch = sys.argv[2]
 
 sdk_dir = os.environ["WindowsSdkDir"]
 sdk_version = os.environ["WindowsSDKVersion"].removesuffix("\\")
 vc_tools_install_dir = os.environ["VCToolsInstallDir"]
 
 # gfxstream doesn't seem to support MSVC
+os.environ["CC"] = "clang-cl"
 os.environ["CXX"] = "clang-cl"
 
-out_dir = os.path.join(repo_dir, "aot_artifacts", "x86_64-windows-msvc")
+out_dir = os.path.join(repo_dir, "aot_artifacts", f"{rust_arch}-windows-msvc")
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
+
+empty_wrapp = os.path.join(repo_dir, "webrogue-sdk", "examples", "empty", "webrogue.json")
+if os.path.exists(empty_wrapp):
+    subprocess.run(
+        [
+            "cargo",
+            "run",
+            "--features=compile",
+            "--release",
+            "--",
+            "compile",
+            "object",
+            str(empty_wrapp),
+            f"windows\msvc\empty-{rust_arch}.obj",
+            f"{rust_arch}-windows-msvc"
+        ],
+        cwd=str(repo_dir),
+    ).check_returncode()
 
 subprocess.run(
     [
@@ -26,7 +48,7 @@ subprocess.run(
         "build",
         "--manifest-path=../../crates/aot-lib/Cargo.toml",
         "--target-dir=./target",
-        "--target=x86_64-pc-windows-msvc",
+        f"--target={rust_arch}-pc-windows-msvc",
         "--profile=aot",
     ],
     cwd=str(template_dir),
@@ -40,7 +62,7 @@ for gfxstream_type in ["impl", "stub"]:
             "--manifest-path=../../crates/gfxstream-lib/Cargo.toml",
             "--target-dir=./target",
             f"--features={gfxstream_type}",
-            "--target=x86_64-pc-windows-msvc",
+            f"--target={rust_arch}-pc-windows-msvc",
             "--profile=aot",
         ],
         cwd=str(template_dir),
@@ -49,7 +71,7 @@ for gfxstream_type in ["impl", "stub"]:
         os.path.join(
             template_dir,
             "target",
-            "x86_64-pc-windows-msvc",
+            f"{rust_arch}-pc-windows-msvc",
             "aot",
             "libwebrogue_gfxstream_lib.rlib",
         ),
@@ -66,7 +88,7 @@ for win_type in ["gui", "console"]:
         [
             "clang",
             "-target",
-            "x86_64-pc-win32",
+            f"{rust_arch}-pc-win32",
             "-c",
             "main.c",
             "-o",
@@ -107,7 +129,7 @@ for win_type in ["gui", "console"]:
         os.path.join(template_dir, f"{win_type}.obj"),
         obj_out_path,
     )
-um_lib_dir = os.path.join(sdk_dir, "Lib", sdk_version, "um", "x64")
+um_lib_dir = os.path.join(sdk_dir, "Lib", sdk_version, "um", win_arch)
 
 webrogue_aot_lib_path = os.path.join(template_dir, "webrogue_aot_lib.lib")
 if os.path.exists(webrogue_aot_lib_path):
@@ -116,7 +138,7 @@ os.rename(
     os.path.join(
         template_dir,
         "target",
-        "x86_64-pc-windows-msvc",
+        f"{rust_arch}-pc-windows-msvc",
         "aot",
         "webrogue_aot_lib.lib",
     ),
@@ -128,11 +150,11 @@ subprocess.run(
         "llvm-ar",
         "qLs",
         webrogue_aot_lib_path,
-        os.path.join(vc_tools_install_dir, "lib", "x64", "libcpmt.lib"),
-        os.path.join(vc_tools_install_dir, "lib", "x64", "libvcruntime.lib"),
-        os.path.join(vc_tools_install_dir, "lib", "x64", "oldnames.lib"),
-        os.path.join(vc_tools_install_dir, "lib", "x64", "libcmt.lib"),
-        os.path.join(sdk_dir, "Lib", sdk_version, "ucrt", "x64", "libucrt.lib"),
+        os.path.join(vc_tools_install_dir, "lib", win_arch, "libcpmt.lib"),
+        os.path.join(vc_tools_install_dir, "lib", win_arch, "libvcruntime.lib"),
+        os.path.join(vc_tools_install_dir, "lib", win_arch, "oldnames.lib"),
+        os.path.join(vc_tools_install_dir, "lib", win_arch, "libcmt.lib"),
+        os.path.join(sdk_dir, "Lib", sdk_version, "ucrt", win_arch, "libucrt.lib"),
         # os.path.join(um_lib_dir, "ws2_32.lib"),
         os.path.join(um_lib_dir, "ntdll.lib"),
         os.path.join(um_lib_dir, "AdvAPI32.Lib"),
@@ -177,8 +199,8 @@ for gfxstream_type in ["impl", "stub"]:
                 "lld-link",
                 f"-out:{exe_path}",
                 "-nologo",
-                "-machine:x64",
-                os.path.join(template_dir, "empty.obj"),
+                f"-machine:{win_arch}",
+                os.path.join(template_dir, f"empty-{rust_arch}.obj"),
                 obj_out_path,
                 webrogue_aot_lib_path,
                 os.path.join(
@@ -233,12 +255,6 @@ for object_batch_to_remove in batched(objects_to_remove, 128):
         cwd=str(template_dir),
     ).check_returncode()
 
-if not os.path.exists(os.path.join(template_dir, "swiftshader")):
-    os.makedirs(os.path.join(template_dir, "swiftshader"))
-if not os.path.exists(os.path.join(template_dir, "swiftshader", "x64.zip")):
-    response = requests.get("https://github.com/webrogue-runtime/swiftshader-builder/releases/download/latest_build/windows_x64.zip")
-    with open(os.path.join(template_dir, "swiftshader", "x64.zip"), "bw") as destination:
-        destination.write(response.content)
 
 webrogue_aot_lib_out_path = os.path.join(out_dir, "webrogue_aot_lib.lib")
 if os.path.exists(webrogue_aot_lib_out_path):
@@ -247,6 +263,13 @@ os.rename(
     webrogue_aot_lib_path,
     webrogue_aot_lib_out_path,
 )
-with zipfile.ZipFile(os.path.join(template_dir, "swiftshader", "x64.zip"), "r") as zip_ref:
-    with open(os.path.join(out_dir, "vk_swiftshader.dll"), "wb") as destination:
-        destination.write(zip_ref.read("x64/vk_swiftshader.dll"))
+if rust_arch == "x86_64":
+    if not os.path.exists(os.path.join(template_dir, "swiftshader")):
+        os.makedirs(os.path.join(template_dir, "swiftshader"))
+    if not os.path.exists(os.path.join(template_dir, "swiftshader", "x64.zip")):
+        response = requests.get("https://github.com/webrogue-runtime/swiftshader-builder/releases/download/latest_build/windows_x64.zip")
+        with open(os.path.join(template_dir, "swiftshader", "x64.zip"), "bw") as destination:
+            destination.write(response.content)
+    with zipfile.ZipFile(os.path.join(template_dir, "swiftshader", "x64.zip"), "r") as zip_ref:
+        with open(os.path.join(out_dir, "vk_swiftshader.dll"), "wb") as destination:
+            destination.write(zip_ref.read("x64/vk_swiftshader.dll"))

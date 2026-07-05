@@ -56,6 +56,10 @@ pub enum Commands {
         wrapp_path: std::path::PathBuf,
         /// Path where resulting executable will be placed
         out_path: std::path::PathBuf,
+        /// CPU architecture to compile for.
+        /// Defaults to x86_64.
+        #[arg(long)]
+        arch: Option<crate::windows::WindowsArch>,
         /// Use console app's entry point.
         /// It allow stdin/stdout/stderr to work, but opens console window upon launch.
         /// It also makes cmd pop up on launch, so this option is not recommended.
@@ -170,9 +174,19 @@ impl Commands {
             Commands::Windows {
                 wrapp_path,
                 out_path,
+                arch,
                 console,
                 no_swiftshader,
-            } => crate::windows::build(wrapp_path, out_path, *console, cache, !no_swiftshader)?,
+            } => crate::windows::build(
+                wrapp_path,
+                out_path,
+                arch.as_ref()
+                    .unwrap_or(&crate::windows::WindowsArch::X86_64)
+                    .clone(),
+                *console,
+                cache,
+                !no_swiftshader,
+            )?,
             Commands::Xcode {
                 wrapp_path,
                 build_dir,

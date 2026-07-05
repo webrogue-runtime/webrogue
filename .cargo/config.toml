@@ -6,7 +6,12 @@ rustflags = [
 [target.x86_64-pc-windows-msvc]
 # Enable static CTR on Windows
 rustflags = [
-    "-C", "target-feature=+crt-static",
+    "-C", "target-feature=+crt-static"
+]
+[target.aarch64-pc-windows-msvc]
+# Enable static CTR on Windows
+rustflags = [
+    "-C", "target-feature=+crt-static"
 ]
 
 [target.x86_64-unknown-linux-musl]

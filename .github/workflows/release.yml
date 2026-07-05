@@ -43,7 +43,12 @@ jobs:
 
     - uses: actions/download-artifact@v8
       with: 
-        name: Artifacts-Windows
+        name: Artifacts-Windows-x86_64
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v8
+      with: 
+        name: Artifacts-Windows-aarch64
         path: aot_artifacts
 
     - uses: actions/download-artifact@v8
@@ -101,6 +106,11 @@ jobs:
       with: 
         name: CLI-windows-x86_64-raw
         path: webrogue_windows_x86_64_raw
+
+    - uses: actions/download-artifact@v8
+      with: 
+        name: CLI-windows-aarch64-raw
+        path: webrogue_windows_aarch64_raw
   
     - name: Append artifacts
       run: |
@@ -128,6 +138,10 @@ jobs:
         python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-x86_64/webrogue.exe
         zip -r webrogue-cli-windows-x86_64.zip webrogue-cli-windows-x86_64/
 
+        mkdir webrogue-cli-windows-aarch64
+        python3 append_artifacts.py webrogue_windows_aarch64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-aarch64/webrogue.exe
+        zip -r webrogue-cli-windows-aarch64.zip webrogue-cli-windows-aarch64/
+
         mkdir webrogue-cli-macos-arm64
         python3 append_artifacts.py webrogue_macos_arm64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-arm64/webrogue
         chmod +x webrogue-cli-macos-arm64/webrogue
@@ -147,6 +161,7 @@ jobs:
           webrogue-cli-linux-musl-x86_64.tar.gz
           webrogue-cli-linux-musl-aarch64.tar.gz
           webrogue-cli-windows-x86_64.zip
+          webrogue-cli-windows-aarch64.zip
           webrogue-cli-macos-arm64.tar.gz
           webrogue-cli-macos-x86_64.tar.gz
         name: Release ${{ github.ref_name }}
@@ -192,6 +207,14 @@ jobs:
         if-no-files-found: error
         path: |
           webrogue-cli-windows-x86_64.zip
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: CLI-windows-aarch64
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          webrogue-cli-windows-aarch64.zip
 
     - uses: actions/upload-artifact@v7
       with:
