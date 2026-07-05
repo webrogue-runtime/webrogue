@@ -16,19 +16,15 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-24.04
-          components: cli,aot-lib
         - os: ubuntu-24.04-arm
           components: cli,aot-lib
         - os: windows-11-arm
-          components: cli,aot-lib
-        - os: windows-2025-vs2026
           components: cli,aot-lib
         - os: macos-26
           components: cli,aot-lib
         - os: macos-26
           components: ios,macos
-        - os: ubuntu-24.04
+        - os: ubuntu-24.04-arm
           components: android
 
     steps:
