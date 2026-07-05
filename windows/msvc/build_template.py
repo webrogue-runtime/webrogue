@@ -17,6 +17,7 @@ sdk_version = os.environ["WindowsSDKVersion"].removesuffix("\\")
 vc_tools_install_dir = os.environ["VCToolsInstallDir"]
 
 # gfxstream doesn't seem to support MSVC
+os.environ["CC"] = "clang-cl"
 os.environ["CXX"] = "clang-cl"
 
 out_dir = os.path.join(repo_dir, "aot_artifacts", f"{rust_arch}-windows-msvc")
@@ -208,7 +209,7 @@ for gfxstream_type in ["impl", "stub"]:
                 ),
                 "/nodefaultlib",
                 "/threads:1",
-                # "/verbose",
+                "/verbose",
             ],
             stderr=subprocess.PIPE,
             cwd=str(template_dir),
@@ -254,12 +255,6 @@ for object_batch_to_remove in batched(objects_to_remove, 128):
         cwd=str(template_dir),
     ).check_returncode()
 
-if not os.path.exists(os.path.join(template_dir, "swiftshader")):
-    os.makedirs(os.path.join(template_dir, "swiftshader"))
-if not os.path.exists(os.path.join(template_dir, "swiftshader", "x64.zip")):
-    response = requests.get("https://github.com/webrogue-runtime/swiftshader-builder/releases/download/latest_build/windows_x64.zip")
-    with open(os.path.join(template_dir, "swiftshader", "x64.zip"), "bw") as destination:
-        destination.write(response.content)
 
 webrogue_aot_lib_out_path = os.path.join(out_dir, "webrogue_aot_lib.lib")
 if os.path.exists(webrogue_aot_lib_out_path):
@@ -269,6 +264,12 @@ os.rename(
     webrogue_aot_lib_out_path,
 )
 if rust_arch == "x86_64":
+    if not os.path.exists(os.path.join(template_dir, "swiftshader")):
+        os.makedirs(os.path.join(template_dir, "swiftshader"))
+    if not os.path.exists(os.path.join(template_dir, "swiftshader", "x64.zip")):
+        response = requests.get("https://github.com/webrogue-runtime/swiftshader-builder/releases/download/latest_build/windows_x64.zip")
+        with open(os.path.join(template_dir, "swiftshader", "x64.zip"), "bw") as destination:
+            destination.write(response.content)
     with zipfile.ZipFile(os.path.join(template_dir, "swiftshader", "x64.zip"), "r") as zip_ref:
         with open(os.path.join(out_dir, "vk_swiftshader.dll"), "wb") as destination:
             destination.write(zip_ref.read("x64/vk_swiftshader.dll"))
