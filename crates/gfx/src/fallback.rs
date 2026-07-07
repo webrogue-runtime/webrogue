@@ -20,15 +20,18 @@ pub fn load() -> Option<Entry> {
 
         fn load_lavapipe_entry() -> anyhow::Result<Entry> {
             // IDK why it fails to compile without .map(|a| a)
+
+            use std::str::FromStr;
             let lib = LAVAPIPE_LIB
                 .as_ref()
                 .map(|lib| lib.clone())
                 .ok_or_else(|| anyhow::anyhow!("Library loading error"))?;
-            let load_fn = std::sync::Arc::new(unsafe {
+            let icd_load_fn = unsafe {
                 lib.get::<ash::vk::PFN_vkGetInstanceProcAddr>(b"vk_icdGetInstanceProcAddr")?
-            });
+            };
+            let load_fn = std::sync::Arc::new(unsafe { std::mem::transmute::<_, ash::vk::PFN_vkGetInstanceProcAddr>( (icd_load_fn)(ash::vk::Instance::null(), std::ffi::CString::from_str("vkGetInstanceProcAddr").unwrap().as_ptr()).unwrap()) });
             let static_fn = ash::StaticFn::load_checked(move |name| unsafe {
-                (**load_fn.clone())(ash::vk::Instance::null(), name.as_ptr())
+                (load_fn)(ash::vk::Instance::null(), name.as_ptr())
                     .map(|f| f as *const std::ffi::c_void)
                     .unwrap_or(std::ptr::null())
             })?;
