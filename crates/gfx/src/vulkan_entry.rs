@@ -1,9 +1,4 @@
-use std::{
-    ffi::CString,
-    path::PathBuf,
-    str::FromStr,
-    sync::{Arc, Mutex},
-};
+use std::{ffi::CString, str::FromStr, sync::Mutex};
 
 use anyhow::Context;
 use ash::{
@@ -203,19 +198,22 @@ fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
     Ok(())
 }
 
-fn load_dynamic(path: &PathBuf) -> anyhow::Result<Entry> {
+#[cfg(any(windows, target_os = "macos"))]
+fn load_dynamic(path: &std::path::PathBuf) -> anyhow::Result<Entry> {
     check_entry(unsafe { Entry::load_from(path) }?)
 }
 
-fn load_dynamic_icd(path: &PathBuf) -> anyhow::Result<Entry> {
-    let lib = std::sync::Arc::new(unsafe { libloading::Library::new(path) }?);
+#[cfg(target_os = "macos")]
+fn load_dynamic_icd(path: &std::path::PathBuf) -> anyhow::Result<Entry> {
+    use std::sync::Arc;
+    let lib = Arc::new(unsafe { libloading::Library::new(path) }?);
 
     lazy_static::lazy_static! {
         static ref LATEST_ICD_LIB: Mutex<Option<Arc<libloading::Library>>> = Mutex::new(None);
     }
     *LATEST_ICD_LIB.lock().unwrap() = Some(lib.clone());
 
-    let load_fn = std::sync::Arc::new(unsafe {
+    let load_fn = Arc::new(unsafe {
         lib.get::<ash::vk::PFN_vkGetInstanceProcAddr>(b"vk_icdGetInstanceProcAddr")?
     });
     let static_fn = ash::StaticFn::load_checked(move |name| unsafe {

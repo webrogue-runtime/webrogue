@@ -8420,6 +8420,7 @@ dependencies = [
  "webrogue-events-macro",
  "webrogue-gfxstream",
  "wiggle",
+ "windows 0.62.2",
 ]
 
 [[package]]
@@ -8434,7 +8435,6 @@ dependencies = [
  "softbuffer",
  "tar",
  "webrogue-gfx",
- "windows 0.62.2",
  "winit",
 ]
 
