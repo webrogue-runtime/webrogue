@@ -1,8 +1,12 @@
-use std::{ffi::CString, str::FromStr, sync::Mutex};
+use std::{
+    ffi::{CStr, CString},
+    str::FromStr,
+    sync::Mutex,
+};
 
 use anyhow::Context;
 use ash::{
-    vk::{Instance, InstanceCreateInfo},
+    vk::{Instance, InstanceCreateInfo, PhysicalDevice16BitStorageFeatures},
     Entry,
 };
 
@@ -28,8 +32,19 @@ fn load_with_retry(required: bool) -> Option<Entry> {
     loop {
         match load_parsed() {
             Ok((entry, _name)) => return Some(entry),
-            Err(_error) => {
+            Err(error) => {
                 if required {
+                    #[not(cfg(windows))]
+                    {
+                        eprintln!(
+                            r"
+This application requires a Vulkan-compatible graphics driver to run.
+
+Drivers tried:
+{error}
+                            "
+                        )
+                    }
                     #[cfg(windows)]
                     {
                         use windows::{
@@ -50,7 +65,7 @@ Visit you manufacturer website (NVIDIA, AMD, INTEL) for detailed instructions.
 If you are an application developer, you can bundle a fallback Vulkan driver (Lavapipe or SwiftShader).
 
 Drivers tried:
-{_error}
+{error}
                     "
                         )
                         .trim()
@@ -129,7 +144,7 @@ fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
         }
     }
 
-    loader_state.try_load("System's implementation", unsafe {
+    loader_state.try_load("System's driver", unsafe {
         Entry::load().map_err(|err| anyhow::anyhow!("{}", err))
     })?;
 
@@ -203,7 +218,7 @@ fn load_dynamic(path: &std::path::PathBuf) -> anyhow::Result<Entry> {
     check_entry(unsafe { Entry::load_from(path) }?)
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(windows)]
 fn load_dynamic_icd(path: &std::path::PathBuf) -> anyhow::Result<Entry> {
     use std::sync::Arc;
     let lib = Arc::new(unsafe { libloading::Library::new(path) }?);
@@ -237,6 +252,48 @@ fn check_entry(entry: Entry) -> anyhow::Result<Entry> {
         ));
     }
 
+    let instance_extensions = unsafe {
+        entry
+            .enumerate_instance_extension_properties(None)
+            .context("Error while calling vkEnumerateInstanceExtensionProperties")?
+    };
+    let has_instance_extension = |name: &CStr| -> bool {
+        for extension in &instance_extensions {
+            if extension.extension_name_as_c_str().unwrap() == name {
+                return true;
+            }
+        }
+        return false;
+    };
+    anyhow::ensure!(
+        (has_instance_extension)(ash::vk::KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_NAME),
+        "{} extension is missing",
+        ash::vk::KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_NAME
+            .to_str()
+            .unwrap()
+    );
+    anyhow::ensure!(
+        (has_instance_extension)(ash::vk::KHR_EXTERNAL_MEMORY_CAPABILITIES_NAME),
+        "{} extension is missing",
+        ash::vk::KHR_EXTERNAL_MEMORY_CAPABILITIES_NAME
+            .to_str()
+            .unwrap()
+    );
+    anyhow::ensure!(
+        (has_instance_extension)(ash::vk::KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_NAME),
+        "{} extension is missing",
+        ash::vk::KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_NAME
+            .to_str()
+            .unwrap()
+    );
+    anyhow::ensure!(
+        (has_instance_extension)(ash::vk::KHR_EXTERNAL_FENCE_CAPABILITIES_NAME),
+        "{} extension is missing",
+        ash::vk::KHR_EXTERNAL_FENCE_CAPABILITIES_NAME
+            .to_str()
+            .unwrap()
+    );
+
     let create_info = InstanceCreateInfo::default();
     let instance = unsafe { entry.create_instance(&create_info, None) }
         .context("Error while creating instance")?;
@@ -244,6 +301,7 @@ fn check_entry(entry: Entry) -> anyhow::Result<Entry> {
     let instance_drop_callback = DropCallback::new(Box::new(move || unsafe {
         instance2.destroy_instance(None)
     }));
+
     let physical_devices = unsafe {
         instance
             .enumerate_physical_devices()
@@ -290,6 +348,11 @@ impl DropCallback {
 }
 
 impl Drop for DropCallback {
+    fn drop(&mut self) {
+        (self.0.take().unwrap())();
+    }
+}
+}
     fn drop(&mut self) {
         (self.0.take().unwrap())();
     }

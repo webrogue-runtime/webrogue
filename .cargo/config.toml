@@ -1,5 +1,6 @@
+# Linking static LLVM libraries with Linux's LD or Windows' Link is pain
+
 [target.x86_64-unknown-linux-gnu]
-# Linking static LLVM libraries with ld is pain
 rustflags = [
     # "-C", "link-arg=-fuse-ld=lld",
 ]
@@ -8,20 +9,23 @@ rustflags = [
 rustflags = [
     "-C", "target-feature=+crt-static"
 ]
+linker = "rust-lld.exe"
+
 [target.aarch64-pc-windows-msvc]
 # Enable static CTR on Windows
 rustflags = [
     "-C", "target-feature=+crt-static"
 ]
+linker = "rust-lld.exe"
 
 [target.x86_64-unknown-linux-musl]
-# And disable it on musl Linux since we will need to dlopen graphics drivers and other shared libraries
+# Disable static CTR on musl Linux since we will need to dlopen graphics drivers and other shared libraries
 rustflags = [
     "-C", "target-feature=-crt-static"
 ]
 
 [target.aarch64-unknown-linux-musl]
-# same for AArch64
+# Disable static CTR on musl Linux since we will need to dlopen graphics drivers and other shared libraries
 rustflags = [
     "-C", "target-feature=-crt-static"
 ]
