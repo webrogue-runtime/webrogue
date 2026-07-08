@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Context;
 use ash::{
-    vk::{Instance, InstanceCreateInfo, PhysicalDevice16BitStorageFeatures},
+    vk::{Instance, InstanceCreateInfo},
     Entry,
 };
 
@@ -34,7 +34,7 @@ fn load_with_retry(required: bool) -> Option<Entry> {
             Ok((entry, _name)) => return Some(entry),
             Err(error) => {
                 if required {
-                    #[not(cfg(windows))]
+                    #[cfg(not(windows))]
                     {
                         eprintln!(
                             r"
@@ -45,6 +45,7 @@ Drivers tried:
                             "
                         )
                     }
+
                     #[cfg(windows)]
                     {
                         use windows::{
@@ -144,9 +145,10 @@ fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
         }
     }
 
-    loader_state.try_load("System's driver", unsafe {
-        Entry::load().map_err(|err| anyhow::anyhow!("{}", err))
-    })?;
+    loader_state.try_load(
+        "System's driver",
+        unsafe { Entry::load().map_err(|err| anyhow::anyhow!("{}", err)) }.and_then(check_entry),
+    )?;
 
     #[cfg(feature = "static-vk")]
     {
@@ -297,6 +299,10 @@ fn check_entry(entry: Entry) -> anyhow::Result<Entry> {
     let create_info = InstanceCreateInfo::default();
     let instance = unsafe { entry.create_instance(&create_info, None) }
         .context("Error while creating instance")?;
+    // panic!(
+    //     "version: {:?}",
+    //     unsafe { entry.try_enumerate_instance_version() }.unwrap()
+    // );
     let instance2 = instance.clone();
     let instance_drop_callback = DropCallback::new(Box::new(move || unsafe {
         instance2.destroy_instance(None)
@@ -348,11 +354,6 @@ impl DropCallback {
 }
 
 impl Drop for DropCallback {
-    fn drop(&mut self) {
-        (self.0.take().unwrap())();
-    }
-}
-}
     fn drop(&mut self) {
         (self.0.take().unwrap())();
     }
