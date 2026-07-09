@@ -219,17 +219,17 @@ void webrogue_gfxstream_ffi_create_global_state(void *get_proc, void* userdata) 
     };
   gfxstream::host::FeatureSet features = gfxstream::host::FeatureSet();
 
-  features.VulkanNullOptionalStrings.enabled = true;
-  features.VulkanIgnoredHandles.enabled = true;
-  features.VulkanShaderFloat16Int8.enabled = true;
-  features.VulkanQueueSubmitWithCommands.enabled = true;
-  // features.DeferredVulkanCommands.enabled = true;
-  // features.VulkanAsyncQueueSubmit.enabled = true;
-  // features.VulkanCreateResourcesWithRequirements.enabled = true;
-  features.VirtioGpuNext.enabled = true;
-  features.VirtioGpuNativeSync.enabled = true;
-  features.VulkanBatchedDescriptorSetUpdate.enabled = false; // TODO ?
-  // features.VulkanAsyncQsri.enabled = true;
+  features.VulkanNullOptionalStrings.setEnabled(true);
+  features.VulkanIgnoredHandles.setEnabled(true);
+  features.VulkanShaderFloat16Int8.setEnabled(true);
+  features.VulkanQueueSubmitWithCommands.setEnabled(true);
+  // features.DeferredVulkanCommands.setEnabled(true);
+  // features.VulkanAsyncQueueSubmit.setEnabled(true);
+  // features.VulkanCreateResourcesWithRequirements.setEnabled(true);
+  features.VirtioGpuNext.setEnabled(true);
+  features.VirtioGpuNativeSync.setEnabled(true);
+  features.VulkanBatchedDescriptorSetUpdate.setEnabled(false); // TODO ?
+  // features.VulkanAsyncQsri.setEnabled(true);
 
   // ResourceTracker::streamFeatureBits |= VULKAN_STREAM_FEATURE_NULL_OPTIONAL_STRINGS_BIT;
   // ResourceTracker::streamFeatureBits |= VULKAN_STREAM_FEATURE_IGNORED_HANDLES_BIT;
