@@ -108,6 +108,7 @@ fn main() {
             // common/base
             "external/gfxstream/common/base/UdmabufCreator_stub.cpp",
             "external/gfxstream/common/base/System.cpp",
+            "external/gfxstream/common/utils/strings.cpp",
             // common/logging
             "external/gfxstream/common/logging/logging.cpp",
         ]);
