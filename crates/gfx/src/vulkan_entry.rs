@@ -267,29 +267,39 @@ fn check_entry(entry: Entry) -> anyhow::Result<Entry> {
         }
         return false;
     };
+    let vk_version = unsafe {
+        entry
+            .try_enumerate_instance_version()
+            .context("Error while calling vkEnumerateInstanceVersion")
+    }?
+    .unwrap_or(ash::vk::API_VERSION_1_0);
     anyhow::ensure!(
-        (has_instance_extension)(ash::vk::KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_NAME),
+        (has_instance_extension)(ash::vk::KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_NAME)
+            || vk_version >= ash::vk::API_VERSION_1_1,
         "{} extension is missing",
         ash::vk::KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_NAME
             .to_str()
             .unwrap()
     );
     anyhow::ensure!(
-        (has_instance_extension)(ash::vk::KHR_EXTERNAL_MEMORY_CAPABILITIES_NAME),
+        (has_instance_extension)(ash::vk::KHR_EXTERNAL_MEMORY_CAPABILITIES_NAME)
+            || vk_version >= ash::vk::API_VERSION_1_1,
         "{} extension is missing",
         ash::vk::KHR_EXTERNAL_MEMORY_CAPABILITIES_NAME
             .to_str()
             .unwrap()
     );
     anyhow::ensure!(
-        (has_instance_extension)(ash::vk::KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_NAME),
+        (has_instance_extension)(ash::vk::KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_NAME)
+            || vk_version >= ash::vk::API_VERSION_1_1,
         "{} extension is missing",
         ash::vk::KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_NAME
             .to_str()
             .unwrap()
     );
     anyhow::ensure!(
-        (has_instance_extension)(ash::vk::KHR_EXTERNAL_FENCE_CAPABILITIES_NAME),
+        (has_instance_extension)(ash::vk::KHR_EXTERNAL_FENCE_CAPABILITIES_NAME)
+            || vk_version >= ash::vk::API_VERSION_1_1,
         "{} extension is missing",
         ash::vk::KHR_EXTERNAL_FENCE_CAPABILITIES_NAME
             .to_str()
