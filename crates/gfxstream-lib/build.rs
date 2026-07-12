@@ -52,6 +52,13 @@ fn main() {
         }
         _ => unimplemented!(),
     }
+
+    for api_definition in ["BASE", "COMPUTE", "GRAPHICS"] {
+        for api_version in ["1_0", "1_1", "1_2", "1_3", "1_4"] {
+            build.define(&format!("VK_{api_definition}_VERSION_{api_version}"), None);
+        }
+    }
+
     let mut sources = Vec::new();
     #[cfg(feature = "impl")]
     {
@@ -76,6 +83,7 @@ fn main() {
             "external/gfxstream/host/vulkan/dependency_graph.cpp",
             "external/gfxstream/host/vulkan/vk_utils.cpp",
             "external/gfxstream/host/vulkan/vk_format_utils.cpp",
+            "external/gfxstream/host/vulkan/vk_format_support.cpp",
             "external/gfxstream/host/vulkan/external_memory.cpp",
             // host/vulkan/cereal/common
             "external/gfxstream/host/vulkan/cereal/common/goldfish_vk_dispatch.cpp",
@@ -100,6 +108,7 @@ fn main() {
             // common/base
             "external/gfxstream/common/base/UdmabufCreator_stub.cpp",
             "external/gfxstream/common/base/System.cpp",
+            "external/gfxstream/common/utils/strings.cpp",
             // common/logging
             "external/gfxstream/common/logging/logging.cpp",
         ]);

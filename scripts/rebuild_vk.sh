@@ -10,12 +10,12 @@ cp webrogue-sdk/libraries/Vulkan-Headers/include/vk_video/*.h webrogue-sdk/libra
 cp webrogue-sdk/libraries/Vulkan-Headers/include/vulkan/*.h webrogue-sdk/libraries/SDL2/src/video/khronos/vulkan
 cp webrogue-sdk/libraries/Vulkan-Headers/include/vulkan/*.h webrogue-sdk/libraries/SDL3/src/video/khronos/vulkan
 
-
 cd webrogue-sdk/libraries/mesa/src/gfxstream/codegen
 sh generate-gfxstream-vulkan.sh ../../../../../../external/gfxstream
 cd ../../../../../..
+
 cd webrogue-sdk/libraries/mesa/src/gfxstream/guest/vulkan_enc
-rm func_table.cpp \
+rm -f func_table.cpp \
     goldfish_vk_counting_guest.cpp goldfish_vk_counting_guest.h \
     goldfish_vk_deepcopy_guest.cpp goldfish_vk_deepcopy_guest.h \
     goldfish_vk_extension_structs_guest.cpp goldfish_vk_extension_structs_guest.h \
@@ -26,3 +26,4 @@ rm func_table.cpp \
     vulkan_gfxstream_structure_type.h \
     vulkan_gfxstream.h
 cd ../../../../../../..
+

@@ -54,6 +54,7 @@ targets:
     - ../../external/gfxstream/host/vulkan/dependency_graph.cpp
     - ../../external/gfxstream/host/vulkan/vk_utils.cpp
     - ../../external/gfxstream/host/vulkan/vk_format_utils.cpp
+    - ../../external/gfxstream/host/vulkan/vk_format_support.cpp
     - ../../external/gfxstream/host/vulkan/external_memory.cpp
     - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_dispatch.cpp
     - ../../external/gfxstream/host/vulkan/cereal/common/goldfish_vk_transform.cpp
@@ -109,6 +110,21 @@ targets:
         - "VK_GFXSTREAM_STRUCTURE_TYPE_EXT=1"
         - "VK_USE_PLATFORM_METAL_EXT=1"
         - "VK_USE_PLATFORM_MACOS_MVK=1"
+        - "VK_BASE_VERSION_1_0=1"
+        - "VK_COMPUTE_VERSION_1_0=1"
+        - "VK_GRAPHICS_VERSION_1_0=1"
+        - "VK_BASE_VERSION_1_1=1"
+        - "VK_COMPUTE_VERSION_1_1=1"
+        - "VK_GRAPHICS_VERSION_1_1=1"
+        - "VK_BASE_VERSION_1_2=1"
+        - "VK_COMPUTE_VERSION_1_2=1"
+        - "VK_GRAPHICS_VERSION_1_2=1"
+        - "VK_BASE_VERSION_1_3=1"
+        - "VK_COMPUTE_VERSION_1_3=1"
+        - "VK_GRAPHICS_VERSION_1_3=1"
+        - "VK_BASE_VERSION_1_4=1"
+        - "VK_COMPUTE_VERSION_1_4=1"
+        - "VK_GRAPHICS_VERSION_1_4=1"
         OTHER_CPLUSPLUSFLAGS:
         - "$(OTHER_CFLAGS)"
         - "-Wno-return-type-c-linkage"

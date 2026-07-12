@@ -4,8 +4,6 @@ mod proxied_builder;
 mod simple_builder;
 mod system;
 mod utils;
-#[cfg(not(target_arch = "wasm32"))]
-mod vulkan_library;
 mod window;
 mod window_registry;
 

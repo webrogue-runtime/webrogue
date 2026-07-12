@@ -1,8 +1,7 @@
 mod child_builder;
 pub mod events_encoder;
 mod interface;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod swiftshader;
+mod vulkan_entry;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use webrogue_gfxstream::Decoder as GFXStreamDecoder;
@@ -16,3 +15,4 @@ pub use interface::IBuilder;
 pub use interface::ISystem;
 pub use interface::IWindow;
 pub use interface::Interface;
+pub use vulkan_entry::load_vulkan_entry;

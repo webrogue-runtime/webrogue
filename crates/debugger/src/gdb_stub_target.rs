@@ -542,14 +542,11 @@ impl gdbstub::target::ext::base::multithread::MultiThreadResume for Wasm32Target
                 continue;
             };
 
-            let send_result =
-                stopped_thread
-                    .sender
-                    .unbounded_send(ThreadMessage::Resume(ResumeMessage {
-                        is_step: matches!(resume_type, ResumeType::Step),
-                    }));
-
-            assert!(send_result.is_ok());
+            let _ = stopped_thread
+                .sender
+                .unbounded_send(ThreadMessage::Resume(ResumeMessage {
+                    is_step: matches!(resume_type, ResumeType::Step),
+                }));
         }
         self.default_resume_type = Some(ResumeType::Continue);
         Ok(())

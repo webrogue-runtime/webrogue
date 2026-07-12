@@ -7,7 +7,7 @@ use winit::window::WindowAttributes;
 use crate::{mailbox::Mailbox, window::WinitWindowInternal, WinitWindow};
 
 #[cfg(not(target_arch = "wasm32"))]
-use crate::vulkan_library::load_vulkan_entry;
+use webrogue_gfx::load_vulkan_entry;
 
 pub struct WinitSystem {
     pub(crate) mailbox: Mailbox,
