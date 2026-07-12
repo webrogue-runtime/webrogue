@@ -8417,6 +8417,8 @@ dependencies = [
  "ash",
  "lazy_static",
  "libloading",
+ "reqwest",
+ "tar",
  "webrogue-events-macro",
  "webrogue-gfxstream",
  "wiggle",
@@ -8431,9 +8433,7 @@ dependencies = [
  "ash",
  "ash-window",
  "parking_lot",
- "reqwest",
  "softbuffer",
- "tar",
  "webrogue-gfx",
  "winit",
 ]
@@ -8528,6 +8528,7 @@ name = "webrogue-ios"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "webrogue-gfx",
  "webrogue-gfx-winit",
  "webrogue-launcher",
  "webrogue-wasmtime",

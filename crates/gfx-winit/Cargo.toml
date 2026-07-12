@@ -5,9 +5,6 @@ authors.workspace = true
 license.workspace = true
 edition.workspace = true
 
-[features]
-static-vk = ["dep:reqwest", "dep:tar", "webrogue-gfx/static-vk"]
-
 [dependencies]
 anyhow = { workspace = true }
 webrogue-gfx = { workspace = true }
@@ -18,7 +15,3 @@ parking_lot = { workspace = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ash = { workspace = true, features = ["std", "loaded"], default-features = false }
 ash-window = { workspace = true }
-
-[build-dependencies]
-reqwest = { workspace = true, features = ["blocking"], optional = true }
-tar = { workspace = true, optional = true }

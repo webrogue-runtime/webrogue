@@ -60,10 +60,14 @@ Drivers tried:
                         title.push(0);
                         let mut message = format!(
                             r"
-This application requires a Vulkan-compatible graphics driver to run.
-To resolve this, please update you GPU driver to the latest version.
-Visit you manufacturer website (NVIDIA, AMD, INTEL) for detailed instructions.
-If you are an application developer, you can bundle a fallback Vulkan driver (Lavapipe or SwiftShader).
+No Vulkan-compatible graphics driver has been found.
+To resolve this, try one of the following:
+
+1. Update you GPU driver to the latest version. Visit you manufacturer website (NVIDIA, AMD, INTEL) for detailed instructions
+
+2. Install OpenCL™, OpenGL®, and Vulkan® Compatibility Pack
+
+3. If you are an application developer, bundle a fallback driver (vulkan_dzn.dll, vulkan_lvp.dll or vk_swiftshader.dll)
 
 Drivers tried:
 {error}
@@ -152,7 +156,7 @@ fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
 
     #[cfg(feature = "static-vk")]
     {
-        loader_state.try_load("Statically linked implementation", load_static())?;
+        loader_state.try_load("Statically linked Vulkan", load_static())?;
 
         fn load_static() -> anyhow::Result<Entry> {
             extern "system" {
@@ -170,45 +174,46 @@ fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
         }
     }
 
-    #[cfg(windows)]
+    #[cfg(feature = "static-vk-icd")]
     {
-        loader_state.try_load("Dozen", load_dynamic_dozen())?;
+        loader_state.try_load("Statically linked ICD", load_static_icd())?;
 
-        fn load_dynamic_dozen() -> anyhow::Result<Entry> {
-            let path = std::env::current_exe()?
-                .parent()
-                .ok_or_else(|| anyhow::anyhow!("Path error"))?
-                .join("vulkan_dzn.dll");
+        fn load_static_icd() -> anyhow::Result<Entry> {
+            extern "system" {
+                fn vk_icdGetInstanceProcAddr(
+                    instance: ash::vk::Instance,
+                    name: *const std::ffi::c_char,
+                ) -> ash::vk::PFN_vkVoidFunction;
+            }
 
-            load_dynamic_icd(&path)
+            let static_fn = ash::StaticFn::load_checked(move |name| unsafe {
+                vk_icdGetInstanceProcAddr(ash::vk::Instance::null(), name.as_ptr())
+                    .map(|f| f as *const std::ffi::c_void)
+                    .unwrap_or(std::ptr::null())
+            })?;
+            check_entry(unsafe { Entry::from_static_fn(static_fn) })
         }
     }
 
     #[cfg(windows)]
     {
-        loader_state.try_load("Lavapipe", load_dynamic_lavapipe())?;
+        loader_state.try_load("Dozen", (|| load_dynamic(&find_dll("vulkan_dzn.dll")?))())?;
+        loader_state.try_load(
+            "Lavapipe",
+            (|| load_dynamic(&find_dll("vulkan_lvp.dll")?))(),
+        )?;
+        loader_state.try_load(
+            "SwiftShader",
+            (|| load_dynamic(&find_dll("vk_swiftshader.dll")?))(),
+        )?;
 
-        fn load_dynamic_lavapipe() -> anyhow::Result<Entry> {
+        fn find_dll(filename: &str) -> anyhow::Result<std::path::PathBuf> {
             let path = std::env::current_exe()?
                 .parent()
                 .ok_or_else(|| anyhow::anyhow!("Path error"))?
-                .join("vulkan_lvp.dll");
-
-            load_dynamic_icd(&path)
-        }
-    }
-
-    #[cfg(windows)]
-    {
-        loader_state.try_load("SwiftShader", load_dynamic_swiftshader())?;
-
-        fn load_dynamic_swiftshader() -> anyhow::Result<Entry> {
-            let path = std::env::current_exe()?
-                .parent()
-                .ok_or_else(|| anyhow::anyhow!("Path error"))?
-                .join("vk_swiftshader.dll");
-
-            load_dynamic(&path)
+                .join(filename);
+            anyhow::ensure!(path.exists(), "{} not found", filename);
+            Ok(path)
         }
     }
 

@@ -7,12 +7,18 @@ edition.workspace = true
 
 [features]
 static-vk = []
+static-vk-icd = []
+static-moltenvk = ["static-vk", "dep:reqwest", "dep:tar"]
 
 [dependencies]
 anyhow = { workspace = true }
 webrogue-events-macro = { workspace = true }
 wiggle = { workspace = true, default-features = false }
 lazy_static = { workspace = true }
+
+[build-dependencies]
+reqwest = { workspace = true, features = ["blocking"], optional = true }
+tar = { workspace = true, optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ash = { workspace = true, features = ["std", "loaded"], default-features = false }
