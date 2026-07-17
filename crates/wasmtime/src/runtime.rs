@@ -130,7 +130,7 @@ impl Runtime {
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
                     .compiler_inlining(Inlining::Intrinsics)
                     .signals_based_traps(true);
-                webrogue_gfxstream::shadow_blob::external_signal_handler_installed();
+                webrogue_virgl::shadow_blob::external_signal_handler_installed();
             }
             JitProfile::FastCompilation => {
                 self.wasmtime_config
@@ -138,7 +138,7 @@ impl Runtime {
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
                     .compiler_inlining(Inlining::Intrinsics)
                     .signals_based_traps(true);
-                webrogue_gfxstream::shadow_blob::external_signal_handler_installed();
+                webrogue_virgl::shadow_blob::external_signal_handler_installed();
             }
         };
 
@@ -208,7 +208,7 @@ impl Runtime {
         )));
         self.wasmtime_config.epoch_interruption(false);
         self.wasmtime_config.signals_based_traps(true);
-        webrogue_gfxstream::shadow_blob::external_signal_handler_installed();
+        webrogue_virgl::shadow_blob::external_signal_handler_installed();
         let engine = wasmtime::Engine::new(&self.wasmtime_config)?;
         let module = unsafe {
             wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
@@ -307,11 +307,10 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         use wasmtime::unix::StoreExt;
 
         store.set_signal_handler(move |signum, siginfo, _| {
-            let Some(addr) = webrogue_gfxstream::shadow_blob::get_segfault_addr(signum, siginfo)
-            else {
+            let Some(addr) = webrogue_virgl::shadow_blob::get_segfault_addr(signum, siginfo) else {
                 return false;
             };
-            webrogue_gfxstream::shadow_blob::handle_segfault(addr)
+            webrogue_virgl::shadow_blob::handle_segfault(addr)
         });
     }
     #[cfg(target_os = "windows")]
@@ -319,11 +318,10 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
         use wasmtime::windows::StoreExt;
 
         store.set_signal_handler(move |exception_info| {
-            let Some(addr) = webrogue_gfxstream::shadow_blob::get_segfault_addr(exception_info)
-            else {
+            let Some(addr) = webrogue_virgl::shadow_blob::get_segfault_addr(exception_info) else {
                 return false;
             };
-            webrogue_gfxstream::shadow_blob::handle_segfault(addr)
+            webrogue_virgl::shadow_blob::handle_segfault(addr)
         });
     }
 

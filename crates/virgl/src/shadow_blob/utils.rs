@@ -1,18 +1,19 @@
 use std::ptr::copy_nonoverlapping;
 
-use crate::ffi::webrogue_gfxstream_ffi_get_host_blob;
+// use crate::ffi::webrogue_gfxstream_ffi_get_host_blob;
 
 pub unsafe fn get_host_blob_part(
     blob_id: u64,
     blob_offset: u64,
     size: usize,
 ) -> Option<&'static mut [u8]> {
-    let blob_base = webrogue_gfxstream_ffi_get_host_blob(blob_id);
-    if blob_base.is_null() {
-        return None;
-    }
-    let blob_ptr = blob_base.add(blob_offset as usize);
-    return Some(std::slice::from_raw_parts_mut(blob_ptr, size));
+    // let blob_base = webrogue_gfxstream_ffi_get_host_blob(blob_id);
+    // if blob_base.is_null() {
+    //     return None;
+    // }
+    // let blob_ptr = blob_base.add(blob_offset as usize);
+    // return Some(std::slice::from_raw_parts_mut(blob_ptr, size));
+    todo!()
 }
 
 pub unsafe fn copy_host_blob_part_to_guest(

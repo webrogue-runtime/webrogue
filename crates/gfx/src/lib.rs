@@ -4,9 +4,10 @@ mod interface;
 mod vulkan_entry;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use webrogue_gfxstream::Decoder as GFXStreamDecoder;
+pub use webrogue_virgl::ContextContainer as VirGLContextContainer;
 #[cfg(not(target_arch = "wasm32"))]
-pub use webrogue_gfxstream::System as GFXStreamSystem;
+pub use webrogue_virgl::Renderer as VirGLRenderer;
+pub use webrogue_virgl::SystemProxy as VirGLSystemProxy;
 
 pub use child_builder::ChildBuilder;
 pub use interface::run;

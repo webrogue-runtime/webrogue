@@ -87,7 +87,7 @@ impl WinitProxy {
         window_id: WindowId,
         event: WindowEvent,
     ) {
-        if let Some(window) = window_registry.get_window(window_id) {
+        if let Some(window) = window_registry.get_window_by_winit_id(window_id) {
             window.on_event(event);
         }
     }

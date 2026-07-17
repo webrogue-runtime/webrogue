@@ -1,5 +1,5 @@
 [package]
-name = "webrogue-gfxstream-lib"
+name = "webrogue-virgl-lib"
 version.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -9,9 +9,10 @@ edition.workspace = true
 crate-type=["lib"]
 
 [features]
-_build = ["dep:cc"]
+_build = ["dep:cc", "dep:bindgen"]
 impl = ["_build"]
 stub = ["_build"]
 
 [build-dependencies]
 cc = { workspace = true, optional = true }
+bindgen = { workspace = true, optional = true }

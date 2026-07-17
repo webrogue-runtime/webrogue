@@ -14,7 +14,7 @@ debug = ["wasmtime/debug"]
 
 [dependencies]
 webrogue-gfx = { workspace = true }
-webrogue-gfxstream = { workspace = true }
+webrogue-virgl = { workspace = true }
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
 webrogue-wasip1 = { workspace = true }

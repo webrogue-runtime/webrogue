@@ -34,7 +34,7 @@ lazy_static! {
 
 pub fn init() {
     unsafe {
-        crate::ffi::webrogue_gfxstream_ffi_set_register_shadow_blob_callback(register_blob);
+        // crate::ffi::webrogue_gfxstream_ffi_set_register_shadow_blob_callback(register_blob);
     }
 }
 

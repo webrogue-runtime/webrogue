@@ -1,19 +1,19 @@
 [package]
-name = "webrogue-gfxstream"
+name = "webrogue-virgl"
 version.workspace = true
 authors.workspace = true
 license.workspace = true
 edition.workspace = true
 
 [features]
-_lib = ["dep:webrogue-gfxstream-lib"]
-lib-stub = ["_lib", "webrogue-gfxstream-lib/stub"]
-lib-impl = ["_lib", "webrogue-gfxstream-lib/impl"]
+_lib = ["dep:webrogue-virgl-lib"]
+lib-stub = ["_lib", "webrogue-virgl-lib/stub"]
+lib-impl = ["_lib", "webrogue-virgl-lib/impl"]
 
 [dependencies]
 lazy_static = { workspace = true }
 ash = { workspace = true, default-features = false }
-webrogue-gfxstream-lib = { workspace = true, optional = true }
+webrogue-virgl-lib = { workspace = true, optional = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 
 [target.'cfg(windows)'.dependencies]
