@@ -235,26 +235,59 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         let _ = mem.write(out_fd, fd as u32);
     }
 
-    fn vtest_map_fd(
+    fn vtest_register_blob(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
-        fd: u32,
+        blob_id: u64,
         buf: wiggle::GuestPtr<u8>,
         buf_len: GuestSize,
     ) -> () {
-        let linear_memory_ptr = match mem {
-            wiggle::GuestMemory::Unshared(items) => items.as_ptr(),
-            wiggle::GuestMemory::Shared(unsafe_cells) => unsafe_cells.as_ptr() as *const u8,
+        let (linear_memory_ptr, linear_memory_len) = match mem {
+            wiggle::GuestMemory::Unshared(items) => (items.as_ptr(), items.len()),
+            wiggle::GuestMemory::Shared(unsafe_cells) => {
+                (unsafe_cells.as_ptr() as *const u8, unsafe_cells.len())
+            }
             wiggle::GuestMemory::Dynamic(_) => todo!(),
         };
+        if buf.offset() + buf_len > linear_memory_len as u32 {
+            return;
+        }
         let buf_ptr = unsafe { linear_memory_ptr.add(buf.offset() as usize) };
+
         let Some(virgl_context) = self.system.get_virgl_context() else {
             return;
         };
         virgl_context
             .lock()
             .unwrap()
-            .map_fd(fd as i32, buf_ptr, buf_len as usize);
+            .register_blob(blob_id, buf_ptr, buf_len as usize);
+    }
+
+    fn vtest_setup_shmem(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        ptr: wiggle::GuestPtr<u8>,
+        size: GuestSize,
+    ) -> () {
+        let (linear_memory_ptr, linear_memory_len) = match mem {
+            wiggle::GuestMemory::Unshared(items) => (items.as_ptr(), items.len()),
+            wiggle::GuestMemory::Shared(unsafe_cells) => {
+                (unsafe_cells.as_ptr() as *const u8, unsafe_cells.len())
+            }
+            wiggle::GuestMemory::Dynamic(_) => todo!(),
+        };
+        if ptr.offset() + size > linear_memory_len as u32 {
+            return;
+        }
+        let buf_ptr = unsafe { linear_memory_ptr.add(ptr.offset() as usize) };
+
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        virgl_context
+            .lock()
+            .unwrap()
+            .setup_shmem(buf_ptr, size as usize);
     }
 
     // CPU rendering

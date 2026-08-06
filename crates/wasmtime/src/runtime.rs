@@ -99,7 +99,8 @@ impl Runtime {
         use wasmtime::Inlining;
 
         self.wasmtime_config
-            .wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+            .wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable)
+            .debug_info(true);
 
         #[cfg(feature = "cache")]
         if let Some(cache_config) = self.jit_cache_config {
@@ -453,7 +454,7 @@ mod bindings {
         use super::WasmThread;
         wiggle::wasmtime_integration!({
             target: webrogue_wasi_common::snapshots::preview_1,
-            witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
+            witx: ["../wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
             block_on [webrogue_wasip1::run_in_executor]: *
         });
     }
@@ -463,7 +464,7 @@ mod bindings {
         use super::WasmThread;
         wiggle::wasmtime_integration!({
             target: webrogue_wasi_common::snapshots::preview_1,
-            witx: ["../../external/wasmtime/crates/wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
+            witx: ["../wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
             async: *
         });
     }

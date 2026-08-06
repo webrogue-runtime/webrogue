@@ -11,7 +11,6 @@ mod bindings;
 pub mod shadow_blob;
 mod system_proxy;
 use ash::{vk::PFN_vkGetInstanceProcAddr, Entry};
-use rustix::path::Arg;
 pub use system_proxy::SystemProxy;
 
 use crate::bindings::{
@@ -21,7 +20,6 @@ use crate::bindings::{
 
 enum Message {
     Write(FFIContextContainer, Vec<u8>),
-    // RegisterBlob(u64, usize, usize),
 }
 
 lazy_static::lazy_static! {
@@ -53,7 +51,7 @@ impl Renderer {
         ) -> ash::vk::PFN_vkVoidFunction {
             let vk_lib = SHARED_RENDERER.get().unwrap().vk_lib.clone();
             let name = CStr::from_ptr(p_name);
-            match name.as_str().unwrap() {
+            match name.to_str().unwrap() {
                 "vkCreateSurfaceWEBROGUE" => {
                     #[repr(C)]
                     pub struct SurfaceCreateInfoWEBROGUE<'a> {
@@ -184,13 +182,7 @@ impl Renderer {
                                 )
                             };
                             assert_eq!(ret, 0);
-                        } // Message::RegisterBlob(blob_id, guest_buf, len) => unsafe {
-                          //     bindings::vtest_webrogue_register_guest_blob(
-                          //         blob_id,
-                          //         guest_buf as *mut u8,
-                          //         len,
-                          //     );
-                          // },
+                        }
                     }
                 }
                 unsafe {
@@ -261,9 +253,6 @@ impl FFIContextContainer {
                     Ok(Message::Write(_, mut new_data)) => {
                         data.append(&mut new_data);
                     }
-                    // Ok(Message::RegisterBlob(_, _, _)) => {
-                    //     unreachable!()
-                    // }
                     Err(_) => todo!(),
                 }
             }
@@ -372,9 +361,13 @@ impl ContextContainer {
         i32::from_le_bytes(*self.read(4).as_array().unwrap())
     }
 
-    pub fn map_fd(&self, fd: i32, addr: *const u8, size: usize) {
+    pub fn register_blob(&self, blob_id: u64, buf: *const u8, size: usize) {
+        crate::shadow_blob::register_blob(buf as *const (), size, blob_id);
+    }
+
+    pub fn setup_shmem(&self, ptr: *const u8, size: usize) {
         unsafe {
-            bindings::webrogue_map_fd(fd, addr as *mut c_void, size);
+            bindings::vtest_webrogue_setup_shmem(ptr as *mut c_void, size);
         }
     }
 

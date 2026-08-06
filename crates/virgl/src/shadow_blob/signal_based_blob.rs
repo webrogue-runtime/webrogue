@@ -1,14 +1,13 @@
-use std::{collections::BTreeMap, sync::Mutex};
+use std::{collections::BTreeMap, ptr::copy_nonoverlapping, sync::Mutex};
 
 use lazy_static::lazy_static;
 
-use crate::shadow_blob::utils::{copy_guest_blob_part_to_host, copy_host_blob_part_to_guest};
-
 type Ptr = usize;
 
+#[derive(Debug)]
 struct Page {
     blob_id: u64,
-    blob_offset: u64,
+    host_page_ptr: Ptr,
     loaded: bool,
 }
 
@@ -45,7 +44,7 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     let base_page_addr = segfault_addr & !(page_size - 1);
     let mut matching_pages = 0;
     let mut blob_id = 0;
-    let mut offset = 0;
+    let mut first_host_page_ptr = 0;
     // TODO adjust number of preloaded pages
     for page_index in 0..1 {
         let page_addr = base_page_addr + page_size * page_index;
@@ -54,7 +53,7 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
         };
         if page_index == 0 {
             blob_id = page.blob_id;
-            offset = page.blob_offset;
+            first_host_page_ptr = page.host_page_ptr;
         } else {
             if page.loaded || page.blob_id != blob_id {
                 break;
@@ -72,10 +71,10 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     unsafe {
         mem_ops::mprotect(base_page_addr, page_size, matching_pages, true, true);
 
-        copy_host_blob_part_to_guest(
-            blob_id,
-            offset,
-            std::slice::from_raw_parts_mut(base_page_addr as *mut u8, page_size * matching_pages),
+        copy_nonoverlapping(
+            first_host_page_ptr as *const u8,
+            base_page_addr as *mut u8,
+            page_size * matching_pages,
         );
     };
     return true;
@@ -97,10 +96,10 @@ pub fn flush_all() {
         unsafe {
             mem_ops::mprotect(loaded_page_addr, page_size, 1, true, false);
 
-            copy_guest_blob_part_to_host(
-                page.blob_id,
-                page.blob_offset,
-                std::slice::from_raw_parts_mut(loaded_page_addr as *mut u8, page_size),
+            copy_nonoverlapping(
+                loaded_page_addr as *const u8,
+                page.host_page_ptr as *mut u8,
+                page_size,
             );
 
             mem_ops::mprotect(loaded_page_addr, page_size, 1, false, false);
@@ -108,21 +107,21 @@ pub fn flush_all() {
     }
 }
 
-extern "C" fn register_blob(ptr: *const (), len: u64, blob_id: u64) {
-    let blob_ptr = ptr as Ptr;
+pub fn register_blob(vm_ptr: *const (), len: usize, host_ptr: *const (), blob_id: u64) {
+    let vm_ptr = vm_ptr as Ptr;
     let len = len as usize;
     let mut storage = static_storage.lock().unwrap();
     let page_size = storage.page_size;
 
-    mem_ops::mprotect(blob_ptr, page_size, len / page_size, false, false);
+    mem_ops::mprotect(vm_ptr, page_size, len / page_size, false, false);
     assert!(len % storage.page_size == 0);
     for page_index in 0..(len / storage.page_size) {
-        let page_ptr = blob_ptr + storage.page_size * page_index;
+        let page_ptr = vm_ptr + storage.page_size * page_index;
         storage.pages.insert(
             page_ptr,
             Page {
                 blob_id,
-                blob_offset: (page_ptr - blob_ptr) as u64,
+                host_page_ptr: (page_ptr - vm_ptr) + host_ptr as Ptr,
                 loaded: false,
             },
         );

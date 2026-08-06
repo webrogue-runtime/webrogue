@@ -1,4 +1,4 @@
-use std::{ptr::copy_nonoverlapping, sync::Mutex};
+use std::{cmp::min, ptr::copy_nonoverlapping, sync::Mutex};
 
 use lazy_static::lazy_static;
 use xxhash_rust::xxh3::xxh3_64;
@@ -9,9 +9,8 @@ type Ptr = usize;
 type Hash = u64;
 
 struct Entry {
-    blob_id: u64,
-    // None means that this Entry is just registered
-    host_ptr_and_hash: Option<(Ptr, Hash)>,
+    host_ptr: Ptr,
+    hash: Hash,
     len: usize,
     vm_ptr: Ptr,
 }
@@ -45,20 +44,8 @@ pub fn handle_segfault(_segfault_addr: *const ()) -> bool {
 pub fn flush_all() {
     let mut storage = static_storage.lock().unwrap();
     for entry in &mut storage.entries {
-        let host_ptr;
-        let expected_hash;
-        if let Some(host_ptr_and_hash) = entry.host_ptr_and_hash {
-            host_ptr = host_ptr_and_hash.0;
-            expected_hash = host_ptr_and_hash.1;
-        } else {
-            let Some(host_blob) = (unsafe { get_host_blob_part(entry.blob_id, 0, entry.len) })
-            else {
-                todo!()
-            };
-            host_ptr = host_blob.as_ptr_range().start.addr();
-            expected_hash = hash(host_blob);
-            entry.host_ptr_and_hash = Some((host_ptr, expected_hash));
-        }
+        let host_ptr = entry.host_ptr;
+        let expected_hash = entry.hash;
         let guest_memory =
             unsafe { std::slice::from_raw_parts_mut(entry.vm_ptr as *mut u8, entry.len) };
         let host_memory = unsafe { std::slice::from_raw_parts_mut(host_ptr as *mut u8, entry.len) };
@@ -75,7 +62,7 @@ pub fn flush_all() {
                     guest_memory.len(),
                 )
             };
-            entry.host_ptr_and_hash.as_mut().unwrap().1 = guest_hash;
+            entry.hash = guest_hash;
         } else if host_hash != expected_hash {
             unsafe {
                 copy_nonoverlapping(
@@ -84,18 +71,29 @@ pub fn flush_all() {
                     guest_memory.len(),
                 )
             };
-            entry.host_ptr_and_hash.as_mut().unwrap().1 = host_hash;
+            entry.hash = host_hash;
         }
     }
 }
 
-extern "C" fn register_blob(ptr: *const (), len: u64, blob_id: u64) {
-    static_storage.lock().unwrap().entries.push(Entry {
-        blob_id,
-        host_ptr_and_hash: None,
-        len: len as usize,
-        vm_ptr: ptr as Ptr,
-    });
+pub fn register_blob(
+    mut vm_ptr: *const (),
+    mut len: usize,
+    mut host_ptr: *const (),
+    _blob_id: u64,
+) {
+    while len > 0 {
+        let page_size = min(len, 1024);
+        static_storage.lock().unwrap().entries.push(Entry {
+            host_ptr: host_ptr as Ptr,
+            hash: hash(unsafe { std::slice::from_raw_parts(host_ptr as *const u8, page_size) }),
+            len: page_size,
+            vm_ptr: vm_ptr as Ptr,
+        });
+        vm_ptr = unsafe { vm_ptr.add(page_size) };
+        host_ptr = unsafe { host_ptr.add(page_size) };
+        len -= page_size;
+    }
 }
 
 fn hash(data: &[u8]) -> Hash {

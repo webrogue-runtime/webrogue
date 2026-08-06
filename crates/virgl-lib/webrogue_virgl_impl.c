@@ -5,6 +5,8 @@
 #include "webrogue_virgl.h"
 #include <sys/mman.h>
 
+#include "venus/vkr_renderer.h"
+
 // void webrogue_virgl_create_global_state(void *get_proc, void* userdata) {
 //   int ret;
 //   int virgl_flags = VIRGL_RENDERER_VENUS | VIRGL_RENDERER_NO_VIRGL | VIRGL_RENDERER_THREAD_SYNC;
@@ -35,11 +37,9 @@ void* webrogueGetVulkan(void) {
   return webrogueVulkan;
 }
 
-void webrogue_map_fd(int32_t fd, void* addr, size_t size) {
-  void* ret = mmap(addr, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
-  if(addr != ret) {
-    abort();
-  }
+void* webrogue_get_host_blob(uint64_t blob_id) {
+  /* single-client webrogue renderer always uses context id 1 */
+  return vkr_renderer_get_host_blob(1, (uint32_t)blob_id);
 }
 
 #define EPOXY_GL_STUB(name) void name() { abort(); }
