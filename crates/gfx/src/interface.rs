@@ -173,72 +173,10 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         let _ = mem.write(out_error, ret);
     }
 
-    fn vtest_write(
+    fn vulkan_register_blob(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
-        buf: wiggle::GuestPtr<u8>,
-        len: GuestSize,
-    ) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let Ok(buf) = mem.as_cow(buf.as_array(len)) else {
-            return;
-        };
-        virgl_context.lock().unwrap().write(&buf);
-    }
-
-    fn vtest_read(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        buf: wiggle::GuestPtr<u8>,
-        len: GuestSize,
-    ) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let data = virgl_context.lock().unwrap().read(len as usize);
-        let _ = mem.copy_from_slice(&data, buf.as_array(len));
-    }
-
-    // fn vtest_register_blob(
-    //     &mut self,
-    //     mem: &mut wiggle::GuestMemory<'_>,
-    //     blob_id: u64,
-    //     buf: wiggle::GuestPtr<u8>,
-    //     buf_len: GuestSize,
-    // ) -> () {
-    //     let linear_memory_ptr = match mem {
-    //         wiggle::GuestMemory::Unshared(items) => items.as_ptr(),
-    //         wiggle::GuestMemory::Shared(unsafe_cells) => unsafe_cells.as_ptr() as *const u8,
-    //         wiggle::GuestMemory::Dynamic(_) => todo!(),
-    //     };
-    //     let buf_ptr = unsafe { linear_memory_ptr.add(buf.offset() as usize) };
-    //     let Some(virgl_context) = self.system.get_virgl_context() else {
-    //         return;
-    //     };
-    //     virgl_context
-    //         .lock()
-    //         .unwrap()
-    //         .register_guest_blob(blob_id, buf_ptr, buf_len as usize);
-    // }
-
-    fn vtest_receive_fd(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        out_fd: wiggle::GuestPtr<u32>,
-    ) -> () {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let fd = virgl_context.lock().unwrap().receive_fd();
-        let _ = mem.write(out_fd, fd as u32);
-    }
-
-    fn vtest_register_blob(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        blob_id: u64,
+        res_id: u32,
         buf: wiggle::GuestPtr<u8>,
         buf_len: GuestSize,
     ) -> () {
@@ -260,34 +198,203 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
         virgl_context
             .lock()
             .unwrap()
-            .register_blob(blob_id, buf_ptr, buf_len as usize);
+            .register_blob(res_id.into(), buf_ptr, buf_len as usize);
     }
 
-    fn vtest_setup_shmem(
+    fn vulkan_create_blob(
         &mut self,
         mem: &mut wiggle::GuestMemory<'_>,
         ptr: wiggle::GuestPtr<u8>,
         size: GuestSize,
+        blob_id: u64,
+        out_res_id: wiggle::GuestPtr<u32>,
     ) -> () {
-        let (linear_memory_ptr, linear_memory_len) = match mem {
-            wiggle::GuestMemory::Unshared(items) => (items.as_ptr(), items.len()),
-            wiggle::GuestMemory::Shared(unsafe_cells) => {
-                (unsafe_cells.as_ptr() as *const u8, unsafe_cells.len())
+        let res_id = (|| {
+            let Some(virgl_context) = self.system.get_virgl_context() else {
+                return 0;
+            };
+            let virgl_context = virgl_context.lock().unwrap();
+            if blob_id != 0 {
+                // device memory blob: no guest buffer, just reference the blob id
+                return virgl_context.create_blob(std::ptr::null(), size as usize, blob_id);
             }
-            wiggle::GuestMemory::Dynamic(_) => todo!(),
-        };
-        if ptr.offset() + size > linear_memory_len as u32 {
-            return;
-        }
-        let buf_ptr = unsafe { linear_memory_ptr.add(ptr.offset() as usize) };
 
+            let (linear_memory_ptr, linear_memory_len) = match mem {
+                wiggle::GuestMemory::Unshared(items) => (items.as_ptr(), items.len()),
+                wiggle::GuestMemory::Shared(unsafe_cells) => {
+                    (unsafe_cells.as_ptr() as *const u8, unsafe_cells.len())
+                }
+                wiggle::GuestMemory::Dynamic(_) => todo!(),
+            };
+            if ptr.offset() + size > linear_memory_len as u32 {
+                return 0;
+            }
+            let buf_ptr = unsafe { linear_memory_ptr.add(ptr.offset() as usize) };
+            virgl_context.create_blob(buf_ptr, size as usize, blob_id)
+        })();
+        let _ = mem.write(out_res_id, res_id);
+    }
+
+    fn vulkan_resource_unref(&mut self, _mem: &mut wiggle::GuestMemory<'_>, res_id: u32) {
         let Some(virgl_context) = self.system.get_virgl_context() else {
             return;
+        };
+        virgl_context.lock().unwrap().resource_unref(res_id);
+    }
+
+    fn vulkan_sync_create(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        value: u64,
+        out_sync_id: wiggle::GuestPtr<u32>,
+    ) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        let sync_id = virgl_context.lock().unwrap().sync_create(value);
+        let _ = mem.write(out_sync_id, sync_id);
+    }
+
+    fn vulkan_sync_unref(&mut self, _mem: &mut wiggle::GuestMemory<'_>, sync_id: u32) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        virgl_context.lock().unwrap().sync_unref(sync_id);
+    }
+
+    fn vulkan_sync_read(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        sync_id: u32,
+        out_value: wiggle::GuestPtr<u64>,
+    ) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        let value = virgl_context.lock().unwrap().sync_read(sync_id);
+        let _ = mem.write(out_value, value);
+    }
+
+    fn vulkan_sync_write(&mut self, _mem: &mut wiggle::GuestMemory<'_>, sync_id: u32, value: u64) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        virgl_context.lock().unwrap().sync_write(sync_id, value);
+    }
+
+    fn vulkan_submit_cmd(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        headers: wiggle::GuestPtr<u8>,
+        headers_len: u32,
+        cmds: wiggle::GuestPtr<u8>,
+        cmds_len: u32,
+        syncs: wiggle::GuestPtr<u8>,
+        syncs_len: u32,
+    ) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        let Ok(headers) = mem.as_cow(headers.as_array(headers_len)) else {
+            return;
+        };
+        let Ok(cmds) = mem.as_cow(cmds.as_array(cmds_len)) else {
+            return;
+        };
+        let Ok(syncs) = mem.as_cow(syncs.as_array(syncs_len)) else {
+            return;
+        };
+        let words = |bytes: &[u8]| -> Vec<u32> {
+            bytes
+                .chunks_exact(4)
+                .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
+                .collect()
         };
         virgl_context
             .lock()
             .unwrap()
-            .setup_shmem(buf_ptr, size as usize);
+            .submit_cmd(&words(&headers), &words(&cmds), &words(&syncs));
+    }
+
+    fn vulkan_sync_wait(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        flags: u32,
+        timeout: u32,
+        syncs: wiggle::GuestPtr<u8>,
+        syncs_len: u32,
+        out_result: wiggle::GuestPtr<u32>,
+    ) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        let Ok(syncs) = mem.as_cow(syncs.as_array(syncs_len)) else {
+            return;
+        };
+        let words: Vec<u32> = syncs
+            .chunks_exact(4)
+            .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
+            .collect();
+        let result = virgl_context
+            .lock()
+            .unwrap()
+            .sync_wait(flags, timeout, &words);
+        let _ = mem.write(out_result, result as u32);
+    }
+
+    fn vulkan_get_max_timeline_count(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        out_value: wiggle::GuestPtr<u32>,
+    ) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        let value = virgl_context.lock().unwrap().get_max_timeline_count();
+        let _ = mem.write(out_value, value);
+    }
+
+    fn vulkan_get_capset(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        id: u32,
+        version: u32,
+        capset: wiggle::GuestPtr<u8>,
+        capset_size: u32,
+        out_size: wiggle::GuestPtr<u32>,
+    ) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        let data = virgl_context.lock().unwrap().get_capset(id, version);
+        let size = data.len() as u32;
+        let _ = mem.copy_from_slice(
+            &data[..size.min(capset_size) as usize],
+            capset.as_array(size.min(capset_size)),
+        );
+        let _ = mem.write(out_size, size);
+    }
+
+    fn vulkan_context_init(&mut self, _mem: &mut wiggle::GuestMemory<'_>, capset_id: u32) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        virgl_context.lock().unwrap().context_init(capset_id);
+    }
+
+    fn vulkan_create_renderer(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        name: wiggle::GuestPtr<u8>,
+        name_len: u32,
+    ) {
+        let Some(virgl_context) = self.system.get_virgl_context() else {
+            return;
+        };
+        let Ok(name) = mem.as_cow(name.as_array(name_len)) else {
+            return;
+        };
+        virgl_context.lock().unwrap().create_renderer(&name);
     }
 
     // CPU rendering

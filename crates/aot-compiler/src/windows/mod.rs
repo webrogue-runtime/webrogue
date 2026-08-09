@@ -213,10 +213,10 @@ fn link_windows_msvc(
         build_dir,
         &format!("{}-windows-msvc/webrogue_aot_lib.lib", arch_str),
     )?;
-    let gfxstream_lib_tmp = artifacts.extract_tmp(
+    let virgl_lib_tmp = artifacts.extract_tmp(
         build_dir,
         &format!(
-            "{}-windows-msvc/webrogue_gfxstream_lib_{}.a",
+            "{}-windows-msvc/webrogue_virgl_lib_{}.a",
             arch_str,
             if vulkan { "impl" } else { "stub" }
         ),
@@ -231,7 +231,7 @@ fn link_windows_msvc(
         path_to_arg(res_tmp)?,
         obj_tmp.as_arg()?,
         webrogue_aot_lib_tmp.as_arg()?,
-        gfxstream_lib_tmp.as_arg()?,
+        virgl_lib_tmp.as_arg()?,
         "/nodefaultlib",
         "/lldignoreenv"
     )

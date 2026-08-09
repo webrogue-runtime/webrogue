@@ -2,8 +2,6 @@ ARG ARCH
 FROM quay.io/pypa/musllinux_1_2_${ARCH}
 ARG ARCH
 
-RUN apk add pkgconfig openssl-dev musl-dev cmake make openssl-libs-static clang19 llvm19 lld gcc g++ strace bzip2-dev
-
 ENV PATH="/fakehome/.cargo/bin:$PATH"
 ENV RUSTUP_HOME=/fakehome/rustup
 ENV CARGO_HOME=/fakehome/.cargo
@@ -20,10 +18,15 @@ RUN apk add pipewire-dev alsa-lib-dev pulseaudio-dev libx11-dev libx11-static \
     libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev \
     libxscrnsaver-dev dbus-dev ibus-dev openpgl-dev mesa-dev \
     libxkbcommon-dev wayland-dev libdrm-dev libusb-dev \
-    liburing-dev pipewire-jack-dev libdecor-dev bzip2-static xz-dev xz-static
+    liburing-dev pipewire-jack-dev libdecor-dev bzip2-static xz-dev xz-static \
+    clang-libclang pkgconfig openssl-dev musl-dev cmake make openssl-libs-static \
+    clang llvm lld gcc g++ strace bzip2-dev
 
-RUN apk add pkgconfig openssl-dev musl-dev cmake make openssl-libs-static clang llvm lld gcc g++ strace bzip2-dev
-
+RUN apk add llvm20-dev clang20-static
+RUN apk add llvm20-libs
+RUN apk add ncurses-dev ncurses-static 
+RUN apk add zlib-static zlib-dev
+RUN apk add llvm20-libs
 # RUN rm /usr/lib/libX11.so  
 
 ENV ARCH=${ARCH}

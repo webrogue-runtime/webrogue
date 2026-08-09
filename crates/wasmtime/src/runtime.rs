@@ -100,7 +100,7 @@ impl Runtime {
 
         self.wasmtime_config
             .wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable)
-            .debug_info(true);
+            .debug_info(false);
 
         #[cfg(feature = "cache")]
         if let Some(cache_config) = self.jit_cache_config {

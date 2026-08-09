@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, ptr::copy_nonoverlapping, sync::Mutex};
+use std::{
+    collections::{BTreeMap, HashMap},
+    ptr::copy_nonoverlapping,
+    sync::Mutex,
+};
 
 use lazy_static::lazy_static;
 
@@ -31,11 +35,7 @@ lazy_static! {
     static ref static_storage: Mutex<Storage> = Mutex::new(Storage::new());
 }
 
-pub fn init() {
-    unsafe {
-        // crate::ffi::webrogue_gfxstream_ffi_set_register_shadow_blob_callback(register_blob);
-    }
-}
+pub fn init() {}
 
 pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     let segfault_addr = segfault_addr as Ptr;
@@ -82,8 +82,32 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
 
 pub fn flush_all() {
     let mut storage = static_storage.lock().unwrap();
-    let loaded_pages = storage.loaded_pages.clone();
+
+    // Re-validate liveness against the host: if the backing blob no longer
+    // resolves (device memory freed / resource destroyed behind an unordered
+    // destroy), drop the pages so neither flush nor the segfault handler ever
+    // dereferences the stale host pointer, and give the guest region its access
+    // back so the (freed) linear memory stays usable.
+    let mut blob_host_ptr: HashMap<u64, Ptr> = HashMap::new();
+    let mut stale_pages: Vec<Ptr> = Vec::new();
+    for (page_ptr, page) in storage.pages.iter() {
+        let live = *blob_host_ptr.entry(page.blob_id).or_insert_with(|| unsafe {
+            crate::bindings::webrogue_get_host_blob(page.blob_id) as Ptr
+        });
+        if live == 0 {
+            stale_pages.push(*page_ptr);
+        }
+    }
     let page_size = storage.page_size;
+    for page_ptr in &stale_pages {
+        mem_ops::mprotect(*page_ptr, page_size, 1, true, true);
+        storage.pages.remove(page_ptr);
+    }
+    storage
+        .loaded_pages
+        .retain(|page_ptr| !stale_pages.contains(page_ptr));
+
+    let loaded_pages = storage.loaded_pages.clone();
     storage.loaded_pages.clear();
 
     for loaded_page_addr in loaded_pages {
@@ -126,6 +150,31 @@ pub fn register_blob(vm_ptr: *const (), len: usize, host_ptr: *const (), blob_id
             },
         );
     }
+}
+
+pub fn deregister_blob(blob_id: u64) {
+    let mut storage = static_storage.lock().unwrap();
+    let page_size = storage.page_size;
+    let mut pages = Vec::new();
+    storage.pages.retain(|page_ptr, page| {
+        if page.blob_id == blob_id {
+            pages.push(*page_ptr);
+            false
+        } else {
+            true
+        }
+    });
+    if pages.is_empty() {
+        return;
+    }
+    // Make the freed guest region accessible again before dropping the tracking
+    // state, so the caller can safely free/reuse the linear memory.
+    for page_ptr in &pages {
+        mem_ops::mprotect(*page_ptr, page_size, 1, true, true);
+    }
+    storage
+        .loaded_pages
+        .retain(|page_ptr| !pages.contains(page_ptr));
 }
 
 #[cfg(target_os = "windows")]

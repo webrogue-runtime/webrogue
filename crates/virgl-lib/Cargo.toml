@@ -15,4 +15,9 @@ stub = ["_build"]
 
 [build-dependencies]
 cc = { workspace = true, optional = true }
-bindgen = { workspace = true, optional = true }
+
+[target.'cfg(target_env = "musl")'.build-dependencies]
+bindgen = { workspace = true, optional = true, default-features = false }
+
+[target.'cfg(not(target_env = "musl"))'.build-dependencies]
+bindgen = { workspace = true, optional = true, default-features = true }

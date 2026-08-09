@@ -1,8 +1,5 @@
 use std::{
-    cell::UnsafeCell,
     ffi::{c_char, c_int, c_void, CStr},
-    mem::swap,
-    ptr::{copy_nonoverlapping, null_mut},
     sync::{Arc, Mutex, OnceLock},
 };
 
@@ -10,25 +7,25 @@ mod bindings;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod shadow_blob;
 mod system_proxy;
+mod webrogue;
 use ash::{vk::PFN_vkGetInstanceProcAddr, Entry};
 pub use system_proxy::SystemProxy;
 
 use crate::bindings::{
-    vtest_buffer, VIRGL_RENDERER_NO_VIRGL, VIRGL_RENDERER_RENDER_SERVER,
-    VIRGL_RENDERER_THREAD_SYNC, VIRGL_RENDERER_VENUS,
+    VIRGL_RENDERER_NO_VIRGL, VIRGL_RENDERER_RENDER_SERVER, VIRGL_RENDERER_THREAD_SYNC,
+    VIRGL_RENDERER_VENUS,
 };
-
-enum Message {
-    Write(FFIContextContainer, Vec<u8>),
-}
 
 lazy_static::lazy_static! {
     static ref SHARED_RENDERER: OnceLock<Arc<Renderer>> = OnceLock::new();
 }
 
 pub struct Renderer {
-    tx: std::sync::mpsc::SyncSender<Message>,
-    rx: Arc<Mutex<std::sync::mpsc::Receiver<Message>>>,
+    /* Serializes all virgl operations (blob/sync/submit/context). Every operation
+     * runs synchronously on the calling thread under this lock, so guest command
+     * ordering is preserved.
+     */
+    session: Mutex<()>,
     vk_lib: Arc<Entry>,
     system_proxy: Arc<dyn SystemProxy>,
 }
@@ -139,62 +136,16 @@ impl Renderer {
 
         unsafe { bindings::webrogueSetVulkan(wrapped_sym as *mut c_void) };
 
-        unsafe {
-            let ret = bindings::vtest_init_renderer(
-                false,
-                (VIRGL_RENDERER_VENUS
-                    | VIRGL_RENDERER_NO_VIRGL
-                    | VIRGL_RENDERER_THREAD_SYNC
-                    | VIRGL_RENDERER_RENDER_SERVER) as c_int,
-                "Webrogue render device idk\0".as_ptr() as *const c_char,
-            );
-            assert_eq!(ret, 0);
-        };
-        let (tx, rx) = std::sync::mpsc::sync_channel(1);
-        let rx = Arc::new(Mutex::new(rx));
-        let rx2 = rx.clone();
-        let vk_lib2 = vk_lib.clone();
-        std::thread::Builder::new()
-            .name("virglrenderer".to_owned())
-            .spawn(move || {
-                while let Ok(message) = {
-                    let l = rx2.try_lock().unwrap();
-                    let r = l.recv();
-                    drop(l);
-                    r
-                } {
-                    match message {
-                        Message::Write(ffi_context_container, mut data) => {
-                            assert_eq!(data.len() % 4, 0);
-                            let initial_len = data.len() / 4;
-                            ffi_context_container
-                                .input_buffer
-                                .0
-                                .lock()
-                                .unwrap()
-                                .append(&mut data);
-                            let ret = unsafe {
-                                bindings::vtest_webrogue_write(
-                                    &mut *ffi_context_container.vtest_input.get(),
-                                    &mut *ffi_context_container.vtest_output.get(),
-                                    initial_len as u32,
-                                    ffi_context_container.as_raw_mut_vtest_context(),
-                                )
-                            };
-                            assert_eq!(ret, 0);
-                        }
-                    }
-                }
-                unsafe {
-                    bindings::vtest_cleanup_renderer();
-                };
-                // Shouldn't unload Vulkan before cleanup is finished
-                drop(vk_lib2);
-            })
-            .unwrap();
+        let ret = webrogue::init(
+            (VIRGL_RENDERER_VENUS
+                | VIRGL_RENDERER_NO_VIRGL
+                | VIRGL_RENDERER_THREAD_SYNC
+                | VIRGL_RENDERER_RENDER_SERVER) as c_int,
+        );
+        assert_eq!(ret, 0);
+
         Arc::new(Self {
-            tx,
-            rx,
+            session: Mutex::new(()),
             vk_lib,
             system_proxy,
         })
@@ -205,262 +156,149 @@ impl Renderer {
     }
 }
 
+impl Drop for Renderer {
+    fn drop(&mut self) {
+        webrogue::cleanup();
+        // Shouldn't unload Vulkan before cleanup is finished
+    }
+}
+
 pub struct ContextContainer {
     renderer: Arc<Renderer>,
-    ffi_context_container: FFIContextContainer,
-    // #[allow(clippy::type_complexity)]
-    // presentation_callback: Mutex<Option<Box<Box<dyn Fn()>>>>,
-}
-
-struct InputBufferData(
-    Mutex<Vec<u8>>,
-    Arc<Mutex<std::sync::mpsc::Receiver<Message>>>,
-);
-
-struct OutputBufferData {
-    data: Mutex<Vec<u8>>,
-    tx: std::sync::mpsc::Sender<()>,
-    rx: Mutex<std::sync::mpsc::Receiver<()>>,
-}
-
-#[derive(Clone)]
-struct FFIContextContainer {
-    vtest_context: Arc<UnsafeCell<*mut bindings::vtest_context>>,
-    input_buffer: Arc<InputBufferData>,
-    vtest_input: Arc<UnsafeCell<bindings::vtest_input>>,
-    output_buffer: Arc<UnsafeCell<OutputBufferData>>,
-    vtest_output: Arc<UnsafeCell<bindings::vtest_output>>,
-}
-
-unsafe impl Send for FFIContextContainer {}
-
-impl FFIContextContainer {
-    fn new(rx: Arc<Mutex<std::sync::mpsc::Receiver<Message>>>) -> Self {
-        let input_buffer = Arc::new(InputBufferData(Mutex::new(Vec::new()), rx));
-
-        unsafe extern "C" fn read(
-            input: *mut bindings::vtest_input,
-            buf: *mut c_void,
-            len: c_int,
-        ) -> c_int {
-            let buffer: *const InputBufferData =
-                (*input).data.buffer as *const vtest_buffer as *const InputBufferData;
-            let mut data = (*buffer).0.lock().unwrap();
-            while data.len() < len as usize {
-                match (*buffer).1.try_lock().unwrap().recv() {
-                    // may become a problem if more then one context exists
-                    // TODO something with it
-                    Ok(Message::Write(_, mut new_data)) => {
-                        data.append(&mut new_data);
-                    }
-                    Err(_) => todo!(),
-                }
-            }
-            copy_nonoverlapping::<c_char>(
-                data.as_ptr() as *const c_char,
-                buf as *mut c_char,
-                len as usize,
-            );
-            data.drain(..(len as usize));
-            len
-        }
-        let vtest_input = bindings::vtest_input {
-            data: bindings::vtest_input__bindgen_ty_1 {
-                buffer: input_buffer.as_ref() as *const InputBufferData as *const vtest_buffer
-                    as *mut vtest_buffer,
-            },
-            read: Some(read),
-        };
-
-        let output_buffer = {
-            let (tx, rx) = std::sync::mpsc::channel();
-            Arc::new(UnsafeCell::new(OutputBufferData {
-                data: Mutex::new(Vec::new()),
-                tx,
-                rx: Mutex::new(rx),
-            }))
-        };
-
-        unsafe extern "C" fn write(
-            output: *mut bindings::vtest_output,
-            buf: *const c_void,
-            len: c_int,
-        ) -> c_int {
-            let buffer = (*output).data as *mut OutputBufferData;
-            let buffer = &mut *buffer;
-            buffer
-                .data
-                .lock()
-                .unwrap()
-                .extend_from_slice(std::slice::from_raw_parts(buf as *const u8, len as usize));
-            let _ = buffer.tx.send(());
-            len
-        }
-        let output_buffer_ref: *mut OutputBufferData = unsafe { &mut *output_buffer.get() };
-        let vtest_output = bindings::vtest_output {
-            data: output_buffer_ref as *mut c_void,
-            write: Some(write),
-        };
-
-        Self {
-            vtest_context: Arc::new(UnsafeCell::new(null_mut())),
-            input_buffer,
-            vtest_input: Arc::new(UnsafeCell::new(vtest_input)),
-            output_buffer,
-            vtest_output: Arc::new(UnsafeCell::new(vtest_output)),
-        }
-    }
-
-    fn as_raw_mut_vtest_context(&self) -> *mut *mut bindings::vtest_context {
-        unsafe { &mut *self.vtest_context.get() }
-    }
 }
 
 impl ContextContainer {
     pub fn new(renderer: Arc<Renderer>) -> Self {
-        let rx = renderer.rx.clone();
-        Self {
-            renderer: renderer,
-            ffi_context_container: FFIContextContainer::new(rx),
-            // presentation_callback: Mutex::new(None),
-        }
-    }
-
-    pub fn write(&self, buf: &[u8]) {
-        // Seem to be the best place to call this function so far
-        crate::shadow_blob::flush_all();
-
-        self.renderer
-            .tx
-            .send(Message::Write(
-                self.ffi_context_container.clone(),
-                buf.to_vec(),
-            ))
-            .unwrap();
-    }
-
-    pub fn read(&self, len: usize) -> Vec<u8> {
-        let buffer = unsafe { &mut *self.ffi_context_container.output_buffer.get() };
-        let rx = buffer.rx.try_lock().unwrap();
-        while let Ok(_) = rx.try_recv() {}
-        let mut data = loop {
-            let data = buffer.data.lock().unwrap();
-            if data.len() >= len {
-                break data;
-            }
-            drop(data);
-            rx.recv().unwrap();
-        };
-
-        let mut new_data = data.split_off(len);
-        swap(&mut new_data, &mut data);
-        new_data
-    }
-
-    pub fn receive_fd(&self) -> i32 {
-        i32::from_le_bytes(*self.read(4).as_array().unwrap())
+        Self { renderer }
     }
 
     pub fn register_blob(&self, blob_id: u64, buf: *const u8, size: usize) {
         crate::shadow_blob::register_blob(buf as *const (), size, blob_id);
     }
 
-    pub fn setup_shmem(&self, ptr: *const u8, size: usize) {
-        unsafe {
-            bindings::vtest_webrogue_setup_shmem(ptr as *mut c_void, size);
+    pub fn create_blob(&self, ptr: *const u8, size: usize, blob_id: u64) -> u32 {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        if blob_id == 0 {
+            /* shmem blob: prime the pending-shmem slot for vkr_context_create_resource */
+            unsafe {
+                bindings::webrogue_virgl_setup_shmem(ptr as *mut c_void, size);
+            }
         }
+        webrogue::create_blob(ptr as usize, size, blob_id)
     }
 
-    // pub fn register_guest_blob(&self, blob_id: u64, guest_buf: *const u8, len: usize) {
-    //     self.renderer
-    //         .tx
-    //         .send(Message::RegisterBlob(blob_id, guest_buf as usize, len))
-    //         .unwrap();
-    // }
+    pub fn resource_unref(&self, res_id: u32) {
+        // Final flush happens before the host resource is released so host_ptr
+        // is still valid; only then drop the shadow mapping to avoid a dangling
+        // host/guest pointer once device memory is unmapped or the guest frees
+        // its buffer.
+        crate::shadow_blob::flush_all();
+        crate::shadow_blob::deregister_blob(res_id.into());
+        let _guard = self.renderer.session.lock().unwrap();
+        webrogue::resource_unref(res_id);
+    }
 
-    // pub fn read(&self, buf: &mut [u8]) {
-    //     unsafe {
-    //         ffi::webrogue_gfxstream_ffi_ret_buffer_read(
-    //             self.raw_decoder_ptr,
-    //             buf.as_ptr() as *mut (),
-    //             buf.len() as u32,
-    //         )
-    //     };
-    // }
+    pub fn sync_create(&self, value: u64) -> u32 {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        webrogue::sync_create(value)
+    }
 
-    // #[allow(clippy::missing_safety_doc)]
-    // pub unsafe fn register_blob(&self, buf: &[std::cell::UnsafeCell<u8>], id: u64) {
-    //     // crate::shadow_blob::register_blob(buf.as_ptr() as *mut std::ffi::c_void, buf.len());
-    //     unsafe {
-    //         ffi::webrogue_gfxstream_ffi_register_blob(
-    //             self.raw_decoder_ptr,
-    //             buf.as_ptr() as *mut (),
-    //             buf.len() as u64,
-    //             id,
-    //         )
-    //     };
-    // }
+    pub fn sync_unref(&self, sync_id: u32) {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        webrogue::sync_unref(sync_id);
+    }
 
-    // // unbox_VkInstance
-    // pub fn unbox_vk_instance(&self, vk_instance: u64) -> *mut () {
-    //     unsafe { ffi::webrogue_gfxstream_ffi_unbox_vk_instance(vk_instance) }
-    // }
+    pub fn sync_read(&self, sync_id: u32) -> u64 {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        webrogue::sync_read(sync_id)
+    }
 
-    // #[allow(clippy::not_unsafe_ptr_arg_deref)] // yet another clippy bug
-    // pub fn box_vk_surface(&self, vk_surface: *mut ()) -> u64 {
-    //     unsafe { ffi::webrogue_gfxstream_ffi_box_vk_surface(vk_surface) }
-    // }
+    pub fn sync_write(&self, sync_id: u32, value: u64) {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        let ret = webrogue::sync_write(sync_id, value);
+        assert_eq!(ret, 0);
+    }
 
-    // pub fn set_extensions(&self, extensions: Vec<String>) {
-    //     let count = extensions.len();
-    //     unsafe {
-    //         ffi::webrogue_gfxstream_ffi_set_extensions(
-    //             self.raw_decoder_ptr,
-    //             extensions
-    //                 .into_iter()
-    //                 .map(|extension| CString::from_str(extension.as_str()).unwrap())
-    //                 .collect::<Vec<_>>()
-    //                 .iter()
-    //                 .map(|extension| extension.as_ptr())
-    //                 .collect::<Vec<_>>()
-    //                 .as_ptr(),
-    //             count as u32,
-    //         )
-    //     }
-    // }
+    pub fn submit_cmd(&self, headers: &[u32], cmds: &[u32], syncs: &[u32]) {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        let ret = webrogue::submit_cmd(headers, cmds, syncs);
+        assert_eq!(ret, 0);
+        // The batch may have freed host device memory (e.g. vkFreeMemory); drop
+        // any shadow mapping whose backend is now gone before the guest resumes,
+        // so a guest that skips resource_unref can't leave us dereferencing it.
+        crate::shadow_blob::flush_all();
+    }
 
-    // pub fn set_presentation_callback(&self, callback: Box<dyn Fn()>) {
-    //     type CUserdata = *const Box<dyn Fn()>;
-    //     let mut stored_callback = self.presentation_callback.lock().unwrap();
-    //     if stored_callback.is_some() {
-    //         unimplemented!();
-    //     }
-    //     unsafe extern "C" fn c_callback(userdata: *const ()) {
-    //         (*transmute::<*const (), CUserdata>(userdata))()
-    //     }
-    //     let callback_box_box = Box::new(callback);
-    //     let userdata = callback_box_box.as_ref() as CUserdata;
-    //     stored_callback.replace(callback_box_box);
+/// Blocks on the host until the syncs are satisfied or `timeout` (ms; u32::MAX
+/// waits forever) elapses. Returns 0 on ready, 2 (VK_TIMEOUT), or a negative
+/// errno on error. The guest can't poll host fds, so the wait happens here.
+    pub fn sync_wait(&self, flags: u32, timeout: u32, syncs: &[u32]) -> i32 {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        webrogue::sync_wait(flags, timeout, syncs)
+    }
 
-    //     unsafe {
-    //         ffi::webrogue_gfxstream_ffi_set_presentation_callback(
-    //             self.raw_decoder_ptr,
-    //             c_callback,
-    //             userdata as *const (),
-    //         )
-    //     };
-    // }
+    pub fn get_max_timeline_count(&self) -> u32 {
+        const VTEST_MAX_TIMELINE_COUNT: u32 = 64;
+
+        if std::env::var("VIRGL_DISABLE_MT").is_ok() {
+            return 0;
+        }
+        VTEST_MAX_TIMELINE_COUNT
+    }
+
+    pub fn get_capset(&self, id: u32, version: u32) -> Vec<u8> {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        let mut max_version: u32 = 0;
+        let mut max_size: u32 = 0;
+        unsafe {
+            bindings::virgl_renderer_get_cap_set(id, &mut max_version, &mut max_size);
+        }
+        if (max_version == 0 && max_size == 0) || version > max_version || max_size % 4 != 0 {
+            return Vec::new();
+        }
+        let mut caps = vec![0u8; max_size as usize];
+        unsafe {
+            bindings::virgl_renderer_fill_caps(id, version, caps.as_mut_ptr() as *mut c_void);
+        }
+        caps
+    }
+
+    pub fn context_init(&self, capset_id: u32) {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        let ret = webrogue::context_init(capset_id);
+        assert_eq!(ret, 0);
+    }
+
+    /// `name` must include the terminating NUL.
+    pub fn create_renderer(&self, name: &[u8]) {
+        // Seem to be the best place to call this function so far
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        let ret = webrogue::context_create(name);
+        assert_eq!(ret, 0);
+    }
 }
 
 impl Drop for ContextContainer {
     fn drop(&mut self) {
-        let vtest_context: &mut *mut bindings::vtest_context =
-            &mut unsafe { *self.ffi_context_container.as_raw_mut_vtest_context() };
-        if *vtest_context != null_mut() {
-            unsafe {
-                bindings::vtest_destroy_context(*vtest_context);
-            }
-            *vtest_context = null_mut();
-        }
+        webrogue::context_destroy();
     }
 }

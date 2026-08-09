@@ -78,9 +78,23 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
 pub fn register_blob(vm_ptr: *const (), size: usize, blob_id: u64) {
     // TODO get host_blob size too
     let host_ptr = unsafe { crate::bindings::webrogue_get_host_blob(blob_id) } as *const ();
+    if host_ptr.is_null() {
+        // No host blob behind this id means nothing to mirror (e.g. the backing
+        // device memory is already gone); registering would give us an invalid
+        // host pointer to deref later.
+        return;
+    }
     match ShadowBlobImpl::get() {
         ShadowBlobImpl::Hash => hash_based_blob::register_blob(vm_ptr, size, host_ptr, blob_id),
         #[cfg(signal_based_shadow_blob)]
         ShadowBlobImpl::Signal => signal_based_blob::register_blob(vm_ptr, size, host_ptr, blob_id),
+    }
+}
+
+pub fn deregister_blob(blob_id: u64) {
+    match ShadowBlobImpl::get() {
+        ShadowBlobImpl::Hash => hash_based_blob::deregister_blob(blob_id),
+        #[cfg(signal_based_shadow_blob)]
+        ShadowBlobImpl::Signal => signal_based_blob::deregister_blob(blob_id),
     }
 }

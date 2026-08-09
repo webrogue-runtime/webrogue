@@ -2,44 +2,57 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "webrogue_virgl.h"
-#include <sys/mman.h>
 
 #include "venus/vkr_renderer.h"
 
-// void webrogue_virgl_create_global_state(void *get_proc, void* userdata) {
-//   int ret;
-//   int virgl_flags = VIRGL_RENDERER_VENUS | VIRGL_RENDERER_NO_VIRGL | VIRGL_RENDERER_THREAD_SYNC;
+/* Pending-shmem slot consumed by vkr_context_create_resource for shmem blobs.
+ * The rest of the renderer state machine lives on the Rust side (webrogue.rs). */
+static void *webrogue_pending_shmem_ptr = NULL;
+static size_t webrogue_pending_shmem_size = 0;
 
-//   vtest_init_renderer(server.multi_clients,
-//                       virgl_flags,
-//                       server.render_device);
-
-
-//   struct virgl_renderer_callbacks *virgl_cbs = malloc(sizeof(struct virgl_renderer_callbacks));
-//   memset(virgl_cbs, 0, sizeof(virgl_cbs));
-//   virgl_cbs->version = VIRGL_RENDERER_CALLBACKS_VERSION;
-
-//   if (ret = virgl_renderer_init(userdata, virgl_flags, virgl_cbs)) {
-//     fprintf(stderr, "failed to initialize virgl renderer: %s\n", strerror(ret));
-//     abort();
-//   }
-// }
-
-
-static void* webrogueVulkan = NULL;
-
-void webrogueSetVulkan(void* vulkan) {
-  webrogueVulkan = vulkan;
+void webrogue_virgl_setup_shmem(void *ptr, size_t size)
+{
+   webrogue_pending_shmem_ptr = ptr;
+   webrogue_pending_shmem_size = size;
 }
 
-void* webrogueGetVulkan(void) {
-  return webrogueVulkan;
+void *webrogue_virgl_pop_shmem(size_t *out_size)
+{
+   void *ret;
+   size_t ret_size;
+
+   if (!webrogue_pending_shmem_ptr) {
+      ret = NULL;
+      ret_size = 0;
+   } else {
+      ret = webrogue_pending_shmem_ptr;
+      ret_size = webrogue_pending_shmem_size;
+      webrogue_pending_shmem_ptr = NULL;
+   }
+   if (out_size) {
+      *out_size = ret_size;
+   }
+   return ret;
 }
 
-void* webrogue_get_host_blob(uint64_t blob_id) {
-  /* single-client webrogue renderer always uses context id 1 */
-  return vkr_renderer_get_host_blob(1, (uint32_t)blob_id);
+static void *webrogueVulkan = NULL;
+
+void webrogueSetVulkan(void *vulkan)
+{
+   webrogueVulkan = vulkan;
+}
+
+void *webrogueGetVulkan(void)
+{
+   return webrogueVulkan;
+}
+
+void *webrogue_get_host_blob(uint64_t blob_id)
+{
+   /* single-client webrogue renderer always uses context id 1 */
+   return vkr_renderer_get_host_blob(1, (uint32_t)blob_id);
 }
 
 #define EPOXY_GL_STUB(name) void name() { abort(); }
@@ -307,11 +320,13 @@ EPOXY_GL_STUB(epoxy_glPolygonStipple)
 EPOXY_GL_STUB(epoxy_glGetIntegeri_v)
 EPOXY_GL_STUB(epoxy_glGetFloatv)
 EPOXY_GL_STUB(epoxy_glGetMultisamplefv)
+EPOXY_GL_STUB(epoxy_glGetInteger64v)
 
 #undef EPOXY_GL_STUB
 
-uint8_t webrogue_virgl_is_impl() {
-  return 1;
+uint8_t webrogue_virgl_is_impl()
+{
+   return 1;
 }
 
 void webrogue_virgl_stub_fn() {}

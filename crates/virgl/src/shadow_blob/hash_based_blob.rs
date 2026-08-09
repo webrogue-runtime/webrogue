@@ -1,9 +1,7 @@
-use std::{cmp::min, ptr::copy_nonoverlapping, sync::Mutex};
+use std::{cmp::min, collections::HashMap, ptr::copy_nonoverlapping, sync::Mutex};
 
 use lazy_static::lazy_static;
 use xxhash_rust::xxh3::xxh3_64;
-
-use crate::shadow_blob::utils::get_host_blob_part;
 
 type Ptr = usize;
 type Hash = u64;
@@ -13,6 +11,7 @@ struct Entry {
     hash: Hash,
     len: usize,
     vm_ptr: Ptr,
+    blob_id: u64,
 }
 
 struct Storage {
@@ -31,11 +30,7 @@ lazy_static! {
     static ref static_storage: Mutex<Storage> = Mutex::new(Storage::new());
 }
 
-pub fn init() {
-    unsafe {
-        // crate::ffi::webrogue_gfxstream_ffi_set_register_shadow_blob_callback(register_blob);
-    }
-}
+pub fn init() {}
 
 pub fn handle_segfault(_segfault_addr: *const ()) -> bool {
     return false;
@@ -43,6 +38,20 @@ pub fn handle_segfault(_segfault_addr: *const ()) -> bool {
 
 pub fn flush_all() {
     let mut storage = static_storage.lock().unwrap();
+
+    // The guest may skip resource_unref entirely, so the only trustworthy signal
+    // for whether host_ptr is still live is the host itself: drop every entry
+    // (or entry group) whose blob no longer resolves to the recorded pointer.
+    let mut blob_host_ptr: HashMap<u64, Ptr> = HashMap::new();
+    storage.entries.retain(|entry| {
+        let live = *blob_host_ptr
+            .entry(entry.blob_id)
+            .or_insert_with(|| unsafe {
+                crate::bindings::webrogue_get_host_blob(entry.blob_id) as Ptr
+            });
+        live != 0 && live == entry.host_ptr
+    });
+
     for entry in &mut storage.entries {
         let host_ptr = entry.host_ptr;
         let expected_hash = entry.hash;
@@ -76,12 +85,7 @@ pub fn flush_all() {
     }
 }
 
-pub fn register_blob(
-    mut vm_ptr: *const (),
-    mut len: usize,
-    mut host_ptr: *const (),
-    _blob_id: u64,
-) {
+pub fn register_blob(mut vm_ptr: *const (), mut len: usize, mut host_ptr: *const (), blob_id: u64) {
     while len > 0 {
         let page_size = min(len, 1024);
         static_storage.lock().unwrap().entries.push(Entry {
@@ -89,11 +93,17 @@ pub fn register_blob(
             hash: hash(unsafe { std::slice::from_raw_parts(host_ptr as *const u8, page_size) }),
             len: page_size,
             vm_ptr: vm_ptr as Ptr,
+            blob_id,
         });
         vm_ptr = unsafe { vm_ptr.add(page_size) };
         host_ptr = unsafe { host_ptr.add(page_size) };
         len -= page_size;
     }
+}
+
+pub fn deregister_blob(blob_id: u64) {
+    let mut storage = static_storage.lock().unwrap();
+    storage.entries.retain(|e| e.blob_id != blob_id);
 }
 
 fn hash(data: &[u8]) -> Hash {

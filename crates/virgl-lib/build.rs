@@ -3,7 +3,7 @@ fn main() {}
 
 #[cfg(feature = "_build")]
 fn main() {
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashSet;
     use std::env;
 
     let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
@@ -12,7 +12,8 @@ fn main() {
     }
 
     use std::fs::File;
-    use std::io::{Read, Write};
+    use std::io::Read;
+    use std::io::Write as _;
     use std::str::FromStr as _;
     let _crate_manifest_dir =
         std::path::PathBuf::from_str(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).unwrap();
@@ -43,22 +44,22 @@ fn main() {
         .unwrap();
 
     let mut is_windows = false;
-    let mut is_macos = false;
+    let mut _is_macos = false;
     let mut is_linux = false;
-    let mut is_android = false;
+    let mut _is_android = false;
     let mut is_freebsd = false;
     match _os.as_str() {
         "windows" => {
             is_windows = true;
         }
         "macos" => {
-            is_macos = true;
+            _is_macos = true;
         }
         "linux" => {
             is_linux = true;
         }
         "android" => {
-            is_android = true;
+            _is_android = true;
             is_linux = true;
         }
         "freebsd" => {
@@ -88,126 +89,128 @@ fn main() {
 
     let mut bindgen_args = Vec::new();
 
-    {
-        use std::io::Write as _;
+    let config: Vec<(&str, Option<&str>)> = vec![
+        ("VERSION", Some(virglrenderer_version)),
+        ("_GNU_SOURCE", Some("1")),
+        ("VIRGL_RENDERER_UNSTABLE_APIS", Some("1")),
+        ("HAVE___BUILTIN_BSWAP32", Some("1")),
+        ("HAVE___BUILTIN_BSWAP64", Some("1")),
+        ("HAVE___BUILTIN_CLZ", Some("1")),
+        ("HAVE___BUILTIN_CLZLL", Some("1")),
+        ("HAVE___BUILTIN_EXPECT", Some("1")),
+        ("HAVE___BUILTIN_FFS", Some("1")),
+        ("HAVE___BUILTIN_FFSLL", Some("1")),
+        ("HAVE___BUILTIN_POPCOUNT", Some("1")),
+        ("HAVE___BUILTIN_POPCOUNTLL", Some("1")),
+        ("HAVE___BUILTIN_TYPES_COMPATIBLE_P", Some("1")),
+        ("HAVE___BUILTIN_UNREACHABLE", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_CONST", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_FLATTEN", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_FORMAT", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_MALLOC", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_NORETURN", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_PACKED", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_PURE", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_RETURNS_NONNULL", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_UNUSED", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_WARN_UNUSED_RESULT", Some("1")),
+        ("HAVE_FUNC_ATTRIBUTE_WEAK", Some("1")),
+        ("HAVE_MEMFD_CREATE", Some("1")),
+        ("HAVE_STRTOK_R", Some("1")),
+        ("HAVE_TIMESPEC_GET", Some("1")),
+        ("HAVE_SYS_UIO_H", Some("1")),
+        ("HAVE_PTHREAD", def_if(!is_windows)),
+        ("HAVE_PTHREAD_SETAFFINITY", def_if(!is_windows)),
+        ("HAVE_PTHREAD_NP_H", def_if(is_freebsd)),
+        ("HAVE_EPOXY_EGL_H", None),
+        ("HAVE_EPOXY_GLX_H", None),
+        ("CHECK_GL_ERRORS", Some("1")),
+        ("ENABLE_GBM_ALLOCATION", None),
+        ("ENABLE_VENUS", Some("1")),
+        ("ENABLE_VULKAN_DLOAD", None),
+        ("ENABLE_VULKAN_PRELOAD", None),
+        ("ENABLE_GBM", None),
+        ("ENABLE_DRM", None),
+        ("ENABLE_DRM_MSM", None),
+        ("ENABLE_DRM_AMDGPU", None),
+        ("ENABLE_DRM_ASAHI", None),
+        ("ENABLE_DRM_PANFROST", None),
+        ("ENABLE_DRM_I915", None),
+        ("ENABLE_LIBDRM", None),
+        ("ENABLE_RENDER_SERVER", Some("1")),
+        ("ENABLE_SAME_PROCESS_RENDER_SERVER", Some("1")),
+        ("ENABLE_RENDER_SERVER_WORKER_PROCESS", None),
+        ("ENABLE_RENDER_SERVER_WORKER_THREAD", Some("1")),
+        ("ENABLE_RENDER_SERVER_WORKER_MINIJAIL", None),
+        ("RENDER_SERVER_EXEC_PATH", Some("\"No path to that\"")),
+        ("HAVE_EVENTFD_H", def_if(is_linux)),
+        ("HAVE_DMABUF_H", None),
+        ("HAVE_LINUX_UDMABUF_H", None),
+        ("HAVE_DLFCN_H", None),
+        ("ENABLE_VIDEO", None),
+        ("ENABLE_TRACING", None),
+        ("ENABLE_TESTS", None),
+        ("UTIL_ARCH_LITTLE_ENDIAN", Some("1")),
+        ("UTIL_ARCH_BIG_ENDIAN", Some("0")),
+        ("PIPE_ARCH_X86", def_if(target_arch == "x86")),
+        ("PIPE_ARCH_X86_64", def_if(target_arch == "x86_64")),
+        ("PIPE_ARCH_PPC", def_if(target_arch == "powerpc")),
+        ("PIPE_ARCH_PPC_64", def_if(target_arch == "powerpc64")),
+        ("PIPE_ARCH_S390", def_if(target_arch == "s390")),
+        ("PIPE_ARCH_ARM", def_if(target_arch == "arm")),
+        ("PIPE_ARCH_AARCH64", def_if(target_arch == "aarch64")),
+    ];
 
-        let config: HashMap<&str, Option<&str>> = [
-            ("VERSION", Some(virglrenderer_version)),
-            ("_GNU_SOURCE", Some("1")),
-            ("VIRGL_RENDERER_UNSTABLE_APIS", Some("1")),
-            ("HAVE___BUILTIN_BSWAP32", Some("1")),
-            ("HAVE___BUILTIN_BSWAP64", Some("1")),
-            ("HAVE___BUILTIN_CLZ", Some("1")),
-            ("HAVE___BUILTIN_CLZLL", Some("1")),
-            ("HAVE___BUILTIN_EXPECT", Some("1")),
-            ("HAVE___BUILTIN_FFS", Some("1")),
-            ("HAVE___BUILTIN_FFSLL", Some("1")),
-            ("HAVE___BUILTIN_POPCOUNT", Some("1")),
-            ("HAVE___BUILTIN_POPCOUNTLL", Some("1")),
-            ("HAVE___BUILTIN_TYPES_COMPATIBLE_P", Some("1")),
-            ("HAVE___BUILTIN_UNREACHABLE", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_CONST", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_FLATTEN", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_FORMAT", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_MALLOC", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_NORETURN", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_PACKED", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_PURE", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_RETURNS_NONNULL", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_UNUSED", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_WARN_UNUSED_RESULT", Some("1")),
-            ("HAVE_FUNC_ATTRIBUTE_WEAK", Some("1")),
-            ("HAVE_MEMFD_CREATE", Some("1")),
-            ("HAVE_STRTOK_R", Some("1")),
-            ("HAVE_TIMESPEC_GET", Some("1")),
-            ("HAVE_SYS_UIO_H", Some("1")),
-            ("HAVE_PTHREAD", def_if(!is_windows)),
-            ("HAVE_PTHREAD_SETAFFINITY", def_if(!is_windows)),
-            ("HAVE_PTHREAD_NP_H", def_if(is_freebsd)),
-            ("HAVE_EPOXY_EGL_H", None),
-            ("HAVE_EPOXY_GLX_H", None),
-            ("CHECK_GL_ERRORS", Some("1")),
-            ("ENABLE_GBM_ALLOCATION", None),
-            ("ENABLE_VENUS", Some("1")),
-            ("ENABLE_VULKAN_DLOAD", None),
-            ("ENABLE_VULKAN_PRELOAD", None),
-            ("ENABLE_GBM", None),
-            ("ENABLE_DRM", None),
-            ("ENABLE_DRM_MSM", None),
-            ("ENABLE_DRM_AMDGPU", None),
-            ("ENABLE_DRM_ASAHI", None),
-            ("ENABLE_DRM_PANFROST", None),
-            ("ENABLE_DRM_I915", None),
-            ("ENABLE_LIBDRM", None),
-            ("ENABLE_RENDER_SERVER", Some("1")),
-            ("ENABLE_SAME_PROCESS_RENDER_SERVER", Some("1")),
-            ("ENABLE_RENDER_SERVER_WORKER_PROCESS", None),
-            ("ENABLE_RENDER_SERVER_WORKER_THREAD", Some("1")),
-            ("ENABLE_RENDER_SERVER_WORKER_MINIJAIL", None),
-            ("RENDER_SERVER_EXEC_PATH", Some("\"No path to that\"")),
-            ("HAVE_EVENTFD_H", def_if(is_linux)),
-            ("HAVE_DMABUF_H", None),
-            ("HAVE_LINUX_UDMABUF_H", None),
-            ("HAVE_DLFCN_H", None),
-            ("ENABLE_VIDEO", None),
-            ("ENABLE_TRACING", None),
-            ("ENABLE_TESTS", None),
-            ("UTIL_ARCH_LITTLE_ENDIAN", Some("1")),
-            ("UTIL_ARCH_BIG_ENDIAN", Some("0")),
-            ("PIPE_ARCH_X86", def_if(target_arch == "x86")),
-            ("PIPE_ARCH_X86_64", def_if(target_arch == "x86_64")),
-            ("PIPE_ARCH_PPC", def_if(target_arch == "powerpc")),
-            ("PIPE_ARCH_PPC_64", def_if(target_arch == "powerpc64")),
-            ("PIPE_ARCH_S390", def_if(target_arch == "s390")),
-            ("PIPE_ARCH_ARM", def_if(target_arch == "arm")),
-            ("PIPE_ARCH_AARCH64", def_if(target_arch == "aarch64")),
-        ]
-        .into();
+    let mut config_file_in = "".to_string();
+    File::open(external_dir.join("virglrenderer").join("config.h.meson"))
+        .unwrap()
+        .read_to_string(&mut config_file_in)
+        .unwrap();
 
-        let mut config_file_in = "".to_string();
-        File::open(external_dir.join("virglrenderer").join("config.h.meson"))
-            .unwrap()
-            .read_to_string(&mut config_file_in)
-            .unwrap();
+    let needed_config_keys = config_file_in
+        .split("#mesondefine")
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect::<HashSet<_>>();
 
-        let needed_config_keys = config_file_in
-            .split("#mesondefine")
-            .map(|s| s.trim())
-            .filter(|s| !s.is_empty())
-            .collect::<HashSet<_>>();
-
-        let difference = config
-            .keys()
-            .cloned()
-            .collect::<HashSet<_>>()
-            .difference(&needed_config_keys)
-            .cloned()
-            .collect::<Vec<_>>();
-        if !difference.is_empty() {
-            panic!("The following values are unneeded: {:?}", difference)
-        }
-        let mut config_file_out = "".to_string();
-        for (k, v) in config.iter() {
-            let Some(v) = v else {
-                continue;
-            };
-            config_file_out.push_str(&format!("#define {} {}\n", k, v));
-        }
-        let config_h_path = out_dir.join("config.h");
-        File::create(&config_h_path)
-            .unwrap()
-            .write_all(config_file_out.as_bytes())
-            .unwrap();
-
-        build
-            .define("HAVE_CONFIG_H", "1")
-            .flag(format!("-imacros{}", config_h_path.display()))
-            .include(&out_dir);
-
-        bindgen_args.push(format!("-DHAVE_CONFIG_H=1"));
-        bindgen_args.push(format!("-imacros{}", config_h_path.display()));
-        bindgen_args.push(format!("-I{}", out_dir.display()));
+    let difference = config
+        .iter()
+        .map(|c| c.0)
+        .collect::<HashSet<_>>()
+        .difference(&needed_config_keys)
+        .cloned()
+        .collect::<Vec<_>>();
+    if !difference.is_empty() {
+        panic!("The following values are unneeded: {:?}", difference)
     }
+    let mut config_file_out = "".to_string();
+    for (k, v) in config {
+        let Some(v) = v else {
+            continue;
+        };
+        config_file_out.push_str(&format!("#define {} {}\n", k, v));
+    }
+    let config_h_path = out_dir.join("config.h");
+    {
+        let mut config_file_out_old = String::new();
+        let _ = File::open(&config_h_path)
+            .and_then(|mut file| file.read_to_string(&mut config_file_out_old));
+        if config_file_out_old != config_file_out {
+            File::create(&config_h_path)
+                .unwrap()
+                .write_all(config_file_out.as_bytes())
+                .unwrap();
+        }
+    }
+
+    build
+        .define("HAVE_CONFIG_H", "1")
+        .flag(format!("-imacros{}", config_h_path.display()))
+        .include(&out_dir);
+
+    bindgen_args.push(format!("-DHAVE_CONFIG_H=1"));
+    bindgen_args.push(format!("-imacros{}", config_h_path.display()));
+    bindgen_args.push(format!("-I{}", out_dir.display()));
 
     {
         use std::io::Write as _;
@@ -235,11 +238,19 @@ fn main() {
                 "(@VIRGL_MICRO_VERSION@)",
                 virglrenderer_version.split(".").nth(2).unwrap(),
             );
-        let config_h_path = out_dir.join("virgl-version.h");
-        File::create(&config_h_path)
-            .unwrap()
-            .write_all(config.as_bytes())
-            .unwrap();
+
+        {
+            let config_h_path = out_dir.join("virgl-version.h");
+            let mut config_file_out_old = String::new();
+            let _ = File::open(&config_h_path)
+                .and_then(|mut file| file.read_to_string(&mut config_file_out_old));
+            if config_file_out_old != config {
+                File::create(&config_h_path)
+                    .unwrap()
+                    .write_all(config.as_bytes())
+                    .unwrap();
+            }
+        }
     }
 
     if std::env::var("DEBUG").unwrap() == "true" {
@@ -326,10 +337,6 @@ fn main() {
             "external/virglrenderer/server/render_worker.c",
             "external/virglrenderer/server/render_state.c",
             "external/virglrenderer/server/render_common.c",
-            "external/virglrenderer/vtest/vtest_server.c",
-            "external/virglrenderer/vtest/vtest_renderer.c",
-            "external/virglrenderer/vtest/util.c",
-            "external/virglrenderer/vtest/vtest_shm.c",
         ]);
     };
     #[cfg(feature = "stub")]
@@ -369,7 +376,6 @@ fn main() {
         "src/mesa/pipe",
         "src/mesa/compat",
         "src/mesa/util",
-        "vtest",
     ];
 
     for rel_path in includes {
@@ -383,13 +389,13 @@ fn main() {
         build.include(&path);
         bindgen_args.push(format!("-I{}", path.display()));
     }
+    build.include(&_crate_manifest_dir);
 
     build
         .define("VK_USE_PLATFORM_WEBROGUE", None)
-        .compile("webrogue_gfxstream");
+        .compile("webrogue_virgl");
 
-    let mut bindings_data = b"#![allow(dead_code)]\n#![allow(non_camel_case_types)]\n#![allow(non_upper_case_globals)]\n".to_vec();
-
+    #[cfg(not(target_env = "musl"))]
     bindgen::Builder::default()
         .header(
             _crate_manifest_dir
@@ -398,22 +404,18 @@ fn main() {
                 .unwrap(),
         )
         .clang_args(bindgen_args)
+        .raw_line("#![allow(dead_code)]")
+        .raw_line("#![allow(nonstandard_style)]")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .unwrap()
-        .write(Box::new(&mut bindings_data))
+        .write_to_file(
+            _crate_manifest_dir
+                .parent()
+                .unwrap()
+                .join("virgl")
+                .join("src")
+                .join("bindings.rs"),
+        )
         .unwrap();
-    std::fs::File::create(
-        _crate_manifest_dir
-            .parent()
-            .unwrap()
-            .join("virgl")
-            .join("src")
-            .join("bindings.rs")
-            .to_str()
-            .unwrap(),
-    )
-    .unwrap()
-    .write_all(&mut bindings_data)
-    .unwrap();
 }
