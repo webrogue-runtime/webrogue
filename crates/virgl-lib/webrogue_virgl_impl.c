@@ -6,6 +6,18 @@
 #include "webrogue_virgl.h"
 
 #include "venus/vkr_renderer.h"
+#include "virgl_util.h"
+
+/* virglrenderer drops all logs (proxy_log, vkr_log, ...) unless a handler is
+ * registered; forward them to stderr so failures are visible. */
+static void
+webrogue_log_cb(enum virgl_log_level_flags log_level, const char *msg, void *user_data)
+{
+   (void)log_level;
+   (void)user_data;
+   fputs(msg, stderr);
+   fflush(stderr);
+}
 
 /* Pending-shmem slot consumed by vkr_context_create_resource for shmem blobs.
  * The rest of the renderer state machine lives on the Rust side (webrogue.rs). */
@@ -329,4 +341,7 @@ uint8_t webrogue_virgl_is_impl()
    return 1;
 }
 
-void webrogue_virgl_stub_fn() {}
+void webrogue_virgl_stub_fn()
+{
+   virgl_log_set_handler(webrogue_log_cb, NULL, NULL);
+}

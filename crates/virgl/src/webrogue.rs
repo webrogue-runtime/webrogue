@@ -7,6 +7,17 @@ use std::time::{Duration, Instant};
 
 use crate::bindings;
 
+#[cfg(unix)]
+unsafe fn unmap(ptr: *mut c_void, len: usize) {
+    libc::munmap(ptr, len);
+}
+
+#[cfg(windows)]
+unsafe fn unmap(ptr: *mut c_void, _len: usize) {
+    use windows_sys::Win32::System::Memory::{VirtualFree, MEM_RELEASE};
+    VirtualFree(ptr as *mut _, 0, MEM_RELEASE);
+}
+
 pub(crate) const MAX_TIMELINE_COUNT: usize = 64;
 const SYNC_WAIT_FLAG_ANY: u32 = 1;
 
@@ -230,7 +241,7 @@ pub(crate) fn context_destroy() {
     for res in ctx.resource_table.values() {
         unsafe { bindings::virgl_renderer_resource_unref(res.res_id) };
         if let Some((ptr, len)) = res.iov {
-            unsafe { libc::munmap(ptr as *mut c_void, len) };
+            unsafe { unmap(ptr as *mut c_void, len) };
         }
     }
     // timelines (TimelineSubmits) and hash tables are dropped here.
@@ -277,7 +288,7 @@ pub(crate) fn create_blob(ptr: usize, size: usize, blob_id: u64) -> u32 {
     let ret = unsafe { bindings::virgl_renderer_resource_create_blob(&args) };
     if ret != 0 {
         if let Some(i) = iov {
-            unsafe { libc::munmap(i.iov_base, i.iov_len) };
+            unsafe { unmap(i.iov_base, i.iov_len) };
         }
         unsafe { bindings::virgl_renderer_resource_unref(res_id) };
         return 0;

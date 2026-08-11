@@ -115,8 +115,8 @@ fn main() {
         ("HAVE_FUNC_ATTRIBUTE_UNUSED", Some("1")),
         ("HAVE_FUNC_ATTRIBUTE_WARN_UNUSED_RESULT", Some("1")),
         ("HAVE_FUNC_ATTRIBUTE_WEAK", Some("1")),
-        ("HAVE_MEMFD_CREATE", Some("1")),
-        ("HAVE_STRTOK_R", Some("1")),
+        ("HAVE_MEMFD_CREATE", def_if(is_linux)),
+        ("HAVE_STRTOK_R", def_if(!is_windows)),
         ("HAVE_TIMESPEC_GET", Some("1")),
         ("HAVE_SYS_UIO_H", Some("1")),
         ("HAVE_PTHREAD", def_if(!is_windows)),
@@ -203,14 +203,47 @@ fn main() {
         }
     }
 
-    build
-        .define("HAVE_CONFIG_H", "1")
-        .flag(format!("-imacros{}", config_h_path.display()))
-        .include(&out_dir);
+    build.define("HAVE_CONFIG_H", "1");
+    if is_windows {
+        // clang-cl / MSVC's cl ignore clang's `-imacros`; use the MSVC
+        // force-include form instead so every translation unit sees config.h.
+        build.flag(format!("/FI{}", config_h_path.display()));
+    } else {
+        build.flag(format!("-imacros{}", config_h_path.display()));
+    }
+    build.include(&out_dir);
+
+    if is_windows {
+        // Windows POSIX compatibility layer (see crates/virgl-lib/compat).
+        let compat_dir = _crate_manifest_dir.join("compat");
+        build.file(&compat_dir.join("win32_compat.c"));
+        build.include(&compat_dir);
+        // Force-include the compat prelude (clock_gettime etc.) in every TU.
+        build.flag(format!("/FI{}", compat_dir.join("prelude.h").display()));
+        // cc only tracks .file() inputs, not headers this crate adds to the
+        // include path; make sure compat header edits trigger a rebuild.
+        fn track_compat(dir: &std::path::Path) {
+            for entry in std::fs::read_dir(dir).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    track_compat(&path);
+                } else {
+                    println!("cargo:rerun-if-changed={}", path.display());
+                }
+            }
+        }
+        track_compat(&compat_dir);
+    }
 
     bindgen_args.push(format!("-DHAVE_CONFIG_H=1"));
     bindgen_args.push(format!("-imacros{}", config_h_path.display()));
     bindgen_args.push(format!("-I{}", out_dir.display()));
+    if is_windows {
+        bindgen_args.push(format!(
+            "-I{}",
+            _crate_manifest_dir.join("compat").display()
+        ));
+    }
 
     {
         use std::io::Write as _;
