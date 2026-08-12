@@ -1,3 +1,8 @@
+//! "Signal-based shadow blob" uses mprotect and segfault catching wizardy to
+//! mimic mmap-ing one memory region to another. It helps avoiding dependency
+//! on Vulkan Device Memory exporting and implaced mapping extension,
+//! but is not performant. It's a miracle that it even works
+
 use std::{
     collections::{BTreeMap, HashMap},
     ptr::copy_nonoverlapping,
@@ -38,6 +43,9 @@ lazy_static! {
 pub fn init() {}
 
 pub fn handle_segfault(segfault_addr: *const ()) -> bool {
+    // idk how, but it fixes a data race. Think twice before removing
+    flush_all();
+
     let segfault_addr = segfault_addr as Ptr;
     let mut storage = static_storage.lock().unwrap();
     let page_size = storage.page_size;

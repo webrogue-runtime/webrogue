@@ -1,3 +1,7 @@
+//! Originally provided as a fallback to it's "Signal-based" sibling,
+//! "Hash-based shadow blob" is super-slow and produces strange
+//! rendering artifacts. Should be avoided at any cost
+
 use std::{cmp::min, collections::HashMap, ptr::copy_nonoverlapping, sync::Mutex};
 
 use lazy_static::lazy_static;
