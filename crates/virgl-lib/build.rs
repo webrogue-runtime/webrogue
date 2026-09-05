@@ -424,10 +424,6 @@ fn main() {
     }
     build.include(&_crate_manifest_dir);
 
-    build
-        .define("VK_USE_PLATFORM_WEBROGUE", None)
-        .compile("webrogue_virgl");
-
     #[cfg(not(target_env = "musl"))]
     bindgen::Builder::default()
         .header(
@@ -451,4 +447,8 @@ fn main() {
                 .join("bindings.rs"),
         )
         .unwrap();
+
+    build
+        .define("VK_USE_PLATFORM_WEBROGUE", None)
+        .compile("webrogue_virgl");
 }

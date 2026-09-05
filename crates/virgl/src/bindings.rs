@@ -27,178 +27,36 @@ pub const HAVE_FUNC_ATTRIBUTE_RETURNS_NONNULL: u32 = 1;
 pub const HAVE_FUNC_ATTRIBUTE_UNUSED: u32 = 1;
 pub const HAVE_FUNC_ATTRIBUTE_WARN_UNUSED_RESULT: u32 = 1;
 pub const HAVE_FUNC_ATTRIBUTE_WEAK: u32 = 1;
-pub const HAVE_MEMFD_CREATE: u32 = 1;
-pub const HAVE_STRTOK_R: u32 = 1;
 pub const HAVE_TIMESPEC_GET: u32 = 1;
 pub const HAVE_SYS_UIO_H: u32 = 1;
-pub const HAVE_PTHREAD: u32 = 1;
-pub const HAVE_PTHREAD_SETAFFINITY: u32 = 1;
 pub const CHECK_GL_ERRORS: u32 = 1;
 pub const ENABLE_VENUS: u32 = 1;
 pub const ENABLE_RENDER_SERVER: u32 = 1;
 pub const ENABLE_SAME_PROCESS_RENDER_SERVER: u32 = 1;
 pub const ENABLE_RENDER_SERVER_WORKER_THREAD: u32 = 1;
 pub const RENDER_SERVER_EXEC_PATH: &[u8; 16] = b"No path to that\0";
-pub const HAVE_EVENTFD_H: u32 = 1;
 pub const UTIL_ARCH_LITTLE_ENDIAN: u32 = 1;
 pub const UTIL_ARCH_BIG_ENDIAN: u32 = 0;
 pub const PIPE_ARCH_X86_64: u32 = 1;
-pub const _STDINT_H: u32 = 1;
-pub const _FEATURES_H: u32 = 1;
-pub const _ISOC95_SOURCE: u32 = 1;
-pub const _ISOC99_SOURCE: u32 = 1;
-pub const _ISOC11_SOURCE: u32 = 1;
-pub const _ISOC23_SOURCE: u32 = 1;
-pub const _ISOC2Y_SOURCE: u32 = 1;
-pub const _POSIX_SOURCE: u32 = 1;
-pub const _POSIX_C_SOURCE: u32 = 202405;
-pub const _XOPEN_SOURCE: u32 = 800;
-pub const _XOPEN_SOURCE_EXTENDED: u32 = 1;
-pub const _LARGEFILE64_SOURCE: u32 = 1;
-pub const _DEFAULT_SOURCE: u32 = 1;
-pub const _ATFILE_SOURCE: u32 = 1;
-pub const _DYNAMIC_STACK_SIZE_SOURCE: u32 = 1;
-pub const __GLIBC_USE_ISOC2Y: u32 = 1;
-pub const __GLIBC_USE_ISOC23: u32 = 1;
-pub const __USE_ISOC11: u32 = 1;
-pub const __USE_ISOC99: u32 = 1;
-pub const __USE_ISOC95: u32 = 1;
-pub const __USE_POSIX: u32 = 1;
-pub const __USE_POSIX2: u32 = 1;
-pub const __USE_POSIX199309: u32 = 1;
-pub const __USE_POSIX199506: u32 = 1;
-pub const __USE_XOPEN2K: u32 = 1;
-pub const __USE_XOPEN2K8: u32 = 1;
-pub const __USE_XOPEN2K24: u32 = 1;
-pub const __USE_XOPEN: u32 = 1;
-pub const __USE_XOPEN_EXTENDED: u32 = 1;
-pub const __USE_UNIX98: u32 = 1;
-pub const _LARGEFILE_SOURCE: u32 = 1;
-pub const __USE_XOPEN2K8XSI: u32 = 1;
-pub const __USE_XOPEN2K24XSI: u32 = 1;
-pub const __USE_XOPEN2KXSI: u32 = 1;
-pub const __USE_LARGEFILE: u32 = 1;
-pub const __USE_LARGEFILE64: u32 = 1;
-pub const __WORDSIZE: u32 = 64;
-pub const __WORDSIZE_TIME64_COMPAT32: u32 = 1;
-pub const __SYSCALL_WORDSIZE: u32 = 64;
-pub const __TIMESIZE: u32 = 64;
-pub const __USE_TIME_BITS64: u32 = 1;
-pub const __USE_MISC: u32 = 1;
-pub const __USE_ATFILE: u32 = 1;
-pub const __USE_DYNAMIC_STACK_SIZE: u32 = 1;
-pub const __USE_GNU: u32 = 1;
-pub const __USE_FORTIFY_LEVEL: u32 = 0;
-pub const __GLIBC_USE_DEPRECATED_GETS: u32 = 0;
-pub const __GLIBC_USE_DEPRECATED_SCANF: u32 = 0;
-pub const __GLIBC_USE_C23_STRTOL: u32 = 1;
-pub const _STDC_PREDEF_H: u32 = 1;
-pub const __STDC_IEC_559__: u32 = 1;
-pub const __STDC_IEC_60559_BFP__: u32 = 201404;
-pub const __STDC_IEC_559_COMPLEX__: u32 = 1;
-pub const __STDC_IEC_60559_COMPLEX__: u32 = 201404;
-pub const __STDC_ISO_10646__: u32 = 201706;
-pub const __GNU_LIBRARY__: u32 = 6;
-pub const __GLIBC__: u32 = 2;
-pub const __GLIBC_MINOR__: u32 = 43;
-pub const _SYS_CDEFS_H: u32 = 1;
-pub const __glibc_c99_flexarr_available: u32 = 1;
-pub const __LDOUBLE_REDIRECTS_TO_FLOAT128_ABI: u32 = 0;
-pub const __HAVE_GENERIC_SELECTION: u32 = 1;
-pub const __GLIBC_USE_LIB_EXT2: u32 = 1;
-pub const __GLIBC_USE_IEC_60559_BFP_EXT: u32 = 1;
-pub const __GLIBC_USE_IEC_60559_BFP_EXT_C23: u32 = 1;
-pub const __GLIBC_USE_IEC_60559_EXT: u32 = 1;
-pub const __GLIBC_USE_IEC_60559_FUNCS_EXT: u32 = 1;
-pub const __GLIBC_USE_IEC_60559_FUNCS_EXT_C23: u32 = 1;
-pub const __GLIBC_USE_IEC_60559_TYPES_EXT: u32 = 1;
-pub const _BITS_TYPES_H: u32 = 1;
-pub const _BITS_TYPESIZES_H: u32 = 1;
-pub const __OFF_T_MATCHES_OFF64_T: u32 = 1;
-pub const __INO_T_MATCHES_INO64_T: u32 = 1;
-pub const __RLIM_T_MATCHES_RLIM64_T: u32 = 1;
-pub const __STATFS_MATCHES_STATFS64: u32 = 1;
-pub const __KERNEL_OLD_TIMEVAL_MATCHES_TIMEVAL64: u32 = 1;
-pub const __FD_SETSIZE: u32 = 1024;
-pub const _BITS_TIME64_H: u32 = 1;
-pub const _BITS_WCHAR_H: u32 = 1;
-pub const __STDC_VERSION_STDINT_H__: u32 = 202311;
-pub const _BITS_STDINT_INTN_H: u32 = 1;
-pub const _BITS_STDINT_UINTN_H: u32 = 1;
-pub const _BITS_STDINT_LEAST_H: u32 = 1;
-pub const INT8_MIN: i32 = -128;
-pub const INT16_MIN: i32 = -32768;
-pub const INT32_MIN: i32 = -2147483648;
-pub const INT8_MAX: u32 = 127;
-pub const INT16_MAX: u32 = 32767;
-pub const INT32_MAX: u32 = 2147483647;
-pub const UINT8_MAX: u32 = 255;
-pub const UINT16_MAX: u32 = 65535;
-pub const UINT32_MAX: u32 = 4294967295;
-pub const INT_LEAST8_MIN: i32 = -128;
-pub const INT_LEAST16_MIN: i32 = -32768;
-pub const INT_LEAST32_MIN: i32 = -2147483648;
-pub const INT_LEAST8_MAX: u32 = 127;
-pub const INT_LEAST16_MAX: u32 = 32767;
-pub const INT_LEAST32_MAX: u32 = 2147483647;
-pub const UINT_LEAST8_MAX: u32 = 255;
-pub const UINT_LEAST16_MAX: u32 = 65535;
-pub const UINT_LEAST32_MAX: u32 = 4294967295;
-pub const INT_FAST8_MIN: i32 = -128;
-pub const INT_FAST16_MIN: i64 = -9223372036854775808;
-pub const INT_FAST32_MIN: i64 = -9223372036854775808;
-pub const INT_FAST8_MAX: u32 = 127;
-pub const INT_FAST16_MAX: u64 = 9223372036854775807;
-pub const INT_FAST32_MAX: u64 = 9223372036854775807;
-pub const UINT_FAST8_MAX: u32 = 255;
-pub const UINT_FAST16_MAX: i32 = -1;
-pub const UINT_FAST32_MAX: i32 = -1;
-pub const INTPTR_MIN: i64 = -9223372036854775808;
-pub const INTPTR_MAX: u64 = 9223372036854775807;
-pub const UINTPTR_MAX: i32 = -1;
-pub const PTRDIFF_MIN: i64 = -9223372036854775808;
-pub const PTRDIFF_MAX: u64 = 9223372036854775807;
-pub const SIG_ATOMIC_MIN: i32 = -2147483648;
-pub const SIG_ATOMIC_MAX: u32 = 2147483647;
-pub const SIZE_MAX: i32 = -1;
+pub const _VCRT_COMPILER_PREPROCESSOR: u32 = 1;
+pub const _SAL_VERSION: u32 = 20;
+pub const __SAL_H_VERSION: u32 = 180000000;
+pub const _USE_DECLSPECS_FOR_SAL: u32 = 0;
+pub const _USE_ATTRIBUTES_FOR_SAL: u32 = 0;
+pub const _CRT_PACKING: u32 = 8;
+pub const _HAS_EXCEPTIONS: u32 = 1;
+pub const _STL_LANG: u32 = 0;
+pub const _HAS_CXX17: u32 = 0;
+pub const _HAS_CXX20: u32 = 0;
+pub const _HAS_CXX23: u32 = 0;
+pub const _HAS_CXX26: u32 = 0;
+pub const WCHAR_MIN: u32 = 0;
+pub const WCHAR_MAX: u32 = 65535;
 pub const WINT_MIN: u32 = 0;
-pub const WINT_MAX: u32 = 4294967295;
-pub const INT8_WIDTH: u32 = 8;
-pub const UINT8_WIDTH: u32 = 8;
-pub const INT16_WIDTH: u32 = 16;
-pub const UINT16_WIDTH: u32 = 16;
-pub const INT32_WIDTH: u32 = 32;
-pub const UINT32_WIDTH: u32 = 32;
-pub const INT64_WIDTH: u32 = 64;
-pub const UINT64_WIDTH: u32 = 64;
-pub const INT_LEAST8_WIDTH: u32 = 8;
-pub const UINT_LEAST8_WIDTH: u32 = 8;
-pub const INT_LEAST16_WIDTH: u32 = 16;
-pub const UINT_LEAST16_WIDTH: u32 = 16;
-pub const INT_LEAST32_WIDTH: u32 = 32;
-pub const UINT_LEAST32_WIDTH: u32 = 32;
-pub const INT_LEAST64_WIDTH: u32 = 64;
-pub const UINT_LEAST64_WIDTH: u32 = 64;
-pub const INT_FAST8_WIDTH: u32 = 8;
-pub const UINT_FAST8_WIDTH: u32 = 8;
-pub const INT_FAST16_WIDTH: u32 = 64;
-pub const UINT_FAST16_WIDTH: u32 = 64;
-pub const INT_FAST32_WIDTH: u32 = 64;
-pub const UINT_FAST32_WIDTH: u32 = 64;
-pub const INT_FAST64_WIDTH: u32 = 64;
-pub const UINT_FAST64_WIDTH: u32 = 64;
-pub const INTPTR_WIDTH: u32 = 64;
-pub const UINTPTR_WIDTH: u32 = 64;
-pub const INTMAX_WIDTH: u32 = 64;
-pub const UINTMAX_WIDTH: u32 = 64;
-pub const PTRDIFF_WIDTH: u32 = 64;
-pub const SIG_ATOMIC_WIDTH: u32 = 32;
-pub const SIZE_WIDTH: u32 = 64;
-pub const WCHAR_WIDTH: u32 = 32;
-pub const WINT_WIDTH: u32 = 32;
+pub const WINT_MAX: u32 = 65535;
 pub const __bool_true_false_are_defined: u32 = 1;
-pub const true_: u32 = 1;
 pub const false_: u32 = 0;
+pub const true_: u32 = 1;
 pub const VIRGL_MAJOR_VERSION: u32 = 1;
 pub const VIRGL_MINOR_VERSION: u32 = 3;
 pub const VIRGL_MICRO_VERSION: u32 = 0;
@@ -247,267 +105,72 @@ pub const VIRGL_RENDERER_BLOB_FD_TYPE_DMABUF: u32 = 1;
 pub const VIRGL_RENDERER_BLOB_FD_TYPE_OPAQUE: u32 = 2;
 pub const VIRGL_RENDERER_BLOB_FD_TYPE_SHM: u32 = 3;
 pub const VIRGL_RENDERER_FENCE_FLAG_MERGEABLE: u32 = 1;
-pub const _SYS_UIO_H: u32 = 1;
-pub const _SYS_TYPES_H: u32 = 1;
-pub const __clock_t_defined: u32 = 1;
-pub const __clockid_t_defined: u32 = 1;
-pub const __time_t_defined: u32 = 1;
-pub const __timer_t_defined: u32 = 1;
-pub const __BIT_TYPES_DEFINED__: u32 = 1;
-pub const _ENDIAN_H: u32 = 1;
-pub const _BITS_ENDIAN_H: u32 = 1;
-pub const __LITTLE_ENDIAN: u32 = 1234;
-pub const __BIG_ENDIAN: u32 = 4321;
-pub const __PDP_ENDIAN: u32 = 3412;
-pub const _BITS_ENDIANNESS_H: u32 = 1;
-pub const __BYTE_ORDER: u32 = 1234;
-pub const __FLOAT_WORD_ORDER: u32 = 1234;
-pub const LITTLE_ENDIAN: u32 = 1234;
-pub const BIG_ENDIAN: u32 = 4321;
-pub const PDP_ENDIAN: u32 = 3412;
-pub const BYTE_ORDER: u32 = 1234;
-pub const _BITS_BYTESWAP_H: u32 = 1;
-pub const _BITS_UINTN_IDENTITY_H: u32 = 1;
-pub const _SYS_SELECT_H: u32 = 1;
-pub const __sigset_t_defined: u32 = 1;
-pub const __timeval_defined: u32 = 1;
-pub const _STRUCT_TIMESPEC: u32 = 1;
-pub const FD_SETSIZE: u32 = 1024;
-pub const _BITS_PTHREADTYPES_COMMON_H: u32 = 1;
-pub const _THREAD_SHARED_TYPES_H: u32 = 1;
-pub const _BITS_PTHREADTYPES_ARCH_H: u32 = 1;
-pub const __SIZEOF_PTHREAD_MUTEX_T: u32 = 40;
-pub const __SIZEOF_PTHREAD_ATTR_T: u32 = 56;
-pub const __SIZEOF_PTHREAD_RWLOCK_T: u32 = 56;
-pub const __SIZEOF_PTHREAD_BARRIER_T: u32 = 32;
-pub const __SIZEOF_PTHREAD_MUTEXATTR_T: u32 = 4;
-pub const __SIZEOF_PTHREAD_COND_T: u32 = 48;
-pub const __SIZEOF_PTHREAD_CONDATTR_T: u32 = 4;
-pub const __SIZEOF_PTHREAD_RWLOCKATTR_T: u32 = 8;
-pub const __SIZEOF_PTHREAD_BARRIERATTR_T: u32 = 4;
-pub const _THREAD_MUTEX_INTERNAL_H: u32 = 1;
-pub const __PTHREAD_MUTEX_HAVE_PREV: u32 = 1;
-pub const __have_pthread_attr_t: u32 = 1;
-pub const __iovec_defined: u32 = 1;
-pub const _BITS_UIO_LIM_H: u32 = 1;
-pub const __IOV_MAX: u32 = 1024;
-pub const UIO_MAXIOV: u32 = 1024;
-pub const _BITS_UIO_EXT_H: u32 = 1;
-pub const RWF_HIPRI: u32 = 1;
-pub const RWF_DSYNC: u32 = 2;
-pub const RWF_SYNC: u32 = 4;
-pub const RWF_NOWAIT: u32 = 8;
-pub const RWF_APPEND: u32 = 16;
-pub const RWF_NOAPPEND: u32 = 32;
-pub const RWF_ATOMIC: u32 = 64;
-pub const RWF_DONTCACHE: u32 = 128;
-pub const _UNISTD_H: u32 = 1;
-pub const _POSIX_VERSION: u32 = 200809;
-pub const __POSIX2_THIS_VERSION: u32 = 200809;
-pub const _POSIX2_VERSION: u32 = 200809;
-pub const _POSIX2_C_VERSION: u32 = 200809;
-pub const _POSIX2_C_BIND: u32 = 200809;
-pub const _POSIX2_C_DEV: u32 = 200809;
-pub const _POSIX2_SW_DEV: u32 = 200809;
-pub const _POSIX2_LOCALEDEF: u32 = 200809;
-pub const _XOPEN_VERSION: u32 = 700;
-pub const _XOPEN_XCU_VERSION: u32 = 4;
-pub const _XOPEN_XPG2: u32 = 1;
-pub const _XOPEN_XPG3: u32 = 1;
-pub const _XOPEN_XPG4: u32 = 1;
-pub const _XOPEN_UNIX: u32 = 1;
-pub const _XOPEN_ENH_I18N: u32 = 1;
-pub const _XOPEN_LEGACY: u32 = 1;
-pub const _BITS_POSIX_OPT_H: u32 = 1;
-pub const _POSIX_JOB_CONTROL: u32 = 1;
-pub const _POSIX_SAVED_IDS: u32 = 1;
-pub const _POSIX_PRIORITY_SCHEDULING: u32 = 200809;
-pub const _POSIX_SYNCHRONIZED_IO: u32 = 200809;
-pub const _POSIX_FSYNC: u32 = 200809;
-pub const _POSIX_MAPPED_FILES: u32 = 200809;
-pub const _POSIX_MEMLOCK: u32 = 200809;
-pub const _POSIX_MEMLOCK_RANGE: u32 = 200809;
-pub const _POSIX_MEMORY_PROTECTION: u32 = 200809;
-pub const _POSIX_CHOWN_RESTRICTED: u32 = 0;
-pub const _POSIX_VDISABLE: u32 = 0;
-pub const _POSIX_NO_TRUNC: u32 = 1;
-pub const _XOPEN_REALTIME: u32 = 1;
-pub const _XOPEN_REALTIME_THREADS: u32 = 1;
-pub const _XOPEN_SHM: u32 = 1;
-pub const _POSIX_THREADS: u32 = 200809;
-pub const _POSIX_REENTRANT_FUNCTIONS: u32 = 1;
-pub const _POSIX_THREAD_SAFE_FUNCTIONS: u32 = 200809;
-pub const _POSIX_THREAD_PRIORITY_SCHEDULING: u32 = 200809;
-pub const _POSIX_THREAD_ATTR_STACKSIZE: u32 = 200809;
-pub const _POSIX_THREAD_ATTR_STACKADDR: u32 = 200809;
-pub const _POSIX_THREAD_PRIO_INHERIT: u32 = 200809;
-pub const _POSIX_THREAD_PRIO_PROTECT: u32 = 200809;
-pub const _POSIX_THREAD_ROBUST_PRIO_INHERIT: u32 = 200809;
-pub const _POSIX_THREAD_ROBUST_PRIO_PROTECT: i32 = -1;
-pub const _POSIX_SEMAPHORES: u32 = 200809;
-pub const _POSIX_REALTIME_SIGNALS: u32 = 200809;
-pub const _POSIX_ASYNCHRONOUS_IO: u32 = 200809;
-pub const _POSIX_ASYNC_IO: u32 = 1;
-pub const _LFS_ASYNCHRONOUS_IO: u32 = 1;
-pub const _POSIX_PRIORITIZED_IO: u32 = 200809;
-pub const _LFS64_ASYNCHRONOUS_IO: u32 = 1;
-pub const _LFS_LARGEFILE: u32 = 1;
-pub const _LFS64_LARGEFILE: u32 = 1;
-pub const _LFS64_STDIO: u32 = 1;
-pub const _POSIX_SHARED_MEMORY_OBJECTS: u32 = 200809;
-pub const _POSIX_CPUTIME: u32 = 0;
-pub const _POSIX_THREAD_CPUTIME: u32 = 0;
-pub const _POSIX_REGEXP: u32 = 1;
-pub const _POSIX_READER_WRITER_LOCKS: u32 = 200809;
-pub const _POSIX_SHELL: u32 = 1;
-pub const _POSIX_TIMEOUTS: u32 = 200809;
-pub const _POSIX_SPIN_LOCKS: u32 = 200809;
-pub const _POSIX_SPAWN: u32 = 200809;
-pub const _POSIX_TIMERS: u32 = 200809;
-pub const _POSIX_BARRIERS: u32 = 200809;
-pub const _POSIX_MESSAGE_PASSING: u32 = 200809;
-pub const _POSIX_THREAD_PROCESS_SHARED: u32 = 200809;
-pub const _POSIX_MONOTONIC_CLOCK: u32 = 0;
-pub const _POSIX_CLOCK_SELECTION: u32 = 200809;
-pub const _POSIX_ADVISORY_INFO: u32 = 200809;
-pub const _POSIX_IPV6: u32 = 200809;
-pub const _POSIX_RAW_SOCKETS: u32 = 200809;
-pub const _POSIX2_CHAR_TERM: u32 = 200809;
-pub const _POSIX_SPORADIC_SERVER: i32 = -1;
-pub const _POSIX_THREAD_SPORADIC_SERVER: i32 = -1;
-pub const _POSIX_TRACE: i32 = -1;
-pub const _POSIX_TRACE_EVENT_FILTER: i32 = -1;
-pub const _POSIX_TRACE_INHERIT: i32 = -1;
-pub const _POSIX_TRACE_LOG: i32 = -1;
-pub const _POSIX_TYPED_MEMORY_OBJECTS: i32 = -1;
-pub const _POSIX_V7_LPBIG_OFFBIG: i32 = -1;
-pub const _POSIX_V6_LPBIG_OFFBIG: i32 = -1;
-pub const _XBS5_LPBIG_OFFBIG: i32 = -1;
-pub const _POSIX_V7_LP64_OFF64: u32 = 1;
-pub const _POSIX_V6_LP64_OFF64: u32 = 1;
-pub const _XBS5_LP64_OFF64: u32 = 1;
-pub const __ILP32_OFF32_CFLAGS: &[u8; 5] = b"-m32\0";
-pub const __ILP32_OFF32_LDFLAGS: &[u8; 5] = b"-m32\0";
-pub const __ILP32_OFFBIG_CFLAGS: &[u8; 48] = b"-m32 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64\0";
-pub const __ILP32_OFFBIG_LDFLAGS: &[u8; 5] = b"-m32\0";
-pub const __LP64_OFF64_CFLAGS: &[u8; 5] = b"-m64\0";
-pub const __LP64_OFF64_LDFLAGS: &[u8; 5] = b"-m64\0";
+pub const _ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE: u32 = 1;
+pub const _CRT_BUILD_DESKTOP_APP: u32 = 1;
+pub const _ARGMAX: u32 = 100;
+pub const _CRT_INT_MAX: u32 = 2147483647;
+pub const _CRT_FUNCTIONS_REQUIRED: u32 = 1;
+pub const _CRT_HAS_CXX17: u32 = 0;
+pub const _CRT_HAS_C11: u32 = 1;
+pub const _CRT_INTERNAL_NONSTDC_NAMES: u32 = 1;
+pub const __STDC_SECURE_LIB__: u32 = 200411;
+pub const __GOT_SECURE_LIB__: u32 = 200411;
+pub const __STDC_WANT_SECURE_LIB__: u32 = 1;
+pub const _SECURECRT_FILL_BUFFER_PATTERN: u32 = 254;
+pub const _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES: u32 = 0;
+pub const _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES_COUNT: u32 = 0;
+pub const _CRT_SECURE_CPP_OVERLOAD_SECURE_NAMES: u32 = 1;
+pub const _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES_MEMORY: u32 = 0;
+pub const _CRT_SECURE_CPP_OVERLOAD_SECURE_NAMES_MEMORY: u32 = 0;
+pub const _STATIC_INLINE_UCRT_FUNCTIONS: u32 = 0;
 pub const STDIN_FILENO: u32 = 0;
 pub const STDOUT_FILENO: u32 = 1;
 pub const STDERR_FILENO: u32 = 2;
-pub const R_OK: u32 = 4;
-pub const W_OK: u32 = 2;
-pub const X_OK: u32 = 1;
-pub const F_OK: u32 = 0;
 pub const SEEK_SET: u32 = 0;
 pub const SEEK_CUR: u32 = 1;
 pub const SEEK_END: u32 = 2;
-pub const SEEK_DATA: u32 = 3;
-pub const SEEK_HOLE: u32 = 4;
-pub const L_SET: u32 = 0;
-pub const L_INCR: u32 = 1;
-pub const L_XTND: u32 = 2;
-pub const _GETOPT_POSIX_H: u32 = 1;
-pub const _GETOPT_CORE_H: u32 = 1;
-pub const F_ULOCK: u32 = 0;
-pub const F_LOCK: u32 = 1;
-pub const F_TLOCK: u32 = 2;
-pub const F_TEST: u32 = 3;
-pub const CLOSE_RANGE_UNSHARE: u32 = 2;
-pub const CLOSE_RANGE_CLOEXEC: u32 = 4;
-pub type __u_char = ::std::os::raw::c_uchar;
-pub type __u_short = ::std::os::raw::c_ushort;
-pub type __u_int = ::std::os::raw::c_uint;
-pub type __u_long = ::std::os::raw::c_ulong;
-pub type __int8_t = ::std::os::raw::c_schar;
-pub type __uint8_t = ::std::os::raw::c_uchar;
-pub type __int16_t = ::std::os::raw::c_short;
-pub type __uint16_t = ::std::os::raw::c_ushort;
-pub type __int32_t = ::std::os::raw::c_int;
-pub type __uint32_t = ::std::os::raw::c_uint;
-pub type __int64_t = ::std::os::raw::c_long;
-pub type __uint64_t = ::std::os::raw::c_ulong;
-pub type __int_least8_t = __int8_t;
-pub type __uint_least8_t = __uint8_t;
-pub type __int_least16_t = __int16_t;
-pub type __uint_least16_t = __uint16_t;
-pub type __int_least32_t = __int32_t;
-pub type __uint_least32_t = __uint32_t;
-pub type __int_least64_t = __int64_t;
-pub type __uint_least64_t = __uint64_t;
-pub type __quad_t = ::std::os::raw::c_long;
-pub type __u_quad_t = ::std::os::raw::c_ulong;
-pub type __intmax_t = ::std::os::raw::c_long;
-pub type __uintmax_t = ::std::os::raw::c_ulong;
-pub type __dev_t = ::std::os::raw::c_ulong;
-pub type __uid_t = ::std::os::raw::c_uint;
-pub type __gid_t = ::std::os::raw::c_uint;
-pub type __ino_t = ::std::os::raw::c_ulong;
-pub type __ino64_t = ::std::os::raw::c_ulong;
-pub type __mode_t = ::std::os::raw::c_uint;
-pub type __nlink_t = ::std::os::raw::c_ulong;
-pub type __off_t = ::std::os::raw::c_long;
-pub type __off64_t = ::std::os::raw::c_long;
-pub type __pid_t = ::std::os::raw::c_int;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct __fsid_t {
-    pub __val: [::std::os::raw::c_int; 2usize],
+pub const F_OK: u32 = 0;
+pub const X_OK: u32 = 1;
+pub const W_OK: u32 = 2;
+pub const R_OK: u32 = 4;
+pub const _SC_PAGESIZE: u32 = 30;
+pub const _SC_PAGE_SIZE: u32 = 30;
+pub type va_list = *mut ::std::os::raw::c_char;
+unsafe extern "C" {
+    pub fn __va_start(arg1: *mut *mut ::std::os::raw::c_char, ...);
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of __fsid_t"][::std::mem::size_of::<__fsid_t>() - 8usize];
-    ["Alignment of __fsid_t"][::std::mem::align_of::<__fsid_t>() - 4usize];
-    ["Offset of field: __fsid_t::__val"][::std::mem::offset_of!(__fsid_t, __val) - 0usize];
-};
-pub type __clock_t = ::std::os::raw::c_long;
-pub type __rlim_t = ::std::os::raw::c_ulong;
-pub type __rlim64_t = ::std::os::raw::c_ulong;
-pub type __id_t = ::std::os::raw::c_uint;
-pub type __time_t = ::std::os::raw::c_long;
-pub type __useconds_t = ::std::os::raw::c_uint;
-pub type __suseconds_t = ::std::os::raw::c_long;
-pub type __suseconds64_t = ::std::os::raw::c_long;
-pub type __daddr_t = ::std::os::raw::c_int;
-pub type __key_t = ::std::os::raw::c_int;
-pub type __clockid_t = ::std::os::raw::c_int;
-pub type __timer_t = *mut ::std::os::raw::c_void;
-pub type __blksize_t = ::std::os::raw::c_long;
-pub type __blkcnt_t = ::std::os::raw::c_long;
-pub type __blkcnt64_t = ::std::os::raw::c_long;
-pub type __fsblkcnt_t = ::std::os::raw::c_ulong;
-pub type __fsblkcnt64_t = ::std::os::raw::c_ulong;
-pub type __fsfilcnt_t = ::std::os::raw::c_ulong;
-pub type __fsfilcnt64_t = ::std::os::raw::c_ulong;
-pub type __fsword_t = ::std::os::raw::c_long;
-pub type __ssize_t = ::std::os::raw::c_long;
-pub type __syscall_slong_t = ::std::os::raw::c_long;
-pub type __syscall_ulong_t = ::std::os::raw::c_ulong;
-pub type __loff_t = __off64_t;
-pub type __caddr_t = *mut ::std::os::raw::c_char;
-pub type __intptr_t = ::std::os::raw::c_long;
-pub type __socklen_t = ::std::os::raw::c_uint;
-pub type __sig_atomic_t = ::std::os::raw::c_int;
-pub type int_least8_t = __int_least8_t;
-pub type int_least16_t = __int_least16_t;
-pub type int_least32_t = __int_least32_t;
-pub type int_least64_t = __int_least64_t;
-pub type uint_least8_t = __uint_least8_t;
-pub type uint_least16_t = __uint_least16_t;
-pub type uint_least32_t = __uint_least32_t;
-pub type uint_least64_t = __uint_least64_t;
+pub type __vcrt_bool = bool;
+pub type wchar_t = ::std::os::raw::c_ushort;
+unsafe extern "C" {
+    pub fn __security_init_cookie();
+}
+unsafe extern "C" {
+    pub fn __security_check_cookie(_StackCookie: usize);
+}
+unsafe extern "C" {
+    pub fn __report_gsfailure(_StackCookie: usize) -> !;
+}
+unsafe extern "C" {
+    pub static mut __security_cookie: usize;
+}
+pub type int_least8_t = ::std::os::raw::c_schar;
+pub type int_least16_t = ::std::os::raw::c_short;
+pub type int_least32_t = ::std::os::raw::c_int;
+pub type int_least64_t = ::std::os::raw::c_longlong;
+pub type uint_least8_t = ::std::os::raw::c_uchar;
+pub type uint_least16_t = ::std::os::raw::c_ushort;
+pub type uint_least32_t = ::std::os::raw::c_uint;
+pub type uint_least64_t = ::std::os::raw::c_ulonglong;
 pub type int_fast8_t = ::std::os::raw::c_schar;
-pub type int_fast16_t = ::std::os::raw::c_long;
-pub type int_fast32_t = ::std::os::raw::c_long;
-pub type int_fast64_t = ::std::os::raw::c_long;
+pub type int_fast16_t = ::std::os::raw::c_int;
+pub type int_fast32_t = ::std::os::raw::c_int;
+pub type int_fast64_t = ::std::os::raw::c_longlong;
 pub type uint_fast8_t = ::std::os::raw::c_uchar;
-pub type uint_fast16_t = ::std::os::raw::c_ulong;
-pub type uint_fast32_t = ::std::os::raw::c_ulong;
-pub type uint_fast64_t = ::std::os::raw::c_ulong;
-pub type intmax_t = __intmax_t;
-pub type uintmax_t = __uintmax_t;
-pub type __gnuc_va_list = __builtin_va_list;
-pub type va_list = __builtin_va_list;
+pub type uint_fast16_t = ::std::os::raw::c_uint;
+pub type uint_fast32_t = ::std::os::raw::c_uint;
+pub type uint_fast64_t = ::std::os::raw::c_ulonglong;
+pub type intmax_t = ::std::os::raw::c_longlong;
+pub type uintmax_t = ::std::os::raw::c_ulonglong;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct virgl_box {
@@ -659,7 +322,7 @@ pub const virgl_renderer_structure_type_v0_VIRGL_RENDERER_STRUCTURE_TYPE_EXPORT_
     virgl_renderer_structure_type_v0 = 1;
 pub const virgl_renderer_structure_type_v0_VIRGL_RENDERER_STRUCTURE_TYPE_SUPPORTED_STRUCTURES:
     virgl_renderer_structure_type_v0 = 2;
-pub type virgl_renderer_structure_type_v0 = ::std::os::raw::c_uint;
+pub type virgl_renderer_structure_type_v0 = ::std::os::raw::c_int;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct virgl_renderer_resource_create_args {
@@ -786,15 +449,14 @@ const _: () = {
     )
         - 16usize];
 };
-pub type virgl_debug_callback_type = ::std::option::Option<
-    unsafe extern "C" fn(fmt: *const ::std::os::raw::c_char, ap: *mut __va_list_tag),
->;
+pub type virgl_debug_callback_type =
+    ::std::option::Option<unsafe extern "C" fn(fmt: *const ::std::os::raw::c_char, ap: va_list)>;
 pub const virgl_log_level_flags_VIRGL_LOG_LEVEL_DEBUG: virgl_log_level_flags = 0;
 pub const virgl_log_level_flags_VIRGL_LOG_LEVEL_INFO: virgl_log_level_flags = 1;
 pub const virgl_log_level_flags_VIRGL_LOG_LEVEL_WARNING: virgl_log_level_flags = 2;
 pub const virgl_log_level_flags_VIRGL_LOG_LEVEL_ERROR: virgl_log_level_flags = 3;
 pub const virgl_log_level_flags_VIRGL_LOG_LEVEL_SILENT: virgl_log_level_flags = 4;
-pub type virgl_log_level_flags = ::std::os::raw::c_uint;
+pub type virgl_log_level_flags = ::std::os::raw::c_int;
 pub type virgl_free_data_callback_type =
     ::std::option::Option<unsafe extern "C" fn(user_data: *mut ::std::os::raw::c_void)>;
 pub type virgl_log_callback_type = ::std::option::Option<
@@ -1169,455 +831,172 @@ unsafe extern "C" {
 unsafe extern "C" {
     pub fn virgl_renderer_get_dev_fd(ctx_id: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-pub type u_char = __u_char;
-pub type u_short = __u_short;
-pub type u_int = __u_int;
-pub type u_long = __u_long;
-pub type quad_t = __quad_t;
-pub type u_quad_t = __u_quad_t;
-pub type fsid_t = __fsid_t;
-pub type loff_t = __loff_t;
-pub type ino_t = __ino_t;
-pub type ino64_t = __ino64_t;
-pub type dev_t = __dev_t;
-pub type gid_t = __gid_t;
-pub type mode_t = __mode_t;
-pub type nlink_t = __nlink_t;
-pub type uid_t = __uid_t;
-pub type off_t = __off_t;
-pub type off64_t = __off64_t;
-pub type pid_t = __pid_t;
-pub type id_t = __id_t;
-pub type daddr_t = __daddr_t;
-pub type caddr_t = __caddr_t;
-pub type key_t = __key_t;
-pub type clock_t = __clock_t;
-pub type clockid_t = __clockid_t;
-pub type time_t = __time_t;
-pub type timer_t = __timer_t;
-pub type useconds_t = __useconds_t;
-pub type suseconds_t = __suseconds_t;
-pub type ulong = ::std::os::raw::c_ulong;
-pub type ushort = ::std::os::raw::c_ushort;
-pub type uint = ::std::os::raw::c_uint;
-pub type u_int8_t = __uint8_t;
-pub type u_int16_t = __uint16_t;
-pub type u_int32_t = __uint32_t;
-pub type u_int64_t = __uint64_t;
-pub type register_t = ::std::os::raw::c_long;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct __sigset_t {
-    pub __val: [::std::os::raw::c_ulong; 16usize],
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of __sigset_t"][::std::mem::size_of::<__sigset_t>() - 128usize];
-    ["Alignment of __sigset_t"][::std::mem::align_of::<__sigset_t>() - 8usize];
-    ["Offset of field: __sigset_t::__val"][::std::mem::offset_of!(__sigset_t, __val) - 0usize];
-};
-pub type sigset_t = __sigset_t;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct timeval {
-    pub tv_sec: __time_t,
-    pub tv_usec: __suseconds_t,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of timeval"][::std::mem::size_of::<timeval>() - 16usize];
-    ["Alignment of timeval"][::std::mem::align_of::<timeval>() - 8usize];
-    ["Offset of field: timeval::tv_sec"][::std::mem::offset_of!(timeval, tv_sec) - 0usize];
-    ["Offset of field: timeval::tv_usec"][::std::mem::offset_of!(timeval, tv_usec) - 8usize];
-};
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct timespec {
-    pub tv_sec: __time_t,
-    pub tv_nsec: __syscall_slong_t,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of timespec"][::std::mem::size_of::<timespec>() - 16usize];
-    ["Alignment of timespec"][::std::mem::align_of::<timespec>() - 8usize];
-    ["Offset of field: timespec::tv_sec"][::std::mem::offset_of!(timespec, tv_sec) - 0usize];
-    ["Offset of field: timespec::tv_nsec"][::std::mem::offset_of!(timespec, tv_nsec) - 8usize];
-};
-pub type __fd_mask = ::std::os::raw::c_long;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct fd_set {
-    pub fds_bits: [__fd_mask; 16usize],
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of fd_set"][::std::mem::size_of::<fd_set>() - 128usize];
-    ["Alignment of fd_set"][::std::mem::align_of::<fd_set>() - 8usize];
-    ["Offset of field: fd_set::fds_bits"][::std::mem::offset_of!(fd_set, fds_bits) - 0usize];
-};
-pub type fd_mask = __fd_mask;
+pub type __crt_bool = bool;
 unsafe extern "C" {
-    pub fn select(
-        __nfds: ::std::os::raw::c_int,
-        __readfds: *mut fd_set,
-        __writefds: *mut fd_set,
-        __exceptfds: *mut fd_set,
-        __timeout: *mut timeval,
-    ) -> ::std::os::raw::c_int;
+    pub fn _invalid_parameter_noinfo();
 }
 unsafe extern "C" {
-    pub fn pselect(
-        __nfds: ::std::os::raw::c_int,
-        __readfds: *mut fd_set,
-        __writefds: *mut fd_set,
-        __exceptfds: *mut fd_set,
-        __timeout: *const timespec,
-        __sigmask: *const __sigset_t,
-    ) -> ::std::os::raw::c_int;
+    pub fn _invalid_parameter_noinfo_noreturn() -> !;
 }
-pub type blksize_t = __blksize_t;
-pub type blkcnt_t = __blkcnt_t;
-pub type fsblkcnt_t = __fsblkcnt_t;
-pub type fsfilcnt_t = __fsfilcnt_t;
-pub type blkcnt64_t = __blkcnt64_t;
-pub type fsblkcnt64_t = __fsblkcnt64_t;
-pub type fsfilcnt64_t = __fsfilcnt64_t;
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union __atomic_wide_counter {
-    pub __value64: ::std::os::raw::c_ulonglong,
-    pub __value32: __atomic_wide_counter__bindgen_ty_1,
+unsafe extern "C" {
+    pub fn _invoke_watson(
+        _Expression: *const wchar_t,
+        _FunctionName: *const wchar_t,
+        _FileName: *const wchar_t,
+        _LineNo: ::std::os::raw::c_uint,
+        _Reserved: usize,
+    ) -> !;
 }
+pub type errno_t = ::std::os::raw::c_int;
+pub type wint_t = ::std::os::raw::c_ushort;
+pub type wctype_t = ::std::os::raw::c_ushort;
+pub type __time32_t = ::std::os::raw::c_long;
+pub type __time64_t = ::std::os::raw::c_longlong;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct __atomic_wide_counter__bindgen_ty_1 {
-    pub __low: ::std::os::raw::c_uint,
-    pub __high: ::std::os::raw::c_uint,
+pub struct __crt_locale_data_public {
+    pub _locale_pctype: *const ::std::os::raw::c_ushort,
+    pub _locale_mb_cur_max: ::std::os::raw::c_int,
+    pub _locale_lc_codepage: ::std::os::raw::c_uint,
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of __atomic_wide_counter__bindgen_ty_1"]
-        [::std::mem::size_of::<__atomic_wide_counter__bindgen_ty_1>() - 8usize];
-    ["Alignment of __atomic_wide_counter__bindgen_ty_1"]
-        [::std::mem::align_of::<__atomic_wide_counter__bindgen_ty_1>() - 4usize];
-    ["Offset of field: __atomic_wide_counter__bindgen_ty_1::__low"]
-        [::std::mem::offset_of!(__atomic_wide_counter__bindgen_ty_1, __low) - 0usize];
-    ["Offset of field: __atomic_wide_counter__bindgen_ty_1::__high"]
-        [::std::mem::offset_of!(__atomic_wide_counter__bindgen_ty_1, __high) - 4usize];
-};
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of __atomic_wide_counter"][::std::mem::size_of::<__atomic_wide_counter>() - 8usize];
-    ["Alignment of __atomic_wide_counter"]
-        [::std::mem::align_of::<__atomic_wide_counter>() - 8usize];
-    ["Offset of field: __atomic_wide_counter::__value64"]
-        [::std::mem::offset_of!(__atomic_wide_counter, __value64) - 0usize];
-    ["Offset of field: __atomic_wide_counter::__value32"]
-        [::std::mem::offset_of!(__atomic_wide_counter, __value32) - 0usize];
+    ["Size of __crt_locale_data_public"]
+        [::std::mem::size_of::<__crt_locale_data_public>() - 16usize];
+    ["Alignment of __crt_locale_data_public"]
+        [::std::mem::align_of::<__crt_locale_data_public>() - 8usize];
+    ["Offset of field: __crt_locale_data_public::_locale_pctype"]
+        [::std::mem::offset_of!(__crt_locale_data_public, _locale_pctype) - 0usize];
+    ["Offset of field: __crt_locale_data_public::_locale_mb_cur_max"]
+        [::std::mem::offset_of!(__crt_locale_data_public, _locale_mb_cur_max) - 8usize];
+    ["Offset of field: __crt_locale_data_public::_locale_lc_codepage"]
+        [::std::mem::offset_of!(__crt_locale_data_public, _locale_lc_codepage) - 12usize];
 };
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct __pthread_internal_list {
-    pub __prev: *mut __pthread_internal_list,
-    pub __next: *mut __pthread_internal_list,
+pub struct __crt_locale_pointers {
+    pub locinfo: *mut __crt_locale_data,
+    pub mbcinfo: *mut __crt_multibyte_data,
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of __pthread_internal_list"][::std::mem::size_of::<__pthread_internal_list>() - 16usize];
-    ["Alignment of __pthread_internal_list"]
-        [::std::mem::align_of::<__pthread_internal_list>() - 8usize];
-    ["Offset of field: __pthread_internal_list::__prev"]
-        [::std::mem::offset_of!(__pthread_internal_list, __prev) - 0usize];
-    ["Offset of field: __pthread_internal_list::__next"]
-        [::std::mem::offset_of!(__pthread_internal_list, __next) - 8usize];
+    ["Size of __crt_locale_pointers"][::std::mem::size_of::<__crt_locale_pointers>() - 16usize];
+    ["Alignment of __crt_locale_pointers"]
+        [::std::mem::align_of::<__crt_locale_pointers>() - 8usize];
+    ["Offset of field: __crt_locale_pointers::locinfo"]
+        [::std::mem::offset_of!(__crt_locale_pointers, locinfo) - 0usize];
+    ["Offset of field: __crt_locale_pointers::mbcinfo"]
+        [::std::mem::offset_of!(__crt_locale_pointers, mbcinfo) - 8usize];
 };
-pub type __pthread_list_t = __pthread_internal_list;
+pub type _locale_t = *mut __crt_locale_pointers;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct __pthread_internal_slist {
-    pub __next: *mut __pthread_internal_slist,
+pub struct _Mbstatet {
+    pub _Wchar: ::std::os::raw::c_ulong,
+    pub _Byte: ::std::os::raw::c_ushort,
+    pub _State: ::std::os::raw::c_ushort,
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of __pthread_internal_slist"]
-        [::std::mem::size_of::<__pthread_internal_slist>() - 8usize];
-    ["Alignment of __pthread_internal_slist"]
-        [::std::mem::align_of::<__pthread_internal_slist>() - 8usize];
-    ["Offset of field: __pthread_internal_slist::__next"]
-        [::std::mem::offset_of!(__pthread_internal_slist, __next) - 0usize];
+    ["Size of _Mbstatet"][::std::mem::size_of::<_Mbstatet>() - 8usize];
+    ["Alignment of _Mbstatet"][::std::mem::align_of::<_Mbstatet>() - 4usize];
+    ["Offset of field: _Mbstatet::_Wchar"][::std::mem::offset_of!(_Mbstatet, _Wchar) - 0usize];
+    ["Offset of field: _Mbstatet::_Byte"][::std::mem::offset_of!(_Mbstatet, _Byte) - 4usize];
+    ["Offset of field: _Mbstatet::_State"][::std::mem::offset_of!(_Mbstatet, _State) - 6usize];
 };
-pub type __pthread_slist_t = __pthread_internal_slist;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct __pthread_mutex_s {
-    pub __lock: ::std::os::raw::c_int,
-    pub __count: ::std::os::raw::c_uint,
-    pub __owner: ::std::os::raw::c_int,
-    pub __nusers: ::std::os::raw::c_uint,
-    pub __kind: ::std::os::raw::c_int,
-    pub __spins: ::std::os::raw::c_short,
-    pub __unused: ::std::os::raw::c_short,
-    pub __list: __pthread_list_t,
+pub type mbstate_t = _Mbstatet;
+pub type time_t = __time64_t;
+pub type rsize_t = usize;
+unsafe extern "C" {
+    pub fn _errno() -> *mut ::std::os::raw::c_int;
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of __pthread_mutex_s"][::std::mem::size_of::<__pthread_mutex_s>() - 40usize];
-    ["Alignment of __pthread_mutex_s"][::std::mem::align_of::<__pthread_mutex_s>() - 8usize];
-    ["Offset of field: __pthread_mutex_s::__lock"]
-        [::std::mem::offset_of!(__pthread_mutex_s, __lock) - 0usize];
-    ["Offset of field: __pthread_mutex_s::__count"]
-        [::std::mem::offset_of!(__pthread_mutex_s, __count) - 4usize];
-    ["Offset of field: __pthread_mutex_s::__owner"]
-        [::std::mem::offset_of!(__pthread_mutex_s, __owner) - 8usize];
-    ["Offset of field: __pthread_mutex_s::__nusers"]
-        [::std::mem::offset_of!(__pthread_mutex_s, __nusers) - 12usize];
-    ["Offset of field: __pthread_mutex_s::__kind"]
-        [::std::mem::offset_of!(__pthread_mutex_s, __kind) - 16usize];
-    ["Offset of field: __pthread_mutex_s::__spins"]
-        [::std::mem::offset_of!(__pthread_mutex_s, __spins) - 20usize];
-    ["Offset of field: __pthread_mutex_s::__unused"]
-        [::std::mem::offset_of!(__pthread_mutex_s, __unused) - 22usize];
-    ["Offset of field: __pthread_mutex_s::__list"]
-        [::std::mem::offset_of!(__pthread_mutex_s, __list) - 24usize];
-};
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct __pthread_rwlock_arch_t {
-    pub __readers: ::std::os::raw::c_uint,
-    pub __writers: ::std::os::raw::c_uint,
-    pub __wrphase_futex: ::std::os::raw::c_uint,
-    pub __writers_futex: ::std::os::raw::c_uint,
-    pub __pad3: ::std::os::raw::c_uint,
-    pub __pad4: ::std::os::raw::c_uint,
-    pub __cur_writer: ::std::os::raw::c_int,
-    pub __shared: ::std::os::raw::c_int,
-    pub __pad1: ::std::os::raw::c_ulong,
-    pub __pad2: ::std::os::raw::c_ulong,
-    pub __flags: ::std::os::raw::c_uint,
+unsafe extern "C" {
+    pub fn _set_errno(_Value: ::std::os::raw::c_int) -> errno_t;
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of __pthread_rwlock_arch_t"][::std::mem::size_of::<__pthread_rwlock_arch_t>() - 56usize];
-    ["Alignment of __pthread_rwlock_arch_t"]
-        [::std::mem::align_of::<__pthread_rwlock_arch_t>() - 8usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__readers"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __readers) - 0usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__writers"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __writers) - 4usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__wrphase_futex"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __wrphase_futex) - 8usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__writers_futex"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __writers_futex) - 12usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__pad3"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __pad3) - 16usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__pad4"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __pad4) - 20usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__cur_writer"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __cur_writer) - 24usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__shared"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __shared) - 28usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__pad1"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __pad1) - 32usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__pad2"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __pad2) - 40usize];
-    ["Offset of field: __pthread_rwlock_arch_t::__flags"]
-        [::std::mem::offset_of!(__pthread_rwlock_arch_t, __flags) - 48usize];
-};
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct __pthread_cond_s {
-    pub __wseq: __atomic_wide_counter,
-    pub __g1_start: __atomic_wide_counter,
-    pub __g_size: [::std::os::raw::c_uint; 2usize],
-    pub __g1_orig_size: ::std::os::raw::c_uint,
-    pub __wrefs: ::std::os::raw::c_uint,
-    pub __g_signals: [::std::os::raw::c_uint; 2usize],
-    pub __unused_initialized_1: ::std::os::raw::c_uint,
-    pub __unused_initialized_2: ::std::os::raw::c_uint,
+unsafe extern "C" {
+    pub fn _get_errno(_Value: *mut ::std::os::raw::c_int) -> errno_t;
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of __pthread_cond_s"][::std::mem::size_of::<__pthread_cond_s>() - 48usize];
-    ["Alignment of __pthread_cond_s"][::std::mem::align_of::<__pthread_cond_s>() - 8usize];
-    ["Offset of field: __pthread_cond_s::__wseq"]
-        [::std::mem::offset_of!(__pthread_cond_s, __wseq) - 0usize];
-    ["Offset of field: __pthread_cond_s::__g1_start"]
-        [::std::mem::offset_of!(__pthread_cond_s, __g1_start) - 8usize];
-    ["Offset of field: __pthread_cond_s::__g_size"]
-        [::std::mem::offset_of!(__pthread_cond_s, __g_size) - 16usize];
-    ["Offset of field: __pthread_cond_s::__g1_orig_size"]
-        [::std::mem::offset_of!(__pthread_cond_s, __g1_orig_size) - 24usize];
-    ["Offset of field: __pthread_cond_s::__wrefs"]
-        [::std::mem::offset_of!(__pthread_cond_s, __wrefs) - 28usize];
-    ["Offset of field: __pthread_cond_s::__g_signals"]
-        [::std::mem::offset_of!(__pthread_cond_s, __g_signals) - 32usize];
-    ["Offset of field: __pthread_cond_s::__unused_initialized_1"]
-        [::std::mem::offset_of!(__pthread_cond_s, __unused_initialized_1) - 40usize];
-    ["Offset of field: __pthread_cond_s::__unused_initialized_2"]
-        [::std::mem::offset_of!(__pthread_cond_s, __unused_initialized_2) - 44usize];
-};
-pub type __tss_t = ::std::os::raw::c_uint;
-pub type __thrd_t = ::std::os::raw::c_ulong;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct __once_flag {
-    pub __data: ::std::os::raw::c_int,
+unsafe extern "C" {
+    pub fn __threadid() -> ::std::os::raw::c_ulong;
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of __once_flag"][::std::mem::size_of::<__once_flag>() - 4usize];
-    ["Alignment of __once_flag"][::std::mem::align_of::<__once_flag>() - 4usize];
-    ["Offset of field: __once_flag::__data"][::std::mem::offset_of!(__once_flag, __data) - 0usize];
-};
-pub type pthread_t = ::std::os::raw::c_ulong;
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union pthread_mutexattr_t {
-    pub __size: [::std::os::raw::c_char; 4usize],
-    pub __align: ::std::os::raw::c_int,
+unsafe extern "C" {
+    pub fn __threadhandle() -> usize;
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of pthread_mutexattr_t"][::std::mem::size_of::<pthread_mutexattr_t>() - 4usize];
-    ["Alignment of pthread_mutexattr_t"][::std::mem::align_of::<pthread_mutexattr_t>() - 4usize];
-    ["Offset of field: pthread_mutexattr_t::__size"]
-        [::std::mem::offset_of!(pthread_mutexattr_t, __size) - 0usize];
-    ["Offset of field: pthread_mutexattr_t::__align"]
-        [::std::mem::offset_of!(pthread_mutexattr_t, __align) - 0usize];
-};
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union pthread_condattr_t {
-    pub __size: [::std::os::raw::c_char; 4usize],
-    pub __align: ::std::os::raw::c_int,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of pthread_condattr_t"][::std::mem::size_of::<pthread_condattr_t>() - 4usize];
-    ["Alignment of pthread_condattr_t"][::std::mem::align_of::<pthread_condattr_t>() - 4usize];
-    ["Offset of field: pthread_condattr_t::__size"]
-        [::std::mem::offset_of!(pthread_condattr_t, __size) - 0usize];
-    ["Offset of field: pthread_condattr_t::__align"]
-        [::std::mem::offset_of!(pthread_condattr_t, __align) - 0usize];
-};
-pub type pthread_key_t = ::std::os::raw::c_uint;
-pub type pthread_once_t = ::std::os::raw::c_int;
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union pthread_attr_t {
-    pub __size: [::std::os::raw::c_char; 56usize],
-    pub __align: ::std::os::raw::c_long,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of pthread_attr_t"][::std::mem::size_of::<pthread_attr_t>() - 56usize];
-    ["Alignment of pthread_attr_t"][::std::mem::align_of::<pthread_attr_t>() - 8usize];
-    ["Offset of field: pthread_attr_t::__size"]
-        [::std::mem::offset_of!(pthread_attr_t, __size) - 0usize];
-    ["Offset of field: pthread_attr_t::__align"]
-        [::std::mem::offset_of!(pthread_attr_t, __align) - 0usize];
-};
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union pthread_mutex_t {
-    pub __data: __pthread_mutex_s,
-    pub __size: [::std::os::raw::c_char; 40usize],
-    pub __align: ::std::os::raw::c_long,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of pthread_mutex_t"][::std::mem::size_of::<pthread_mutex_t>() - 40usize];
-    ["Alignment of pthread_mutex_t"][::std::mem::align_of::<pthread_mutex_t>() - 8usize];
-    ["Offset of field: pthread_mutex_t::__data"]
-        [::std::mem::offset_of!(pthread_mutex_t, __data) - 0usize];
-    ["Offset of field: pthread_mutex_t::__size"]
-        [::std::mem::offset_of!(pthread_mutex_t, __size) - 0usize];
-    ["Offset of field: pthread_mutex_t::__align"]
-        [::std::mem::offset_of!(pthread_mutex_t, __align) - 0usize];
-};
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union pthread_cond_t {
-    pub __data: __pthread_cond_s,
-    pub __size: [::std::os::raw::c_char; 48usize],
-    pub __align: ::std::os::raw::c_longlong,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of pthread_cond_t"][::std::mem::size_of::<pthread_cond_t>() - 48usize];
-    ["Alignment of pthread_cond_t"][::std::mem::align_of::<pthread_cond_t>() - 8usize];
-    ["Offset of field: pthread_cond_t::__data"]
-        [::std::mem::offset_of!(pthread_cond_t, __data) - 0usize];
-    ["Offset of field: pthread_cond_t::__size"]
-        [::std::mem::offset_of!(pthread_cond_t, __size) - 0usize];
-    ["Offset of field: pthread_cond_t::__align"]
-        [::std::mem::offset_of!(pthread_cond_t, __align) - 0usize];
-};
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union pthread_rwlock_t {
-    pub __data: __pthread_rwlock_arch_t,
-    pub __size: [::std::os::raw::c_char; 56usize],
-    pub __align: ::std::os::raw::c_long,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of pthread_rwlock_t"][::std::mem::size_of::<pthread_rwlock_t>() - 56usize];
-    ["Alignment of pthread_rwlock_t"][::std::mem::align_of::<pthread_rwlock_t>() - 8usize];
-    ["Offset of field: pthread_rwlock_t::__data"]
-        [::std::mem::offset_of!(pthread_rwlock_t, __data) - 0usize];
-    ["Offset of field: pthread_rwlock_t::__size"]
-        [::std::mem::offset_of!(pthread_rwlock_t, __size) - 0usize];
-    ["Offset of field: pthread_rwlock_t::__align"]
-        [::std::mem::offset_of!(pthread_rwlock_t, __align) - 0usize];
-};
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union pthread_rwlockattr_t {
-    pub __size: [::std::os::raw::c_char; 8usize],
-    pub __align: ::std::os::raw::c_long,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of pthread_rwlockattr_t"][::std::mem::size_of::<pthread_rwlockattr_t>() - 8usize];
-    ["Alignment of pthread_rwlockattr_t"][::std::mem::align_of::<pthread_rwlockattr_t>() - 8usize];
-    ["Offset of field: pthread_rwlockattr_t::__size"]
-        [::std::mem::offset_of!(pthread_rwlockattr_t, __size) - 0usize];
-    ["Offset of field: pthread_rwlockattr_t::__align"]
-        [::std::mem::offset_of!(pthread_rwlockattr_t, __align) - 0usize];
-};
-pub type pthread_spinlock_t = ::std::os::raw::c_int;
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union pthread_barrier_t {
-    pub __size: [::std::os::raw::c_char; 32usize],
-    pub __align: ::std::os::raw::c_long,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of pthread_barrier_t"][::std::mem::size_of::<pthread_barrier_t>() - 32usize];
-    ["Alignment of pthread_barrier_t"][::std::mem::align_of::<pthread_barrier_t>() - 8usize];
-    ["Offset of field: pthread_barrier_t::__size"]
-        [::std::mem::offset_of!(pthread_barrier_t, __size) - 0usize];
-    ["Offset of field: pthread_barrier_t::__align"]
-        [::std::mem::offset_of!(pthread_barrier_t, __align) - 0usize];
-};
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union pthread_barrierattr_t {
-    pub __size: [::std::os::raw::c_char; 4usize],
-    pub __align: ::std::os::raw::c_int,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of pthread_barrierattr_t"][::std::mem::size_of::<pthread_barrierattr_t>() - 4usize];
-    ["Alignment of pthread_barrierattr_t"]
-        [::std::mem::align_of::<pthread_barrierattr_t>() - 4usize];
-    ["Offset of field: pthread_barrierattr_t::__size"]
-        [::std::mem::offset_of!(pthread_barrierattr_t, __size) - 0usize];
-    ["Offset of field: pthread_barrierattr_t::__align"]
-        [::std::mem::offset_of!(pthread_barrierattr_t, __align) - 0usize];
-};
+pub type POINTER_64_INT = ::std::os::raw::c_ulonglong;
+pub type INT8 = ::std::os::raw::c_schar;
+pub type PINT8 = *mut ::std::os::raw::c_schar;
+pub type INT16 = ::std::os::raw::c_short;
+pub type PINT16 = *mut ::std::os::raw::c_short;
+pub type INT32 = ::std::os::raw::c_int;
+pub type PINT32 = *mut ::std::os::raw::c_int;
+pub type INT64 = ::std::os::raw::c_longlong;
+pub type PINT64 = *mut ::std::os::raw::c_longlong;
+pub type UINT8 = ::std::os::raw::c_uchar;
+pub type PUINT8 = *mut ::std::os::raw::c_uchar;
+pub type UINT16 = ::std::os::raw::c_ushort;
+pub type PUINT16 = *mut ::std::os::raw::c_ushort;
+pub type UINT32 = ::std::os::raw::c_uint;
+pub type PUINT32 = *mut ::std::os::raw::c_uint;
+pub type UINT64 = ::std::os::raw::c_ulonglong;
+pub type PUINT64 = *mut ::std::os::raw::c_ulonglong;
+pub type LONG32 = ::std::os::raw::c_int;
+pub type PLONG32 = *mut ::std::os::raw::c_int;
+pub type ULONG32 = ::std::os::raw::c_uint;
+pub type PULONG32 = *mut ::std::os::raw::c_uint;
+pub type DWORD32 = ::std::os::raw::c_uint;
+pub type PDWORD32 = *mut ::std::os::raw::c_uint;
+pub type INT_PTR = ::std::os::raw::c_longlong;
+pub type PINT_PTR = *mut ::std::os::raw::c_longlong;
+pub type UINT_PTR = ::std::os::raw::c_ulonglong;
+pub type PUINT_PTR = *mut ::std::os::raw::c_ulonglong;
+pub type LONG_PTR = ::std::os::raw::c_longlong;
+pub type PLONG_PTR = *mut ::std::os::raw::c_longlong;
+pub type ULONG_PTR = ::std::os::raw::c_ulonglong;
+pub type PULONG_PTR = *mut ::std::os::raw::c_ulonglong;
+pub type PHANDLE64 = *mut *mut ::std::os::raw::c_void;
+pub type SHANDLE_PTR = ::std::os::raw::c_longlong;
+pub type HANDLE_PTR = ::std::os::raw::c_ulonglong;
+pub type UHALF_PTR = ::std::os::raw::c_uint;
+pub type PUHALF_PTR = *mut ::std::os::raw::c_uint;
+pub type HALF_PTR = ::std::os::raw::c_int;
+pub type PHALF_PTR = *mut ::std::os::raw::c_int;
+pub type SIZE_T = ULONG_PTR;
+pub type PSIZE_T = *mut ULONG_PTR;
+pub type SSIZE_T = LONG_PTR;
+pub type PSSIZE_T = *mut LONG_PTR;
+pub type DWORD_PTR = ULONG_PTR;
+pub type PDWORD_PTR = *mut ULONG_PTR;
+pub type LONG64 = ::std::os::raw::c_longlong;
+pub type PLONG64 = *mut ::std::os::raw::c_longlong;
+pub type ULONG64 = ::std::os::raw::c_ulonglong;
+pub type PULONG64 = *mut ::std::os::raw::c_ulonglong;
+pub type DWORD64 = ::std::os::raw::c_ulonglong;
+pub type PDWORD64 = *mut ::std::os::raw::c_ulonglong;
+pub type KAFFINITY = ULONG_PTR;
+pub type PKAFFINITY = *mut KAFFINITY;
+pub type _ino_t = ::std::os::raw::c_ushort;
+pub type ino_t = _ino_t;
+pub type _dev_t = ::std::os::raw::c_uint;
+pub type dev_t = _dev_t;
+pub type _off_t = ::std::os::raw::c_long;
+pub type off_t = _off_t;
+pub type _off64_t = ::std::os::raw::c_longlong;
+pub type off64_t = _off64_t;
+pub type _mode_t = ::std::os::raw::c_ushort;
+pub type mode_t = _mode_t;
+pub type pid_t = isize;
+pub type useconds_t = ::std::os::raw::c_uint;
+pub type id_t = ::std::os::raw::c_int;
+pub type idtype_t = ::std::os::raw::c_uint;
+pub type uid_t = ::std::os::raw::c_uint;
+pub type gid_t = ::std::os::raw::c_uint;
+pub type nlink_t = ::std::os::raw::c_ushort;
+pub type blkcnt_t = ::std::os::raw::c_long;
+pub type blksize_t = ::std::os::raw::c_long;
+pub type u_char = ::std::os::raw::c_uchar;
+pub type u_short = ::std::os::raw::c_ushort;
+pub type u_int = ::std::os::raw::c_uint;
+pub type u_long = ::std::os::raw::c_ulong;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct iovec {
@@ -1633,104 +1012,16 @@ const _: () = {
 };
 unsafe extern "C" {
     pub fn readv(
-        __fd: ::std::os::raw::c_int,
-        __iovec: *const iovec,
-        __count: ::std::os::raw::c_int,
+        fd: ::std::os::raw::c_int,
+        iov: *const iovec,
+        iovcnt: ::std::os::raw::c_int,
     ) -> isize;
 }
 unsafe extern "C" {
     pub fn writev(
-        __fd: ::std::os::raw::c_int,
-        __iovec: *const iovec,
-        __count: ::std::os::raw::c_int,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn preadv(
-        __fd: ::std::os::raw::c_int,
-        __iovec: *const iovec,
-        __count: ::std::os::raw::c_int,
-        __offset: __off_t,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn pwritev(
-        __fd: ::std::os::raw::c_int,
-        __iovec: *const iovec,
-        __count: ::std::os::raw::c_int,
-        __offset: __off_t,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn preadv64(
-        __fd: ::std::os::raw::c_int,
-        __iovec: *const iovec,
-        __count: ::std::os::raw::c_int,
-        __offset: __off64_t,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn pwritev64(
-        __fd: ::std::os::raw::c_int,
-        __iovec: *const iovec,
-        __count: ::std::os::raw::c_int,
-        __offset: __off64_t,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn preadv2(
-        __fp: ::std::os::raw::c_int,
-        __iovec: *const iovec,
-        __count: ::std::os::raw::c_int,
-        __offset: __off_t,
-        ___flags: ::std::os::raw::c_int,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn pwritev2(
-        __fd: ::std::os::raw::c_int,
-        __iodev: *const iovec,
-        __count: ::std::os::raw::c_int,
-        __offset: __off_t,
-        __flags: ::std::os::raw::c_int,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn preadv64v2(
-        __fp: ::std::os::raw::c_int,
-        __iovec: *const iovec,
-        __count: ::std::os::raw::c_int,
-        __offset: __off64_t,
-        ___flags: ::std::os::raw::c_int,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn pwritev64v2(
-        __fd: ::std::os::raw::c_int,
-        __iodev: *const iovec,
-        __count: ::std::os::raw::c_int,
-        __offset: __off64_t,
-        __flags: ::std::os::raw::c_int,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn process_vm_readv(
-        __pid: pid_t,
-        __lvec: *const iovec,
-        __liovcnt: ::std::os::raw::c_ulong,
-        __rvec: *const iovec,
-        __riovcnt: ::std::os::raw::c_ulong,
-        __flags: ::std::os::raw::c_ulong,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn process_vm_writev(
-        __pid: pid_t,
-        __lvec: *const iovec,
-        __liovcnt: ::std::os::raw::c_ulong,
-        __rvec: *const iovec,
-        __riovcnt: ::std::os::raw::c_ulong,
-        __flags: ::std::os::raw::c_ulong,
+        fd: ::std::os::raw::c_int,
+        iov: *const iovec,
+        iovcnt: ::std::os::raw::c_int,
     ) -> isize;
 }
 #[repr(C)]
@@ -1817,948 +1108,87 @@ unsafe extern "C" {
         buf: *mut ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-pub type socklen_t = __socklen_t;
 unsafe extern "C" {
-    pub fn access(
-        __name: *const ::std::os::raw::c_char,
-        __type: ::std::os::raw::c_int,
+    pub fn close(fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
+}
+unsafe extern "C" {
+    pub fn read(
+        fd: ::std::os::raw::c_int,
+        buf: *mut ::std::os::raw::c_void,
+        count: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn euidaccess(
-        __name: *const ::std::os::raw::c_char,
-        __type: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn eaccess(
-        __name: *const ::std::os::raw::c_char,
-        __type: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn execveat(
-        __fd: ::std::os::raw::c_int,
-        __path: *const ::std::os::raw::c_char,
-        __argv: *const *mut ::std::os::raw::c_char,
-        __envp: *const *mut ::std::os::raw::c_char,
-        __flags: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn faccessat(
-        __fd: ::std::os::raw::c_int,
-        __file: *const ::std::os::raw::c_char,
-        __type: ::std::os::raw::c_int,
-        __flag: ::std::os::raw::c_int,
+    pub fn write(
+        fd: ::std::os::raw::c_int,
+        buf: *const ::std::os::raw::c_void,
+        count: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
     pub fn lseek(
-        __fd: ::std::os::raw::c_int,
-        __offset: __off_t,
-        __whence: ::std::os::raw::c_int,
-    ) -> __off_t;
-}
-unsafe extern "C" {
-    pub fn lseek64(
-        __fd: ::std::os::raw::c_int,
-        __offset: __off64_t,
-        __whence: ::std::os::raw::c_int,
-    ) -> __off64_t;
-}
-unsafe extern "C" {
-    pub fn close(__fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn closefrom(__lowfd: ::std::os::raw::c_int);
-}
-unsafe extern "C" {
-    pub fn read(
-        __fd: ::std::os::raw::c_int,
-        __buf: *mut ::std::os::raw::c_void,
-        __nbytes: usize,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn write(
-        __fd: ::std::os::raw::c_int,
-        __buf: *const ::std::os::raw::c_void,
-        __n: usize,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn pread(
-        __fd: ::std::os::raw::c_int,
-        __buf: *mut ::std::os::raw::c_void,
-        __nbytes: usize,
-        __offset: __off_t,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn pwrite(
-        __fd: ::std::os::raw::c_int,
-        __buf: *const ::std::os::raw::c_void,
-        __n: usize,
-        __offset: __off_t,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn pread64(
-        __fd: ::std::os::raw::c_int,
-        __buf: *mut ::std::os::raw::c_void,
-        __nbytes: usize,
-        __offset: __off64_t,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn pwrite64(
-        __fd: ::std::os::raw::c_int,
-        __buf: *const ::std::os::raw::c_void,
-        __n: usize,
-        __offset: __off64_t,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn pipe(__pipedes: *mut ::std::os::raw::c_int) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn pipe2(
-        __pipedes: *mut ::std::os::raw::c_int,
-        __flags: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn alarm(__seconds: ::std::os::raw::c_uint) -> ::std::os::raw::c_uint;
-}
-unsafe extern "C" {
-    pub fn sleep(__seconds: ::std::os::raw::c_uint) -> ::std::os::raw::c_uint;
-}
-unsafe extern "C" {
-    pub fn ualarm(__value: __useconds_t, __interval: __useconds_t) -> __useconds_t;
-}
-unsafe extern "C" {
-    pub fn usleep(__useconds: __useconds_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn pause() -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn chown(
-        __file: *const ::std::os::raw::c_char,
-        __owner: __uid_t,
-        __group: __gid_t,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn fchown(
-        __fd: ::std::os::raw::c_int,
-        __owner: __uid_t,
-        __group: __gid_t,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn lchown(
-        __file: *const ::std::os::raw::c_char,
-        __owner: __uid_t,
-        __group: __gid_t,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn fchownat(
-        __fd: ::std::os::raw::c_int,
-        __file: *const ::std::os::raw::c_char,
-        __owner: __uid_t,
-        __group: __gid_t,
-        __flag: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn chdir(__path: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn fchdir(__fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn getcwd(__buf: *mut ::std::os::raw::c_char, __size: usize)
-    -> *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub fn get_current_dir_name() -> *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub fn getwd(__buf: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub fn dup(__fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn dup2(__fd: ::std::os::raw::c_int, __fd2: ::std::os::raw::c_int)
-    -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn dup3(
-        __fd: ::std::os::raw::c_int,
-        __fd2: ::std::os::raw::c_int,
-        __flags: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub static mut __environ: *mut *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub static mut environ: *mut *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub fn execve(
-        __path: *const ::std::os::raw::c_char,
-        __argv: *const *mut ::std::os::raw::c_char,
-        __envp: *const *mut ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn fexecve(
-        __fd: ::std::os::raw::c_int,
-        __argv: *const *mut ::std::os::raw::c_char,
-        __envp: *const *mut ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn execv(
-        __path: *const ::std::os::raw::c_char,
-        __argv: *const *mut ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn execle(
-        __path: *const ::std::os::raw::c_char,
-        __arg: *const ::std::os::raw::c_char,
-        ...
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn execl(
-        __path: *const ::std::os::raw::c_char,
-        __arg: *const ::std::os::raw::c_char,
-        ...
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn execvp(
-        __file: *const ::std::os::raw::c_char,
-        __argv: *const *mut ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn execlp(
-        __file: *const ::std::os::raw::c_char,
-        __arg: *const ::std::os::raw::c_char,
-        ...
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn execvpe(
-        __file: *const ::std::os::raw::c_char,
-        __argv: *const *mut ::std::os::raw::c_char,
-        __envp: *const *mut ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn nice(__inc: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn _exit(__status: ::std::os::raw::c_int) -> !;
-}
-pub const _PC_LINK_MAX: _bindgen_ty_1 = 0;
-pub const _PC_MAX_CANON: _bindgen_ty_1 = 1;
-pub const _PC_MAX_INPUT: _bindgen_ty_1 = 2;
-pub const _PC_NAME_MAX: _bindgen_ty_1 = 3;
-pub const _PC_PATH_MAX: _bindgen_ty_1 = 4;
-pub const _PC_PIPE_BUF: _bindgen_ty_1 = 5;
-pub const _PC_CHOWN_RESTRICTED: _bindgen_ty_1 = 6;
-pub const _PC_NO_TRUNC: _bindgen_ty_1 = 7;
-pub const _PC_VDISABLE: _bindgen_ty_1 = 8;
-pub const _PC_SYNC_IO: _bindgen_ty_1 = 9;
-pub const _PC_ASYNC_IO: _bindgen_ty_1 = 10;
-pub const _PC_PRIO_IO: _bindgen_ty_1 = 11;
-pub const _PC_SOCK_MAXBUF: _bindgen_ty_1 = 12;
-pub const _PC_FILESIZEBITS: _bindgen_ty_1 = 13;
-pub const _PC_REC_INCR_XFER_SIZE: _bindgen_ty_1 = 14;
-pub const _PC_REC_MAX_XFER_SIZE: _bindgen_ty_1 = 15;
-pub const _PC_REC_MIN_XFER_SIZE: _bindgen_ty_1 = 16;
-pub const _PC_REC_XFER_ALIGN: _bindgen_ty_1 = 17;
-pub const _PC_ALLOC_SIZE_MIN: _bindgen_ty_1 = 18;
-pub const _PC_SYMLINK_MAX: _bindgen_ty_1 = 19;
-pub const _PC_2_SYMLINKS: _bindgen_ty_1 = 20;
-pub type _bindgen_ty_1 = ::std::os::raw::c_uint;
-pub const _SC_ARG_MAX: _bindgen_ty_2 = 0;
-pub const _SC_CHILD_MAX: _bindgen_ty_2 = 1;
-pub const _SC_CLK_TCK: _bindgen_ty_2 = 2;
-pub const _SC_NGROUPS_MAX: _bindgen_ty_2 = 3;
-pub const _SC_OPEN_MAX: _bindgen_ty_2 = 4;
-pub const _SC_STREAM_MAX: _bindgen_ty_2 = 5;
-pub const _SC_TZNAME_MAX: _bindgen_ty_2 = 6;
-pub const _SC_JOB_CONTROL: _bindgen_ty_2 = 7;
-pub const _SC_SAVED_IDS: _bindgen_ty_2 = 8;
-pub const _SC_REALTIME_SIGNALS: _bindgen_ty_2 = 9;
-pub const _SC_PRIORITY_SCHEDULING: _bindgen_ty_2 = 10;
-pub const _SC_TIMERS: _bindgen_ty_2 = 11;
-pub const _SC_ASYNCHRONOUS_IO: _bindgen_ty_2 = 12;
-pub const _SC_PRIORITIZED_IO: _bindgen_ty_2 = 13;
-pub const _SC_SYNCHRONIZED_IO: _bindgen_ty_2 = 14;
-pub const _SC_FSYNC: _bindgen_ty_2 = 15;
-pub const _SC_MAPPED_FILES: _bindgen_ty_2 = 16;
-pub const _SC_MEMLOCK: _bindgen_ty_2 = 17;
-pub const _SC_MEMLOCK_RANGE: _bindgen_ty_2 = 18;
-pub const _SC_MEMORY_PROTECTION: _bindgen_ty_2 = 19;
-pub const _SC_MESSAGE_PASSING: _bindgen_ty_2 = 20;
-pub const _SC_SEMAPHORES: _bindgen_ty_2 = 21;
-pub const _SC_SHARED_MEMORY_OBJECTS: _bindgen_ty_2 = 22;
-pub const _SC_AIO_LISTIO_MAX: _bindgen_ty_2 = 23;
-pub const _SC_AIO_MAX: _bindgen_ty_2 = 24;
-pub const _SC_AIO_PRIO_DELTA_MAX: _bindgen_ty_2 = 25;
-pub const _SC_DELAYTIMER_MAX: _bindgen_ty_2 = 26;
-pub const _SC_MQ_OPEN_MAX: _bindgen_ty_2 = 27;
-pub const _SC_MQ_PRIO_MAX: _bindgen_ty_2 = 28;
-pub const _SC_VERSION: _bindgen_ty_2 = 29;
-pub const _SC_PAGESIZE: _bindgen_ty_2 = 30;
-pub const _SC_RTSIG_MAX: _bindgen_ty_2 = 31;
-pub const _SC_SEM_NSEMS_MAX: _bindgen_ty_2 = 32;
-pub const _SC_SEM_VALUE_MAX: _bindgen_ty_2 = 33;
-pub const _SC_SIGQUEUE_MAX: _bindgen_ty_2 = 34;
-pub const _SC_TIMER_MAX: _bindgen_ty_2 = 35;
-pub const _SC_BC_BASE_MAX: _bindgen_ty_2 = 36;
-pub const _SC_BC_DIM_MAX: _bindgen_ty_2 = 37;
-pub const _SC_BC_SCALE_MAX: _bindgen_ty_2 = 38;
-pub const _SC_BC_STRING_MAX: _bindgen_ty_2 = 39;
-pub const _SC_COLL_WEIGHTS_MAX: _bindgen_ty_2 = 40;
-pub const _SC_EQUIV_CLASS_MAX: _bindgen_ty_2 = 41;
-pub const _SC_EXPR_NEST_MAX: _bindgen_ty_2 = 42;
-pub const _SC_LINE_MAX: _bindgen_ty_2 = 43;
-pub const _SC_RE_DUP_MAX: _bindgen_ty_2 = 44;
-pub const _SC_CHARCLASS_NAME_MAX: _bindgen_ty_2 = 45;
-pub const _SC_2_VERSION: _bindgen_ty_2 = 46;
-pub const _SC_2_C_BIND: _bindgen_ty_2 = 47;
-pub const _SC_2_C_DEV: _bindgen_ty_2 = 48;
-pub const _SC_2_FORT_DEV: _bindgen_ty_2 = 49;
-pub const _SC_2_FORT_RUN: _bindgen_ty_2 = 50;
-pub const _SC_2_SW_DEV: _bindgen_ty_2 = 51;
-pub const _SC_2_LOCALEDEF: _bindgen_ty_2 = 52;
-pub const _SC_PII: _bindgen_ty_2 = 53;
-pub const _SC_PII_XTI: _bindgen_ty_2 = 54;
-pub const _SC_PII_SOCKET: _bindgen_ty_2 = 55;
-pub const _SC_PII_INTERNET: _bindgen_ty_2 = 56;
-pub const _SC_PII_OSI: _bindgen_ty_2 = 57;
-pub const _SC_POLL: _bindgen_ty_2 = 58;
-pub const _SC_SELECT: _bindgen_ty_2 = 59;
-pub const _SC_UIO_MAXIOV: _bindgen_ty_2 = 60;
-pub const _SC_IOV_MAX: _bindgen_ty_2 = 60;
-pub const _SC_PII_INTERNET_STREAM: _bindgen_ty_2 = 61;
-pub const _SC_PII_INTERNET_DGRAM: _bindgen_ty_2 = 62;
-pub const _SC_PII_OSI_COTS: _bindgen_ty_2 = 63;
-pub const _SC_PII_OSI_CLTS: _bindgen_ty_2 = 64;
-pub const _SC_PII_OSI_M: _bindgen_ty_2 = 65;
-pub const _SC_T_IOV_MAX: _bindgen_ty_2 = 66;
-pub const _SC_THREADS: _bindgen_ty_2 = 67;
-pub const _SC_THREAD_SAFE_FUNCTIONS: _bindgen_ty_2 = 68;
-pub const _SC_GETGR_R_SIZE_MAX: _bindgen_ty_2 = 69;
-pub const _SC_GETPW_R_SIZE_MAX: _bindgen_ty_2 = 70;
-pub const _SC_LOGIN_NAME_MAX: _bindgen_ty_2 = 71;
-pub const _SC_TTY_NAME_MAX: _bindgen_ty_2 = 72;
-pub const _SC_THREAD_DESTRUCTOR_ITERATIONS: _bindgen_ty_2 = 73;
-pub const _SC_THREAD_KEYS_MAX: _bindgen_ty_2 = 74;
-pub const _SC_THREAD_STACK_MIN: _bindgen_ty_2 = 75;
-pub const _SC_THREAD_THREADS_MAX: _bindgen_ty_2 = 76;
-pub const _SC_THREAD_ATTR_STACKADDR: _bindgen_ty_2 = 77;
-pub const _SC_THREAD_ATTR_STACKSIZE: _bindgen_ty_2 = 78;
-pub const _SC_THREAD_PRIORITY_SCHEDULING: _bindgen_ty_2 = 79;
-pub const _SC_THREAD_PRIO_INHERIT: _bindgen_ty_2 = 80;
-pub const _SC_THREAD_PRIO_PROTECT: _bindgen_ty_2 = 81;
-pub const _SC_THREAD_PROCESS_SHARED: _bindgen_ty_2 = 82;
-pub const _SC_NPROCESSORS_CONF: _bindgen_ty_2 = 83;
-pub const _SC_NPROCESSORS_ONLN: _bindgen_ty_2 = 84;
-pub const _SC_PHYS_PAGES: _bindgen_ty_2 = 85;
-pub const _SC_AVPHYS_PAGES: _bindgen_ty_2 = 86;
-pub const _SC_ATEXIT_MAX: _bindgen_ty_2 = 87;
-pub const _SC_PASS_MAX: _bindgen_ty_2 = 88;
-pub const _SC_XOPEN_VERSION: _bindgen_ty_2 = 89;
-pub const _SC_XOPEN_XCU_VERSION: _bindgen_ty_2 = 90;
-pub const _SC_XOPEN_UNIX: _bindgen_ty_2 = 91;
-pub const _SC_XOPEN_CRYPT: _bindgen_ty_2 = 92;
-pub const _SC_XOPEN_ENH_I18N: _bindgen_ty_2 = 93;
-pub const _SC_XOPEN_SHM: _bindgen_ty_2 = 94;
-pub const _SC_2_CHAR_TERM: _bindgen_ty_2 = 95;
-pub const _SC_2_C_VERSION: _bindgen_ty_2 = 96;
-pub const _SC_2_UPE: _bindgen_ty_2 = 97;
-pub const _SC_XOPEN_XPG2: _bindgen_ty_2 = 98;
-pub const _SC_XOPEN_XPG3: _bindgen_ty_2 = 99;
-pub const _SC_XOPEN_XPG4: _bindgen_ty_2 = 100;
-pub const _SC_CHAR_BIT: _bindgen_ty_2 = 101;
-pub const _SC_CHAR_MAX: _bindgen_ty_2 = 102;
-pub const _SC_CHAR_MIN: _bindgen_ty_2 = 103;
-pub const _SC_INT_MAX: _bindgen_ty_2 = 104;
-pub const _SC_INT_MIN: _bindgen_ty_2 = 105;
-pub const _SC_LONG_BIT: _bindgen_ty_2 = 106;
-pub const _SC_WORD_BIT: _bindgen_ty_2 = 107;
-pub const _SC_MB_LEN_MAX: _bindgen_ty_2 = 108;
-pub const _SC_NZERO: _bindgen_ty_2 = 109;
-pub const _SC_SSIZE_MAX: _bindgen_ty_2 = 110;
-pub const _SC_SCHAR_MAX: _bindgen_ty_2 = 111;
-pub const _SC_SCHAR_MIN: _bindgen_ty_2 = 112;
-pub const _SC_SHRT_MAX: _bindgen_ty_2 = 113;
-pub const _SC_SHRT_MIN: _bindgen_ty_2 = 114;
-pub const _SC_UCHAR_MAX: _bindgen_ty_2 = 115;
-pub const _SC_UINT_MAX: _bindgen_ty_2 = 116;
-pub const _SC_ULONG_MAX: _bindgen_ty_2 = 117;
-pub const _SC_USHRT_MAX: _bindgen_ty_2 = 118;
-pub const _SC_NL_ARGMAX: _bindgen_ty_2 = 119;
-pub const _SC_NL_LANGMAX: _bindgen_ty_2 = 120;
-pub const _SC_NL_MSGMAX: _bindgen_ty_2 = 121;
-pub const _SC_NL_NMAX: _bindgen_ty_2 = 122;
-pub const _SC_NL_SETMAX: _bindgen_ty_2 = 123;
-pub const _SC_NL_TEXTMAX: _bindgen_ty_2 = 124;
-pub const _SC_XBS5_ILP32_OFF32: _bindgen_ty_2 = 125;
-pub const _SC_XBS5_ILP32_OFFBIG: _bindgen_ty_2 = 126;
-pub const _SC_XBS5_LP64_OFF64: _bindgen_ty_2 = 127;
-pub const _SC_XBS5_LPBIG_OFFBIG: _bindgen_ty_2 = 128;
-pub const _SC_XOPEN_LEGACY: _bindgen_ty_2 = 129;
-pub const _SC_XOPEN_REALTIME: _bindgen_ty_2 = 130;
-pub const _SC_XOPEN_REALTIME_THREADS: _bindgen_ty_2 = 131;
-pub const _SC_ADVISORY_INFO: _bindgen_ty_2 = 132;
-pub const _SC_BARRIERS: _bindgen_ty_2 = 133;
-pub const _SC_BASE: _bindgen_ty_2 = 134;
-pub const _SC_C_LANG_SUPPORT: _bindgen_ty_2 = 135;
-pub const _SC_C_LANG_SUPPORT_R: _bindgen_ty_2 = 136;
-pub const _SC_CLOCK_SELECTION: _bindgen_ty_2 = 137;
-pub const _SC_CPUTIME: _bindgen_ty_2 = 138;
-pub const _SC_THREAD_CPUTIME: _bindgen_ty_2 = 139;
-pub const _SC_DEVICE_IO: _bindgen_ty_2 = 140;
-pub const _SC_DEVICE_SPECIFIC: _bindgen_ty_2 = 141;
-pub const _SC_DEVICE_SPECIFIC_R: _bindgen_ty_2 = 142;
-pub const _SC_FD_MGMT: _bindgen_ty_2 = 143;
-pub const _SC_FIFO: _bindgen_ty_2 = 144;
-pub const _SC_PIPE: _bindgen_ty_2 = 145;
-pub const _SC_FILE_ATTRIBUTES: _bindgen_ty_2 = 146;
-pub const _SC_FILE_LOCKING: _bindgen_ty_2 = 147;
-pub const _SC_FILE_SYSTEM: _bindgen_ty_2 = 148;
-pub const _SC_MONOTONIC_CLOCK: _bindgen_ty_2 = 149;
-pub const _SC_MULTI_PROCESS: _bindgen_ty_2 = 150;
-pub const _SC_SINGLE_PROCESS: _bindgen_ty_2 = 151;
-pub const _SC_NETWORKING: _bindgen_ty_2 = 152;
-pub const _SC_READER_WRITER_LOCKS: _bindgen_ty_2 = 153;
-pub const _SC_SPIN_LOCKS: _bindgen_ty_2 = 154;
-pub const _SC_REGEXP: _bindgen_ty_2 = 155;
-pub const _SC_REGEX_VERSION: _bindgen_ty_2 = 156;
-pub const _SC_SHELL: _bindgen_ty_2 = 157;
-pub const _SC_SIGNALS: _bindgen_ty_2 = 158;
-pub const _SC_SPAWN: _bindgen_ty_2 = 159;
-pub const _SC_SPORADIC_SERVER: _bindgen_ty_2 = 160;
-pub const _SC_THREAD_SPORADIC_SERVER: _bindgen_ty_2 = 161;
-pub const _SC_SYSTEM_DATABASE: _bindgen_ty_2 = 162;
-pub const _SC_SYSTEM_DATABASE_R: _bindgen_ty_2 = 163;
-pub const _SC_TIMEOUTS: _bindgen_ty_2 = 164;
-pub const _SC_TYPED_MEMORY_OBJECTS: _bindgen_ty_2 = 165;
-pub const _SC_USER_GROUPS: _bindgen_ty_2 = 166;
-pub const _SC_USER_GROUPS_R: _bindgen_ty_2 = 167;
-pub const _SC_2_PBS: _bindgen_ty_2 = 168;
-pub const _SC_2_PBS_ACCOUNTING: _bindgen_ty_2 = 169;
-pub const _SC_2_PBS_LOCATE: _bindgen_ty_2 = 170;
-pub const _SC_2_PBS_MESSAGE: _bindgen_ty_2 = 171;
-pub const _SC_2_PBS_TRACK: _bindgen_ty_2 = 172;
-pub const _SC_SYMLOOP_MAX: _bindgen_ty_2 = 173;
-pub const _SC_STREAMS: _bindgen_ty_2 = 174;
-pub const _SC_2_PBS_CHECKPOINT: _bindgen_ty_2 = 175;
-pub const _SC_V6_ILP32_OFF32: _bindgen_ty_2 = 176;
-pub const _SC_V6_ILP32_OFFBIG: _bindgen_ty_2 = 177;
-pub const _SC_V6_LP64_OFF64: _bindgen_ty_2 = 178;
-pub const _SC_V6_LPBIG_OFFBIG: _bindgen_ty_2 = 179;
-pub const _SC_HOST_NAME_MAX: _bindgen_ty_2 = 180;
-pub const _SC_TRACE: _bindgen_ty_2 = 181;
-pub const _SC_TRACE_EVENT_FILTER: _bindgen_ty_2 = 182;
-pub const _SC_TRACE_INHERIT: _bindgen_ty_2 = 183;
-pub const _SC_TRACE_LOG: _bindgen_ty_2 = 184;
-pub const _SC_LEVEL1_ICACHE_SIZE: _bindgen_ty_2 = 185;
-pub const _SC_LEVEL1_ICACHE_ASSOC: _bindgen_ty_2 = 186;
-pub const _SC_LEVEL1_ICACHE_LINESIZE: _bindgen_ty_2 = 187;
-pub const _SC_LEVEL1_DCACHE_SIZE: _bindgen_ty_2 = 188;
-pub const _SC_LEVEL1_DCACHE_ASSOC: _bindgen_ty_2 = 189;
-pub const _SC_LEVEL1_DCACHE_LINESIZE: _bindgen_ty_2 = 190;
-pub const _SC_LEVEL2_CACHE_SIZE: _bindgen_ty_2 = 191;
-pub const _SC_LEVEL2_CACHE_ASSOC: _bindgen_ty_2 = 192;
-pub const _SC_LEVEL2_CACHE_LINESIZE: _bindgen_ty_2 = 193;
-pub const _SC_LEVEL3_CACHE_SIZE: _bindgen_ty_2 = 194;
-pub const _SC_LEVEL3_CACHE_ASSOC: _bindgen_ty_2 = 195;
-pub const _SC_LEVEL3_CACHE_LINESIZE: _bindgen_ty_2 = 196;
-pub const _SC_LEVEL4_CACHE_SIZE: _bindgen_ty_2 = 197;
-pub const _SC_LEVEL4_CACHE_ASSOC: _bindgen_ty_2 = 198;
-pub const _SC_LEVEL4_CACHE_LINESIZE: _bindgen_ty_2 = 199;
-pub const _SC_IPV6: _bindgen_ty_2 = 235;
-pub const _SC_RAW_SOCKETS: _bindgen_ty_2 = 236;
-pub const _SC_V7_ILP32_OFF32: _bindgen_ty_2 = 237;
-pub const _SC_V7_ILP32_OFFBIG: _bindgen_ty_2 = 238;
-pub const _SC_V7_LP64_OFF64: _bindgen_ty_2 = 239;
-pub const _SC_V7_LPBIG_OFFBIG: _bindgen_ty_2 = 240;
-pub const _SC_SS_REPL_MAX: _bindgen_ty_2 = 241;
-pub const _SC_TRACE_EVENT_NAME_MAX: _bindgen_ty_2 = 242;
-pub const _SC_TRACE_NAME_MAX: _bindgen_ty_2 = 243;
-pub const _SC_TRACE_SYS_MAX: _bindgen_ty_2 = 244;
-pub const _SC_TRACE_USER_EVENT_MAX: _bindgen_ty_2 = 245;
-pub const _SC_XOPEN_STREAMS: _bindgen_ty_2 = 246;
-pub const _SC_THREAD_ROBUST_PRIO_INHERIT: _bindgen_ty_2 = 247;
-pub const _SC_THREAD_ROBUST_PRIO_PROTECT: _bindgen_ty_2 = 248;
-pub const _SC_MINSIGSTKSZ: _bindgen_ty_2 = 249;
-pub const _SC_SIGSTKSZ: _bindgen_ty_2 = 250;
-pub type _bindgen_ty_2 = ::std::os::raw::c_uint;
-pub const _CS_PATH: _bindgen_ty_3 = 0;
-pub const _CS_V6_WIDTH_RESTRICTED_ENVS: _bindgen_ty_3 = 1;
-pub const _CS_GNU_LIBC_VERSION: _bindgen_ty_3 = 2;
-pub const _CS_GNU_LIBPTHREAD_VERSION: _bindgen_ty_3 = 3;
-pub const _CS_V5_WIDTH_RESTRICTED_ENVS: _bindgen_ty_3 = 4;
-pub const _CS_V7_WIDTH_RESTRICTED_ENVS: _bindgen_ty_3 = 5;
-pub const _CS_LFS_CFLAGS: _bindgen_ty_3 = 1000;
-pub const _CS_LFS_LDFLAGS: _bindgen_ty_3 = 1001;
-pub const _CS_LFS_LIBS: _bindgen_ty_3 = 1002;
-pub const _CS_LFS_LINTFLAGS: _bindgen_ty_3 = 1003;
-pub const _CS_LFS64_CFLAGS: _bindgen_ty_3 = 1004;
-pub const _CS_LFS64_LDFLAGS: _bindgen_ty_3 = 1005;
-pub const _CS_LFS64_LIBS: _bindgen_ty_3 = 1006;
-pub const _CS_LFS64_LINTFLAGS: _bindgen_ty_3 = 1007;
-pub const _CS_XBS5_ILP32_OFF32_CFLAGS: _bindgen_ty_3 = 1100;
-pub const _CS_XBS5_ILP32_OFF32_LDFLAGS: _bindgen_ty_3 = 1101;
-pub const _CS_XBS5_ILP32_OFF32_LIBS: _bindgen_ty_3 = 1102;
-pub const _CS_XBS5_ILP32_OFF32_LINTFLAGS: _bindgen_ty_3 = 1103;
-pub const _CS_XBS5_ILP32_OFFBIG_CFLAGS: _bindgen_ty_3 = 1104;
-pub const _CS_XBS5_ILP32_OFFBIG_LDFLAGS: _bindgen_ty_3 = 1105;
-pub const _CS_XBS5_ILP32_OFFBIG_LIBS: _bindgen_ty_3 = 1106;
-pub const _CS_XBS5_ILP32_OFFBIG_LINTFLAGS: _bindgen_ty_3 = 1107;
-pub const _CS_XBS5_LP64_OFF64_CFLAGS: _bindgen_ty_3 = 1108;
-pub const _CS_XBS5_LP64_OFF64_LDFLAGS: _bindgen_ty_3 = 1109;
-pub const _CS_XBS5_LP64_OFF64_LIBS: _bindgen_ty_3 = 1110;
-pub const _CS_XBS5_LP64_OFF64_LINTFLAGS: _bindgen_ty_3 = 1111;
-pub const _CS_XBS5_LPBIG_OFFBIG_CFLAGS: _bindgen_ty_3 = 1112;
-pub const _CS_XBS5_LPBIG_OFFBIG_LDFLAGS: _bindgen_ty_3 = 1113;
-pub const _CS_XBS5_LPBIG_OFFBIG_LIBS: _bindgen_ty_3 = 1114;
-pub const _CS_XBS5_LPBIG_OFFBIG_LINTFLAGS: _bindgen_ty_3 = 1115;
-pub const _CS_POSIX_V6_ILP32_OFF32_CFLAGS: _bindgen_ty_3 = 1116;
-pub const _CS_POSIX_V6_ILP32_OFF32_LDFLAGS: _bindgen_ty_3 = 1117;
-pub const _CS_POSIX_V6_ILP32_OFF32_LIBS: _bindgen_ty_3 = 1118;
-pub const _CS_POSIX_V6_ILP32_OFF32_LINTFLAGS: _bindgen_ty_3 = 1119;
-pub const _CS_POSIX_V6_ILP32_OFFBIG_CFLAGS: _bindgen_ty_3 = 1120;
-pub const _CS_POSIX_V6_ILP32_OFFBIG_LDFLAGS: _bindgen_ty_3 = 1121;
-pub const _CS_POSIX_V6_ILP32_OFFBIG_LIBS: _bindgen_ty_3 = 1122;
-pub const _CS_POSIX_V6_ILP32_OFFBIG_LINTFLAGS: _bindgen_ty_3 = 1123;
-pub const _CS_POSIX_V6_LP64_OFF64_CFLAGS: _bindgen_ty_3 = 1124;
-pub const _CS_POSIX_V6_LP64_OFF64_LDFLAGS: _bindgen_ty_3 = 1125;
-pub const _CS_POSIX_V6_LP64_OFF64_LIBS: _bindgen_ty_3 = 1126;
-pub const _CS_POSIX_V6_LP64_OFF64_LINTFLAGS: _bindgen_ty_3 = 1127;
-pub const _CS_POSIX_V6_LPBIG_OFFBIG_CFLAGS: _bindgen_ty_3 = 1128;
-pub const _CS_POSIX_V6_LPBIG_OFFBIG_LDFLAGS: _bindgen_ty_3 = 1129;
-pub const _CS_POSIX_V6_LPBIG_OFFBIG_LIBS: _bindgen_ty_3 = 1130;
-pub const _CS_POSIX_V6_LPBIG_OFFBIG_LINTFLAGS: _bindgen_ty_3 = 1131;
-pub const _CS_POSIX_V7_ILP32_OFF32_CFLAGS: _bindgen_ty_3 = 1132;
-pub const _CS_POSIX_V7_ILP32_OFF32_LDFLAGS: _bindgen_ty_3 = 1133;
-pub const _CS_POSIX_V7_ILP32_OFF32_LIBS: _bindgen_ty_3 = 1134;
-pub const _CS_POSIX_V7_ILP32_OFF32_LINTFLAGS: _bindgen_ty_3 = 1135;
-pub const _CS_POSIX_V7_ILP32_OFFBIG_CFLAGS: _bindgen_ty_3 = 1136;
-pub const _CS_POSIX_V7_ILP32_OFFBIG_LDFLAGS: _bindgen_ty_3 = 1137;
-pub const _CS_POSIX_V7_ILP32_OFFBIG_LIBS: _bindgen_ty_3 = 1138;
-pub const _CS_POSIX_V7_ILP32_OFFBIG_LINTFLAGS: _bindgen_ty_3 = 1139;
-pub const _CS_POSIX_V7_LP64_OFF64_CFLAGS: _bindgen_ty_3 = 1140;
-pub const _CS_POSIX_V7_LP64_OFF64_LDFLAGS: _bindgen_ty_3 = 1141;
-pub const _CS_POSIX_V7_LP64_OFF64_LIBS: _bindgen_ty_3 = 1142;
-pub const _CS_POSIX_V7_LP64_OFF64_LINTFLAGS: _bindgen_ty_3 = 1143;
-pub const _CS_POSIX_V7_LPBIG_OFFBIG_CFLAGS: _bindgen_ty_3 = 1144;
-pub const _CS_POSIX_V7_LPBIG_OFFBIG_LDFLAGS: _bindgen_ty_3 = 1145;
-pub const _CS_POSIX_V7_LPBIG_OFFBIG_LIBS: _bindgen_ty_3 = 1146;
-pub const _CS_POSIX_V7_LPBIG_OFFBIG_LINTFLAGS: _bindgen_ty_3 = 1147;
-pub const _CS_V6_ENV: _bindgen_ty_3 = 1148;
-pub const _CS_V7_ENV: _bindgen_ty_3 = 1149;
-pub type _bindgen_ty_3 = ::std::os::raw::c_uint;
-unsafe extern "C" {
-    pub fn pathconf(
-        __path: *const ::std::os::raw::c_char,
-        __name: ::std::os::raw::c_int,
+        fd: ::std::os::raw::c_int,
+        offset: ::std::os::raw::c_long,
+        whence: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_long;
 }
 unsafe extern "C" {
-    pub fn fpathconf(
-        __fd: ::std::os::raw::c_int,
-        __name: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_long;
+    pub fn fsync(fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn sysconf(__name: ::std::os::raw::c_int) -> ::std::os::raw::c_long;
+    pub fn ftruncate(fd: ::std::os::raw::c_int, length: off_t) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn confstr(
-        __name: ::std::os::raw::c_int,
-        __buf: *mut ::std::os::raw::c_char,
-        __len: usize,
-    ) -> usize;
+    pub fn dup(fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn getpid() -> __pid_t;
+    pub fn dup2(fd: ::std::os::raw::c_int, fd2: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn getppid() -> __pid_t;
+    pub fn pipe(fds: *mut ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn getpgrp() -> __pid_t;
-}
-unsafe extern "C" {
-    pub fn __getpgid(__pid: __pid_t) -> __pid_t;
-}
-unsafe extern "C" {
-    pub fn getpgid(__pid: __pid_t) -> __pid_t;
-}
-unsafe extern "C" {
-    pub fn setpgid(__pid: __pid_t, __pgid: __pid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn setpgrp() -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn setsid() -> __pid_t;
-}
-unsafe extern "C" {
-    pub fn getsid(__pid: __pid_t) -> __pid_t;
-}
-unsafe extern "C" {
-    pub fn getuid() -> __uid_t;
-}
-unsafe extern "C" {
-    pub fn geteuid() -> __uid_t;
-}
-unsafe extern "C" {
-    pub fn getgid() -> __gid_t;
-}
-unsafe extern "C" {
-    pub fn getegid() -> __gid_t;
-}
-unsafe extern "C" {
-    pub fn getgroups(__size: ::std::os::raw::c_int, __list: *mut __gid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn group_member(__gid: __gid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn setuid(__uid: __uid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn setreuid(__ruid: __uid_t, __euid: __uid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn seteuid(__uid: __uid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn setgid(__gid: __gid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn setregid(__rgid: __gid_t, __egid: __gid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn setegid(__gid: __gid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn getresuid(
-        __ruid: *mut __uid_t,
-        __euid: *mut __uid_t,
-        __suid: *mut __uid_t,
+    pub fn access(
+        path: *const ::std::os::raw::c_char,
+        mode: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn getresgid(
-        __rgid: *mut __gid_t,
-        __egid: *mut __gid_t,
-        __sgid: *mut __gid_t,
-    ) -> ::std::os::raw::c_int;
+    pub fn unlink(path: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn setresuid(__ruid: __uid_t, __euid: __uid_t, __suid: __uid_t) -> ::std::os::raw::c_int;
+    pub fn rmdir(path: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn setresgid(__rgid: __gid_t, __egid: __gid_t, __sgid: __gid_t) -> ::std::os::raw::c_int;
+    pub fn chdir(path: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn fork() -> __pid_t;
-}
-unsafe extern "C" {
-    pub fn vfork() -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn _Fork() -> __pid_t;
-}
-unsafe extern "C" {
-    pub fn ttyname(__fd: ::std::os::raw::c_int) -> *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub fn ttyname_r(
-        __fd: ::std::os::raw::c_int,
-        __buf: *mut ::std::os::raw::c_char,
-        __buflen: usize,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn isatty(__fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn ttyslot() -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn link(
-        __from: *const ::std::os::raw::c_char,
-        __to: *const ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn linkat(
-        __fromfd: ::std::os::raw::c_int,
-        __from: *const ::std::os::raw::c_char,
-        __tofd: ::std::os::raw::c_int,
-        __to: *const ::std::os::raw::c_char,
-        __flags: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn symlink(
-        __from: *const ::std::os::raw::c_char,
-        __to: *const ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn readlink(
-        __path: *const ::std::os::raw::c_char,
-        __buf: *mut ::std::os::raw::c_char,
-        __len: usize,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn symlinkat(
-        __from: *const ::std::os::raw::c_char,
-        __tofd: ::std::os::raw::c_int,
-        __to: *const ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn readlinkat(
-        __fd: ::std::os::raw::c_int,
-        __path: *const ::std::os::raw::c_char,
-        __buf: *mut ::std::os::raw::c_char,
-        __len: usize,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn unlink(__name: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn unlinkat(
-        __fd: ::std::os::raw::c_int,
-        __name: *const ::std::os::raw::c_char,
-        __flag: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn rmdir(__path: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn tcgetpgrp(__fd: ::std::os::raw::c_int) -> __pid_t;
-}
-unsafe extern "C" {
-    pub fn tcsetpgrp(__fd: ::std::os::raw::c_int, __pgrp_id: __pid_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn getlogin() -> *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub fn getlogin_r(
-        __name: *mut ::std::os::raw::c_char,
-        __name_len: usize,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn setlogin(__name: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub static mut optarg: *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub static mut optind: ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub static mut opterr: ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub static mut optopt: ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn getopt(
-        ___argc: ::std::os::raw::c_int,
-        ___argv: *const *mut ::std::os::raw::c_char,
-        __shortopts: *const ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn gethostname(__name: *mut ::std::os::raw::c_char, __len: usize) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn sethostname(
-        __name: *const ::std::os::raw::c_char,
-        __len: usize,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn sethostid(__id: ::std::os::raw::c_long) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn getdomainname(
-        __name: *mut ::std::os::raw::c_char,
-        __len: usize,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn setdomainname(
-        __name: *const ::std::os::raw::c_char,
-        __len: usize,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn vhangup() -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn revoke(__file: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn profil(
-        __sample_buffer: *mut ::std::os::raw::c_ushort,
-        __size: usize,
-        __offset: usize,
-        __scale: ::std::os::raw::c_uint,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn acct(__name: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn getusershell() -> *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub fn endusershell();
-}
-unsafe extern "C" {
-    pub fn setusershell();
-}
-unsafe extern "C" {
-    pub fn daemon(
-        __nochdir: ::std::os::raw::c_int,
-        __noclose: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn chroot(__path: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn getpass(__prompt: *const ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
-}
-unsafe extern "C" {
-    pub fn fsync(__fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn syncfs(__fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn gethostid() -> ::std::os::raw::c_long;
-}
-unsafe extern "C" {
-    pub fn sync();
-}
-unsafe extern "C" {
-    pub fn getpagesize() -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn getdtablesize() -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn truncate(
-        __file: *const ::std::os::raw::c_char,
-        __length: __off_t,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn truncate64(
-        __file: *const ::std::os::raw::c_char,
-        __length: __off64_t,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn ftruncate(__fd: ::std::os::raw::c_int, __length: __off_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn ftruncate64(__fd: ::std::os::raw::c_int, __length: __off64_t) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn brk(__addr: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn sbrk(__delta: isize) -> *mut ::std::os::raw::c_void;
-}
-unsafe extern "C" {
-    pub fn syscall(__sysno: ::std::os::raw::c_long, ...) -> ::std::os::raw::c_long;
-}
-unsafe extern "C" {
-    pub fn lockf(
-        __fd: ::std::os::raw::c_int,
-        __cmd: ::std::os::raw::c_int,
-        __len: __off_t,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn lockf64(
-        __fd: ::std::os::raw::c_int,
-        __cmd: ::std::os::raw::c_int,
-        __len: __off64_t,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn copy_file_range(
-        __infd: ::std::os::raw::c_int,
-        __pinoff: *mut __off64_t,
-        __outfd: ::std::os::raw::c_int,
-        __poutoff: *mut __off64_t,
-        __length: usize,
-        __flags: ::std::os::raw::c_uint,
-    ) -> isize;
-}
-unsafe extern "C" {
-    pub fn fdatasync(__fildes: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn crypt(
-        __key: *const ::std::os::raw::c_char,
-        __salt: *const ::std::os::raw::c_char,
+    pub fn getcwd(
+        buf: *mut ::std::os::raw::c_char,
+        size: ::std::os::raw::c_int,
     ) -> *mut ::std::os::raw::c_char;
 }
 unsafe extern "C" {
-    pub fn swab(
-        __from: *const ::std::os::raw::c_void,
-        __to: *mut ::std::os::raw::c_void,
-        __n: isize,
-    );
+    pub fn getpid() -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn getentropy(
-        __buffer: *mut ::std::os::raw::c_void,
-        __length: usize,
+    pub fn sysconf(name: ::std::os::raw::c_int) -> ::std::os::raw::c_long;
+}
+unsafe extern "C" {
+    pub fn sleep(seconds: ::std::os::raw::c_uint) -> ::std::os::raw::c_uint;
+}
+unsafe extern "C" {
+    pub fn usleep(usec: useconds_t) -> ::std::os::raw::c_int;
+}
+unsafe extern "C" {
+    pub fn setenv(
+        name: *const ::std::os::raw::c_char,
+        value: *const ::std::os::raw::c_char,
+        overwrite: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
-    pub fn close_range(
-        __fd: ::std::os::raw::c_uint,
-        __max_fd: ::std::os::raw::c_uint,
-        __flags: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn gettid() -> __pid_t;
+    pub fn unsetenv(name: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
     pub fn webrogueSetVulkan(vulkan: *mut ::std::os::raw::c_void);
@@ -2781,28 +1211,16 @@ unsafe extern "C" {
 unsafe extern "C" {
     pub fn webrogue_virgl_pop_shmem(out_size: *mut usize) -> *mut ::std::os::raw::c_void;
 }
-pub type __builtin_va_list = [__va_list_tag; 1usize];
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct __va_list_tag {
-    pub gp_offset: ::std::os::raw::c_uint,
-    pub fp_offset: ::std::os::raw::c_uint,
-    pub overflow_arg_area: *mut ::std::os::raw::c_void,
-    pub reg_save_area: *mut ::std::os::raw::c_void,
+pub struct __crt_locale_data {
+    pub _address: u8,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of __va_list_tag"][::std::mem::size_of::<__va_list_tag>() - 24usize];
-    ["Alignment of __va_list_tag"][::std::mem::align_of::<__va_list_tag>() - 8usize];
-    ["Offset of field: __va_list_tag::gp_offset"]
-        [::std::mem::offset_of!(__va_list_tag, gp_offset) - 0usize];
-    ["Offset of field: __va_list_tag::fp_offset"]
-        [::std::mem::offset_of!(__va_list_tag, fp_offset) - 4usize];
-    ["Offset of field: __va_list_tag::overflow_arg_area"]
-        [::std::mem::offset_of!(__va_list_tag, overflow_arg_area) - 8usize];
-    ["Offset of field: __va_list_tag::reg_save_area"]
-        [::std::mem::offset_of!(__va_list_tag, reg_save_area) - 16usize];
-};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct __crt_multibyte_data {
+    pub _address: u8,
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct pipe_box {

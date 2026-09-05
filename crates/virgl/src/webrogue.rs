@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ffi::{c_int, c_void};
 use std::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use crate::bindings;
@@ -60,9 +60,22 @@ fn state() -> &'static Mutex<State> {
     STATE.get_or_init(|| Mutex::new(State { context: None }))
 }
 
-fn completed() -> &'static Mutex<Vec<u64>> {
-    static COMPLETED: OnceLock<Mutex<Vec<u64>>> = OnceLock::new();
-    COMPLETED.get_or_init(|| Mutex::new(Vec::new()))
+fn completed() -> &'static CompletedQueue {
+    static COMPLETED: OnceLock<CompletedQueue> = OnceLock::new();
+    COMPLETED.get_or_init(|| CompletedQueue {
+        queue: Mutex::new(Vec::new()),
+        cv: Condvar::new(),
+    })
+}
+
+/// Fence-completion queue paired with a condvar so host-side waiters
+/// (`sync_wait`) wake up the moment `write_context_fence` fires instead of
+/// polling at the OS sleep granularity. Windows `Sleep(1)` is ~15.6 ms, so the
+/// old 1 ms poll loop was actually sampling at ~64 Hz and every fence took at
+/// least one full sleep quantum per wait.
+struct CompletedQueue {
+    queue: Mutex<Vec<u64>>,
+    cv: Condvar,
 }
 
 fn decode_triplet(data: &[u32], index: usize) -> (u32, u64) {
@@ -85,7 +98,10 @@ fn signal_sync(sync: &Arc<Sync>, value: u64) {
 /// timeline up to and including the completed one (MERGEABLE fences imply earlier
 /// submits).
 fn drain_completed(st: &mut State) {
-    let ids = std::mem::take(&mut *completed().lock().unwrap());
+    let ids = std::mem::take(&mut *completed().queue.lock().unwrap());
+    if !ids.is_empty() {
+        completed().cv.notify_all();
+    }
     if ids.is_empty() {
         return;
     }
@@ -119,7 +135,7 @@ fn drain_completed(st: &mut State) {
 
 pub(crate) fn init(ctx_flags: c_int) -> c_int {
     // Make sure the fence-id queue exists before venus can call back into it.
-    completed().lock().unwrap().clear();
+    completed().queue.lock().unwrap().clear();
     state();
 
     static CALLBACKS: OnceLock<Box<bindings::virgl_renderer_callbacks>> = OnceLock::new();
@@ -134,8 +150,10 @@ pub(crate) fn init(ctx_flags: c_int) -> c_int {
             _ring_idx: u32,
             fence_id: u64,
         ) {
-            if let Ok(mut queue) = completed().lock() {
-                queue.push(fence_id);
+            let queue = &completed();
+            if let Ok(mut done) = queue.queue.lock() {
+                done.push(fence_id);
+                queue.cv.notify_all();
             }
         }
         Box::new(bindings::virgl_renderer_callbacks {
@@ -165,7 +183,7 @@ pub(crate) fn init(ctx_flags: c_int) -> c_int {
 
 pub(crate) fn cleanup() {
     context_destroy();
-    completed().lock().unwrap().clear();
+    completed().queue.lock().unwrap().clear();
     unsafe { bindings::virgl_renderer_cleanup(ptr::null_mut()) };
 }
 
@@ -229,7 +247,7 @@ pub(crate) fn context_init(capset_id: u32) -> c_int {
 
 pub(crate) fn context_destroy() {
     // Drop any fence completions whose TimelineSubmits are destroyed below.
-    completed().lock().unwrap().clear();
+    completed().queue.lock().unwrap().clear();
 
     let st = state();
     let mut st = st.lock().unwrap();
@@ -371,6 +389,10 @@ pub(crate) fn sync_write(sync_id: u32, value: u64) -> c_int {
 ///
 /// Returns 0 (ready), 2 (VK_TIMEOUT), or a negative errno on error.
 pub(crate) fn sync_wait(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
+    sync_wait_inner(flags, timeout_ms, syncs)
+}
+
+fn sync_wait_inner(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
     let st = state();
     let mut st = st.lock().unwrap();
 
@@ -431,7 +453,19 @@ pub(crate) fn sync_wait(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
                 return 2; // VK_TIMEOUT
             }
         }
-        std::thread::sleep(Duration::from_millis(1));
+        {
+            // Wait for a fence-completion notification instead of blind-sleeping.
+            // On Windows `Sleep(1)` quantizes to ~15.6 ms, so a fence that
+            // completes between polls previously cost a full sleep quantum per
+            // check; the condvar wakes us the moment the fence callback fires.
+            // The queue is consumed by drain_completed() at the top of the next
+            // iteration, so entries that arrive while we hold the lock are safe
+            // to leave behind.
+            let queue = completed().queue.lock().unwrap();
+            if queue.is_empty() {
+                let _ = completed().cv.wait_timeout(queue, Duration::from_millis(1));
+            }
+        }
     }
 }
 

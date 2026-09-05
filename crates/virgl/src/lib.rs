@@ -16,6 +16,25 @@ use crate::bindings::{
     VIRGL_RENDERER_VENUS,
 };
 
+/// Raise the Windows multimedia timer resolution to 1ms for the whole process.
+/// Without it, `Sleep(1)` stalls ~15.6ms, and the MESA venus guest's wait/backoff
+/// loops (vn_relax) spend ~15ms per iteration on Windows vs microseconds on
+/// Linux - which throttled the frame rate to single digits.
+#[cfg(target_os = "windows")]
+fn raise_timer_resolution() {
+    #[link(name = "winmm")]
+    extern "system" {
+        fn timeBeginPeriod(uPeriod: u32) -> u32;
+    }
+    static RAISED: OnceLock<()> = OnceLock::new();
+    RAISED.get_or_init(|| unsafe {
+        timeBeginPeriod(1);
+    });
+}
+
+#[cfg(not(target_os = "windows"))]
+fn raise_timer_resolution() {}
+
 lazy_static::lazy_static! {
     static ref SHARED_RENDERER: OnceLock<Arc<Renderer>> = OnceLock::new();
 }
@@ -143,6 +162,7 @@ impl Renderer {
                 | VIRGL_RENDERER_RENDER_SERVER) as c_int,
         );
         assert_eq!(ret, 0);
+        raise_timer_resolution();
 
         Arc::new(Self {
             session: Mutex::new(()),
@@ -241,9 +261,9 @@ impl ContextContainer {
         crate::shadow_blob::flush_all();
     }
 
-/// Blocks on the host until the syncs are satisfied or `timeout` (ms; u32::MAX
-/// waits forever) elapses. Returns 0 on ready, 2 (VK_TIMEOUT), or a negative
-/// errno on error. The guest can't poll host fds, so the wait happens here.
+    /// Blocks on the host until the syncs are satisfied or `timeout` (ms; u32::MAX
+    /// waits forever) elapses. Returns 0 on ready, 2 (VK_TIMEOUT), or a negative
+    /// errno on error. The guest can't poll host fds, so the wait happens here.
     pub fn sync_wait(&self, flags: u32, timeout: u32, syncs: &[u32]) -> i32 {
         // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
