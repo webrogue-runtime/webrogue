@@ -61,6 +61,33 @@ void *webrogueGetVulkan(void)
    return webrogueVulkan;
 }
 
+static void (*webrogue_retire_fence_cb)(uint32_t ctx_id, uint32_t ring_idx,
+                                        uint64_t fence_id) = NULL;
+
+static void
+webrogue_vkr_retire_fence(uint32_t ctx_id, uint32_t ring_idx, uint64_t fence_id)
+{
+   webrogue_retire_fence_cb(ctx_id, ring_idx, fence_id);
+}
+
+/* static: vkr_state.cbs keeps pointing at it for the renderer's lifetime */
+static const struct vkr_renderer_callbacks webrogue_vkr_cbs = {
+   /* logging already goes through the global virgl log handler set by
+    * webrogue_virgl_stub_fn; the same-process render server passes NULL
+    * here as well */
+   .debug_logger = NULL,
+   .retire_fence = webrogue_vkr_retire_fence,
+};
+
+bool
+webrogue_vkr_init(uint32_t flags,
+                  void (*retire_fence)(uint32_t ctx_id, uint32_t ring_idx,
+                                       uint64_t fence_id))
+{
+   webrogue_retire_fence_cb = retire_fence;
+   return vkr_renderer_init(flags, &webrogue_vkr_cbs);
+}
+
 void *webrogue_get_host_blob(uint64_t blob_id)
 {
    /* single-client webrogue renderer always uses context id 1 */

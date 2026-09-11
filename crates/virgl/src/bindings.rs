@@ -3,245 +3,91 @@
 #![allow(dead_code)]
 #![allow(nonstandard_style)]
 
-pub const VIRGL_RENDERER_UNSTABLE_APIS: u32 = 1;
-pub const VIRGL_RENDERER_CALLBACKS_VERSION: u32 = 4;
-pub const VIRGL_RENDERER_USE_EGL: u32 = 1;
-pub const VIRGL_RENDERER_THREAD_SYNC: u32 = 2;
-pub const VIRGL_RENDERER_USE_GLX: u32 = 4;
-pub const VIRGL_RENDERER_USE_SURFACELESS: u32 = 8;
-pub const VIRGL_RENDERER_USE_GLES: u32 = 16;
-pub const VIRGL_RENDERER_USE_EXTERNAL_BLOB: u32 = 32;
 pub const VIRGL_RENDERER_VENUS: u32 = 64;
 pub const VIRGL_RENDERER_NO_VIRGL: u32 = 128;
-pub const VIRGL_RENDERER_ASYNC_FENCE_CB: u32 = 256;
-pub const VIRGL_RENDERER_RENDER_SERVER: u32 = 512;
-pub const VIRGL_RENDERER_DRM: u32 = 1024;
-pub const VIRGL_RENDERER_USE_VIDEO: u32 = 2048;
-pub const VIRGL_RENDERER_D3D11_SHARE_TEXTURE: u32 = 4096;
-pub const VIRGL_RENDERER_COMPAT_PROFILE: u32 = 8192;
 pub const VIRGL_RENDERER_USE_GUEST_VRAM: u32 = 16384;
-pub const VIRGL_RENDERER_RESOURCE_INFO_EXT_VERSION: u32 = 0;
-pub const VIRGL_RENDERER_CONTEXT_FLAG_CAPSET_ID_MASK: u32 = 255;
-pub const VIRGL_RENDERER_BLOB_MEM_GUEST: u32 = 1;
-pub const VIRGL_RENDERER_BLOB_MEM_HOST3D: u32 = 2;
-pub const VIRGL_RENDERER_BLOB_MEM_HOST3D_GUEST: u32 = 3;
-pub const VIRGL_RENDERER_BLOB_MEM_GUEST_VRAM: u32 = 4;
 pub const VIRGL_RENDERER_BLOB_FLAG_USE_MAPPABLE: u32 = 1;
-pub const VIRGL_RENDERER_BLOB_FLAG_USE_SHAREABLE: u32 = 2;
-pub const VIRGL_RENDERER_BLOB_FLAG_USE_CROSS_DEVICE: u32 = 4;
-pub const VIRGL_RENDERER_MAP_CACHE_MASK: u32 = 15;
-pub const VIRGL_RENDERER_MAP_CACHE_NONE: u32 = 0;
-pub const VIRGL_RENDERER_MAP_CACHE_CACHED: u32 = 1;
-pub const VIRGL_RENDERER_MAP_CACHE_UNCACHED: u32 = 2;
-pub const VIRGL_RENDERER_MAP_CACHE_WC: u32 = 3;
-pub const VIRGL_RENDERER_BLOB_FD_TYPE_DMABUF: u32 = 1;
-pub const VIRGL_RENDERER_BLOB_FD_TYPE_OPAQUE: u32 = 2;
-pub const VIRGL_RENDERER_BLOB_FD_TYPE_SHM: u32 = 3;
 pub const VIRGL_RENDERER_FENCE_FLAG_MERGEABLE: u32 = 1;
-pub type virgl_renderer_gl_context = *mut ::std::os::raw::c_void;
+pub const VKR_RENDERER_THREAD_SYNC: u32 = 1;
+pub const VKR_RENDERER_ASYNC_FENCE_CB: u32 = 2;
+pub const VIRTGPU_DRM_CAPSET_VENUS: u32 = 4;
+pub const virgl_resource_fd_type_VIRGL_RESOURCE_FD_DMABUF: virgl_resource_fd_type = 0;
+pub const virgl_resource_fd_type_VIRGL_RESOURCE_FD_OPAQUE: virgl_resource_fd_type = 1;
+pub const virgl_resource_fd_type_VIRGL_RESOURCE_FD_SHM: virgl_resource_fd_type = 2;
+pub const virgl_resource_fd_type_VIRGL_RESOURCE_BUFFER: virgl_resource_fd_type = 3;
+#[doc = " An opaque handle can be something like a GEM handle, from which a\n fd can be created upon demand.\n\n Renderers which use this type must implement virgl_context::export_fd\n\n Do not use this type for resources that are _BLOB_FLAG_USE_SHAREABLE,\n as the opaque handle can become invalid/stale any time outside of the\n original context."]
+pub const virgl_resource_fd_type_VIRGL_RESOURCE_OPAQUE_HANDLE: virgl_resource_fd_type = 4;
+#[doc = " An opaque handle can be something like a GEM handle, from which a\n fd can be created upon demand.\n\n Renderers which use this type must implement virgl_context::export_fd\n\n Do not use this type for resources that are _BLOB_FLAG_USE_SHAREABLE,\n as the opaque handle can become invalid/stale any time outside of the\n original context."]
+pub const virgl_resource_fd_type_VIRGL_RESOURCE_FD_INVALID: virgl_resource_fd_type = -1;
+pub type virgl_resource_fd_type = ::std::os::raw::c_int;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct virgl_renderer_gl_ctx_param {
-    pub version: ::std::os::raw::c_int,
-    pub shared: bool,
-    pub major_ver: ::std::os::raw::c_int,
-    pub minor_ver: ::std::os::raw::c_int,
-    pub compat_ctx: ::std::os::raw::c_int,
+pub struct virgl_resource_vulkan_info {
+    pub device_uuid: [u8; 16usize],
+    pub driver_uuid: [u8; 16usize],
+    pub allocation_size: u64,
+    pub memory_type_index: u32,
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of virgl_renderer_gl_ctx_param"]
-        [::std::mem::size_of::<virgl_renderer_gl_ctx_param>() - 20usize];
-    ["Alignment of virgl_renderer_gl_ctx_param"]
-        [::std::mem::align_of::<virgl_renderer_gl_ctx_param>() - 4usize];
-    ["Offset of field: virgl_renderer_gl_ctx_param::version"]
-        [::std::mem::offset_of!(virgl_renderer_gl_ctx_param, version) - 0usize];
-    ["Offset of field: virgl_renderer_gl_ctx_param::shared"]
-        [::std::mem::offset_of!(virgl_renderer_gl_ctx_param, shared) - 4usize];
-    ["Offset of field: virgl_renderer_gl_ctx_param::major_ver"]
-        [::std::mem::offset_of!(virgl_renderer_gl_ctx_param, major_ver) - 8usize];
-    ["Offset of field: virgl_renderer_gl_ctx_param::minor_ver"]
-        [::std::mem::offset_of!(virgl_renderer_gl_ctx_param, minor_ver) - 12usize];
-    ["Offset of field: virgl_renderer_gl_ctx_param::compat_ctx"]
-        [::std::mem::offset_of!(virgl_renderer_gl_ctx_param, compat_ctx) - 16usize];
-};
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct virgl_renderer_callbacks {
-    pub version: ::std::os::raw::c_int,
-    pub write_fence: ::std::option::Option<
-        unsafe extern "C" fn(cookie: *mut ::std::os::raw::c_void, fence: u32),
-    >,
-    pub create_gl_context: ::std::option::Option<
-        unsafe extern "C" fn(
-            cookie: *mut ::std::os::raw::c_void,
-            scanout_idx: ::std::os::raw::c_int,
-            param: *mut virgl_renderer_gl_ctx_param,
-        ) -> virgl_renderer_gl_context,
-    >,
-    pub destroy_gl_context: ::std::option::Option<
-        unsafe extern "C" fn(cookie: *mut ::std::os::raw::c_void, ctx: virgl_renderer_gl_context),
-    >,
-    pub make_current: ::std::option::Option<
-        unsafe extern "C" fn(
-            cookie: *mut ::std::os::raw::c_void,
-            scanout_idx: ::std::os::raw::c_int,
-            ctx: virgl_renderer_gl_context,
-        ) -> ::std::os::raw::c_int,
-    >,
-    pub get_drm_fd: ::std::option::Option<
-        unsafe extern "C" fn(cookie: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int,
-    >,
-    pub write_context_fence: ::std::option::Option<
-        unsafe extern "C" fn(
-            cookie: *mut ::std::os::raw::c_void,
-            ctx_id: u32,
-            ring_idx: u32,
-            fence_id: u64,
-        ),
-    >,
-    pub get_server_fd: ::std::option::Option<
-        unsafe extern "C" fn(
-            cookie: *mut ::std::os::raw::c_void,
-            version: u32,
-        ) -> ::std::os::raw::c_int,
-    >,
-    pub get_egl_display: ::std::option::Option<
-        unsafe extern "C" fn(cookie: *mut ::std::os::raw::c_void) -> *mut ::std::os::raw::c_void,
-    >,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of virgl_renderer_callbacks"]
-        [::std::mem::size_of::<virgl_renderer_callbacks>() - 72usize];
-    ["Alignment of virgl_renderer_callbacks"]
-        [::std::mem::align_of::<virgl_renderer_callbacks>() - 8usize];
-    ["Offset of field: virgl_renderer_callbacks::version"]
-        [::std::mem::offset_of!(virgl_renderer_callbacks, version) - 0usize];
-    ["Offset of field: virgl_renderer_callbacks::write_fence"]
-        [::std::mem::offset_of!(virgl_renderer_callbacks, write_fence) - 8usize];
-    ["Offset of field: virgl_renderer_callbacks::create_gl_context"]
-        [::std::mem::offset_of!(virgl_renderer_callbacks, create_gl_context) - 16usize];
-    ["Offset of field: virgl_renderer_callbacks::destroy_gl_context"]
-        [::std::mem::offset_of!(virgl_renderer_callbacks, destroy_gl_context) - 24usize];
-    ["Offset of field: virgl_renderer_callbacks::make_current"]
-        [::std::mem::offset_of!(virgl_renderer_callbacks, make_current) - 32usize];
-    ["Offset of field: virgl_renderer_callbacks::get_drm_fd"]
-        [::std::mem::offset_of!(virgl_renderer_callbacks, get_drm_fd) - 40usize];
-    ["Offset of field: virgl_renderer_callbacks::write_context_fence"]
-        [::std::mem::offset_of!(virgl_renderer_callbacks, write_context_fence) - 48usize];
-    ["Offset of field: virgl_renderer_callbacks::get_server_fd"]
-        [::std::mem::offset_of!(virgl_renderer_callbacks, get_server_fd) - 56usize];
-    ["Offset of field: virgl_renderer_callbacks::get_egl_display"]
-        [::std::mem::offset_of!(virgl_renderer_callbacks, get_egl_display) - 64usize];
+    ["Size of virgl_resource_vulkan_info"]
+        [::std::mem::size_of::<virgl_resource_vulkan_info>() - 48usize];
+    ["Alignment of virgl_resource_vulkan_info"]
+        [::std::mem::align_of::<virgl_resource_vulkan_info>() - 8usize];
+    ["Offset of field: virgl_resource_vulkan_info::device_uuid"]
+        [::std::mem::offset_of!(virgl_resource_vulkan_info, device_uuid) - 0usize];
+    ["Offset of field: virgl_resource_vulkan_info::driver_uuid"]
+        [::std::mem::offset_of!(virgl_resource_vulkan_info, driver_uuid) - 16usize];
+    ["Offset of field: virgl_resource_vulkan_info::allocation_size"]
+        [::std::mem::offset_of!(virgl_resource_vulkan_info, allocation_size) - 32usize];
+    ["Offset of field: virgl_resource_vulkan_info::memory_type_index"]
+        [::std::mem::offset_of!(virgl_resource_vulkan_info, memory_type_index) - 40usize];
 };
 unsafe extern "C" {
-    pub fn virgl_renderer_init(
-        cookie: *mut ::std::os::raw::c_void,
-        flags: ::std::os::raw::c_int,
-        cb: *mut virgl_renderer_callbacks,
-    ) -> ::std::os::raw::c_int;
+    pub fn vkr_get_capset(capset: *mut ::std::os::raw::c_void, flags: u32) -> usize;
 }
 unsafe extern "C" {
-    pub fn virgl_renderer_poll();
+    pub fn vkr_renderer_fini();
 }
 unsafe extern "C" {
-    pub fn virgl_renderer_resource_unref(res_handle: u32);
-}
-unsafe extern "C" {
-    pub fn virgl_renderer_context_destroy(handle: u32);
-}
-unsafe extern "C" {
-    pub fn virgl_renderer_submit_cmd(
-        buffer: *mut ::std::os::raw::c_void,
-        ctx_id: ::std::os::raw::c_int,
-        ndw: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-}
-unsafe extern "C" {
-    pub fn virgl_renderer_get_cap_set(set: u32, max_ver: *mut u32, max_size: *mut u32);
-}
-unsafe extern "C" {
-    pub fn virgl_renderer_fill_caps(set: u32, version: u32, caps: *mut ::std::os::raw::c_void);
-}
-unsafe extern "C" {
-    pub fn virgl_renderer_ctx_attach_resource(
-        ctx_id: ::std::os::raw::c_int,
-        res_handle: ::std::os::raw::c_int,
-    );
-}
-unsafe extern "C" {
-    pub fn virgl_renderer_cleanup(cookie: *mut ::std::os::raw::c_void);
-}
-unsafe extern "C" {
-    pub fn virgl_renderer_context_create_with_flags(
+    pub fn vkr_renderer_create_context(
         ctx_id: u32,
         ctx_flags: u32,
         nlen: u32,
         name: *const ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct virgl_renderer_resource_create_blob_args {
-    pub res_handle: u32,
-    pub ctx_id: u32,
-    pub blob_mem: u32,
-    pub blob_flags: u32,
-    pub blob_id: u64,
-    pub size: u64,
-    pub iovecs: *const iovec,
-    pub num_iovs: u32,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of virgl_renderer_resource_create_blob_args"]
-        [::std::mem::size_of::<virgl_renderer_resource_create_blob_args>() - 48usize];
-    ["Alignment of virgl_renderer_resource_create_blob_args"]
-        [::std::mem::align_of::<virgl_renderer_resource_create_blob_args>() - 8usize];
-    ["Offset of field: virgl_renderer_resource_create_blob_args::res_handle"]
-        [::std::mem::offset_of!(virgl_renderer_resource_create_blob_args, res_handle) - 0usize];
-    ["Offset of field: virgl_renderer_resource_create_blob_args::ctx_id"]
-        [::std::mem::offset_of!(virgl_renderer_resource_create_blob_args, ctx_id) - 4usize];
-    ["Offset of field: virgl_renderer_resource_create_blob_args::blob_mem"]
-        [::std::mem::offset_of!(virgl_renderer_resource_create_blob_args, blob_mem) - 8usize];
-    ["Offset of field: virgl_renderer_resource_create_blob_args::blob_flags"]
-        [::std::mem::offset_of!(virgl_renderer_resource_create_blob_args, blob_flags) - 12usize];
-    ["Offset of field: virgl_renderer_resource_create_blob_args::blob_id"]
-        [::std::mem::offset_of!(virgl_renderer_resource_create_blob_args, blob_id) - 16usize];
-    ["Offset of field: virgl_renderer_resource_create_blob_args::size"]
-        [::std::mem::offset_of!(virgl_renderer_resource_create_blob_args, size) - 24usize];
-    ["Offset of field: virgl_renderer_resource_create_blob_args::iovecs"]
-        [::std::mem::offset_of!(virgl_renderer_resource_create_blob_args, iovecs) - 32usize];
-    ["Offset of field: virgl_renderer_resource_create_blob_args::num_iovs"]
-        [::std::mem::offset_of!(virgl_renderer_resource_create_blob_args, num_iovs) - 40usize];
-};
-unsafe extern "C" {
-    pub fn virgl_renderer_resource_create_blob(
-        args: *const virgl_renderer_resource_create_blob_args,
-    ) -> ::std::os::raw::c_int;
+    ) -> bool;
 }
 unsafe extern "C" {
-    pub fn virgl_renderer_context_create_fence(
+    pub fn vkr_renderer_destroy_context(ctx_id: u32);
+}
+unsafe extern "C" {
+    pub fn vkr_renderer_submit_cmd(
         ctx_id: u32,
-        flags: u32,
-        ring_idx: u32,
-        fence_id: u64,
-    ) -> ::std::os::raw::c_int;
+        cmd: *mut ::std::os::raw::c_void,
+        size: u32,
+    ) -> bool;
 }
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct iovec {
-    pub iov_base: *mut ::std::os::raw::c_void,
-    pub iov_len: usize,
+unsafe extern "C" {
+    pub fn vkr_renderer_submit_fence(ctx_id: u32, flags: u32, ring_idx: u64, fence_id: u64)
+    -> bool;
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of iovec"][::std::mem::size_of::<iovec>() - 16usize];
-    ["Alignment of iovec"][::std::mem::align_of::<iovec>() - 8usize];
-    ["Offset of field: iovec::iov_base"][::std::mem::offset_of!(iovec, iov_base) - 0usize];
-    ["Offset of field: iovec::iov_len"][::std::mem::offset_of!(iovec, iov_len) - 8usize];
-};
+unsafe extern "C" {
+    pub fn vkr_renderer_create_resource(
+        ctx_id: u32,
+        res_id: u32,
+        blob_id: u64,
+        blob_size: u64,
+        blob_flags: u32,
+        out_fd_type: *mut virgl_resource_fd_type,
+        out_res_fd: *mut ::std::os::raw::c_int,
+        out_map_info: *mut u32,
+        out_vulkan_info: *mut virgl_resource_vulkan_info,
+        out_mapped_ptr: *mut *mut ::std::os::raw::c_void,
+    ) -> bool;
+}
+unsafe extern "C" {
+    pub fn vkr_renderer_destroy_resource(ctx_id: u32, res_id: u32);
+}
 unsafe extern "C" {
     pub fn webrogueSetVulkan(vulkan: *mut ::std::os::raw::c_void);
 }
@@ -262,4 +108,12 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn webrogue_virgl_pop_shmem(out_size: *mut usize) -> *mut ::std::os::raw::c_void;
+}
+unsafe extern "C" {
+    pub fn webrogue_vkr_init(
+        flags: u32,
+        retire_fence: ::std::option::Option<
+            unsafe extern "C" fn(ctx_id: u32, ring_idx: u32, fence_id: u64),
+        >,
+    ) -> bool;
 }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::ffi::{c_int, c_void};
 use std::ptr;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -133,58 +133,49 @@ fn drain_completed(st: &mut State) {
     }
 }
 
+/// Renderer flags from `Renderer::new`, kept only for `vkr_get_capset` (the
+/// only bit that matters there is `VIRGL_RENDERER_USE_GUEST_VRAM`).
+static INIT_FLAGS: AtomicU32 = AtomicU32::new(0);
+
+pub(crate) fn init_flags() -> u32 {
+    INIT_FLAGS.load(Ordering::Relaxed)
+}
+
 pub(crate) fn init(ctx_flags: c_int) -> c_int {
     // Make sure the fence-id queue exists before venus can call back into it.
     completed().queue.lock().unwrap().clear();
     state();
 
-    static CALLBACKS: OnceLock<Box<bindings::virgl_renderer_callbacks>> = OnceLock::new();
-    let callbacks = CALLBACKS.get_or_init(|| {
-        unsafe extern "C" fn write_fence(_cookie: *mut c_void, _fence: u32) {}
-        unsafe extern "C" fn get_drm_fd(_cookie: *mut c_void) -> c_int {
-            -1
-        }
-        unsafe extern "C" fn write_context_fence(
-            _cookie: *mut c_void,
-            _ctx_id: u32,
-            _ring_idx: u32,
-            fence_id: u64,
-        ) {
-            let queue = &completed();
-            if let Ok(mut done) = queue.queue.lock() {
-                done.push(fence_id);
-                queue.cv.notify_all();
-            }
-        }
-        Box::new(bindings::virgl_renderer_callbacks {
-            version: bindings::VIRGL_RENDERER_CALLBACKS_VERSION as c_int,
-            write_fence: Some(write_fence),
-            create_gl_context: None,
-            destroy_gl_context: None,
-            make_current: None,
-            get_drm_fd: Some(get_drm_fd),
-            write_context_fence: Some(write_context_fence),
-            get_server_fd: None,
-            get_egl_display: None,
-        })
-    });
+    INIT_FLAGS.store(ctx_flags as u32, Ordering::Relaxed);
 
-    let flags = ctx_flags
-        | bindings::VIRGL_RENDERER_THREAD_SYNC as c_int
-        | bindings::VIRGL_RENDERER_USE_EXTERNAL_BLOB as c_int;
-
-    let cb: *mut bindings::virgl_renderer_callbacks = &**callbacks as *const _ as *mut _;
-    let ret = unsafe { bindings::virgl_renderer_init(ptr::null_mut(), flags, cb) };
-    if ret != 0 {
+    // Direct dispatch: talk to the venus core (vkr) in-process. No proxy, no
+    // socket, no render server worker thread, no fence eventfd. Ring-0 fences
+    // retire inline on the submitting thread; GPU-timeline fences retire from
+    // vkr's own per-queue sync threads (condvar-based, portable).
+    let ok = unsafe {
+        bindings::webrogue_vkr_init(
+            (bindings::VKR_RENDERER_THREAD_SYNC | bindings::VKR_RENDERER_ASYNC_FENCE_CB) as u32,
+            Some(write_context_fence),
+        )
+    };
+    if !ok {
         return -1;
     }
     0
 }
 
+unsafe extern "C" fn write_context_fence(_ctx_id: u32, _ring_idx: u32, fence_id: u64) {
+    let queue = &completed();
+    if let Ok(mut done) = queue.queue.lock() {
+        done.push(fence_id);
+        queue.cv.notify_all();
+    }
+}
+
 pub(crate) fn cleanup() {
     context_destroy();
     completed().queue.lock().unwrap().clear();
-    unsafe { bindings::virgl_renderer_cleanup(ptr::null_mut()) };
+    unsafe { bindings::vkr_renderer_fini() };
 }
 
 pub(crate) fn context_create(name: &[u8]) -> c_int {
@@ -233,16 +224,19 @@ pub(crate) fn context_init(capset_id: u32) -> c_int {
     }
     ctx.capset_id = capset_id;
 
-    let ret = unsafe {
-        bindings::virgl_renderer_context_create_with_flags(
+    let ok = unsafe {
+        bindings::vkr_renderer_create_context(
             ctx.ctx_id,
             ctx.capset_id,
             ctx.debug_name.len() as u32,
             ctx.debug_name.as_ptr() as *const i8,
         )
     };
-    ctx.context_initialized = ret == 0;
-    ret
+    ctx.context_initialized = ok;
+    if !ok {
+        return -1;
+    }
+    0
 }
 
 pub(crate) fn context_destroy() {
@@ -254,10 +248,10 @@ pub(crate) fn context_destroy() {
     let Some(ctx) = st.context.take() else { return };
 
     if ctx.context_initialized {
-        unsafe { bindings::virgl_renderer_context_destroy(ctx.ctx_id) };
+        unsafe { bindings::vkr_renderer_destroy_context(ctx.ctx_id) };
     }
     for res in ctx.resource_table.values() {
-        unsafe { bindings::virgl_renderer_resource_unref(res.res_id) };
+        unsafe { bindings::vkr_renderer_destroy_resource(ctx.ctx_id, res.res_id) };
         if let Some((ptr, len)) = res.iov {
             unsafe { unmap(ptr as *mut c_void, len) };
         }
@@ -276,43 +270,35 @@ pub(crate) fn create_blob(ptr: usize, size: usize, blob_id: u64) -> u32 {
     ctx.next_resource_id += 1;
 
     let is_shmem = blob_id == 0;
-    let iov = if is_shmem {
-        Some(bindings::iovec {
-            iov_base: ptr as *mut c_void,
-            iov_len: size,
-        })
-    } else {
-        None
-    };
-    let args = bindings::virgl_renderer_resource_create_blob_args {
-        res_handle: res_id,
-        ctx_id: ctx.ctx_id,
-        blob_mem: if is_shmem {
-            bindings::VIRGL_RENDERER_BLOB_MEM_HOST3D_GUEST
-        } else {
-            bindings::VIRGL_RENDERER_BLOB_MEM_HOST3D
-        },
-        blob_flags: if is_shmem {
-            bindings::VIRGL_RENDERER_BLOB_FLAG_USE_MAPPABLE
-        } else {
-            0
-        },
-        blob_id,
-        size: size as u64,
-        iovecs: iov.as_ref().map_or(ptr::null(), |i| i),
-        num_iovs: if is_shmem { 1 } else { 0 },
-    };
 
-    let ret = unsafe { bindings::virgl_renderer_resource_create_blob(&args) };
-    if ret != 0 {
-        if let Some(i) = iov {
-            unsafe { unmap(i.iov_base, i.iov_len) };
-        }
-        unsafe { bindings::virgl_renderer_resource_unref(res_id) };
+    let mut fd_type: bindings::virgl_resource_fd_type = unsafe { std::mem::zeroed() };
+    let mut res_fd: c_int = -1;
+    let mut map_info: u32 = 0;
+    let mut vulkan_info: bindings::virgl_resource_vulkan_info = unsafe { std::mem::zeroed() };
+    let mut mapped_ptr: *mut c_void = ptr::null_mut();
+    let ok = unsafe {
+        bindings::vkr_renderer_create_resource(
+            ctx.ctx_id,
+            res_id,
+            blob_id,
+            size as u64,
+            if is_shmem {
+                bindings::VIRGL_RENDERER_BLOB_FLAG_USE_MAPPABLE
+            } else {
+                0
+            },
+            &mut fd_type,
+            &mut res_fd,
+            &mut map_info,
+            &mut vulkan_info,
+            &mut mapped_ptr,
+        )
+    };
+    if !ok {
+        unsafe { bindings::vkr_renderer_destroy_resource(ctx.ctx_id, res_id) };
         return 0;
     }
 
-    unsafe { bindings::virgl_renderer_ctx_attach_resource(ctx.ctx_id as c_int, res_id as c_int) };
     ctx.resource_table.insert(
         res_id,
         Resource {
@@ -392,6 +378,31 @@ pub(crate) fn sync_wait(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
     sync_wait_inner(flags, timeout_ms, syncs)
 }
 
+/// Waits until `poll_and_check` returns `Some(result)`. Fence retirement is
+/// fully event-driven in direct dispatch: ring-0 fences retire inline on the
+/// submitting thread (before the wait even starts), GPU-timeline fences retire
+/// from vkr's per-queue sync threads, and both paths push to `completed()` and
+/// notify the condvar, so the waiter wakes immediately. The 1ms timeout is
+/// only a safety net for the deadline check in `sync_wait_inner`.
+fn wait_completed<T>(
+    st: &mut State,
+    mut poll_and_check: impl FnMut(&mut State) -> Option<T>,
+) -> T {
+    loop {
+        drain_completed(st);
+        if let Some(result) = poll_and_check(st) {
+            return result;
+        }
+        // The queue is consumed by drain_completed() at the top of the next
+        // iteration, so entries that arrive while we hold the lock are safe
+        // to leave behind.
+        let queue = completed().queue.lock().unwrap();
+        if queue.is_empty() {
+            let _ = completed().cv.wait_timeout(queue, Duration::from_millis(1));
+        }
+    }
+}
+
 fn sync_wait_inner(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
     let st = state();
     let mut st = st.lock().unwrap();
@@ -414,25 +425,6 @@ fn sync_wait_inner(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
         }
     }
 
-    let ready = |remaining: usize| -> bool {
-        remaining == 0 || ((flags & SYNC_WAIT_FLAG_ANY) != 0 && remaining < sync_count)
-    };
-    // Poll virgl so in-flight work completes and fires fence callbacks, then
-    // drain the completed fences into sync values.
-    let poll_and_check = |st: &mut State| -> bool {
-        unsafe { bindings::virgl_renderer_poll() };
-        drain_completed(st);
-        let remaining = targets
-            .iter()
-            .filter(|(sync, value)| sync.value.load(Ordering::Relaxed) < *value)
-            .count();
-        ready(remaining)
-    };
-
-    if poll_and_check(&mut st) {
-        return 0;
-    }
-
     // u32::MAX from the guest means wait forever.
     let deadline = if timeout_ms == u32::MAX {
         None
@@ -444,36 +436,28 @@ fn sync_wait_inner(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
         )
     };
 
-    loop {
-        if poll_and_check(&mut st) {
-            return 0;
+    wait_completed(&mut st, |_st| {
+        let remaining = targets
+            .iter()
+            .filter(|(sync, value)| sync.value.load(Ordering::Relaxed) < *value)
+            .count();
+        let ready = remaining == 0 || ((flags & SYNC_WAIT_FLAG_ANY) != 0 && remaining < sync_count);
+        if ready {
+            return Some(0);
         }
         if let Some(deadline) = deadline {
             if Instant::now() >= deadline {
-                return 2; // VK_TIMEOUT
+                return Some(2); // VK_TIMEOUT
             }
         }
-        {
-            // Wait for a fence-completion notification instead of blind-sleeping.
-            // On Windows `Sleep(1)` quantizes to ~15.6 ms, so a fence that
-            // completes between polls previously cost a full sleep quantum per
-            // check; the condvar wakes us the moment the fence callback fires.
-            // The queue is consumed by drain_completed() at the top of the next
-            // iteration, so entries that arrive while we hold the lock are safe
-            // to leave behind.
-            let queue = completed().queue.lock().unwrap();
-            if queue.is_empty() {
-                let _ = completed().cv.wait_timeout(queue, Duration::from_millis(1));
-            }
-        }
-    }
+        None
+    })
 }
 
 pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int {
     let st = state();
     let mut st = st.lock().unwrap();
 
-    unsafe { bindings::virgl_renderer_poll() };
     drain_completed(&mut st);
 
     let Some(ctx) = st.context.as_mut() else {
@@ -487,6 +471,12 @@ pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int 
     }
     let batch_count = headers.len() / 5;
 
+    // ring_idx 0 is the CPU timeline: vkr retires its fences inline, right
+    // after the batch has been dispatched and all replies written, so the
+    // collected fence ids below are already retired by the time this call
+    // returns and the wait at the bottom finds them drained immediately.
+    // GPU timelines (ring_idx > 0) retire asynchronously from vkr's per-queue
+    // sync threads.
     let mut cpu_fence_ids: Vec<u64> = Vec::new();
 
     for bi in 0..batch_count {
@@ -504,15 +494,15 @@ pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int 
             return -EINVAL;
         }
 
-        let ret = unsafe {
-            bindings::virgl_renderer_submit_cmd(
+        let ok = unsafe {
+            bindings::vkr_renderer_submit_cmd(
+                ctx.ctx_id,
                 cmds.as_ptr().add(cmd_offset) as *mut c_void,
-                ctx.ctx_id as c_int,
-                cmd_size as c_int,
+                (cmd_size * std::mem::size_of::<u32>()) as u32,
             )
         };
-        if ret != 0 {
-            return ret;
+        if !ok {
+            return -1;
         }
 
         if ring != 0 && sync_count == 0 {
@@ -539,17 +529,17 @@ pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int 
         let fence_id = (&*boxed as *const TimelineSubmit) as usize as u64;
         ctx.timelines[ring].push(boxed);
 
-        let ret = unsafe {
-            bindings::virgl_renderer_context_create_fence(
+        let ok = unsafe {
+            bindings::vkr_renderer_submit_fence(
                 ctx.ctx_id,
                 bindings::VIRGL_RENDERER_FENCE_FLAG_MERGEABLE,
-                ring as u32,
+                ring as u64,
                 fence_id,
             )
         };
-        if ret != 0 {
+        if !ok {
             ctx.timelines[ring].pop();
-            return ret;
+            return -1;
         }
         if ring == 0 {
             cpu_fence_ids.push(fence_id);
@@ -557,32 +547,18 @@ pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int 
     }
 
     if !cpu_fence_ids.is_empty() {
-        loop {
-            unsafe { bindings::virgl_renderer_poll() };
-            drain_completed(&mut st);
-
-            let all_done = {
-                let Some(ctx) = st.context.as_ref() else {
-                    return -1;
-                };
-                !cpu_fence_ids.iter().any(|id| {
-                    ctx.timelines[0].iter().any(|s| {
-                        let p: *const TimelineSubmit = &**s;
-                        std::ptr::eq(p, *id as usize as *const TimelineSubmit)
-                    })
-                })
+        wait_completed(&mut st, |st| {
+            let Some(ctx) = st.context.as_ref() else {
+                return Some(0);
             };
-            if all_done {
-                break;
-            }
-
-            {
-                let queue = completed().queue.lock().unwrap();
-                if queue.is_empty() {
-                    let _ = completed().cv.wait_timeout(queue, Duration::from_millis(1));
-                }
-            }
-        }
+            let all_done = !cpu_fence_ids.iter().any(|id| {
+                ctx.timelines[0].iter().any(|s| {
+                    let p: *const TimelineSubmit = &**s;
+                    std::ptr::eq(p, *id as usize as *const TimelineSubmit)
+                })
+            });
+            all_done.then_some(0)
+        });
     }
 
     drain_completed(&mut st);

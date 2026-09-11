@@ -433,12 +433,21 @@ fn main() {
                 .unwrap(),
         )
         .clang_args(bindgen_args)
+        // Only expose the API surface the Rust side consumes. Without this,
+        // bindgen also emits every system-header artifact (MSVC _CRT/_SAL
+        // defines, glibc internals, va_list machinery), so regenerating on a
+        // different host toolchain rewrites the whole file. Everything kept
+        // below is platform-independent: declarations from webrogue_virgl.h /
+        // vkr_renderer.h and structs with identical layouts everywhere.
+        // Notably absent on purpose: vkr_renderer_init/vkr_renderer_callbacks
+        // (the callbacks embed a va_list-logging type; Rust goes through the
+        // webrogue_vkr_init C shim instead). When a new binding is needed, add
+        // it to the matching allowlist; a missing item fails the build loudly.
         .allowlist_function(
-            "virgl_renderer_cleanup|virgl_renderer_context_create_fence|virgl_renderer_context_create_with_flags|virgl_renderer_context_destroy|virgl_renderer_ctx_attach_resource|virgl_renderer_fill_caps|virgl_renderer_get_cap_set|virgl_renderer_init|virgl_renderer_poll|virgl_renderer_resource_create_blob|virgl_renderer_resource_unref|virgl_renderer_submit_cmd",
+            "webrogue.*|vkr_get_capset|vkr_renderer_create_context|vkr_renderer_destroy_context|vkr_renderer_fini|vkr_renderer_submit_cmd|vkr_renderer_submit_fence|vkr_renderer_create_resource|vkr_renderer_destroy_resource",
         )
-        .allowlist_function("webrogue.*")
-        .allowlist_type("virgl_renderer_callbacks|virgl_renderer_resource_create_blob_args|iovec")
-        .allowlist_var("VIRGL_RENDERER_.*")
+        .allowlist_type("virgl_resource_fd_type|virgl_resource_vulkan_info")
+        .allowlist_var("VIRGL_RESOURCE_FD_.*|VIRGL_RENDERER_BLOB_FLAG_USE_MAPPABLE|VIRGL_RENDERER_FENCE_FLAG_MERGEABLE|VIRGL_RENDERER_USE_GUEST_VRAM|VIRGL_RENDERER_VENUS|VIRGL_RENDERER_NO_VIRGL|VKR_RENDERER_.*|VIRTGPU_DRM_CAPSET_VENUS")
         .raw_line("#![allow(dead_code)]")
         .raw_line("#![allow(nonstandard_style)]")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))

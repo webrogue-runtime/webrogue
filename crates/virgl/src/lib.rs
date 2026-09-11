@@ -11,29 +11,7 @@ mod webrogue;
 use ash::{vk::PFN_vkGetInstanceProcAddr, Entry};
 pub use system_proxy::SystemProxy;
 
-use crate::bindings::{
-    VIRGL_RENDERER_ASYNC_FENCE_CB, VIRGL_RENDERER_NO_VIRGL, VIRGL_RENDERER_RENDER_SERVER,
-    VIRGL_RENDERER_THREAD_SYNC, VIRGL_RENDERER_VENUS,
-};
-
-/// Raise the Windows multimedia timer resolution to 1ms for the whole process.
-/// Without it, `Sleep(1)` stalls ~15.6ms, and the MESA venus guest's wait/backoff
-/// loops (vn_relax) spend ~15ms per iteration on Windows vs microseconds on
-/// Linux - which throttled the frame rate to single digits.
-#[cfg(target_os = "windows")]
-fn raise_timer_resolution() {
-    #[link(name = "winmm")]
-    extern "system" {
-        fn timeBeginPeriod(uPeriod: u32) -> u32;
-    }
-    static RAISED: OnceLock<()> = OnceLock::new();
-    RAISED.get_or_init(|| unsafe {
-        timeBeginPeriod(1);
-    });
-}
-
-#[cfg(not(target_os = "windows"))]
-fn raise_timer_resolution() {}
+use crate::bindings::{VIRGL_RENDERER_NO_VIRGL, VIRGL_RENDERER_VENUS};
 
 lazy_static::lazy_static! {
     static ref SHARED_RENDERER: OnceLock<Arc<Renderer>> = OnceLock::new();
@@ -156,14 +134,12 @@ impl Renderer {
         unsafe { bindings::webrogueSetVulkan(wrapped_sym as *mut c_void) };
 
         let ret = webrogue::init(
-            (VIRGL_RENDERER_VENUS
-                | VIRGL_RENDERER_NO_VIRGL
-                | VIRGL_RENDERER_THREAD_SYNC
-                | VIRGL_RENDERER_ASYNC_FENCE_CB
-                | VIRGL_RENDERER_RENDER_SERVER) as c_int,
+            // Direct dispatch: these flags only pass through to the venus
+            // capset (USE_GUEST_VRAM is the only bit vkr reads there); the
+            // proxy/RENDER_SERVER machinery is not used at all.
+            (VIRGL_RENDERER_VENUS | VIRGL_RENDERER_NO_VIRGL) as c_int,
         );
         assert_eq!(ret, 0);
-        raise_timer_resolution();
 
         Arc::new(Self {
             session: Mutex::new(()),
@@ -281,21 +257,24 @@ impl ContextContainer {
         VTEST_MAX_TIMELINE_COUNT
     }
 
-    pub fn get_capset(&self, id: u32, version: u32) -> Vec<u8> {
+    pub fn get_capset(&self, id: u32, _version: u32) -> Vec<u8> {
         // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
-        let mut max_version: u32 = 0;
-        let mut max_size: u32 = 0;
-        unsafe {
-            bindings::virgl_renderer_get_cap_set(id, &mut max_version, &mut max_size);
-        }
-        if (max_version == 0 && max_size == 0) || version > max_version || max_size % 4 != 0 {
+        if id != bindings::VIRTGPU_DRM_CAPSET_VENUS {
             return Vec::new();
         }
-        let mut caps = vec![0u8; max_size as usize];
-        unsafe {
-            bindings::virgl_renderer_fill_caps(id, version, caps.as_mut_ptr() as *mut c_void);
+        // vkr fills exactly one venus capset; there is no version negotiation.
+        let mut caps = vec![0u8; 4096];
+        let size = unsafe {
+            bindings::vkr_get_capset(
+                caps.as_mut_ptr() as *mut c_void,
+                webrogue::init_flags(),
+            )
+        };
+        caps.truncate(size);
+        if caps.len() % 4 != 0 {
+            return Vec::new();
         }
         caps
     }
