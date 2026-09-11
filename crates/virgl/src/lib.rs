@@ -12,8 +12,8 @@ use ash::{vk::PFN_vkGetInstanceProcAddr, Entry};
 pub use system_proxy::SystemProxy;
 
 use crate::bindings::{
-    VIRGL_RENDERER_NO_VIRGL, VIRGL_RENDERER_RENDER_SERVER, VIRGL_RENDERER_THREAD_SYNC,
-    VIRGL_RENDERER_VENUS,
+    VIRGL_RENDERER_ASYNC_FENCE_CB, VIRGL_RENDERER_NO_VIRGL, VIRGL_RENDERER_RENDER_SERVER,
+    VIRGL_RENDERER_THREAD_SYNC, VIRGL_RENDERER_VENUS,
 };
 
 /// Raise the Windows multimedia timer resolution to 1ms for the whole process.
@@ -159,6 +159,7 @@ impl Renderer {
             (VIRGL_RENDERER_VENUS
                 | VIRGL_RENDERER_NO_VIRGL
                 | VIRGL_RENDERER_THREAD_SYNC
+                | VIRGL_RENDERER_ASYNC_FENCE_CB
                 | VIRGL_RENDERER_RENDER_SERVER) as c_int,
         );
         assert_eq!(ret, 0);

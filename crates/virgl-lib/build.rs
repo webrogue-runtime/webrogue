@@ -433,6 +433,12 @@ fn main() {
                 .unwrap(),
         )
         .clang_args(bindgen_args)
+        .allowlist_function(
+            "virgl_renderer_cleanup|virgl_renderer_context_create_fence|virgl_renderer_context_create_with_flags|virgl_renderer_context_destroy|virgl_renderer_ctx_attach_resource|virgl_renderer_fill_caps|virgl_renderer_get_cap_set|virgl_renderer_init|virgl_renderer_poll|virgl_renderer_resource_create_blob|virgl_renderer_resource_unref|virgl_renderer_submit_cmd",
+        )
+        .allowlist_function("webrogue.*")
+        .allowlist_type("virgl_renderer_callbacks|virgl_renderer_resource_create_blob_args|iovec")
+        .allowlist_var("VIRGL_RENDERER_.*")
         .raw_line("#![allow(dead_code)]")
         .raw_line("#![allow(nonstandard_style)]")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))

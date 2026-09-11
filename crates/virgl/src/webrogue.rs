@@ -487,6 +487,8 @@ pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int 
     }
     let batch_count = headers.len() / 5;
 
+    let mut cpu_fence_ids: Vec<u64> = Vec::new();
+
     for bi in 0..batch_count {
         let h = &headers[bi * 5..bi * 5 + 5];
         let cmd_offset = h[0] as usize;
@@ -513,7 +515,7 @@ pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int 
             return ret;
         }
 
-        if sync_count == 0 {
+        if ring != 0 && sync_count == 0 {
             continue;
         }
 
@@ -548,6 +550,38 @@ pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int 
         if ret != 0 {
             ctx.timelines[ring].pop();
             return ret;
+        }
+        if ring == 0 {
+            cpu_fence_ids.push(fence_id);
+        }
+    }
+
+    if !cpu_fence_ids.is_empty() {
+        loop {
+            unsafe { bindings::virgl_renderer_poll() };
+            drain_completed(&mut st);
+
+            let all_done = {
+                let Some(ctx) = st.context.as_ref() else {
+                    return -1;
+                };
+                !cpu_fence_ids.iter().any(|id| {
+                    ctx.timelines[0].iter().any(|s| {
+                        let p: *const TimelineSubmit = &**s;
+                        std::ptr::eq(p, *id as usize as *const TimelineSubmit)
+                    })
+                })
+            };
+            if all_done {
+                break;
+            }
+
+            {
+                let queue = completed().queue.lock().unwrap();
+                if queue.is_empty() {
+                    let _ = completed().cv.wait_timeout(queue, Duration::from_millis(1));
+                }
+            }
         }
     }
 
