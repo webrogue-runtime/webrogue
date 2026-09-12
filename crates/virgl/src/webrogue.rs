@@ -1,6 +1,6 @@
 // ! This module is vibecoded. TODO refactor
 use std::collections::HashMap;
-use std::ffi::{c_int, c_void};
+use std::ffi::{c_char, c_int, c_void};
 use std::ptr;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
@@ -230,7 +230,7 @@ pub(crate) fn context_init(capset_id: u32) -> c_int {
             ctx.ctx_id,
             ctx.capset_id,
             ctx.debug_name.len() as u32,
-            ctx.debug_name.as_ptr() as *const i8,
+            ctx.debug_name.as_ptr() as *const c_char,
         )
     };
     ctx.context_initialized = ok;
