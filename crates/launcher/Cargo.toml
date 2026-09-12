@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-winit = ["dep:winit", "dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-gfxstream", "webrogue-gfxstream/lib-impl"]
+winit = ["dep:winit", "dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-virgl", "webrogue-virgl/lib-impl"]
 
 [dependencies]
 wry = { workspace = true, default-features = true }
@@ -35,7 +35,7 @@ blake3 = { workspace = true }
 webrogue-wrapp = { workspace = true }
 webrogue-wasmtime = { workspace = true, features = ["jit"], optional = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
-webrogue-gfxstream = { workspace = true, optional = true }
+webrogue-virgl = { workspace = true, optional = true }
 headers = { workspace = true }
 rand = { workspace = true }
 tokio-tungstenite = { workspace = true, features = ["rustls-tls-webpki-roots"] }

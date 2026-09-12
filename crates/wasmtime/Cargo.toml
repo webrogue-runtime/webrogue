@@ -10,11 +10,11 @@ jit = ["wasmtime/cranelift", "wasmtime/parallel-compilation", "wasmtime/addr2lin
 aot = ["dep:webrogue-aot-data"]
 cache = ["wasmtime/cache"] # TODO "wasmtime/incremental-cache"
 async = ["wasmtime/async"]
-debug = ["wasmtime/debug"]
+debug = ["wasmtime/debug"] # , "wasmtime/debug-builtins"
 
 [dependencies]
 webrogue-gfx = { workspace = true }
-webrogue-gfxstream = { workspace = true }
+webrogue-virgl = { workspace = true }
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
 webrogue-wasip1 = { workspace = true }

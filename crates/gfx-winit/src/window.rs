@@ -4,11 +4,7 @@ use std::{
 };
 
 use softbuffer::SoftBufferError;
-use winit::{
-    dpi::PhysicalSize,
-    event::WindowEvent,
-    window::{Window, WindowId},
-};
+use winit::{dpi::PhysicalSize, event::WindowEvent, window::Window};
 
 use crate::{events::encode_event, mailbox::Mailbox};
 
@@ -27,14 +23,14 @@ pub struct WinitWindowInternal {
 }
 
 pub struct WinitWindow {
-    pub(crate) window_id: WindowId,
+    pub(crate) window_id: u32,
     pub(crate) mailbox: Mailbox,
 }
 
 impl webrogue_gfx::IWindow for WinitWindow {
     fn get_size(&self) -> (u32, u32) {
         self.mailbox.execute(|_, window_registry| {
-            let Some(window) = window_registry.get_window(self.window_id) else {
+            let Some(window) = window_registry.get_window_by_webrogue_id(self.window_id) else {
                 return (0, 0);
             };
             let size = window
@@ -47,7 +43,7 @@ impl webrogue_gfx::IWindow for WinitWindow {
 
     fn get_gl_size(&self) -> (u32, u32) {
         self.mailbox.execute(|_, window_registry| {
-            let Some(window) = window_registry.get_window(self.window_id) else {
+            let Some(window) = window_registry.get_window_by_webrogue_id(self.window_id) else {
                 return (0, 0);
             };
             let size = window.window.surface_size();
@@ -63,7 +59,7 @@ impl webrogue_gfx::IWindow for WinitWindow {
 
         self.mailbox
             .execute(|_, window_registry| {
-                let Some(window) = window_registry.get_window(self.window_id) else {
+                let Some(window) = window_registry.get_window_by_webrogue_id(self.window_id) else {
                     return None;
                 };
                 let vulkan_entry = window.vulkan_entry.clone();
@@ -102,7 +98,7 @@ impl webrogue_gfx::IWindow for WinitWindow {
 
     fn poll(&self, events_buffer: &mut Vec<u8>) {
         self.mailbox.execute(|_, window_registry| {
-            let Some(window) = window_registry.get_window(self.window_id) else {
+            let Some(window) = window_registry.get_window_by_webrogue_id(self.window_id) else {
                 return;
             };
             events_buffer.append(&mut window.events_buffer.lock().unwrap());
@@ -116,8 +112,8 @@ impl webrogue_gfx::IWindow for WinitWindow {
                     anyhow::anyhow!("{}", err.to_string())
                 }
 
-                let Some(window) = window_registry.get_window(self.window_id) else {
-                    anyhow::bail!("Window (id = {}) not found", self.window_id.into_raw());
+                let Some(window) = window_registry.get_window_by_webrogue_id(self.window_id) else {
+                    anyhow::bail!("Window (id = {}) not found", self.window_id);
                 };
 
                 let mut lock = window.cpu_surface_data.lock().unwrap();
@@ -145,7 +141,7 @@ impl webrogue_gfx::IWindow for WinitWindow {
                 let Some(win_size) =
                     NonZero::new(win_size.0).zip(NonZero::new(win_size.1))
                 else {
-                    anyhow::bail!("Window (id = {}) has zero size", self.window_id.into_raw());
+                    anyhow::bail!("Window (id = {}) has zero size", self.window_id);
                 };
                 // TODO call resize only when needed
                 // Beware of "must set size of surface before calling `width()` on the buffer" error
@@ -157,7 +153,7 @@ impl webrogue_gfx::IWindow for WinitWindow {
                 if buffer.len() != pixels.len() {
                     anyhow::bail!(
                         "Called present_pixels on a window (id = {}) but specified wrong buffer size",
-                        self.window_id.into_raw()
+                        self.window_id
                     );
                 }
 

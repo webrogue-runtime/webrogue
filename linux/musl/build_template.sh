@@ -14,10 +14,10 @@ mkdir -p "$OUT_DIR"
 cargo build --manifest-path=../crates/aot-lib/Cargo.toml $CARGO_FLAGS
 cp $TARGET_DIR/$ARCH-unknown-linux-musl/aot/libwebrogue_aot_lib.a "$OUT_DIR"
 
-for GFXSTREAM_LIB_TYPE in stub impl
+for VIRGL_LIB_TYPE in stub impl
 do
-    cargo build --manifest-path=../crates/gfxstream-lib/Cargo.toml --features=$GFXSTREAM_LIB_TYPE $CARGO_FLAGS
-    cp $TARGET_DIR/$ARCH-unknown-linux-musl/aot/libwebrogue_gfxstream_lib.rlib  "$OUT_DIR/libwebrogue_gfxstream_lib_$GFXSTREAM_LIB_TYPE.a"
+    cargo build --manifest-path=../crates/virgl-lib/Cargo.toml --features=$VIRGL_LIB_TYPE $CARGO_FLAGS
+    cp $TARGET_DIR/$ARCH-unknown-linux-musl/aot/libwebrogue_virgl_lib.rlib  "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a"
 done
 
 clang main.c -nostdlib -c -o main.o
@@ -25,10 +25,10 @@ clang main.c -nostdlib -c -o main.o
 
 rm -f process_dump*
 # strace -s 1000 -o process_dump -ff \
-clang++ \
+clang \
     main.o \
     ../aot_artifacts/$ARCH-linux-musl/libwebrogue_aot_lib.a \
-    ../aot_artifacts/$ARCH-linux-musl/libwebrogue_gfxstream_lib_impl.a \
+    ../aot_artifacts/$ARCH-linux-musl/libwebrogue_virgl_lib_impl.a \
     empty.musl.$ARCH.o \
     -o a.out \
     -fuse-ld=lld \
@@ -66,7 +66,6 @@ cp \
     /usr/lib/gcc/$ARCH-alpine-linux-musl/*/crtbeginT.o \
     /usr/lib/gcc/$ARCH-alpine-linux-musl/*/crtend.o \
     /usr/lib/crtn.o \
-    /usr/lib/libstdc++.so \
     /usr/lib/libgcc_s.so.1 \
     /usr/lib/libc.so \
     "$OUT_DIR"
@@ -75,7 +74,7 @@ strip --strip-debug $OUT_DIR/*
 
 rm main.o
 
-for GFXSTREAM_LIB_TYPE in stub impl
+for VIRGL_LIB_TYPE in stub impl
 do
     ld.lld \
         -z now \
@@ -91,9 +90,8 @@ do
         "$OUT_DIR/crti.o" \
         "$OUT_DIR/crtbeginT.o" \
         "$OUT_DIR/libwebrogue_aot_lib.a" \
-        "$OUT_DIR/libwebrogue_gfxstream_lib_$GFXSTREAM_LIB_TYPE.a" \
+        "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a" \
         empty.musl.$ARCH.o \
-        "$OUT_DIR/libstdc++.so" \
         "$OUT_DIR/libgcc_s.so.1" \
         "$OUT_DIR/libc.so" \
         "$OUT_DIR/crtend.o" \

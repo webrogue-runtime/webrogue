@@ -14,7 +14,7 @@ pub fn load_vulkan_entry(required: bool) -> Option<Entry> {
     load_cached(required)
 }
 
-pub fn load_cached(required: bool) -> Option<Entry> {
+fn load_cached(required: bool) -> Option<Entry> {
     lazy_static::lazy_static! {
         static ref CACHED_ENTRY: Mutex<Option<Entry>> = Mutex::new(None);
     }

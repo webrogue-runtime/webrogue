@@ -11,14 +11,14 @@ launcher = [
     "dep:jni",
     "dep:serde",
     "dep:serde_json",
-    "webrogue-gfxstream/lib-impl",
+    "webrogue-virgl/lib-impl",
     "dep:webrogue-hub-debuggee",
     "dep:webrogue-gfx",
     "dep:tokio",
 ]
 runner = [
     "webrogue-wasmtime/aot",
-    "webrogue-gfxstream/lib-impl"
+    "webrogue-virgl/lib-impl"
 ]
 
 [lib]
@@ -29,7 +29,7 @@ crate-type = ["cdylib"]
 anyhow = { workspace = true }
 webrogue-wasmtime = { workspace = true }
 winit = { workspace = true }
-webrogue-gfxstream = { workspace = true }
+webrogue-virgl = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
 jni = { version = "0.22", optional = true }
 serde = { workspace = true, optional = true }

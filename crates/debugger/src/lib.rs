@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    num::NonZeroI32,
+    sync::{Arc, Mutex},
+};
 
 mod code_runner_loop;
 mod communication;
@@ -38,10 +41,22 @@ pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send 
             thread.trap();
         }
     }));
-    gfx_init_params.async_func_runner(code_runner_loop::runner(target_proxy, threads.clone()));
+    gfx_init_params.async_func_runner(code_runner_loop::runner(
+        target_proxy.clone(),
+        threads.clone(),
+    ));
 
-    let wasi_main_join_handle = rt_handle.spawn_blocking(|| func(runtime, gfx_init_params));
+    let wasi_main_join_handle = rt_handle.spawn_blocking(move || {
+        let result = func(runtime, gfx_init_params);
+        let _ = target_proxy.send(communication::DebuggerLoopMessage::ThreadFinished(
+            NonZeroI32::new(1).unwrap(),
+        ));
+        result
+    });
     let debugger_error = target.wait_for_first_step().await;
+    if wasi_main_join_handle.is_finished() {
+        return wasi_main_join_handle.await?;
+    }
 
     let debugger_error = match debugger_error {
         Ok(_) => {

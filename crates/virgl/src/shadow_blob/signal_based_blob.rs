@@ -1,19 +1,29 @@
-use std::{collections::BTreeMap, sync::Mutex};
+//! "Signal-based shadow blob" uses mprotect and segfault catching wizardy to
+//! mimic mmap-ing one memory region to another. It helps avoiding dependency
+//! on Vulkan Device Memory exporting and implaced mapping extension,
+//! but is not performant. It's a miracle that it even works
+
+use std::{
+    collections::{BTreeMap, HashSet},
+    ptr::copy_nonoverlapping,
+    sync::Mutex,
+};
 
 use lazy_static::lazy_static;
 
-use crate::shadow_blob::utils::{copy_guest_blob_part_to_host, copy_host_blob_part_to_guest};
-
 type Ptr = usize;
 
+#[derive(Debug)]
 struct Page {
     blob_id: u64,
-    blob_offset: u64,
+    host_page_ptr: Ptr,
     loaded: bool,
 }
 
 struct Storage {
     pages: BTreeMap<Ptr, Page>,
+    // blob_id -> registered page addrs
+    blobs: BTreeMap<u64, Vec<Ptr>>,
     page_size: usize,
     loaded_pages: Vec<Ptr>,
 }
@@ -22,6 +32,7 @@ impl Storage {
     fn new() -> Self {
         Self {
             pages: BTreeMap::new(),
+            blobs: BTreeMap::new(),
             page_size: mem_ops::get_page_size(),
             loaded_pages: Vec::new(),
         }
@@ -32,101 +43,161 @@ lazy_static! {
     static ref static_storage: Mutex<Storage> = Mutex::new(Storage::new());
 }
 
-pub fn init() {
-    unsafe {
-        crate::ffi::webrogue_gfxstream_ffi_set_register_shadow_blob_callback(register_blob);
-    }
-}
+pub fn init() {}
 
 pub fn handle_segfault(segfault_addr: *const ()) -> bool {
+    // idk how, but it fixes a data race. Think twice before removing
+    flush_all();
+
     let segfault_addr = segfault_addr as Ptr;
     let mut storage = static_storage.lock().unwrap();
     let page_size = storage.page_size;
     let base_page_addr = segfault_addr & !(page_size - 1);
     let mut matching_pages = 0;
     let mut blob_id = 0;
-    let mut offset = 0;
-    // TODO adjust number of preloaded pages
-    for page_index in 0..1 {
+    let mut first_host_page_ptr = 0;
+    const PREFETCH_PAGES: usize = 16;
+    for page_index in 0..PREFETCH_PAGES {
         let page_addr = base_page_addr + page_size * page_index;
-        let Some(page) = storage.pages.get_mut(&page_addr) else {
+        let Some(page) = storage.pages.get(&page_addr) else {
             break;
         };
         if page_index == 0 {
             blob_id = page.blob_id;
-            offset = page.blob_offset;
-        } else {
-            if page.loaded || page.blob_id != blob_id {
-                break;
-            }
+            first_host_page_ptr = page.host_page_ptr;
+        } else if page.loaded || page.blob_id != blob_id {
+            break;
         }
 
         matching_pages += 1;
-        page.loaded = true;
-        storage.loaded_pages.push(page_addr);
     }
     if matching_pages == 0 {
         return false;
     }
     assert!(blob_id != 0);
+    for page_index in 0..matching_pages {
+        let page_addr = base_page_addr + page_size * page_index;
+        let page = storage.pages.get_mut(&page_addr).unwrap();
+        page.loaded = true;
+        storage.loaded_pages.push(page_addr);
+    }
     unsafe {
         mem_ops::mprotect(base_page_addr, page_size, matching_pages, true, true);
 
-        copy_host_blob_part_to_guest(
-            blob_id,
-            offset,
-            std::slice::from_raw_parts_mut(base_page_addr as *mut u8, page_size * matching_pages),
+        copy_nonoverlapping(
+            first_host_page_ptr as *const u8,
+            base_page_addr as *mut u8,
+            page_size * matching_pages,
         );
     };
     return true;
 }
 
+fn sweep_stale(storage: &mut Storage) {
+    let mut stale_blobs: Vec<u64> = Vec::new();
+    for blob_id in storage.blobs.keys() {
+        let live = unsafe { crate::bindings::webrogue_get_host_blob(*blob_id) as Ptr };
+        if live == 0 {
+            stale_blobs.push(*blob_id);
+        }
+    }
+    let page_size = storage.page_size;
+    if !stale_blobs.is_empty() {
+        let mut stale_pages: Vec<Ptr> = Vec::new();
+        for blob_id in &stale_blobs {
+            if let Some(pages) = storage.blobs.remove(blob_id) {
+                for page_ptr in &pages {
+                    storage.pages.remove(page_ptr);
+                    stale_pages.push(*page_ptr);
+                }
+            }
+        }
+        if !stale_pages.is_empty() {
+            for page_ptr in &stale_pages {
+                mem_ops::mprotect(*page_ptr, page_size, 1, true, true);
+            }
+            let stale_set: HashSet<Ptr> = stale_pages.iter().copied().collect();
+            storage.loaded_pages.retain(|p| !stale_set.contains(p));
+        }
+    }
+}
+
 pub fn flush_all() {
     let mut storage = static_storage.lock().unwrap();
-    let loaded_pages = storage.loaded_pages.clone();
-    let page_size = storage.page_size;
-    storage.loaded_pages.clear();
 
-    for loaded_page_addr in loaded_pages {
-        let Some(page) = storage.pages.get_mut(&loaded_page_addr) else {
+    sweep_stale(&mut storage);
+    let page_size = storage.page_size;
+
+    let loaded_pages = std::mem::take(&mut storage.loaded_pages);
+
+    for loaded_page_addr in &loaded_pages {
+        let Some(page) = storage.pages.get_mut(loaded_page_addr) else {
             continue;
         };
         page.loaded = false;
 
         // TODO collect multiple pages
         unsafe {
-            mem_ops::mprotect(loaded_page_addr, page_size, 1, true, false);
+            mem_ops::mprotect(*loaded_page_addr, page_size, 1, true, false);
 
-            copy_guest_blob_part_to_host(
-                page.blob_id,
-                page.blob_offset,
-                std::slice::from_raw_parts_mut(loaded_page_addr as *mut u8, page_size),
+            copy_nonoverlapping(
+                *loaded_page_addr as *const u8,
+                page.host_page_ptr as *mut u8,
+                page_size,
             );
 
-            mem_ops::mprotect(loaded_page_addr, page_size, 1, false, false);
+            mem_ops::mprotect(*loaded_page_addr, page_size, 1, false, false);
         };
     }
 }
 
-extern "C" fn register_blob(ptr: *const (), len: u64, blob_id: u64) {
-    let blob_ptr = ptr as Ptr;
+pub fn register_blob(vm_ptr: *const (), len: usize, host_ptr: *const (), blob_id: u64) {
+    let vm_ptr = vm_ptr as Ptr;
     let len = len as usize;
     let mut storage = static_storage.lock().unwrap();
     let page_size = storage.page_size;
 
-    mem_ops::mprotect(blob_ptr, page_size, len / page_size, false, false);
-    assert!(len % storage.page_size == 0);
-    for page_index in 0..(len / storage.page_size) {
-        let page_ptr = blob_ptr + storage.page_size * page_index;
+    mem_ops::mprotect(vm_ptr, page_size, len / page_size, false, false);
+    debug_assert!(len % storage.page_size == 0);
+    let pages: Vec<(Ptr, Ptr)> = (0..len / page_size)
+        .map(|page_index| {
+            let page_ptr = vm_ptr + page_size * page_index;
+            (page_ptr, (page_ptr - vm_ptr) + host_ptr as Ptr)
+        })
+        .collect();
+    for (page_ptr, host_page_ptr) in &pages {
         storage.pages.insert(
-            page_ptr,
+            *page_ptr,
             Page {
                 blob_id,
-                blob_offset: (page_ptr - blob_ptr) as u64,
+                host_page_ptr: *host_page_ptr,
                 loaded: false,
             },
         );
     }
+    storage
+        .blobs
+        .entry(blob_id)
+        .or_default()
+        .extend(pages.iter().map(|(page_ptr, _)| *page_ptr));
+}
+
+pub fn deregister_blob(blob_id: u64) {
+    let mut storage = static_storage.lock().unwrap();
+    let page_size = storage.page_size;
+    let Some(pages) = storage.blobs.remove(&blob_id) else {
+        return;
+    };
+    if pages.is_empty() {
+        return;
+    }
+    for page_ptr in &pages {
+        storage.pages.remove(page_ptr);
+        mem_ops::mprotect(*page_ptr, page_size, 1, true, true);
+    }
+    storage
+        .loaded_pages
+        .retain(|page_ptr| !pages.contains(page_ptr));
 }
 
 #[cfg(target_os = "windows")]

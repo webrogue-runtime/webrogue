@@ -14,10 +14,10 @@ mkdir -p "$OUT_DIR"
 cargo build --manifest-path=../crates/aot-lib/Cargo.toml $CARGO_FLAGS
 cp $TARGET_DIR/$ARCH-unknown-linux-gnu/aot/libwebrogue_aot_lib.a "$OUT_DIR"
 
-for GFXSTREAM_LIB_TYPE in stub impl
+for VIRGL_LIB_TYPE in stub impl
 do
-    cargo build --manifest-path=../crates/gfxstream-lib/Cargo.toml --features=$GFXSTREAM_LIB_TYPE $CARGO_FLAGS
-    cp $TARGET_DIR/$ARCH-unknown-linux-gnu/aot/libwebrogue_gfxstream_lib.rlib  "$OUT_DIR/libwebrogue_gfxstream_lib_$GFXSTREAM_LIB_TYPE.a"
+    cargo build --manifest-path=../crates/virgl-lib/Cargo.toml --features=$VIRGL_LIB_TYPE $CARGO_FLAGS
+    cp $TARGET_DIR/$ARCH-unknown-linux-gnu/aot/libwebrogue_virgl_lib.rlib  "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a"
 done
 
 clang --gcc-install-dir=/opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION main.c -nostdlib -c -o main.o
@@ -25,12 +25,12 @@ clang --gcc-install-dir=/opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-
 
 rm -f process_dump*
 # strace -s 1000 -o process_dump -ff \
-clang++ \
+clang \
     -v \
     --gcc-install-dir=/opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION \
     main.o \
     $OUT_DIR/libwebrogue_aot_lib.a \
-    $OUT_DIR/libwebrogue_gfxstream_lib_impl.a \
+    $OUT_DIR/libwebrogue_virgl_lib_impl.a \
     empty.gnu.$ARCH.o \
     -static-libstdc++ \
     -lm \
@@ -64,12 +64,6 @@ esac
 llvm-ar q \
     "$OUT_DIR/libwebrogue_aot_lib.a" \
     "main.o"
-    
-
-llvm-ar qLs \
-    "$OUT_DIR/libwebrogue_aot_lib.a" \
-    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/libstdc++.a \
-    /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/libstdc++_nonshared.a
 
 cp \
     /lib/../lib64/crt1.o \
@@ -123,7 +117,7 @@ strip --strip-debug $OUT_DIR/libwebrogue_aot_lib.a
 #     --no-as-needed \
 #     "$OUT_DIR/crtn.o"
 
-for GFXSTREAM_LIB_TYPE in stub impl
+for VIRGL_LIB_TYPE in stub impl
 do
     ld.lld \
         --hash-style=gnu \
@@ -136,7 +130,7 @@ do
         "$OUT_DIR/crti.o" \
         "$OUT_DIR/crtbegin.o" \
         "$OUT_DIR/libwebrogue_aot_lib.a" \
-        "$OUT_DIR/libwebrogue_gfxstream_lib_$GFXSTREAM_LIB_TYPE.a" \
+        "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a" \
         "empty.gnu.$ARCH.o" \
         "$OUT_DIR/libm.so.6" \
         "$OUT_DIR/libpthread.so" \

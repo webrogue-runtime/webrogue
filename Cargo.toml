@@ -51,8 +51,8 @@ members = [
   "crates/events-macro",
   "crates/gfx",
   "crates/gfx-winit",
-  "crates/gfxstream",
-  "crates/gfxstream-lib",
+  "crates/virgl",
+  "crates/virgl-lib",
   "crates/hub-client",
   "crates/hub-client/openapi",
   "crates/hub-debuggee",
@@ -96,8 +96,8 @@ webrogue-hub-debuggee = { path = "crates/hub-debuggee" }
 webrogue-icons = { path = "crates/icons" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-winit = { path = "crates/gfx-winit" }
-webrogue-gfxstream = { path = "crates/gfxstream" }
-webrogue-gfxstream-lib  = { path = "crates/gfxstream-lib" }
+webrogue-virgl = { path = "crates/virgl" }
+webrogue-virgl-lib  = { path = "crates/virgl-lib" }
 webrogue-lld = { path = "crates/lld" }
 webrogue-wasi-common = { path = "crates/wasi-common", default-features = false }
 webrogue-wasip1 = { path = "crates/wasip1" }
@@ -199,6 +199,8 @@ schemars = "1.2.1"
 rcgen = "0.14.8"
 p12 = "0.6.3"
 xxhash-rust = "0.8.16"
+bindgen = { version = "0.72.1", default-features = false }
+tokio-hrtime = "0.1.7"
 
 # To remove
 thiserror = "2.0.17"

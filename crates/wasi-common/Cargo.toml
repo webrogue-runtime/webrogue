@@ -23,6 +23,7 @@ async-trait = { workspace = true }
 
 # Optional, enabled by tokio feature:
 tokio = { workspace = true, features = ["time"], optional = true }
+tokio-hrtime = { workspace = true, optional = true }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true }
@@ -47,6 +48,7 @@ wiggle_metadata = ["wiggle/wiggle_metadata"]
 # synchronous wasmtime embedding.
 sync = [
     "dep:tokio",
+    "dep:tokio-hrtime",
 ]
 
 [package.metadata.docs.rs]

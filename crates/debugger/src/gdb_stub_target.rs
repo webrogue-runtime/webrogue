@@ -40,10 +40,20 @@ pub(crate) struct Wasm32Target {
 
 impl Wasm32Target {
     pub async fn wait_for_first_step(&mut self) -> anyhow::Result<()> {
-        let message = self.receive_message().await?;
-        assert!(matches!(message, None)); // Main thread registered
-        let message = self.receive_message().await?;
-        assert!(matches!(message, Some(StopReason::Paused(_, _)))); // Breakpoint due to initial single-stepping
+        // Main thread registered
+        anyhow::ensure!(
+            matches!(self.receive_message().await?, None),
+            "First message in wait_for_first_step mismatch"
+        );
+
+        // Breakpoint due to initial single-stepping
+        anyhow::ensure!(
+            matches!(
+                self.receive_message().await?,
+                Some(StopReason::Paused(_, _))
+            ),
+            "Second message in wait_for_first_step mismatch"
+        );
         Ok(())
     }
 
@@ -102,11 +112,9 @@ impl Wasm32Target {
                 Ok(Some(StopReason::Paused(reason, registers)))
             }
             DebuggerLoopMessage::ThreadFinished(tid) => {
-                let thread = self
-                    .threads
-                    .remove(&tid)
-                    .expect("DebuggerLoopMessage::ThreadFinished must refer a live thread");
-                if thread.is_main {
+                let thread = self.threads.remove(&tid);
+                // None means that main thread stopped before being started due to some error
+                if thread.is_none_or(|thread| thread.is_main) {
                     Ok(Some(StopReason::Finished))
                 } else {
                     Ok(None)
@@ -171,8 +179,7 @@ impl Wasm32Target {
                 .unbounded_send(ThreadMessage::EditBreakpoint(EditBreakpointMessage {
                     breakpoints: self.breakpoints.clone(),
                 }));
-            debug_assert!(send_result.is_ok());
-            if !was_stopped {
+            if send_result.is_ok() && !was_stopped {
                 let send_result = stopped_thread
                     .sender
                     .unbounded_send(ThreadMessage::Resume(ResumeMessage { is_step: false }));

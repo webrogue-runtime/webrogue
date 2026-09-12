@@ -28,8 +28,6 @@ pub fn link_musl(
         &build_dir,
         &format!("{}-linux-musl/libwebrogue_aot_lib.a", arch_str),
     )?;
-    let libstdcplusplus_tmp =
-        artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/libstdc++.so", arch_str))?;
     let libgcc_s_tmp = artifacts.extract_tmp(
         &build_dir,
         &format!("{}-linux-musl/libgcc_s.so.1", arch_str),
@@ -40,10 +38,10 @@ pub fn link_musl(
         artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/crtend.o", arch_str))?;
     let crtn_tmp = artifacts.extract_tmp(&build_dir, &format!("{}-linux-musl/crtn.o", arch_str))?;
 
-    let gfxstream_lib = artifacts.extract_tmp(
+    let virgl_lib = artifacts.extract_tmp(
         &build_dir,
         &format!(
-            "{}-linux-musl/libwebrogue_gfxstream_lib_{}.a",
+            "{}-linux-musl/libwebrogue_virgl_lib_{}.a",
             arch_str,
             if vulkan { "impl" } else { "stub" }
         ),
@@ -79,9 +77,8 @@ pub fn link_musl(
         crti_tmp.as_arg()?.to_string(),
         crtbegin_tmp.as_arg()?.to_string(),
         libwebrogue_aot_lib_tmp.as_arg()?.to_string(),
-        gfxstream_lib.as_arg()?.to_string(),
+        virgl_lib.as_arg()?.to_string(),
         object_file.to_string(),
-        libstdcplusplus_tmp.as_arg()?.to_string(),
         libgcc_s_tmp.as_arg()?.to_string(),
         libc_tmp.as_arg()?.to_string(),
         crtend_tmp.as_arg()?.to_string(),
@@ -146,10 +143,10 @@ pub fn link_glibc(
         artifacts.extract_tmp(&build_dir, &format!("{}-linux-gnu/crtend.o", arch_str))?;
     let crtn_tmp = artifacts.extract_tmp(&build_dir, &format!("{}-linux-gnu/crtn.o", arch_str))?;
 
-    let gfxstream_lib = artifacts.extract_tmp(
+    let virgl_lib = artifacts.extract_tmp(
         &build_dir,
         &format!(
-            "{}-linux-gnu/libwebrogue_gfxstream_lib_{}.a",
+            "{}-linux-gnu/libwebrogue_virgl_lib_{}.a",
             arch_str,
             if vulkan { "impl" } else { "stub" }
         ),
@@ -191,7 +188,7 @@ pub fn link_glibc(
         crti_tmp.as_arg()?,
         crtbegin_tmp.as_arg()?,
         libwebrogue_aot_lib_tmp.as_arg()?,
-        gfxstream_lib.as_arg()?,
+        virgl_lib.as_arg()?,
         object_file.to_string(),
         libm_tmp.as_arg()?,
         libpthread_tmp.as_arg()?,

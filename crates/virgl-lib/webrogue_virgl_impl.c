@@ -1,0 +1,365 @@
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "webrogue_virgl.h"
+
+#include "venus/vkr_renderer.h"
+#include "virgl_util.h"
+
+static void
+webrogue_log_cb(enum virgl_log_level_flags log_level, const char *msg, void *user_data)
+{
+   (void)log_level;
+   (void)user_data;
+   fputs(msg, stderr);
+   fflush(stderr);
+}
+
+static void *webrogue_pending_shmem_ptr = NULL;
+static size_t webrogue_pending_shmem_size = 0;
+
+void webrogue_virgl_setup_shmem(void *ptr, size_t size)
+{
+   webrogue_pending_shmem_ptr = ptr;
+   webrogue_pending_shmem_size = size;
+}
+
+void *webrogue_virgl_pop_shmem(size_t *out_size)
+{
+   void *ret;
+   size_t ret_size;
+
+   if (!webrogue_pending_shmem_ptr) {
+      ret = NULL;
+      ret_size = 0;
+   } else {
+      ret = webrogue_pending_shmem_ptr;
+      ret_size = webrogue_pending_shmem_size;
+      webrogue_pending_shmem_ptr = NULL;
+   }
+   if (out_size) {
+      *out_size = ret_size;
+   }
+   return ret;
+}
+
+static void *webrogueVulkan = NULL;
+
+void webrogueSetVulkan(void *vulkan)
+{
+   webrogueVulkan = vulkan;
+}
+
+void *webrogueGetVulkan(void)
+{
+   return webrogueVulkan;
+}
+
+static void (*webrogue_retire_fence_cb)(uint32_t ctx_id, uint32_t ring_idx,
+                                        uint64_t fence_id) = NULL;
+
+static void
+webrogue_vkr_retire_fence(uint32_t ctx_id, uint32_t ring_idx, uint64_t fence_id)
+{
+   webrogue_retire_fence_cb(ctx_id, ring_idx, fence_id);
+}
+
+static const struct vkr_renderer_callbacks webrogue_vkr_cbs = {
+   .debug_logger = NULL,
+   .retire_fence = webrogue_vkr_retire_fence,
+};
+
+bool
+webrogue_vkr_init(uint32_t flags,
+                  void (*retire_fence)(uint32_t ctx_id, uint32_t ring_idx,
+                                       uint64_t fence_id))
+{
+   webrogue_retire_fence_cb = retire_fence;
+   return vkr_renderer_init(flags, &webrogue_vkr_cbs);
+}
+
+void *webrogue_get_host_blob(uint64_t blob_id)
+{
+   return vkr_renderer_get_host_blob(1, (uint32_t)blob_id);
+}
+
+#define EPOXY_GL_STUB(name) void name() { abort(); }
+EPOXY_GL_STUB(epoxy_glBindTransformFeedback)
+EPOXY_GL_STUB(epoxy_glDeleteBuffers)
+EPOXY_GL_STUB(epoxy_glDeleteProgram)
+EPOXY_GL_STUB(epoxy_glDeleteProgramPipelines)
+EPOXY_GL_STUB(epoxy_glDeleteShader)
+EPOXY_GL_STUB(epoxy_glDeleteTextures)
+EPOXY_GL_STUB(epoxy_glDeleteTransformFeedbacks)
+EPOXY_GL_STUB(epoxy_glDeleteVertexArrays)
+EPOXY_GL_STUB(epoxy_glDisable)
+EPOXY_GL_STUB(epoxy_glEnable)
+EPOXY_GL_STUB(epoxy_glEndTransformFeedback)
+EPOXY_GL_STUB(epoxy_has_gl_extension)
+EPOXY_GL_STUB(epoxy_glBindRenderbuffer)
+EPOXY_GL_STUB(epoxy_glDeleteSamplers)
+EPOXY_GL_STUB(epoxy_glFramebufferRenderbuffer)
+EPOXY_GL_STUB(epoxy_glFramebufferTexture)
+EPOXY_GL_STUB(epoxy_glFramebufferTexture1D)
+EPOXY_GL_STUB(epoxy_glFramebufferTexture2D)
+EPOXY_GL_STUB(epoxy_glFramebufferTexture2DMultisampleEXT)
+EPOXY_GL_STUB(epoxy_glFramebufferTexture3D)
+EPOXY_GL_STUB(epoxy_glFramebufferTexture3DOES)
+EPOXY_GL_STUB(epoxy_glFramebufferTextureLayer)
+EPOXY_GL_STUB(epoxy_glGenRenderbuffers)
+EPOXY_GL_STUB(epoxy_glRenderbufferStorageMultisampleEXT)
+EPOXY_GL_STUB(epoxy_glAlphaFunc)
+EPOXY_GL_STUB(epoxy_glBindFramebuffer)
+EPOXY_GL_STUB(epoxy_glCheckFramebufferStatus)
+EPOXY_GL_STUB(epoxy_glClientWaitSync)
+EPOXY_GL_STUB(epoxy_glDeleteSync)
+EPOXY_GL_STUB(epoxy_glDepthFunc)
+EPOXY_GL_STUB(epoxy_glDepthMask)
+EPOXY_GL_STUB(epoxy_glDrawBuffers)
+EPOXY_GL_STUB(epoxy_glReadBuffer)
+EPOXY_GL_STUB(epoxy_glBindBuffer)
+EPOXY_GL_STUB(epoxy_glBindVertexArray)
+EPOXY_GL_STUB(epoxy_glDebugMessageCallback)
+EPOXY_GL_STUB(epoxy_glDeleteFramebuffers)
+EPOXY_GL_STUB(epoxy_glDeleteRenderbuffers)
+EPOXY_GL_STUB(epoxy_glDisableVertexAttribArray)
+EPOXY_GL_STUB(epoxy_glGetError)
+EPOXY_GL_STUB(epoxy_glGetIntegerv)
+EPOXY_GL_STUB(epoxy_glGetString)
+EPOXY_GL_STUB(epoxy_gl_version)
+EPOXY_GL_STUB(epoxy_is_desktop_gl)
+EPOXY_GL_STUB(epoxy_glBindBufferBase)
+EPOXY_GL_STUB(epoxy_glBindBufferRange)
+EPOXY_GL_STUB(epoxy_glDeleteMemoryObjectsEXT)
+EPOXY_GL_STUB(epoxy_glDeleteQueries)
+EPOXY_GL_STUB(epoxy_glGenFramebuffers)
+EPOXY_GL_STUB(epoxy_glGenTransformFeedbacks)
+EPOXY_GL_STUB(epoxy_glGenVertexArrays)
+EPOXY_GL_STUB(epoxy_glGenTextures)
+EPOXY_GL_STUB(epoxy_glBindTexture)
+EPOXY_GL_STUB(epoxy_glTexImage2D)
+EPOXY_GL_STUB(epoxy_glTexImage2DMultisample)
+EPOXY_GL_STUB(epoxy_glTexStorage2D)
+EPOXY_GL_STUB(epoxy_glTexStorage2DMultisample)
+EPOXY_GL_STUB(epoxy_glViewport)
+EPOXY_GL_STUB(epoxy_glGenBuffers)
+EPOXY_GL_STUB(epoxy_glAttachShader)
+EPOXY_GL_STUB(epoxy_glLinkProgram)
+EPOXY_GL_STUB(epoxy_glBufferData)
+EPOXY_GL_STUB(epoxy_glGetActiveUniformBlockiv)
+EPOXY_GL_STUB(epoxy_glUniformBlockBinding)
+EPOXY_GL_STUB(epoxy_glGetUniformBlockIndex)
+EPOXY_GL_STUB(epoxy_glActiveShaderProgram)
+EPOXY_GL_STUB(epoxy_glGetUniformLocation)
+EPOXY_GL_STUB(epoxy_glTransformFeedbackVaryings)
+EPOXY_GL_STUB(epoxy_glGetProgramPipelineiv)
+EPOXY_GL_STUB(epoxy_glValidateProgramPipeline)
+EPOXY_GL_STUB(epoxy_glUseProgramStages)
+EPOXY_GL_STUB(epoxy_glGenProgramPipelines)
+EPOXY_GL_STUB(epoxy_glBindAttribLocation)
+EPOXY_GL_STUB(epoxy_glBindFragDataLocationIndexedEXT)
+EPOXY_GL_STUB(epoxy_glBindFragDataLocationIndexed)
+EPOXY_GL_STUB(epoxy_glGetProgramInfoLog)
+EPOXY_GL_STUB(epoxy_glUseProgram)
+EPOXY_GL_STUB(epoxy_glEnableVertexAttribArray)
+EPOXY_GL_STUB(epoxy_glVertexAttribPointer)
+EPOXY_GL_STUB(epoxy_glGetAttribLocation)
+EPOXY_GL_STUB(epoxy_glTexParameteri)
+EPOXY_GL_STUB(epoxy_glCreateProgram)
+EPOXY_GL_STUB(epoxy_glSamplerParameterIuiv)
+EPOXY_GL_STUB(epoxy_glTextureView)
+EPOXY_GL_STUB(epoxy_glWaitSync)
+EPOXY_GL_STUB(epoxy_glFenceSync)
+EPOXY_GL_STUB(epoxy_glSamplerParameterf)
+EPOXY_GL_STUB(epoxy_glSamplerParameteri)
+EPOXY_GL_STUB(epoxy_glGenSamplers)
+EPOXY_GL_STUB(epoxy_glBindProgramPipeline)
+EPOXY_GL_STUB(epoxy_glProgramParameteri)
+EPOXY_GL_STUB(epoxy_glVertexAttribBinding)
+EPOXY_GL_STUB(epoxy_glVertexAttribFormat)
+EPOXY_GL_STUB(epoxy_glVertexAttribIFormat)
+EPOXY_GL_STUB(epoxy_glFramebufferParameteri)
+EPOXY_GL_STUB(epoxy_glEGLImageTargetTexture2DOES)
+EPOXY_GL_STUB(epoxy_glTexParameteriv)
+EPOXY_GL_STUB(epoxy_glDrawArrays)
+EPOXY_GL_STUB(epoxy_glScissor)
+EPOXY_GL_STUB(epoxy_glBlendBarrierKHR)
+EPOXY_GL_STUB(epoxy_glTextureBarrier)
+EPOXY_GL_STUB(epoxy_glMemoryBarrier)
+EPOXY_GL_STUB(epoxy_glTexBuffer)
+EPOXY_GL_STUB(epoxy_glTexBufferRange)
+EPOXY_GL_STUB(epoxy_glVertexBindingDivisor)
+EPOXY_GL_STUB(epoxy_glClear)
+EPOXY_GL_STUB(epoxy_glClearBufferfv)
+EPOXY_GL_STUB(epoxy_glClearBufferiv)
+EPOXY_GL_STUB(epoxy_glClearBufferuiv)
+EPOXY_GL_STUB(epoxy_glStencilMaskSeparate)
+EPOXY_GL_STUB(epoxy_glClearStencil)
+EPOXY_GL_STUB(epoxy_glStencilMask)
+EPOXY_GL_STUB(epoxy_glClearDepth)
+EPOXY_GL_STUB(epoxy_glClearDepthf)
+EPOXY_GL_STUB(epoxy_glColorMask)
+EPOXY_GL_STUB(epoxy_glColorMaskIndexedEXT)
+EPOXY_GL_STUB(epoxy_glClearColor)
+EPOXY_GL_STUB(epoxy_glGetProgramiv)
+EPOXY_GL_STUB(epoxy_glGetShaderInfoLog)
+EPOXY_GL_STUB(epoxy_glGetShaderiv)
+EPOXY_GL_STUB(epoxy_glVertexAttribDivisorARB)
+EPOXY_GL_STUB(epoxy_glVertexAttribIPointer)
+EPOXY_GL_STUB(epoxy_glUnmapBuffer)
+EPOXY_GL_STUB(epoxy_glVertexAttrib4fv)
+EPOXY_GL_STUB(epoxy_glVertexAttrib3fv)
+EPOXY_GL_STUB(epoxy_glVertexAttrib2fv)
+EPOXY_GL_STUB(epoxy_glVertexAttrib1fv)
+EPOXY_GL_STUB(epoxy_glMapBufferRange)
+EPOXY_GL_STUB(epoxy_glDepthRange)
+EPOXY_GL_STUB(epoxy_glDepthRangefOES)
+EPOXY_GL_STUB(epoxy_glDepthRangeIndexed)
+EPOXY_GL_STUB(epoxy_glDepthRangeIndexedfOES)
+EPOXY_GL_STUB(epoxy_glBindVertexBuffers)
+EPOXY_GL_STUB(epoxy_glViewportIndexedf)
+EPOXY_GL_STUB(epoxy_glScissorIndexed)
+EPOXY_GL_STUB(epoxy_glClearTexSubImage)
+EPOXY_GL_STUB(epoxy_glClearTexSubImageEXT)
+EPOXY_GL_STUB(epoxy_glCompileShader)
+EPOXY_GL_STUB(epoxy_glShaderSource)
+EPOXY_GL_STUB(epoxy_glCreateShader)
+EPOXY_GL_STUB(epoxy_glDrawArraysInstancedBaseInstance)
+EPOXY_GL_STUB(epoxy_glDrawArraysIndirect)
+EPOXY_GL_STUB(epoxy_glMultiDrawArraysIndirect)
+EPOXY_GL_STUB(epoxy_glMultiDrawArraysIndirectCountARB)
+EPOXY_GL_STUB(epoxy_glBlendEquation)
+EPOXY_GL_STUB(epoxy_glActiveTexture)
+EPOXY_GL_STUB(epoxy_glBindBufferARB)
+EPOXY_GL_STUB(epoxy_glBindImageTexture)
+EPOXY_GL_STUB(epoxy_glBindVertexBuffer)
+EPOXY_GL_STUB(epoxy_glBufferSubData)
+EPOXY_GL_STUB(epoxy_glUniform1i)
+EPOXY_GL_STUB(epoxy_glUniform1iv)
+EPOXY_GL_STUB(epoxy_glUniform4f)
+EPOXY_GL_STUB(epoxy_glUniform4uiv)
+EPOXY_GL_STUB(epoxy_glResumeTransformFeedback)
+EPOXY_GL_STUB(epoxy_glPrimitiveRestartIndexNV)
+EPOXY_GL_STUB(epoxy_glPrimitiveRestartIndex)
+EPOXY_GL_STUB(epoxy_glPatchParameteri)
+EPOXY_GL_STUB(epoxy_glMultiDrawElementsIndirectCountARB)
+EPOXY_GL_STUB(epoxy_glMultiDrawElementsIndirect)
+EPOXY_GL_STUB(epoxy_glEnableClientState)
+EPOXY_GL_STUB(epoxy_glDrawRangeElementsBaseVertex)
+EPOXY_GL_STUB(epoxy_glDrawRangeElements)
+EPOXY_GL_STUB(epoxy_glDrawElementsInstancedBaseVertexBaseInstance)
+EPOXY_GL_STUB(epoxy_glDrawElementsInstancedBaseVertex)
+EPOXY_GL_STUB(epoxy_glDrawElementsInstancedBaseInstance)
+EPOXY_GL_STUB(epoxy_glDrawElementsInstancedARB)
+EPOXY_GL_STUB(epoxy_glDrawElementsIndirect)
+EPOXY_GL_STUB(epoxy_glDrawElementsBaseVertex)
+EPOXY_GL_STUB(epoxy_glDrawElements)
+EPOXY_GL_STUB(epoxy_glDrawArraysInstancedARB)
+EPOXY_GL_STUB(epoxy_glDisableClientState)
+EPOXY_GL_STUB(epoxy_glBeginTransformFeedback)
+EPOXY_GL_STUB(epoxy_glStencilOpSeparate)
+EPOXY_GL_STUB(epoxy_glStencilOp)
+EPOXY_GL_STUB(epoxy_glStencilFuncSeparate)
+EPOXY_GL_STUB(epoxy_glStencilFunc)
+EPOXY_GL_STUB(epoxy_glShadeModel)
+EPOXY_GL_STUB(epoxy_glPolygonMode)
+EPOXY_GL_STUB(epoxy_glPointSize)
+EPOXY_GL_STUB(epoxy_glLogicOp)
+EPOXY_GL_STUB(epoxy_glLineWidth)
+EPOXY_GL_STUB(epoxy_glFrontFace)
+EPOXY_GL_STUB(epoxy_glEnableIndexedEXT)
+EPOXY_GL_STUB(epoxy_glDispatchComputeIndirect)
+EPOXY_GL_STUB(epoxy_glDispatchCompute)
+EPOXY_GL_STUB(epoxy_glDisableIndexedEXT)
+EPOXY_GL_STUB(epoxy_glBlendFuncSeparateiARB)
+EPOXY_GL_STUB(epoxy_glBlendFuncSeparate)
+EPOXY_GL_STUB(epoxy_glBlendEquationSeparateiARB)
+EPOXY_GL_STUB(epoxy_glBlendEquationSeparate)
+EPOXY_GL_STUB(epoxy_glBlendColor)
+EPOXY_GL_STUB(epoxy_glTexStorage3DMultisample)
+EPOXY_GL_STUB(epoxy_glTexStorage3D)
+EPOXY_GL_STUB(epoxy_glTexStorage1D)
+EPOXY_GL_STUB(epoxy_glTexParameterIuiv)
+EPOXY_GL_STUB(epoxy_glTexParameterf)
+EPOXY_GL_STUB(epoxy_glTexImage3DMultisample)
+EPOXY_GL_STUB(epoxy_glTexImage3D)
+EPOXY_GL_STUB(epoxy_glTexImage1D)
+EPOXY_GL_STUB(epoxy_glProvokingVertexEXT)
+EPOXY_GL_STUB(epoxy_glPolygonOffsetClampEXT)
+EPOXY_GL_STUB(epoxy_glPolygonOffset)
+EPOXY_GL_STUB(epoxy_glPointParameteri)
+EPOXY_GL_STUB(epoxy_glLineStipple)
+EPOXY_GL_STUB(epoxy_glGenBuffersARB)
+EPOXY_GL_STUB(epoxy_glEGLImageTargetTexStorageEXT)
+EPOXY_GL_STUB(epoxy_glCullFace)
+EPOXY_GL_STUB(epoxy_glClampColor)
+EPOXY_GL_STUB(epoxy_glBufferStorage)
+EPOXY_GL_STUB(epoxy_glBindSampler)
+EPOXY_GL_STUB(epoxy_glClipControl)
+EPOXY_GL_STUB(epoxy_glPauseTransformFeedback)
+EPOXY_GL_STUB(epoxy_glCompressedTexSubImage1D)
+EPOXY_GL_STUB(epoxy_glCompressedTexSubImage2D)
+EPOXY_GL_STUB(epoxy_glCompressedTexSubImage3D)
+EPOXY_GL_STUB(epoxy_glDrawPixels)
+EPOXY_GL_STUB(epoxy_glGetCompressedTexImage)
+EPOXY_GL_STUB(epoxy_glGetnCompressedTexImageARB)
+EPOXY_GL_STUB(epoxy_glGetnTexImageARB)
+EPOXY_GL_STUB(epoxy_glGetTexImage)
+EPOXY_GL_STUB(epoxy_glPixelStorei)
+EPOXY_GL_STUB(epoxy_glPixelTransferf)
+EPOXY_GL_STUB(epoxy_glPixelZoom)
+EPOXY_GL_STUB(epoxy_glReadnPixels)
+EPOXY_GL_STUB(epoxy_glReadnPixelsARB)
+EPOXY_GL_STUB(epoxy_glReadnPixelsKHR)
+EPOXY_GL_STUB(epoxy_glReadPixels)
+EPOXY_GL_STUB(epoxy_glTexSubImage1D)
+EPOXY_GL_STUB(epoxy_glTexSubImage2D)
+EPOXY_GL_STUB(epoxy_glTexSubImage3D)
+EPOXY_GL_STUB(epoxy_glWindowPos2i)
+EPOXY_GL_STUB(epoxy_glBeginQuery)
+EPOXY_GL_STUB(epoxy_glBeginQueryIndexed)
+EPOXY_GL_STUB(epoxy_glBlitFramebuffer)
+EPOXY_GL_STUB(epoxy_glClipPlane)
+EPOXY_GL_STUB(epoxy_glCopyBufferSubData)
+EPOXY_GL_STUB(epoxy_glCopyImageSubData)
+EPOXY_GL_STUB(epoxy_glEndConditionalRender)
+EPOXY_GL_STUB(epoxy_glEndQuery)
+EPOXY_GL_STUB(epoxy_glEndQueryIndexed)
+EPOXY_GL_STUB(epoxy_glFlush)
+EPOXY_GL_STUB(epoxy_glGenQueries)
+EPOXY_GL_STUB(epoxy_glGetQueryObjecti64v)
+EPOXY_GL_STUB(epoxy_glGetQueryObjectiv)
+EPOXY_GL_STUB(epoxy_glGetQueryObjectui64v)
+EPOXY_GL_STUB(epoxy_glGetQueryObjectuiv)
+EPOXY_GL_STUB(epoxy_glMinSampleShading)
+EPOXY_GL_STUB(epoxy_glPatchParameterfv)
+EPOXY_GL_STUB(epoxy_glQueryCounter)
+EPOXY_GL_STUB(epoxy_glSampleMaski)
+EPOXY_GL_STUB(epoxy_glBeginConditionalRender)
+EPOXY_GL_STUB(epoxy_glBeginConditionalRenderNV)
+EPOXY_GL_STUB(epoxy_glCreateMemoryObjectsEXT)
+EPOXY_GL_STUB(epoxy_glDebugMessageInsert)
+EPOXY_GL_STUB(epoxy_glDebugMessageInsertKHR)
+EPOXY_GL_STUB(epoxy_glEndConditionalRenderNV)
+EPOXY_GL_STUB(epoxy_glImportMemoryFdEXT)
+EPOXY_GL_STUB(epoxy_glMemoryObjectParameterivEXT)
+EPOXY_GL_STUB(epoxy_glTexStorageMem2DEXT)
+EPOXY_GL_STUB(epoxy_glPolygonStipple)
+EPOXY_GL_STUB(epoxy_glGetIntegeri_v)
+EPOXY_GL_STUB(epoxy_glGetFloatv)
+EPOXY_GL_STUB(epoxy_glGetMultisamplefv)
+EPOXY_GL_STUB(epoxy_glGetInteger64v)
+
+#undef EPOXY_GL_STUB
+
+uint8_t webrogue_virgl_is_impl()
+{
+   return 1;
+}
+
+void webrogue_virgl_stub_fn()
+{
+   virgl_log_set_handler(webrogue_log_cb, NULL, NULL);
+}

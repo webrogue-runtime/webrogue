@@ -30,5 +30,6 @@ ENV GCC_VERSION=14
 RUN mv /opt/rh/gcc-toolset-$GCC_VERSION /opt/rh/current-gcc-toolset \
     && rm -rf /opt/rh/gcc-toolset-* \
     && mv /opt/rh/current-gcc-toolset /opt/rh/gcc-toolset-$GCC_VERSION
+ENV BINDGEN_EXTRA_CLANG_ARGS_${ARCH}-unknown-linux-gnu=--gcc-install-dir=/opt/rh/gcc-toolset-${GCC_VERSION}/root/usr/lib/gcc/x86_64-redhat-linux/${GCC_VERSION}/
 
 ENV ARCH=${ARCH}
