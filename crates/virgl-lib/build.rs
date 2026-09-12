@@ -45,7 +45,7 @@ fn main() {
     let mut is_windows = false;
     let mut _is_macos = false;
     let mut is_linux = false;
-    let mut _is_android = false;
+    let mut is_android = false;
     let mut is_freebsd = false;
     match _os.as_str() {
         "windows" => {
@@ -58,7 +58,7 @@ fn main() {
             is_linux = true;
         }
         "android" => {
-            _is_android = true;
+            is_android = true;
             is_linux = true;
         }
         "freebsd" => {
@@ -119,7 +119,10 @@ fn main() {
         ("HAVE_TIMESPEC_GET", Some("1")),
         ("HAVE_SYS_UIO_H", Some("1")),
         ("HAVE_PTHREAD", def_if(!is_windows)),
-        ("HAVE_PTHREAD_SETAFFINITY", def_if(!is_windows)),
+        (
+            "HAVE_PTHREAD_SETAFFINITY",
+            def_if(!is_windows && !is_android),
+        ),
         ("HAVE_PTHREAD_NP_H", def_if(is_freebsd)),
         ("HAVE_EPOXY_EGL_H", None),
         ("HAVE_EPOXY_GLX_H", None),

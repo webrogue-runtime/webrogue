@@ -5,6 +5,7 @@ extend-exclude = [
     "*.storyboard",
     "/crates/wasi-common",
     "/crates/virgl-lib/epoxy"
+    "/crates/virgl-lib/compat"
 ]
 ignore-vcs = true
 

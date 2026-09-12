@@ -438,6 +438,34 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
             }
         }
     }
+
+    fn get_os_family(
+        &mut self,
+        mem: &mut wiggle::GuestMemory<'_>,
+        out_os_family: wiggle::GuestPtr<u8>,
+    ) {
+        let os_family = cfg_select! {
+            target_os = "linux" => {
+                1
+            }
+            target_os = "windows" => {
+                2
+            }
+            target_os = "macos" => {
+                3
+            }
+            target_os = "android" => {
+                4
+            }
+            target_os = "ios" => {
+                5
+            }
+            _ => {
+                0
+            }
+        };
+        let _ = mem.write(out_os_family, os_family);
+    }
 }
 
 impl<System: ISystem + 'static> Interface<System> {

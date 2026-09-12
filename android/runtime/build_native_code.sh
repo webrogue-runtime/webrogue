@@ -9,7 +9,7 @@ export ANDROID_HOME="$ANDROID_SDK_ROOT"
 export ANDROID_NDK_HOME="$ANDROID_NDK_PATH"
 export CARGO_NDK_PLATFORM=$ANDROID_API_VERSION
 
-WRAPP_PATH=../../webrogue-sdk/examples/empty/empty.wrapp
+WRAPP_PATH=../../raylib.wrapp
 mkdir -p runner/src/main/assets
 cp $WRAPP_PATH runner/src/main/assets/aot.swrapp
 rm -rf runner/src/main/jniLibs

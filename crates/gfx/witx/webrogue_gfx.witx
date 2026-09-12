@@ -109,4 +109,10 @@
     (param $len $size)
     (param $out_error (@witx pointer u8))
   )
+
+  ;; OS info
+
+  (@interface func (export "get_os_family")
+    (param $out_os_family (@witx pointer u8))
+  )
 )
