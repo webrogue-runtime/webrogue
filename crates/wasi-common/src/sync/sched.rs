@@ -61,7 +61,7 @@ impl WasiSched for SyncSched {
             }
         }
         match duration {
-            Some(Some(remaining)) => match tokio::time::timeout(remaining, futures).await {
+            Some(Some(remaining)) => match tokio_hrtime::timeout(remaining, futures).await {
                 Ok(r) => r?,
                 Err(_deadline_elapsed) => {}
             },
@@ -83,7 +83,7 @@ impl WasiSched for SyncSched {
         Ok(())
     }
     async fn sleep(&self, duration: Duration) -> Result<(), Error> {
-        tokio::time::sleep(duration).await;
+        tokio_hrtime::sleep(duration).await;
         Ok(())
     }
 }
