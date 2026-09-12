@@ -101,6 +101,9 @@ impl Runtime {
         self.wasmtime_config
             .wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable)
             .debug_info(false);
+        // self.wasmtime_config
+        //     .max_wasm_stack(2 * 1024 * 1024)
+        //     .async_stack_size(2 * 1024 * 1024 + 2 * 1024 * 1024);
 
         #[cfg(feature = "cache")]
         if let Some(cache_config) = self.jit_cache_config {

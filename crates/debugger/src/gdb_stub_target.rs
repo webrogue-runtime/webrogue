@@ -179,8 +179,7 @@ impl Wasm32Target {
                 .unbounded_send(ThreadMessage::EditBreakpoint(EditBreakpointMessage {
                     breakpoints: self.breakpoints.clone(),
                 }));
-            debug_assert!(send_result.is_ok());
-            if !was_stopped {
+            if send_result.is_ok() && !was_stopped {
                 let send_result = stopped_thread
                     .sender
                     .unbounded_send(ThreadMessage::Resume(ResumeMessage { is_step: false }));

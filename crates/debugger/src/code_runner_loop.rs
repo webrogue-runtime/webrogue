@@ -41,8 +41,16 @@ pub fn runner<T: Send + 'static>(
                     let run_result = debuggee.run().await?;
                     match run_result {
                         wasmtime_internal_debugger::DebugRunResult::Finished => break 'exec_loop,
-                        wasmtime_internal_debugger::DebugRunResult::HostcallError
-                        | wasmtime_internal_debugger::DebugRunResult::Trap(_) => {
+                        wasmtime_internal_debugger::DebugRunResult::HostcallError => {
+                            must_break = true;
+                        },
+                        wasmtime_internal_debugger::DebugRunResult::Trap(t) => {
+                            eprintln!("Execution stopped due to trap: {t:?}");
+                            // Wasmtime crashes when we try to debug stack overflow trap.
+                            // TODO investigate
+                            if matches!(t, wasmtime::Trap::StackOverflow) {
+                                break 'exec_loop;
+                            }
                             must_break = true;
                         }
                         wasmtime_internal_debugger::DebugRunResult::EpochYield
