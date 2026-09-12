@@ -1,3 +1,4 @@
+// ! This module is vibecoded. TODO refactor
 use std::collections::HashMap;
 use std::ffi::{c_int, c_void};
 use std::ptr;
@@ -384,10 +385,7 @@ pub(crate) fn sync_wait(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
 /// from vkr's per-queue sync threads, and both paths push to `completed()` and
 /// notify the condvar, so the waiter wakes immediately. The 1ms timeout is
 /// only a safety net for the deadline check in `sync_wait_inner`.
-fn wait_completed<T>(
-    st: &mut State,
-    mut poll_and_check: impl FnMut(&mut State) -> Option<T>,
-) -> T {
+fn wait_completed<T>(st: &mut State, mut poll_and_check: impl FnMut(&mut State) -> Option<T>) -> T {
     loop {
         drain_completed(st);
         if let Some(result) = poll_and_check(st) {

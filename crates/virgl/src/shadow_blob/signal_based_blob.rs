@@ -56,11 +56,7 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     let mut matching_pages = 0;
     let mut blob_id = 0;
     let mut first_host_page_ptr = 0;
-    // The guest usually fills buffers sequentially, page by page. Prefetching a
-    // contiguous run of same-blob pages collapses many per-page faults into one
-    // mprotect+copy, so a multi-page buffer upload does not fault once per page.
     const PREFETCH_PAGES: usize = 16;
-    // Probe the run first so the whole range can be hardened in one go.
     for page_index in 0..PREFETCH_PAGES {
         let page_addr = base_page_addr + page_size * page_index;
         let Some(page) = storage.pages.get(&page_addr) else {
@@ -163,8 +159,6 @@ pub fn register_blob(vm_ptr: *const (), len: usize, host_ptr: *const (), blob_id
 
     mem_ops::mprotect(vm_ptr, page_size, len / page_size, false, false);
     debug_assert!(len % storage.page_size == 0);
-    // Build the page list first so we don't hold a borrow of storage.blobs
-    // while inserting into storage.pages.
     let pages: Vec<(Ptr, Ptr)> = (0..len / page_size)
         .map(|page_index| {
             let page_ptr = vm_ptr + page_size * page_index;
@@ -197,8 +191,6 @@ pub fn deregister_blob(blob_id: u64) {
     if pages.is_empty() {
         return;
     }
-    // Make the freed guest region accessible again before dropping the tracking
-    // state, so the caller can safely free/reuse the linear memory.
     for page_ptr in &pages {
         storage.pages.remove(page_ptr);
         mem_ops::mprotect(*page_ptr, page_size, 1, true, true);

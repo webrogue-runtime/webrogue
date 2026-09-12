@@ -32,7 +32,6 @@ fn main() {
         .flag_if_supported("-Wno-unused-parameter")
         .flag_if_supported("-Wno-attributes");
 
-    // Only use static_crt on Windows
     if _os == "windows" {
         build.static_crt(true);
     }
@@ -205,8 +204,6 @@ fn main() {
 
     build.define("HAVE_CONFIG_H", "1");
     if is_windows {
-        // clang-cl / MSVC's cl ignore clang's `-imacros`; use the MSVC
-        // force-include form instead so every translation unit sees config.h.
         build.flag(format!("/FI{}", config_h_path.display()));
     } else {
         build.flag(format!("-imacros{}", config_h_path.display()));
@@ -214,14 +211,10 @@ fn main() {
     build.include(&out_dir);
 
     if is_windows {
-        // Windows POSIX compatibility layer (see crates/virgl-lib/compat).
         let compat_dir = _crate_manifest_dir.join("compat");
         build.file(&compat_dir.join("win32_compat.c"));
         build.include(&compat_dir);
-        // Force-include the compat prelude (clock_gettime etc.) in every TU.
         build.flag(format!("/FI{}", compat_dir.join("prelude.h").display()));
-        // cc only tracks .file() inputs, not headers this crate adds to the
-        // include path; make sure compat header edits trigger a rebuild.
         fn track_compat(dir: &std::path::Path) {
             for entry in std::fs::read_dir(dir).unwrap() {
                 let path = entry.unwrap().path();
@@ -433,16 +426,6 @@ fn main() {
                 .unwrap(),
         )
         .clang_args(bindgen_args)
-        // Only expose the API surface the Rust side consumes. Without this,
-        // bindgen also emits every system-header artifact (MSVC _CRT/_SAL
-        // defines, glibc internals, va_list machinery), so regenerating on a
-        // different host toolchain rewrites the whole file. Everything kept
-        // below is platform-independent: declarations from webrogue_virgl.h /
-        // vkr_renderer.h and structs with identical layouts everywhere.
-        // Notably absent on purpose: vkr_renderer_init/vkr_renderer_callbacks
-        // (the callbacks embed a va_list-logging type; Rust goes through the
-        // webrogue_vkr_init C shim instead). When a new binding is needed, add
-        // it to the matching allowlist; a missing item fails the build loudly.
         .allowlist_function(
             "webrogue.*|vkr_get_capset|vkr_renderer_create_context|vkr_renderer_destroy_context|vkr_renderer_fini|vkr_renderer_submit_cmd|vkr_renderer_submit_fence|vkr_renderer_create_resource|vkr_renderer_destroy_resource",
         )

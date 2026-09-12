@@ -18,10 +18,6 @@ lazy_static::lazy_static! {
 }
 
 pub struct Renderer {
-    /* Serializes all virgl operations (blob/sync/submit/context). Every operation
-     * runs synchronously on the calling thread under this lock, so guest command
-     * ordering is preserved.
-     */
     session: Mutex<()>,
     vk_lib: Arc<Entry>,
     system_proxy: Arc<dyn SystemProxy>,
@@ -133,12 +129,7 @@ impl Renderer {
 
         unsafe { bindings::webrogueSetVulkan(wrapped_sym as *mut c_void) };
 
-        let ret = webrogue::init(
-            // Direct dispatch: these flags only pass through to the venus
-            // capset (USE_GUEST_VRAM is the only bit vkr reads there); the
-            // proxy/RENDER_SERVER machinery is not used at all.
-            (VIRGL_RENDERER_VENUS | VIRGL_RENDERER_NO_VIRGL) as c_int,
-        );
+        let ret = webrogue::init((VIRGL_RENDERER_VENUS | VIRGL_RENDERER_NO_VIRGL) as c_int);
         assert_eq!(ret, 0);
 
         Arc::new(Self {
@@ -156,7 +147,6 @@ impl Renderer {
 impl Drop for Renderer {
     fn drop(&mut self) {
         webrogue::cleanup();
-        // Shouldn't unload Vulkan before cleanup is finished
     }
 }
 
@@ -174,11 +164,9 @@ impl ContextContainer {
     }
 
     pub fn create_blob(&self, ptr: *const u8, size: usize, blob_id: u64) -> u32 {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         if blob_id == 0 {
-            /* shmem blob: prime the pending-shmem slot for vkr_context_create_resource */
             unsafe {
                 bindings::webrogue_virgl_setup_shmem(ptr as *mut c_void, size);
             }
@@ -187,10 +175,6 @@ impl ContextContainer {
     }
 
     pub fn resource_unref(&self, res_id: u32) {
-        // Final flush happens before the host resource is released so host_ptr
-        // is still valid; only then drop the shadow mapping to avoid a dangling
-        // host/guest pointer once device memory is unmapped or the guest frees
-        // its buffer.
         crate::shadow_blob::flush_all();
         crate::shadow_blob::deregister_blob(res_id.into());
         let _guard = self.renderer.session.lock().unwrap();
@@ -198,28 +182,24 @@ impl ContextContainer {
     }
 
     pub fn sync_create(&self, value: u64) -> u32 {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         webrogue::sync_create(value)
     }
 
     pub fn sync_unref(&self, sync_id: u32) {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         webrogue::sync_unref(sync_id);
     }
 
     pub fn sync_read(&self, sync_id: u32) -> u64 {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         webrogue::sync_read(sync_id)
     }
 
     pub fn sync_write(&self, sync_id: u32, value: u64) {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         let ret = webrogue::sync_write(sync_id, value);
@@ -227,22 +207,14 @@ impl ContextContainer {
     }
 
     pub fn submit_cmd(&self, headers: &[u32], cmds: &[u32], syncs: &[u32]) {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         let ret = webrogue::submit_cmd(headers, cmds, syncs);
         assert_eq!(ret, 0);
-        // The batch may have freed host device memory (e.g. vkFreeMemory); drop
-        // any shadow mapping whose backend is now gone before the guest resumes,
-        // so a guest that skips resource_unref can't leave us dereferencing it.
         crate::shadow_blob::flush_all();
     }
 
-    /// Blocks on the host until the syncs are satisfied or `timeout` (ms; u32::MAX
-    /// waits forever) elapses. Returns 0 on ready, 2 (VK_TIMEOUT), or a negative
-    /// errno on error. The guest can't poll host fds, so the wait happens here.
     pub fn sync_wait(&self, flags: u32, timeout: u32, syncs: &[u32]) -> i32 {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         webrogue::sync_wait(flags, timeout, syncs)
@@ -258,19 +230,14 @@ impl ContextContainer {
     }
 
     pub fn get_capset(&self, id: u32, _version: u32) -> Vec<u8> {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         if id != bindings::VIRTGPU_DRM_CAPSET_VENUS {
             return Vec::new();
         }
-        // vkr fills exactly one venus capset; there is no version negotiation.
         let mut caps = vec![0u8; 4096];
         let size = unsafe {
-            bindings::vkr_get_capset(
-                caps.as_mut_ptr() as *mut c_void,
-                webrogue::init_flags(),
-            )
+            bindings::vkr_get_capset(caps.as_mut_ptr() as *mut c_void, webrogue::init_flags())
         };
         caps.truncate(size);
         if caps.len() % 4 != 0 {
@@ -280,16 +247,13 @@ impl ContextContainer {
     }
 
     pub fn context_init(&self, capset_id: u32) {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         let ret = webrogue::context_init(capset_id);
         assert_eq!(ret, 0);
     }
 
-    /// `name` must include the terminating NUL.
     pub fn create_renderer(&self, name: &[u8]) {
-        // Seem to be the best place to call this function so far
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         let ret = webrogue::context_create(name);

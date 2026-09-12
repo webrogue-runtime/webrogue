@@ -79,9 +79,6 @@ pub fn register_blob(vm_ptr: *const (), size: usize, blob_id: u64) {
     // TODO get host_blob size too
     let host_ptr = unsafe { crate::bindings::webrogue_get_host_blob(blob_id) } as *const ();
     if host_ptr.is_null() {
-        // No host blob behind this id means nothing to mirror (e.g. the backing
-        // device memory is already gone); registering would give us an invalid
-        // host pointer to deref later.
         return;
     }
     match ShadowBlobImpl::get() {

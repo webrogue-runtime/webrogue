@@ -8,8 +8,6 @@
 #include "venus/vkr_renderer.h"
 #include "virgl_util.h"
 
-/* virglrenderer drops all logs (proxy_log, vkr_log, ...) unless a handler is
- * registered; forward them to stderr so failures are visible. */
 static void
 webrogue_log_cb(enum virgl_log_level_flags log_level, const char *msg, void *user_data)
 {
@@ -19,8 +17,6 @@ webrogue_log_cb(enum virgl_log_level_flags log_level, const char *msg, void *use
    fflush(stderr);
 }
 
-/* Pending-shmem slot consumed by vkr_context_create_resource for shmem blobs.
- * The rest of the renderer state machine lives on the Rust side (webrogue.rs). */
 static void *webrogue_pending_shmem_ptr = NULL;
 static size_t webrogue_pending_shmem_size = 0;
 
@@ -70,11 +66,7 @@ webrogue_vkr_retire_fence(uint32_t ctx_id, uint32_t ring_idx, uint64_t fence_id)
    webrogue_retire_fence_cb(ctx_id, ring_idx, fence_id);
 }
 
-/* static: vkr_state.cbs keeps pointing at it for the renderer's lifetime */
 static const struct vkr_renderer_callbacks webrogue_vkr_cbs = {
-   /* logging already goes through the global virgl log handler set by
-    * webrogue_virgl_stub_fn; the same-process render server passes NULL
-    * here as well */
    .debug_logger = NULL,
    .retire_fence = webrogue_vkr_retire_fence,
 };
@@ -90,7 +82,6 @@ webrogue_vkr_init(uint32_t flags,
 
 void *webrogue_get_host_blob(uint64_t blob_id)
 {
-   /* single-client webrogue renderer always uses context id 1 */
    return vkr_renderer_get_host_blob(1, (uint32_t)blob_id);
 }
 
