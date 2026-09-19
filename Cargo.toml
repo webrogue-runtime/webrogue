@@ -117,7 +117,7 @@ wasmtime-internal-core = { path = "external/wasmtime/crates/core" }
 # other crates
 image = { version = "0.25", default-features = false }
 imageproc = { version = "0.26", default-features = false }
-object = { version = "0.39", default-features = false }
+object = { version = "0.40", default-features = false }
 clap = { version = "4" }
 futures =  { version = "0.3" }
 wasmparser = { version = ">=0.215" }
