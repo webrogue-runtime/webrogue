@@ -351,7 +351,7 @@ impl gdbstub::target::ext::base::singlethread::SingleThreadBase for Wasm32Target
 impl gdbstub::target::ext::base::single_register_access::SingleRegisterAccess<()> for Wasm32Target {
     fn read_register(
         &mut self,
-        tid: (),
+        _tid: (),
         reg_id: <Self::Arch as gdbstub::arch::Arch>::RegId,
         buf: &mut [u8],
     ) -> TargetResult<usize, Self> {
@@ -549,7 +549,7 @@ impl gdbstub::target::ext::libraries::Libraries for Wasm32Target {
 impl gdbstub::target::ext::wasm::Wasm for Wasm32Target {
     fn wasm_call_stack(
         &self,
-        tid: gdbstub::common::Tid,
+        _tid: gdbstub::common::Tid,
         next_pc: &mut dyn FnMut(u64),
     ) -> Result<(), Self::Error> {
         let State::Paused(state) = &self.state else {

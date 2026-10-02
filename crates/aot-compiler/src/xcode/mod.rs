@@ -1,4 +1,3 @@
-use anyhow::Context as _;
 use clap::Subcommand;
 use std::{fs::File, io::Write as _};
 use webrogue_cli_goodies::step;

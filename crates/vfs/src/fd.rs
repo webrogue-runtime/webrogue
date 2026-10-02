@@ -15,7 +15,7 @@ pub enum FDInner {
     Real(RealFD),
     Wrapp(WrappFD),
     #[allow(dead_code, reason = "Needed for Wasmtime integration")]
-    Dir((VFS, String, Vec<String>)), // (VFS, pash, children)
+    Dir((VFS, String, Vec<String>)), // (VFS, path, children)
 }
 
 impl FD {
