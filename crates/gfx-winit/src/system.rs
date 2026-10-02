@@ -85,14 +85,14 @@ impl webrogue_gfx::AbstractSystem for WinitSystem {
             window.set_resizable(true);
             let window_id = window.id();
             window_registry.add_window(
-                window_id,
+                id,
+                window.id(),
                 WinitWindowInternal {
                     window,
                     cpu_surface_data: Mutex::new(None),
                     event_sink: event_sink.clone(),
                 },
             );
-            window_id
         });
 
         let mut vk_windows = self.vk_windows.lock().unwrap();
