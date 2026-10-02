@@ -50,7 +50,7 @@ pub struct SchemaDumpCommand {}
 impl SchemaDumpCommand {
     pub fn run(&self) -> anyhow::Result<()> {
         let schema = SchemaGenerator::new(SchemaSettings::default().with_transform(MyTransform))
-            .root_schema_for::<webrogue_wrapp::config::Config>();
+            .root_schema_for::<webrogue_vfs::config::Config>();
 
         println!("{}", serde_json::to_string_pretty(&schema).unwrap());
         Ok(())

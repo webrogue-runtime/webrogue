@@ -1,11 +1,10 @@
-use webrogue_events::RawType;
-
 mod code_writer;
 
 #[derive(clap::Parser, Clone)]
 struct Cli {
     c_header_path: std::path::PathBuf,
     c_source_path: std::path::PathBuf,
+    wit_path: std::path::PathBuf,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -13,6 +12,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut c_header_writer = code_writer::CodeWriter::new(args.c_header_path).unwrap();
     let mut c_source_writer = code_writer::CodeWriter::new(args.c_source_path).unwrap();
+    let mut wit_writer = code_writer::CodeWriter::new(args.wit_path).unwrap();
 
     let mut writer = &mut c_header_writer;
     let mut indent = writer.indent_storage();
@@ -24,7 +24,7 @@ fn main() -> anyhow::Result<()> {
     {
         w!("// Events");
         for r#enum in webrogue_events::enums() {
-            w!("typedef enum {} {{", r#enum.c_name());
+            w!("typedef enum {} {{", r#enum.c_name_t());
             indent.inc(|| {
                 for case in r#enum.cases.clone() {
                     w!("{} = {},", case.c_name(&r#enum), case.value);
@@ -36,7 +36,7 @@ fn main() -> anyhow::Result<()> {
                     r#enum.ty.c_max()
                 );
             });
-            w!("}} {};", r#enum.c_name());
+            w!("}} {};", r#enum.c_name_t());
             w!("");
         }
         for event in webrogue_events::events() {
@@ -47,7 +47,10 @@ fn main() -> anyhow::Result<()> {
             indent.inc(|| {
                 for field in event.fields.clone() {
                     let array_len = match field.ty {
-                        webrogue_events::FieldType::Bytes(len) => format!("[{}]", len),
+                        webrogue_events::FieldType::Bytes(len) => {
+                            w!("size_t {}_len;", field.c_name());
+                            format!("[{}]", len)
+                        }
                         _ => "".to_owned(),
                     };
                     w!("{} {}{};", field.ty.c_name(), field.c_name(), array_len);
@@ -56,18 +59,18 @@ fn main() -> anyhow::Result<()> {
             w!("}};");
             w!("");
         }
-        w!("enum webrogue_event_type {{");
+        w!("enum wr4c_event_tag_t {{");
         indent.inc(|| {
-            w!("WEBROGUE_EVENT_TYPE_INVALID = 0,");
+            w!("WR4C_EVENT_TAG_INVALID = 0,");
             for event in webrogue_events::events() {
                 w!("{} = {},", event.c_case_name(), event.id);
             }
         });
         w!("}};");
         w!("");
-        w!("typedef struct webrogue_event {{");
+        w!("typedef struct wr4c_event_t {{");
         indent.inc(|| {
-            w!("enum webrogue_event_type type;");
+            w!("enum wr4c_event_tag_t tag;");
             w!("union {{");
             indent.inc(|| {
                 for event in webrogue_events::events() {
@@ -78,93 +81,89 @@ fn main() -> anyhow::Result<()> {
                 }
             });
             w!("}} inner;");
+            w!("wr4c_window_t window;");
         });
-        w!("}} webrogue_event;");
+        w!("}} wr4c_event_t;");
     }
 
     writer = &mut c_source_writer;
     indent = writer.indent_storage();
     {
-        w!(
-            "#define WEBROGUE_MAX_ENCODED_EVENT_SIZE {}",
-            webrogue_events::events()
-                .iter()
-                .map(|event| event.size)
-                .max()
-                .unwrap()
-        );
         w!("");
-        w!("webrogue_event webroguegfx_poll() {{");
+        for r#enum in webrogue_events::enums() {
+            w!(
+                "static {} convert_{}({} data) {{",
+                r#enum.c_name_t(),
+                r#enum.c_name(),
+                r#enum.c_bindgen_name()
+            );
+            indent.inc(|| {
+                w!("switch (data) {{");
+                indent.inc(|| {
+                    let unknown_case = r#enum
+                        .cases
+                        .iter()
+                        .find(|r#case| r#case.name == "unknown")
+                        .expect("Should have \"unknown\" case")
+                        .clone();
+                    for r#case in r#enum.cases.clone() {
+                        w!(
+                            "case {}: return {};",
+                            r#case.c_bindgen_name(&r#enum),
+                            r#case.c_name(&r#enum)
+                        );
+                    }
+                    w!("default: return {};", unknown_case.c_name(&r#enum));
+                });
+                w!("}}");
+            });
+            w!("}}");
+        }
+        w!("static wr4c_event_t convert_webrogue_event(webrogue_gfx_windowing_window_event_t event) {{");
         indent.inc(|| {
-            w!("webrogue_event result;");
-            w!("static void* buffer_data = NULL;");
-            w!("if(!buffer_data) {{");
-            indent.inc(|| {
-                w!("buffer_data = malloc(WEBROGUE_MAX_ENCODED_EVENT_SIZE);");
-            });
-            w!("}}");
-            w!("static uint32_t buffer_max_size = WEBROGUE_MAX_ENCODED_EVENT_SIZE;");
-            w!("static uint32_t buffer_used_size = 0;");
-            w!("static uint32_t buffer_consumed = 0;");
-            w!("uint32_t available = buffer_used_size - buffer_consumed;");
-            w!("if(available == 0) {{");
-            indent.inc(|| {
-                w!("uint32_t new_size;");
-                w!("imported_webrogue_gfx_poll(&new_size);");
-                w!("if(new_size > buffer_max_size) {{");
-                indent.inc(|| {
-                    w!("free(buffer_data);");
-                    w!("buffer_data = malloc(new_size);");
-                    w!("buffer_max_size = new_size;");
-                });
-                w!("}}");
-                w!("if(new_size) {{");
-                indent.inc(|| {
-                    w!("imported_webrogue_gfx_poll_read(buffer_data);");
-                });
-                w!("}}");
-                w!("buffer_used_size = new_size;");
-                w!("buffer_consumed = 0;");
-                w!("available = new_size;");
-            });
-            w!("}}");
-            w!("if(available < 4) {{");
-            indent.inc(|| {
-                w!("buffer_consumed = buffer_used_size;");
-                w!("result.type = WEBROGUE_EVENT_TYPE_INVALID;");
-                w!("return result;");
-            });
-            w!("}}");
-            w!("const char* current_pointer = ((const char*)buffer_data) + buffer_consumed;");
-            w!("result.type = GET(uint32_t, 0);");
-            w!("switch (result.type) {{");
+            w!("wr4c_event_t result;");
+            w!("switch (event.tag) {{");
             indent.inc(|| {
                 for event in webrogue_events::events() {
-                    w!("case {}: {{", event.c_case_name());
+                    w!("case {}: {{", event.c_wit_name());
                     indent.inc(|| {
-                        w!("BUF_SIZE({});", event.size);
-                        for field in event.fields.clone() {
+                        w!("result.tag = {};", event.c_case_name());
+                        for (i, field) in event.fields.clone().into_iter().enumerate() {
+                            let wit_tuple_field = format!("f{i}");
                             let field_c_name = field.c_name();
-                            let mut raw_read = |raw_type: RawType| {
-                                w!(
-                                    "result.inner.{}.{} = GET({}, {});",
+                            match field.ty {
+                                webrogue_events::FieldType::Enum(r#enum) => w!(
+                                    "result.inner.{}.{} = convert_{}(event.val.{}.{});",
                                     event.c_union_name(),
                                     field_c_name,
-                                    raw_type.c_name(),
-                                    field.offset
-                                );
-                            };
-                            match field.ty {
-                                webrogue_events::FieldType::Enum(r#enum) => raw_read(r#enum.ty),
-                                webrogue_events::FieldType::Raw(raw_type) => raw_read(raw_type),
+                                    r#enum.c_name(),
+                                    event.c_union_name(),
+                                    wit_tuple_field,
+                                ),
+
+                                webrogue_events::FieldType::Raw(_) => w!(
+                                    "result.inner.{}.{} = event.val.{}.{};",
+                                    event.c_union_name(),
+                                    field_c_name,
+                                    event.c_union_name(),
+                                    wit_tuple_field,
+                                ),
                                 webrogue_events::FieldType::Bytes(len) => {
                                     w!(
-                                        "memcpy(&result.inner.{}.{}, current_pointer + {}, {});",
+                                        "memcpy(&result.inner.{}.{}, event.val.{}.{}.ptr, {});",
                                         event.c_union_name(),
-                                        field.c_name(),
-                                        field.offset,
+                                        field_c_name,
+                                        event.c_union_name(),
+                                        wit_tuple_field,
                                         len,
-                                    )
+                                    );
+                                    w!(
+                                        "result.inner.{}.{}_len = event.val.{}.{}.len;",
+                                        event.c_union_name(),
+                                        field_c_name,
+                                        event.c_union_name(),
+                                        wit_tuple_field,
+                                    );
                                 }
                             };
                         }
@@ -177,8 +176,7 @@ fn main() -> anyhow::Result<()> {
             indent.inc(|| {
                 w!("default: {{");
                 indent.inc(|| {
-                    w!("buffer_consumed = buffer_used_size;");
-                    w!("result.type = WEBROGUE_EVENT_TYPE_INVALID;");
+                    w!("result.tag = WR4C_EVENT_TAG_INVALID;");
                     w!("return result;");
                 });
                 w!("}}");
@@ -188,8 +186,50 @@ fn main() -> anyhow::Result<()> {
         w!("}}");
     }
 
+    writer = &mut wit_writer;
+    indent = writer.indent_storage();
+    {
+        indent.inc(|| {
+            for r#enum in webrogue_events::enums() {
+                w!("enum {} {{", r#enum.wit_name());
+                indent.inc(|| {
+                    for case in r#enum.cases.clone() {
+                        w!("{},", case.wit_name());
+                    }
+                });
+                w!("}}");
+                w!("");
+            }
+
+            w!("variant window-event {{");
+            indent.inc(|| {
+                for event in webrogue_events::events() {
+                    let mut line = event.wit_name();
+                    if !event.fields.is_empty() {
+                        let mut comment = "/// ".to_string();
+                        line += "(tuple<";
+                        for (i, field) in event.fields.iter().enumerate() {
+                            if i != 0 {
+                                line += ", ";
+                                comment += ", ";
+                            }
+                            line += &field.ty.wit_name();
+                            comment += &field.wit_name();
+                        }
+                        line += ">)";
+                        w!("{}", comment);
+                    }
+                    w!("{},", line);
+                }
+            });
+            w!("}}");
+        });
+        writer.write_raw("    ")?;
+    }
+
     c_header_writer.write_to_file()?;
     c_source_writer.write_to_file()?;
+    wit_writer.write_to_file()?;
 
     Ok(())
 }

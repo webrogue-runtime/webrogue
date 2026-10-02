@@ -1,22 +1,22 @@
 use crate::window::WinitWindowInternal;
+use webrogue_gfx::events;
 use winit::event::WindowEvent;
 
-pub fn encode_event(
-    window: &WinitWindowInternal,
-    event: WindowEvent,
-    events_buffer: &mut std::sync::MutexGuard<'_, Vec<u8>>,
-) {
-    use webrogue_gfx::events_encoder;
-
+pub fn encode_event(window: &WinitWindowInternal, event: WindowEvent) {
+    let sink = &window.event_sink;
     match event {
         // WindowEvent::ActivationTokenDone { serial, token } => todo!(),
-        WindowEvent::SurfaceResized(_physical_size) => {
-            events_encoder::gl_resized(events_buffer);
-            events_encoder::window_resized(events_buffer);
+        WindowEvent::ScaleFactorChanged {
+            scale_factor: _,
+            surface_size_writer: _,
+        }
+        | WindowEvent::SurfaceResized(_) => {
+            sink.push_event(events::Event::GlResized);
+            sink.push_event(events::Event::WindowResized);
         }
         // WindowEvent::Moved(physical_position) => todo!(),
-        WindowEvent::CloseRequested => events_encoder::quit(events_buffer),
-        WindowEvent::Destroyed => events_encoder::quit(events_buffer),
+        WindowEvent::CloseRequested => sink.push_event(events::Event::Quit),
+        WindowEvent::Destroyed => sink.push_event(events::Event::Quit),
         // WindowEvent::DragEntered { paths, position } => todo!(),
         // WindowEvent::DragMoved { position } => todo!(),
         // WindowEvent::DragDropped { paths, position } => todo!(),
@@ -32,22 +32,23 @@ pub fn encode_event(
             }
             let mut named_key = match event.logical_key {
                 winit::keyboard::Key::Named(named_key) => translate_named_key(named_key),
-                _ => events_encoder::NamedKey::Unknown,
+                _ => events::NamedKey::Unknown,
             };
             let mut physical_key = translate_physical_key(event.physical_key);
             let mut encode_buffer = [0u8; 4];
             let mut text_buffer = [0u8; 32];
             let mut text_buffer_size = 0;
+
             macro_rules! flush {
                 () => {
-                    events_encoder::key(
-                        events_buffer,
+                    let mut text_buffer_vec = Vec::new();
+                    text_buffer_vec.extend(&text_buffer[..text_buffer_size]);
+                    sink.push_event(events::Event::Key(
                         event.state.is_pressed(),
                         named_key,
                         physical_key,
-                        text_buffer_size as u8,
-                        &text_buffer,
-                    );
+                        text_buffer_vec,
+                    ));
                 };
             }
             if let Some(text) = event.text {
@@ -56,8 +57,8 @@ pub fn encode_event(
                     let new_len = text_buffer_size + char.len_utf8();
                     if new_len > max_buffer_size {
                         flush!();
-                        named_key = events_encoder::NamedKey::Unknown;
-                        physical_key = events_encoder::PhysicalKey::Unknown;
+                        named_key = events::NamedKey::Unknown;
+                        physical_key = events::PhysicalKey::Unknown;
                         text_buffer.fill(0);
                         text_buffer_size = 0;
                     }
@@ -68,8 +69,8 @@ pub fn encode_event(
                 }
             }
             if text_buffer_size != 0
-                || named_key != events_encoder::NamedKey::Unknown
-                || physical_key != events_encoder::PhysicalKey::Unknown
+                || named_key != events::NamedKey::Unknown
+                || physical_key != events::PhysicalKey::Unknown
             {
                 flush!();
             }
@@ -83,7 +84,10 @@ pub fn encode_event(
             source: _,
         } => {
             let logical_position = position.to_logical(window.window.scale_factor());
-            events_encoder::mouse_motion(events_buffer, logical_position.x, logical_position.y);
+            sink.push_event(events::Event::MouseMotion(
+                logical_position.x,
+                logical_position.y,
+            ));
         }
         // WindowEvent::PointerEntered { device_id, position, primary, kind } => todo!(),
         // WindowEvent::PointerLeft { device_id, position, primary, kind } => todo!(),
@@ -94,48 +98,42 @@ pub fn encode_event(
             position,
             primary: _,
             button,
+            is_macos_activation_click: _,
         } => {
             let button = match button {
                 winit::event::ButtonSource::Mouse(mouse_button) => match mouse_button {
-                    winit::event::MouseButton::Left => events_encoder::MouseButton::Left,
-                    winit::event::MouseButton::Right => events_encoder::MouseButton::Right,
-                    winit::event::MouseButton::Middle => events_encoder::MouseButton::Left,
-                    winit::event::MouseButton::Back => events_encoder::MouseButton::Left,
-                    _ => events_encoder::MouseButton::Left,
+                    winit::event::MouseButton::Left => events::MouseButton::Left,
+                    winit::event::MouseButton::Right => events::MouseButton::Right,
+                    winit::event::MouseButton::Middle => events::MouseButton::Left,
+                    winit::event::MouseButton::Back => events::MouseButton::Left,
+                    _ => events::MouseButton::Left,
                 },
                 winit::event::ButtonSource::Touch {
                     finger_id: _,
                     force: _,
-                } => events_encoder::MouseButton::Left,
+                } => events::MouseButton::Left,
                 winit::event::ButtonSource::TabletTool {
                     kind: _,
                     button: _,
                     data: _,
-                } => events_encoder::MouseButton::Left,
-                winit::event::ButtonSource::Unknown(_) => events_encoder::MouseButton::Unknown,
+                } => events::MouseButton::Left,
+                winit::event::ButtonSource::Unknown(_) => events::MouseButton::Unknown,
+                _ => events::MouseButton::Unknown,
             };
             let logical_position = position.to_logical(window.window.scale_factor());
-            events_encoder::mouse_button(
-                events_buffer,
+            sink.push_event(events::Event::MouseButton(
                 button,
                 state.is_pressed(),
                 logical_position.x,
                 logical_position.y,
                 false,
-            );
+            ));
         }
         // WindowEvent::PinchGesture { device_id, delta, phase } => todo!(),
         // WindowEvent::PanGesture { device_id, delta, phase } => todo!(),
         // WindowEvent::DoubleTapGesture { device_id } => todo!(),
         // WindowEvent::RotationGesture { device_id, delta, phase } => todo!(),
         // WindowEvent::TouchpadPressure { device_id, pressure, stage } => todo!(),
-        WindowEvent::ScaleFactorChanged {
-            scale_factor: _,
-            surface_size_writer: _,
-        } => {
-            events_encoder::gl_resized(events_buffer);
-            events_encoder::window_resized(events_buffer);
-        }
         // WindowEvent::ThemeChanged(theme) => todo!(),
         // WindowEvent::Occluded(_) => todo!(),
         // WindowEvent::RedrawRequested => todo!(),
@@ -143,10 +141,8 @@ pub fn encode_event(
     };
 }
 
-fn translate_named_key(
-    named_key: winit::keyboard::NamedKey,
-) -> webrogue_gfx::events_encoder::NamedKey {
-    use webrogue_gfx::events_encoder::NamedKey::*;
+fn translate_named_key(named_key: winit::keyboard::NamedKey) -> webrogue_gfx::events::NamedKey {
+    use webrogue_gfx::events::NamedKey::*;
     use winit::keyboard::NamedKey as WinitKey;
 
     match named_key {
@@ -465,8 +461,8 @@ fn translate_named_key(
 
 fn translate_physical_key(
     physical_key: winit::keyboard::PhysicalKey,
-) -> webrogue_gfx::events_encoder::PhysicalKey {
-    use webrogue_gfx::events_encoder::PhysicalKey::*;
+) -> webrogue_gfx::events::PhysicalKey {
+    use webrogue_gfx::events::PhysicalKey::*;
     use winit::keyboard::KeyCode;
 
     match physical_key {

@@ -7,15 +7,22 @@ pub struct Event {
 }
 
 impl Event {
+    pub fn c_wit_name(&self) -> String {
+        format!(
+            "WEBROGUE_GFX_WINDOWING_WINDOW_EVENT_{}",
+            self.name.replace(' ', "_").to_uppercase(),
+        )
+    }
+
     pub fn c_case_name(&self) -> String {
         format!(
-            "WEBROGUE_EVENT_TYPE_{}",
+            "WR4C_EVENT_TAG_{}",
             self.name.replace(' ', "_").to_uppercase(),
         )
     }
 
     pub fn c_struct_name(&self) -> String {
-        format!("webrogue_event_{}", self.name.replace(' ', "_"),)
+        format!("wr4c_event_{}_t", self.name.replace(' ', "_"),)
     }
 
     pub fn c_union_name(&self) -> String {
@@ -23,7 +30,20 @@ impl Event {
     }
 
     pub fn rust_name(&self) -> String {
-        self.name.replace(' ', "_")
+        self.name
+            .split(' ')
+            .map(|word| {
+                let mut word = word.to_owned();
+                let first_char = word.remove(0).to_ascii_uppercase();
+                word.insert(0, first_char);
+                word
+            })
+            .collect::<Vec<_>>()
+            .join("")
+    }
+
+    pub fn wit_name(&self) -> String {
+        self.name.replace(' ', "-")
     }
 }
 
@@ -36,7 +56,19 @@ pub struct Enum {
 
 impl Enum {
     pub fn c_name(&self) -> String {
-        format!("webrogue_{}", self.name.replace(' ', "_"))
+        format!("wr4c_{}", self.name.replace(' ', "_"))
+    }
+
+    pub fn c_name_t(&self) -> String {
+        format!("wr4c_{}_t", self.name.replace(' ', "_"))
+    }
+
+    pub fn c_bindgen_name(&self) -> String {
+        format!("webrogue_gfx_windowing_{}_t", self.name.replace(' ', "_"))
+    }
+
+    pub fn wit_name(&self) -> String {
+        self.name.replace(' ', "-")
     }
 
     pub fn rust_name(&self) -> String {
@@ -64,6 +96,15 @@ impl EnumCase {
         format!("{}_{}", r#enum.c_name(), self.name.replace(' ', "_")).to_uppercase()
     }
 
+    pub fn c_bindgen_name(&self, r#enum: &Enum) -> String {
+        format!(
+            "WEBROGUE_GFX_WINDOWING_{}_{}",
+            r#enum.name.replace(' ', "_"),
+            self.name.replace(' ', "_")
+        )
+        .to_uppercase()
+    }
+
     pub fn rust_name(&self) -> String {
         self.name
             .split(' ')
@@ -75,6 +116,10 @@ impl EnumCase {
             })
             .collect::<Vec<_>>()
             .join("")
+    }
+
+    pub fn wit_name(&self) -> String {
+        wit_identifier_escape(self.name.replace(' ', "-"))
     }
 }
 
@@ -93,6 +138,10 @@ impl Field {
     pub fn rust_name(&self) -> String {
         self.name.replace(' ', "_")
     }
+
+    pub fn wit_name(&self) -> String {
+        self.name.replace(' ', "-")
+    }
 }
 #[derive(Clone)]
 pub enum FieldType {
@@ -104,9 +153,17 @@ pub enum FieldType {
 impl FieldType {
     pub fn c_name(&self) -> String {
         match self {
-            FieldType::Enum(r#enum) => r#enum.c_name(),
+            FieldType::Enum(r#enum) => r#enum.c_name_t(),
             FieldType::Raw(raw_type) => raw_type.c_name().to_owned(),
             FieldType::Bytes(_) => "uint8_t".to_owned(),
+        }
+    }
+
+    pub fn wit_name(&self) -> String {
+        match self {
+            FieldType::Enum(r#enum) => r#enum.wit_name(),
+            FieldType::Raw(raw_type) => raw_type.wit_name().to_owned(),
+            FieldType::Bytes(_) => "list<u8>".to_owned(),
         }
     }
 
@@ -146,7 +203,25 @@ impl RawType {
         }
     }
 
+    pub fn wit_name(&self) -> &'static str {
+        match self {
+            RawType::U32 => "u32",
+            RawType::U16 => "u16",
+            RawType::Bool => "bool",
+            RawType::U8 => "u8",
+        }
+    }
+
     pub fn c_max(&self) -> String {
         format!("0x{}", "FF".repeat(self.size()))
+    }
+}
+
+fn wit_identifier_escape(s: String) -> String {
+    const WIT_IDENTIFIERS: [&'static str; 1] = ["f32"];
+    if WIT_IDENTIFIERS.contains(&s.as_str()) {
+        format!("%{s}")
+    } else {
+        s
     }
 }

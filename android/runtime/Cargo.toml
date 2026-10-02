@@ -12,7 +12,6 @@ launcher = [
     "dep:serde",
     "dep:serde_json",
     "webrogue-virgl/lib-impl",
-    "dep:webrogue-hub-debuggee",
     "dep:webrogue-gfx",
     "dep:tokio",
 ]
@@ -34,7 +33,6 @@ webrogue-gfx-winit = { workspace = true }
 jni = { version = "0.22", optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
-webrogue-hub-debuggee = { workspace = true, optional = true }
 webrogue-gfx = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["full"], optional = true }
 

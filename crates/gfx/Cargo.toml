@@ -12,8 +12,9 @@ static-moltenvk = ["static-vk", "dep:reqwest", "dep:tar"]
 
 [dependencies]
 anyhow = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
 webrogue-events-macro = { workspace = true }
-wiggle = { workspace = true, default-features = false }
+wasmtime = { workspace = true, default-features = false, features = ["component-model"] }
 lazy_static = { workspace = true }
 
 [build-dependencies]

@@ -1,8 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 
 #[cfg(not(target_arch = "wasm32"))]
 use ash::Entry;
-use webrogue_gfx::{VirGLContextContainer, VirGLRenderer};
+use webrogue_gfx::{EventSink, VirGLContextContainer, VirGLRenderer};
 use winit::window::WindowAttributes;
 
 use crate::{mailbox::Mailbox, window::WinitWindowInternal, WinitWindow};
@@ -13,9 +13,9 @@ use webrogue_gfx::load_vulkan_entry;
 pub struct WinitSystem {
     pub(crate) mailbox: Mailbox,
     pub(crate) virgl_context: Option<Arc<Mutex<webrogue_gfx::VirGLContextContainer>>>,
-    pub(crate) vulkan_entry: Option<Arc<Entry>>,
     pub(crate) window_attributes_fn:
         Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
+    pub(crate) vk_windows: Arc<Mutex<Vec<Weak<WinitWindow>>>>,
 }
 
 impl Drop for WinitSystem {
@@ -50,31 +50,31 @@ impl WinitSystem {
         if vulkan_requirement == Some(true) {
             anyhow::bail!("Vulkan is unsupported in web runtime")
         }
+        let vk_windows = Arc::new(Mutex::new(Vec::new()));
         let virgl_context = vulkan_entry.as_ref().map(|entry| {
             Arc::new(Mutex::new(VirGLContextContainer::new(VirGLRenderer::get(
                 Arc::new(entry.clone()),
                 Arc::new(VirGLSystemProxy {
                     mailbox: mailbox.clone(),
                     vulkan_entry: Arc::new(entry.clone()),
+                    vk_windows: vk_windows.clone(),
                 }),
             ))))
         });
         Ok(Self {
             mailbox,
             virgl_context,
-            vulkan_entry: vulkan_entry.map(Arc::new),
             window_attributes_fn,
+            vk_windows,
         })
     }
 }
 
-impl webrogue_gfx::ISystem for WinitSystem {
-    type Window = WinitWindow;
-
-    fn make_window(&self, id: u32) -> WinitWindow {
+impl webrogue_gfx::AbstractSystem for WinitSystem {
+    fn make_window(&self) -> webrogue_gfx::Window {
         let window_attributes_fn = &self.window_attributes_fn;
-        let vulkan_entry = &self.vulkan_entry;
-        self.mailbox.execute(|event_loop, window_registry| {
+        let event_sink = Arc::new(EventSink::new());
+        let window_id = self.mailbox.execute(|event_loop, window_registry| {
             let mut window_attributes = WindowAttributes::default();
 
             if let Some(window_attributes_fn) = window_attributes_fn {
@@ -82,23 +82,29 @@ impl webrogue_gfx::ISystem for WinitSystem {
             }
             let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
             window.set_title("Webrogue");
+            window.set_resizable(true);
+            let window_id = window.id();
             window_registry.add_window(
-                id,
-                window.id(),
+                window_id,
                 WinitWindowInternal {
                     window,
-                    #[cfg(not(target_arch = "wasm32"))]
-                    vulkan_entry: vulkan_entry.clone(),
-                    events_buffer: Mutex::new(Vec::new()),
                     cpu_surface_data: Mutex::new(None),
+                    event_sink: event_sink.clone(),
                 },
             );
+            window_id
         });
 
-        WinitWindow {
-            window_id: id,
+        let mut vk_windows = self.vk_windows.lock().unwrap();
+        let vk_window_id = vk_windows.len() as u32;
+        let window = Arc::new(WinitWindow {
+            window_id,
             mailbox: self.mailbox.clone(),
-        }
+            vk_window_id,
+            event_sink,
+        });
+        vk_windows.push(Arc::downgrade(&window));
+        webrogue_gfx::Window::new(window)
     }
 
     fn get_virgl_context(&self) -> Option<Arc<Mutex<VirGLContextContainer>>> {
@@ -111,6 +117,7 @@ impl webrogue_gfx::ISystem for WinitSystem {
 #[derive(Clone)]
 struct VirGLSystemProxy {
     mailbox: Mailbox,
+    vk_windows: Arc<Mutex<Vec<Weak<WinitWindow>>>>,
     vulkan_entry: Arc<Entry>,
 }
 
@@ -122,11 +129,21 @@ impl webrogue_gfx::VirGLSystemProxy for VirGLSystemProxy {
         p_allocator: *const ash::vk::AllocationCallbacks<'_>,
         p_surface: *mut ash::vk::SurfaceKHR,
     ) -> ash::vk::Result {
+        let vk_windows = self.vk_windows.lock().unwrap();
+        if webrogue_window_id as usize >= vk_windows.len() {
+            return ash::vk::Result::ERROR_UNKNOWN;
+        }
+        let Some(window) = vk_windows[webrogue_window_id as usize].upgrade() else {
+            return ash::vk::Result::ERROR_UNKNOWN;
+        };
+        debug_assert!(window.vk_window_id == webrogue_window_id);
+        let window_id = window.window_id;
+
         let allocator = unsafe { p_allocator.as_ref() };
         let surface = self.mailbox.execute(|active_event_loop, window_registry| {
             let instance = unsafe { ash::Instance::load(self.vulkan_entry.static_fn(), instance) };
             let window_handle = window_registry
-                .get_window_by_webrogue_id(webrogue_window_id)
+                .get_window_by_winit_id(window_id)
                 .ok_or(ash::vk::Result::ERROR_UNKNOWN)?
                 .window
                 .rwh_06_window_handle()

@@ -6,8 +6,8 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
-use webrogue_gfx_winit::{WindowRegistry, WinitProxy};
-use webrogue_hub_debuggee::{HubDebuggee, HubDebuggeeGFX, HubDebuggeeProxiedWinitGFX};
+use webrogue_gfx_winit::{ProxiedWinitBuilder, WindowRegistry, WinitProxy};
+use webrogue_hub_debuggee::HubDebuggee;
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
@@ -28,19 +28,13 @@ struct LauncherConfigImpl {
 impl LauncherConfigImpl {
     fn new(
         storage_path: PathBuf,
-        proxy_container: Arc<Mutex<Option<WinitProxy>>>,
+        gfx_system: webrogue_gfx::System,
         event_loop_proxy: EventLoopProxy,
         launch_finish_indicator: Arc<Mutex<Option<()>>>,
     ) -> Self {
         Self {
             storage_path: storage_path.clone(),
-            hub_debuggee: HubDebuggee::new(
-                storage_path.clone(),
-                HubDebuggeeGFX::ProxiedWinit(HubDebuggeeProxiedWinitGFX {
-                    proxy_container,
-                    event_loop_proxy: event_loop_proxy.clone(),
-                }),
-            ),
+            hub_debuggee: HubDebuggee::new(storage_path.clone(), gfx_system),
             event_loop_proxy,
             launch_finish_indicator,
         }
@@ -88,7 +82,7 @@ pub struct App {
     #[cfg(target_os = "linux")]
     should_quit: Arc<AtomicBool>,
     storage_path: std::path::PathBuf,
-    proxy_container: Arc<Mutex<Option<WinitProxy>>>,
+    proxies: Arc<Mutex<Vec<WinitProxy>>>,
     window_registry: WindowRegistry,
     launch_finish_indicator: Arc<Mutex<Option<()>>>,
     #[cfg(target_os = "linux")]
@@ -105,7 +99,7 @@ impl App {
             #[cfg(target_os = "linux")]
             should_quit: Arc::new(AtomicBool::new(false)),
             storage_path,
-            proxy_container: Arc::new(Mutex::new(None)),
+            proxies: Arc::new(Mutex::new(Vec::new())),
             window_registry: WindowRegistry::new(),
             launch_finish_indicator: Arc::new(Mutex::new(None)),
             #[cfg(target_os = "linux")]
@@ -118,7 +112,11 @@ impl App {
         if self.is_gtk_initialized {
             return;
         }
+
+        std::env::set_var("GDK_BACKEND", "x11");
         std::env::set_var("NO_AT_BRIDGE", "1");
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1"); // Prevents a segfault somehow
+
         gtk::init().unwrap();
         self.is_gtk_initialized = true;
     }
@@ -129,16 +127,21 @@ impl ApplicationHandler for App {
         #[cfg(target_os = "linux")]
         self.initialize_gtk_if_needed();
 
+        let event_loop_proxy = event_loop.create_proxy();
+
+        let (builder, proxy) = ProxiedWinitBuilder::new(event_loop_proxy.clone());
+        self.proxies.lock().unwrap().push(proxy);
+        let gfx_system = builder.to_system(Some(true)).unwrap();
+
         let window = event_loop
             .create_window(WindowAttributes::default().with_title("Webrogue"))
             .unwrap();
-        let event_loop_proxy = event_loop.create_proxy();
         let (webview, mailbox) = build_webview(
             &window,
             self.as_child,
             Arc::new(LauncherConfigImpl::new(
                 self.storage_path.clone(),
-                self.proxy_container.clone(),
+                gfx_system,
                 event_loop.create_proxy(),
                 self.launch_finish_indicator.clone(),
             )),
@@ -171,7 +174,7 @@ impl ApplicationHandler for App {
     }
 
     fn destroy_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
-        if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
+        for proxy in self.proxies.lock().unwrap().iter() {
             proxy.destroy_surfaces(event_loop);
         }
     }
@@ -184,7 +187,7 @@ impl ApplicationHandler for App {
     ) {
         #[cfg(target_os = "linux")]
         self.initialize_gtk_if_needed();
-        if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
+        for proxy in self.proxies.lock().unwrap().iter() {
             proxy.window_event(&mut self.window_registry, window_id, event.clone());
         }
         if Some(window_id) == self.window.as_ref().map(|window| window.id()) {
@@ -246,7 +249,7 @@ impl ApplicationHandler for App {
         #[cfg(target_os = "linux")]
         gtk::main_iteration_do(false);
 
-        if let Some(proxy) = self.proxy_container.lock().unwrap().as_ref() {
+        for proxy in self.proxies.lock().unwrap().iter() {
             proxy.proxy_wake_up(event_loop, &mut self.window_registry);
         }
         if let Some(mailbox) = self.mailbox.as_ref() {

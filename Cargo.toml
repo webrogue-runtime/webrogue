@@ -45,6 +45,7 @@ members = [
   "crates/aot-lib",
   "crates/cli",
   "crates/cli-goodies",
+  "crates/common",
   "crates/debugger",
   "crates/events",
   "crates/events-apigen",
@@ -62,8 +63,7 @@ members = [
   "crates/launcher-dev",
   "crates/licenses",
   "crates/lld",
-  "crates/wasi-common",
-  "crates/wasip1",
+  "crates/vfs",
   "crates/wasmtime",
   "crates/wrapp",
   "crates/wrapp-reader",
@@ -72,9 +72,9 @@ members = [
   "android/runtime/launcher",
 
   "apple/runtime/ios/rust",
-  "apple/runtime/macos/rust",
+  "apple/runtime/macos/rust", 
 
-  "web",
+  # "web",
 ]
 exclude = [
   "external/wasmtime",
@@ -88,7 +88,6 @@ webrogue-cli = { path = "crates/cli" }
 webrogue-cli-goodies = { path = "crates/cli-goodies" }
 webrogue-events = { path = "crates/events" }
 webrogue-events-macro = { path = "crates/events-macro" }
-webrogue-debugger = { path = "crates/debugger" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
 webrogue-hub-client = { path = "crates/hub-client" }
 webrogue-hub-client-openapi = { path = "crates/hub-client/openapi", default-features=false }
@@ -99,20 +98,23 @@ webrogue-gfx-winit = { path = "crates/gfx-winit" }
 webrogue-virgl = { path = "crates/virgl" }
 webrogue-virgl-lib  = { path = "crates/virgl-lib" }
 webrogue-lld = { path = "crates/lld" }
-webrogue-wasi-common = { path = "crates/wasi-common", default-features = false }
-webrogue-wasip1 = { path = "crates/wasip1" }
+webrogue-wasi = { path = "crates/wasi" }
 webrogue-wrapp = { path = "crates/wrapp" }
 webrogue-launcher = { path = "crates/launcher" }
 webrogue-launcher-server-openapi = { path = "crates/launcher/server-openapi", default-features = false }
 webrogue-licenses = { path = "crates/licenses" }
+webrogue-vfs = { path = "crates/vfs" }
+webrogue-common = { path = "crates/common" }
+webrogue-debugger = { path = "crates/debugger" }
 
 # Wasmtime crates
 wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
 wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
 wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
 wiggle-generate = { path = "external/wasmtime/crates/wiggle/generate", default-features = false }
-wasmtime-internal-debugger = { path = "external/wasmtime/crates/debugger" }
 wasmtime-internal-core = { path = "external/wasmtime/crates/core" }
+wasmtime-wasi = { path = "external/wasmtime/crates/wasi", default-features = false }
+wasmtime-internal-debugger = { path = "external/wasmtime/crates/debugger", default-features = false }
 
 # other crates
 image = { version = "0.25", default-features = false }
@@ -144,12 +146,12 @@ rustix = { version = "1", default-features = false }
 cfg_aliases = { version = "0.2.1" }
 windows-sys = { version = "0.61.2", default-features = false }
 windows = { version = "0.62.2", default-features = false }
-wry = { version = "0.55", default-features = false }
+wry = { version = "0.57", default-features = false }
 tao = { version = "0.35.3", default-features = false }
-winit = { version = "0.31.0-beta.2", default-features = false }
-winit-android = { version = "0.31.0-beta.2", default-features = false }
-winit-x11 = { version = "0.31.0-beta.2", default-features = false }
-winit-web = { version = "0.31.0-beta.2", default-features = false }
+winit = { version = "0.31.0-beta.3", default-features = false }
+winit-android = { version = "0.31.0-beta.3", default-features = false }
+winit-x11 = { version = "0.31.0-beta.3", default-features = false }
+winit-web = { version = "0.31.0-beta.3", default-features = false }
 gtk = { version = "0.18.2", default-features = false }
 dpi = { version = "*", default-features = false }
 libloading = { version = "0.8.9", default-features = false }

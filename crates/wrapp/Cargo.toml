@@ -6,14 +6,11 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-write = ["dep:image"]
+write = []
 
 [dependencies]
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
 anyhow = { workspace = true }
 zstd-safe = { workspace = true, features = ["seekable", "std"] }
 zstd = { workspace = true }
-image = { workspace = true, optional = true, default-features = false, features = ["png", "rayon"] }
-semver = { workspace = true, default-features = false, features = ["serde"] }
-schemars = { workspace = true, features = ["semver1"] }
+webrogue-common = { workspace = true }
+#image = { workspace = true, optional = true, default-features = false, features = ["png", "rayon"] }

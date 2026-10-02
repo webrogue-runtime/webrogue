@@ -1,5 +1,6 @@
 mod child_builder;
-pub mod events_encoder;
+mod event_sink;
+pub mod events;
 mod interface;
 mod vulkan_entry;
 
@@ -10,10 +11,9 @@ pub use webrogue_virgl::Renderer as VirGLRenderer;
 pub use webrogue_virgl::SystemProxy as VirGLSystemProxy;
 
 pub use child_builder::ChildBuilder;
-pub use interface::run;
-pub use interface::webrogue_gfx;
-pub use interface::IBuilder;
-pub use interface::ISystem;
-pub use interface::IWindow;
-pub use interface::Interface;
+pub use event_sink::{EventSink, EventStream};
+pub use interface::{
+    add_to_linker, AbstractBuilder, AbstractSystem, AbstractWindow, GFXCtxView, GFXView, System,
+    Window,
+};
 pub use vulkan_entry::load_vulkan_entry;

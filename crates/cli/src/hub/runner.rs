@@ -1,8 +1,4 @@
-use std::{
-    fs::File,
-    path::Path,
-    sync::{Arc, Mutex},
-};
+use std::{fs::File, path::Path};
 
 use futures_util::{SinkExt as _, StreamExt as _};
 use serde::{Deserialize, Serialize};
@@ -12,7 +8,6 @@ use webrogue_hub_client::{
     wait_for_text_message_with_pings,
     ws_messages::{ConnectDeviceWsCommand, ConnectDeviceWsEvent},
 };
-use webrogue_hub_debuggee::{HubDebuggeeGFX, HubDebuggeeWinitSystemGFX};
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
@@ -22,7 +17,7 @@ pub struct Config {
 pub async fn host(
     storage_path: &Path,
     api_key: &str,
-    gfx_system: webrogue_gfx_winit::WinitSystem,
+    gfx_system: webrogue_gfx::System,
 ) -> anyhow::Result<()> {
     let device_name = {
         if !storage_path.exists() {
@@ -65,12 +60,8 @@ pub async fn host(
             .await?;
     let incoming_message = serde_json::from_str::<ConnectDeviceWsEvent>(event_str.as_str())?;
 
-    let hub_debuggee = webrogue_hub_debuggee::HubDebuggee::new(
-        storage_path.to_path_buf(),
-        HubDebuggeeGFX::WinitSystem(HubDebuggeeWinitSystemGFX {
-            gfx_system: Arc::new(Mutex::new(Some(gfx_system))),
-        }),
-    );
+    let hub_debuggee =
+        webrogue_hub_debuggee::HubDebuggee::new(storage_path.to_path_buf(), gfx_system);
 
     hub_debuggee
         .launch(

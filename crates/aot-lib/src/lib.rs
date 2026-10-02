@@ -26,6 +26,7 @@ extern "C" fn webrogue_aot_windows() {
 
         let persistent_path = dirs::data_dir()
             .expect("dirs::data_dir returned None")
+            // TODO validate id
             .join(builder.config().unwrap().id.clone().replace('.', "-"))
             .join("persistent");
         webrogue_wasmtime::Runtime::new(&persistent_path).run_aot_builder(
@@ -69,7 +70,9 @@ extern "C" fn webrogue_aot_windows() {
 extern "C" fn webrogue_aot_linux() {
     let result = || -> anyhow::Result<()> {
         use std::{io::Seek, os::unix::fs::FileExt};
-        use webrogue_wasmtime::IVFSBuilder as _;
+
+        use webrogue_common::RangeReader;
+        use webrogue_gfx::AbstractBuilder;
 
         let mut current_file = std::fs::File::open(std::env::current_exe()?)?;
         let file_size = current_file.seek(std::io::SeekFrom::End(0))?;
@@ -77,22 +80,30 @@ extern "C" fn webrogue_aot_linux() {
         current_file.read_exact_at(&mut wrapp_size_bytes, file_size - 8)?;
         let wrapp_size = u64::from_le_bytes(wrapp_size_bytes);
 
-        let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_part(
+        let vfs = webrogue_vfs::VFS::build_from_wrapp_blob(Box::new(RangeReader::new(
             current_file,
             file_size - wrapp_size - 8,
             wrapp_size,
-        )?;
+        )))?;
+
+        let config = vfs.config();
+
         let persistent_path = dirs::data_dir()
             .ok_or_else(|| anyhow::anyhow!("dirs::data_dir returned None"))?
-            .join(builder.config()?.id.clone().replace('.', "-"))
+            .join(&config.id)
             .join("persistent");
 
-        webrogue_wasmtime::Runtime::new(&persistent_path).run_aot_builder(
-            webrogue_wasmtime::GFXInitParams::new(
-                webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?,
-            ),
-            builder,
-        )?;
+        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?.run(
+            move |gfx_system| {
+                webrogue_wasmtime::block_on_default_executor(
+                    webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path)
+                        .aot()
+                        .run(),
+                )
+            },
+            config.vulkan_requirement().to_bool_option(),
+        )??;
+
         Ok(())
     }();
     if let Err(err) = result {

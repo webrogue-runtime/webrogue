@@ -7,7 +7,6 @@ pub fn build(
     build_dir: &std::path::Path,
     configuration: Configuration,
     destination: Destination,
-    wrapp_builder: &mut impl webrogue_wrapp::IVFSBuilder,
 ) -> anyhow::Result<()> {
     let message = step("Building Xcode project".to_owned(), || {
         let configuration_name = match configuration {
@@ -68,7 +67,7 @@ pub fn build(
             .unwrap()
             .to_owned();
 
-        let appdir_filename = wrapp_builder.config()?.name.clone() + ".app";
+        let appdir_filename = "Output.app";
 
         let product_dir_name = match destination {
             Destination::MacOS => configuration_name.to_owned(),

@@ -10,8 +10,11 @@ crate-type=["staticlib"]
 
 [dependencies]
 webrogue-wasmtime = { workspace = true, features = ["aot"] }
+webrogue-vfs = { workspace = true }
+webrogue-common = { workspace = true }
 webrogue-virgl = { workspace = true, optional = true }
 dirs = { workspace = true }
+webrogue-gfx = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
 anyhow = { workspace = true }
 

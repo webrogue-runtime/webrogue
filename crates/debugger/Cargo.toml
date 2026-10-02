@@ -7,14 +7,11 @@ edition.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-clap = { workspace = true, features = ["derive"] }
-tokio = { workspace = true, features = ["macros", "net", "rt"] }
-futures-util = { workspace = true }
 wasmtime-internal-debugger = { workspace = true }
+webrogue-common = { workspace = true }
 wasmtime = { workspace = true, default-features = false }
-futures = { workspace = true }
-async-trait = { workspace = true }
-webrogue-wasmtime = { workspace = true, features = ["async", "debug"] }
-webrogue-gfx = { workspace = true }
 gdbstub = { workspace = true }
 gdbstub_arch = { workspace = true }
+wasmtime-wasi = { workspace = true, default-features = false, features = ["p2"] } # wasmtime-internal-debugger needs p2, but is too shy to ask
+tokio = { workspace = true, features = ["macros", "net", "rt", "sync"] }
+async-trait = { workspace = true }

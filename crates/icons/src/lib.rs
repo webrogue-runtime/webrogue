@@ -1,7 +1,8 @@
 use anyhow::Context as _;
 use image::DynamicImage;
-use webrogue_wrapp::config::icons::{
-    ColoredIcon, IconBrightness, DARK_ICON_UNCOMPRESSED_NAME, LIGHT_ICON_UNCOMPRESSED_NAME,
+use webrogue_vfs::{
+    config::icons::{ColoredIcon, IconBrightness},
+    DARK_ICON_VFS_PATH, LIGHT_ICON_VFS_PATH, VFS,
 };
 
 use crate::utils::Color;
@@ -39,13 +40,11 @@ pub struct IconsData {
 }
 
 impl IconsData {
-    pub fn from_vfs_builder<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
-        wrapp_builder: &mut VFSBuilder,
-    ) -> anyhow::Result<Self> {
-        let config = wrapp_builder.config()?.clone();
+    pub fn from_vfs(vfs: &VFS) -> anyhow::Result<Self> {
+        let config = vfs.config();
 
-        let mut light_bytes = wrapp_builder.get_uncompressed(LIGHT_ICON_UNCOMPRESSED_NAME)?;
-        let mut dark_bytes = wrapp_builder.get_uncompressed(DARK_ICON_UNCOMPRESSED_NAME)?;
+        let mut light_bytes = vfs.read_as_vec(LIGHT_ICON_VFS_PATH).ok();
+        let mut dark_bytes = vfs.read_as_vec(DARK_ICON_VFS_PATH).ok();
         light_bytes = light_bytes.or_else(|| dark_bytes.clone());
         dark_bytes = dark_bytes.or_else(|| light_bytes.clone());
 

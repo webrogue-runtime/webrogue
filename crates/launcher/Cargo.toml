@@ -32,22 +32,23 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 webrogue-hub-client = { workspace = true }
 blake3 = { workspace = true }
-webrogue-wrapp = { workspace = true }
+webrogue-vfs = { workspace = true }
+webrogue-hub-debuggee = { workspace = true }
 webrogue-wasmtime = { workspace = true, features = ["jit"], optional = true }
+webrogue-gfx = { workspace = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
 webrogue-virgl = { workspace = true, optional = true }
 headers = { workspace = true }
 rand = { workspace = true }
 tokio-tungstenite = { workspace = true, features = ["rustls-tls-webpki-roots"] }
 tokio-util = { workspace = true, features = ["rt"] }
-webrogue-hub-debuggee = { workspace = true }
 rustls = { workspace = true, features = ["aws_lc_rs"] }
 tracing.workspace = true
 futures = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
-wry = { workspace = true, features = ["linux-body"] }
+wry = { workspace = true, features = ["linux-body", "x11"] }
 
 [build-dependencies]
 reqwest = { workspace = true, features = ["blocking"] }

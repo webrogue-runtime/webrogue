@@ -1,7 +1,7 @@
 use std::{future::Future, pin::Pin};
 
 pub use tokio::io::AsyncRead;
-use tokio::io::{AsyncWrite, AsyncWriteExt as _};
+use tokio::io::{AsyncWrite, AsyncWriteExt as _, BufReader};
 
 #[async_trait::async_trait]
 pub trait PacketSender {
@@ -40,15 +40,14 @@ impl Connection {
         }
     }
 
-    pub fn flush(&mut self) -> anyhow::Result<()> {
+    pub async fn flush(&mut self) -> anyhow::Result<()> {
         if self.needs_flush {
             // eprintln!("");
             // eprintln!("-> to client");
             // eprintln!("{}", String::from_utf8_lossy(&self.buffer));
             // eprintln!("<- from client");
 
-            tokio::runtime::Handle::current()
-                .block_on(async { self.sender.send(&self.buffer).await })?;
+            self.sender.send(&self.buffer).await?;
 
             self.buffer.clear();
             self.needs_flush = false;
@@ -88,6 +87,7 @@ pub fn tokio_tcp_connection(port: u16) -> ConnectionFactory {
             let (tcp_stream, _addr) = tcp_listener.accept().await?;
             eprintln!("GDB Remote connection accepted!");
             let (read, write) = tcp_stream.into_split();
+            let read = BufReader::new(read);
             let rx: BoxedPacketReceiver = Box::pin(read);
             let tx: BoxedPacketSender = Box::new(write);
             anyhow::Ok((rx, tx))

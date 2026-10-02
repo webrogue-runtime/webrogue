@@ -1,50 +1,66 @@
-use std::num::NonZeroI32;
+use std::sync::{atomic::AtomicBool, Arc};
 
-use webrogue_wasmtime::Breakpoints;
+use gdbstub_arch::wasm::addr::WasmAddr;
+use wasmtime::Engine;
 
-use crate::thread_info::{StoppedThread, ThreadInfo};
-
-#[derive(Clone)]
-pub struct DebuggerLoopProxy {
-    pub sender: tokio::sync::mpsc::UnboundedSender<DebuggerLoopMessage>,
+// Dropping sender for this means end of runner's execution
+pub enum RunnerMessage {
+    Initialized(Arc<AtomicBool>, Engine),
+    // Dropping command sender means death of debugger loop
+    Paused(
+        tokio::sync::mpsc::Sender<RunnerCommand>,
+        PauseReason,
+        Stacktrace,
+    ),
+    Finished,
 }
 
-impl DebuggerLoopProxy {
-    fn broken_debugger_loop(
-        _err: tokio::sync::mpsc::error::SendError<DebuggerLoopMessage>,
-    ) -> anyhow::Error {
-        anyhow::anyhow!("Broken debugger loop")
-    }
-
-    pub fn send(&self, message: DebuggerLoopMessage) -> anyhow::Result<()> {
-        self.sender
-            .send(message)
-            .map_err(Self::broken_debugger_loop)
-    }
+pub enum PauseReason {
+    Breakpoint,
+    Interrupted,
 }
 
-pub enum DebuggerLoopMessage {
-    RegisterThread(ThreadInfo),
-    ThreadStopped(ThreadStopInfo),
-    ThreadFinished(NonZeroI32),
+pub enum RunnerCommand {
+    Continue(ContinueCommand),
+    DumpModules(tokio::sync::oneshot::Sender<DumpModulesCommandResponse>),
+    DumpMemories(tokio::sync::oneshot::Sender<DumpMemoriesCommandResponse>),
+    ReadMemory(
+        WasmAddr,
+        usize,
+        tokio::sync::oneshot::Sender<Option<Vec<u8>>>,
+    ),
+    ReadFrameVal(
+        usize,
+        FrameVal,
+        tokio::sync::oneshot::Sender<Option<wasmtime::Val>>,
+    ),
+    Breakpoint(WasmAddr, bool, tokio::sync::oneshot::Sender<bool>),
 }
 
-pub struct ThreadStopInfo {
-    pub tid: NonZeroI32,
-    pub is_step: bool,
-    pub stopped_thread: StoppedThread,
+pub struct ContinueCommand {
+    pub single_stepping: bool,
 }
 
-pub enum ThreadMessage {
-    Resume(ResumeMessage),
-    EditBreakpoint(EditBreakpointMessage),
-    Kill,
+pub struct Stacktrace {
+    pub frames: Vec<Frame>,
 }
 
-pub struct ResumeMessage {
-    pub is_step: bool,
+pub struct Frame {
+    pub pc: WasmAddr,
+    // pub stack: Vec<wasmtime::Val>,
+    // pub locals: Vec<wasmtime::Val>,
+    // pub globals: Vec<wasmtime::Val>,
 }
 
-pub struct EditBreakpointMessage {
-    pub breakpoints: Breakpoints, // (module, offset)
+pub struct DumpModulesCommandResponse {
+    pub modules: Vec<(WasmAddr, usize)>,
+}
+pub struct DumpMemoriesCommandResponse {
+    pub memories: Vec<(WasmAddr, usize)>,
+}
+
+pub enum FrameVal {
+    Stack(usize),
+    Local(usize),
+    Global(usize),
 }

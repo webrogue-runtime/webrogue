@@ -10,9 +10,10 @@ anyhow = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 webrogue-gfx = { workspace = true }
 webrogue-debugger = { workspace = true }
+webrogue-common = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
 webrogue-hub-client = { workspace = true }
-webrogue-wrapp = { workspace = true }
+webrogue-vfs = { workspace = true }
 webrtc = { workspace = true }
 winit = { workspace = true, default-features = false }
 async-trait = { workspace = true }

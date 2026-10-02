@@ -12,10 +12,9 @@ run = [
     "dep:webrogue-gfx",
     "dep:webrogue-virgl",
     "webrogue-virgl/lib-impl",
-    "dep:webrogue-debugger",
     "dep:tokio",
     "dep:async-trait",
-    "dep:tokio-util"
+    "dep:tokio-util",
 ]
 compile = [
     "dep:webrogue-aot-compiler",
@@ -24,6 +23,9 @@ compile = [
 ]
 hub = [
     "dep:webrogue-hub-client",
+    "dep:webrogue-hub-debuggee",
+    "dep:webrogue-gfx-winit",
+    "dep:webrogue-gfx",
     "dep:tokio",
     "dep:blake3",
     "dep:tokio-tungstenite",
@@ -31,7 +33,6 @@ hub = [
     "dep:serde",
     "dep:rand",
     "dep:webrogue-cli-goodies",
-    "dep:webrogue-hub-debuggee",
     "__rustls",
 ]
 llvm = ["webrogue-aot-compiler/llvm"]
@@ -44,15 +45,13 @@ clap = { workspace = true, features = ["derive"] }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 
-webrogue-wasmtime = { workspace = true, features = ["jit", "cache"], optional = true }
+webrogue-wasmtime = { workspace = true, features = ["jit", "cache", "debug"], optional = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
 webrogue-gfx = { workspace = true, optional = true }
 webrogue-virgl = { workspace = true, optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }
-webrogue-wrapp = { workspace = true, features = ["write"] }
 webrogue-hub-client = { workspace = true, optional = true }
 webrogue-hub-debuggee = { workspace = true, optional = true }
-webrogue-debugger = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"], optional = true }
 blake3 = { workspace = true, optional = true }
 tokio-tungstenite = { workspace = true, optional = true, features = ["rustls-tls-webpki-roots"] }
@@ -68,6 +67,7 @@ webrogue-licenses = { workspace = true }
 schemars = { workspace = true }
 rcgen = { workspace = true, optional = true }
 p12 = { workspace = true, optional = true }
+webrogue-vfs = { workspace = true, features = ["archive"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 webrogue-gfx = { workspace = true, features = ["static-moltenvk"], optional = true }

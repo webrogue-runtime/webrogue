@@ -1,7 +1,7 @@
 use std::io::{Seek as _, Write as _};
 
-use anyhow::Context as _;
 use webrogue_cli_goodies::step;
+use webrogue_vfs::{archive, ArchiveOptions, VFS};
 
 use crate::utils::TemporaryFile;
 
@@ -53,46 +53,10 @@ pub fn build(
     cache: Option<&std::path::PathBuf>,
     vulkan_fallback: Option<crate::windows::VulkanFallback>,
 ) -> anyhow::Result<()> {
-    if webrogue_wrapp::is_path_a_wrapp(wrapp_file_path).with_context(|| {
-        format!(
-            "Unable to determine file type for {}",
-            wrapp_file_path.display()
-        )
-    })? {
-        build_using_vfs(
-            || webrogue_wrapp::WrappVFSBuilder::from_file_path(wrapp_file_path),
-            wrapp_file_path,
-            output_file_path,
-            arch,
-            is_console,
-            cache,
-            vulkan_fallback,
-        )
-    } else {
-        build_using_vfs(
-            || webrogue_wrapp::RealVFSBuilder::from_config_path(wrapp_file_path),
-            wrapp_file_path,
-            output_file_path,
-            arch,
-            is_console,
-            cache,
-            vulkan_fallback,
-        )
-    }
-}
+    let vfs = VFS::build_from_path(wrapp_file_path)?;
 
-fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
-    vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
-    wrapp_file_path: &std::path::PathBuf,
-    output_file_path: &std::path::PathBuf,
-    arch: WindowsArch,
-    is_console: bool,
-    cache: Option<&std::path::PathBuf>,
-    vulkan_fallback: Option<crate::windows::VulkanFallback>,
-) -> anyhow::Result<()> {
-    let mut vfs_builder = vfs_builder_factory()?;
-    let config = vfs_builder.config()?.clone();
-    let icons_config = webrogue_icons::IconsData::from_vfs_builder(&mut vfs_builder)?;
+    let config = vfs.config();
+    let icons_config = webrogue_icons::IconsData::from_vfs(&vfs)?;
     let object_file = crate::utils::TemporaryFile::for_tmp_object(output_file_path)?;
     let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
     let arch_str = match arch {
@@ -148,7 +112,7 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
 
         let original_size = output_file.seek(std::io::SeekFrom::End(0))?;
 
-        webrogue_wrapp::WRAPPWriter::new(vfs_builder).write(&mut output_file)?;
+        archive(&vfs, &mut output_file, ArchiveOptions { keep_wasm: false })?;
 
         let new_size = output_file.seek(std::io::SeekFrom::End(0))?;
 

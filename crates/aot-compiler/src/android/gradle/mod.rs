@@ -2,7 +2,7 @@ use anyhow::Context as _;
 use semver::Version;
 use std::{io::Write, path::absolute};
 use webrogue_cli_goodies::{note, step};
-use webrogue_wrapp::config::Config;
+use webrogue_vfs::{archive_to_file, config::Config, ArchiveOptions, VFS};
 
 mod icons;
 mod types;
@@ -28,49 +28,9 @@ pub fn build(
     output: Option<std::path::PathBuf>,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
-    if webrogue_wrapp::is_path_a_wrapp(container_path).with_context(|| {
-        format!(
-            "Unable to determine file type for {}",
-            container_path.display()
-        )
-    })? {
-        build_using_vfs(
-            || webrogue_wrapp::WrappVFSBuilder::from_file_path(container_path),
-            sdk_env,
-            java_home_env,
-            container_path,
-            build_dir,
-            signing,
-            output,
-            cache,
-        )
-    } else {
-        build_using_vfs(
-            || webrogue_wrapp::RealVFSBuilder::from_config_path(container_path),
-            sdk_env,
-            java_home_env,
-            container_path,
-            build_dir,
-            signing,
-            output,
-            cache,
-        )
-    }
-}
+    let vfs = VFS::build_from_path(container_path)?;
 
-#[allow(clippy::too_many_arguments)]
-fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
-    vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
-    sdk_env: Option<&std::path::PathBuf>,
-    java_home_env: Option<&std::path::PathBuf>,
-    container_path: &std::path::Path,
-    build_dir: &std::path::PathBuf,
-    signing: Signing,
-    output: Option<std::path::PathBuf>,
-    cache: Option<&std::path::PathBuf>,
-) -> anyhow::Result<()> {
-    let mut vfs_builder = vfs_builder_factory()?;
-    let config = vfs_builder.config()?.clone();
+    let config = vfs.config();
     let mut artifacts =
         crate::utils::Artifacts::new().with_context(|| "Error opening artifacts library")?;
     let template_id = artifacts.get_data("android_gradle/template_id")?;
@@ -101,14 +61,16 @@ fn build_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
     };
     let version = config.version.clone();
     step("Generating stripped WRAPP file".to_owned(), || {
-        webrogue_wrapp::WRAPPWriter::new(vfs_builder_factory()?)
-            .write(&mut std::fs::File::create(assets_path.join("aot.swrapp"))?)?;
-        anyhow::Ok(())
+        archive_to_file(
+            &vfs,
+            assets_path.join("aot.swrapp"),
+            ArchiveOptions { keep_wasm: false },
+        )
     })?;
 
     let icons_stamp = icons::build(
         build_dir,
-        &mut vfs_builder,
+        &vfs,
         old_stamp.as_ref().map(|stamp| &stamp.icons),
     )?;
 
@@ -278,7 +240,7 @@ fn gradle_build(
         }
     };
 
-    let output_apk_filename = config.name.clone().replace(' ', "_") + ".apk";
+    let output_apk_filename = "output.apk";
 
     let copied_apk_dir = if let Some(output) = output {
         if output.is_dir() {
@@ -311,6 +273,13 @@ fn set_gradle_property<V: AsRef<std::ffi::OsStr>>(
     key: &str,
     val: V,
 ) -> anyhow::Result<()> {
-    file.write_fmt(format_args!("{}={}\n", key, val.as_ref().to_str().unwrap()))?;
+    let val = val.as_ref().to_str().ok_or(anyhow::anyhow!(
+        "String parsing error in set_gradle_property"
+    ))?;
+    anyhow::ensure!(
+        val.chars().all(|c| !"\\\n=".contains(c)),
+        "String validation error in set_gradle_property"
+    );
+    file.write_fmt(format_args!("{}={}\n", key, val))?;
     Ok(())
 }

@@ -87,7 +87,12 @@ pub fn main() -> anyhow::Result<()> {
             Ok(())
         }
         Cli::Pack { config, output } => {
-            webrogue_wrapp::archive(&config, &output)?;
+            let vfs = webrogue_vfs::VFS::build_real(&config)?;
+            webrogue_vfs::archive_to_file(
+                &vfs,
+                &output,
+                webrogue_vfs::ArchiveOptions { keep_wasm: true },
+            )?;
             Ok(())
         }
         #[cfg(feature = "hub")]

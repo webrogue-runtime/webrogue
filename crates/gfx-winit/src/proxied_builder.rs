@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 
+use webrogue_gfx::System;
 use winit::{
     event::WindowEvent,
     event_loop::{ActiveEventLoop, EventLoopProxy},
@@ -45,6 +46,18 @@ impl ProxiedWinitBuilder {
     ) -> Self {
         self.window_attributes_fn = Some(Arc::new(window_attributes_fn));
         self
+    }
+
+    pub fn to_system(self, vulkan_requirement: Option<bool>) -> anyhow::Result<System> {
+        let proxy = self.proxy.internal.lock().unwrap();
+        let mailbox = proxy.mailbox.clone();
+        let system = WinitSystem::new(
+            mailbox,
+            vulkan_requirement,
+            self.window_attributes_fn.clone(),
+        )?;
+        let system = System::new(Arc::new(system));
+        Ok(system)
     }
 }
 struct WinitProxyInternal {
@@ -97,25 +110,16 @@ impl WinitProxy {
     }
 }
 
-impl webrogue_gfx::IBuilder for ProxiedWinitBuilder {
-    type System = WinitSystem;
-
+impl webrogue_gfx::AbstractBuilder for ProxiedWinitBuilder {
     fn run<Output>(
         self,
-        body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static,
+        body_fn: impl FnOnce(System) -> Output + Send + 'static,
         vulkan_requirement: Option<bool>,
     ) -> anyhow::Result<Output>
     where
         Output: Send + 'static,
     {
-        let proxy = self.proxy.internal.lock().unwrap();
-        let mailbox = proxy.mailbox.clone();
-        let system = WinitSystem::new(
-            mailbox,
-            vulkan_requirement,
-            self.window_attributes_fn.clone(),
-        )?;
-        drop(proxy);
+        let system = self.to_system(vulkan_requirement)?;
 
         Ok(body_fn(system))
     }

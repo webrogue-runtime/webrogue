@@ -1,27 +1,28 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     fs::File,
     io::{Seek as _, Write as _},
     path::PathBuf,
     sync::Arc,
 };
 
+use anyhow::Context;
 use tokio::{
     io::AsyncRead,
     sync::{mpsc::Sender, Mutex},
 };
-use webrogue_gfx_winit::ProxiedWinitBuilder;
+use webrogue_common::split_path;
 use webrogue_hub_client::debug_messages::{
     DebugCommand, DebugRequestBody, DebugResponseBody, LaunchResponse, ListFilesResponse,
 };
-use webrogue_wrapp::IVFSBuilder as _;
+use webrogue_vfs::VFS;
 use webrtc::data_channel::RTCDataChannel;
 
-use crate::{webrtc_packet_sender::WebRTCPacketSender, HubDebuggeeGFX};
+use crate::webrtc_packet_sender::WebRTCPacketSender;
 
 pub struct DebugRunnerConfig {
     pub storage: PathBuf,
-    pub gfx: std::sync::Mutex<Option<HubDebuggeeGFX>>,
+    pub gfx_system: std::sync::Mutex<Option<webrogue_gfx::System>>,
     pub data_channel: std::sync::Mutex<Option<std::sync::Weak<RTCDataChannel>>>,
     pub done_tx: futures::channel::mpsc::UnboundedSender<anyhow::Result<()>>,
 }
@@ -33,73 +34,32 @@ impl DebugRunnerConfig {
 
     async fn run(
         &self,
-        mut vfs_builder: webrogue_wrapp::RealVFSBuilder,
+        vfs: VFS,
         receiver: Box<dyn AsyncRead + std::marker::Send>,
         abort_handle: Arc<std::sync::Mutex<Option<DropCallback>>>,
     ) -> anyhow::Result<()> {
         let storage = self.storage.clone();
-        let gfx = self.gfx.lock().unwrap().take().unwrap();
+        let gfx_system = self.gfx_system.lock().unwrap().take().unwrap();
         let data_channel = self.data_channel.lock().unwrap().take().unwrap();
         let done_tx = self.done_tx.clone();
         let (launched_tx, mut launched_rx) = tokio::sync::mpsc::unbounded_channel();
 
         let task = tokio::task::spawn(async move {
-            let config = vfs_builder.config().unwrap().clone();
+            let config = vfs.config();
             let persistent_path = storage.join("persistent").join(&config.id);
-            let mut runtime = webrogue_wasmtime::Runtime::new(&persistent_path);
+            let runtime = webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path);
+            let mut runtime = runtime.jit();
             runtime.jit_profile(webrogue_wasmtime::JitProfile::Debug);
-            let handle = vfs_builder.into_vfs().unwrap();
-            let sender = WebRTCPacketSender { data_channel };
+            runtime.debug_connection_factory(webrogue_debugger::connection::premade_connection(
+                Box::new(WebRTCPacketSender { data_channel }),
+                Box::into_pin(receiver),
+                move || launched_tx.send(()).unwrap(),
+            ));
 
             tokio_util::task::LocalPoolHandle::new(1)
                 .spawn_pinned(async move || {
                     let result = async {
-                        match &gfx {
-                            HubDebuggeeGFX::ProxiedWinit(gfx) => {
-                                let (builder, proxy) =
-                                    ProxiedWinitBuilder::new(gfx.event_loop_proxy.clone());
-                                *gfx.proxy_container.lock().unwrap() = Some(proxy);
-                                let gfx_init_params =
-                                    webrogue_wasmtime::GFXInitParams::new(builder);
-                                webrogue_debugger::debug(
-                                    tokio::runtime::Handle::current(),
-                                    runtime,
-                                    gfx_init_params,
-                                    webrogue_debugger::premade_connection(
-                                        Box::new(sender),
-                                        Box::into_pin(receiver),
-                                        move || launched_tx.send(()).unwrap(),
-                                    ),
-                                    true,
-                                    move |runtime, gfx_init_params| {
-                                        runtime.run_jit(gfx_init_params, handle, &config)
-                                    },
-                                )
-                                .await?;
-                            }
-                            HubDebuggeeGFX::WinitSystem(gfx) => {
-                                let gfx_init_params = webrogue_wasmtime::GFXInitParams::new(
-                                    webrogue_gfx::ChildBuilder::new(
-                                        gfx.gfx_system.lock().unwrap().take().unwrap(),
-                                    ),
-                                );
-                                webrogue_debugger::debug(
-                                    tokio::runtime::Handle::current(),
-                                    runtime,
-                                    gfx_init_params,
-                                    webrogue_debugger::premade_connection(
-                                        Box::new(sender),
-                                        Box::into_pin(receiver),
-                                        move || launched_tx.send(()).unwrap(),
-                                    ),
-                                    true,
-                                    move |runtime, gfx_init_params| {
-                                        runtime.run_jit(gfx_init_params, handle, &config)
-                                    },
-                                )
-                                .await?;
-                            }
-                        }
+                        runtime.run().await?;
                         anyhow::Ok(())
                     }
                     .await;
@@ -128,9 +88,8 @@ impl DebugRunnerConfig {
 
 pub struct DebugRunnerState {
     config: Arc<DebugRunnerConfig>,
-    actual_file_hashes_cache: std::sync::Mutex<HashMap<String, String>>,
+    file_paths_and_hashes: Mutex<HashMap<String, String>>,
     currently_constructed_file: Mutex<Option<(String, File)>>,
-    wrapp_config: Mutex<Option<webrogue_wrapp::config::Config>>,
     gdb_data_tx: Mutex<Option<Sender<Result<VecDeque<u8>, std::io::Error>>>>,
     abort_handle: Arc<std::sync::Mutex<Option<DropCallback>>>,
 }
@@ -139,9 +98,8 @@ impl DebugRunnerState {
     pub fn new(config: Arc<DebugRunnerConfig>) -> Self {
         Self {
             config,
-            actual_file_hashes_cache: std::sync::Mutex::new(HashMap::new()),
+            file_paths_and_hashes: Mutex::new(HashMap::new()),
             currently_constructed_file: Mutex::new(None),
-            wrapp_config: Mutex::new(None),
             gdb_data_tx: Mutex::new(None),
             abort_handle: Arc::new(std::sync::Mutex::new(None)),
         }
@@ -154,89 +112,107 @@ impl DebugRunnerState {
         match request {
             DebugRequestBody::ListFiles(request) => {
                 drop(self.currently_constructed_file.lock().await.take());
-                let file_hashes = request.file_paths_and_hashes;
-                self.visit_dir(&file_hashes, "")?;
-
-                let mut missing_files: Vec<String> = Vec::new();
-                for (rel_path, hash) in file_hashes.clone() {
-                    if self.is_file_missing(&rel_path, &hash)? {
-                        missing_files.push(rel_path);
-                        if missing_files.len() >= 16 {
-                            break;
+                let mut file_paths_and_hashes = self.file_paths_and_hashes.lock().await;
+                *file_paths_and_hashes = request.file_paths_and_hashes;
+                for entry in self.constructed_wrapp_dir()?.read_dir()? {
+                    let entry = entry?;
+                    let filetype = entry.file_type()?;
+                    if !filetype.is_file() {
+                        if filetype.is_dir() {
+                            std::fs::remove_dir_all(entry.path()).context(format!(
+                                "Unable to delete {}",
+                                entry.path().as_path().display()
+                            ))?;
+                        } else {
+                            std::fs::remove_file(entry.path()).context(format!(
+                                "Unable to delete {}",
+                                entry.path().as_path().display()
+                            ))?;
                         }
+                        continue;
+                    }
+                    let file_name = entry.file_name().to_string_lossy().to_string();
+                    if !file_paths_and_hashes
+                        .values()
+                        .any(|hash| *hash == file_name)
+                    {
+                        std::fs::remove_file(entry.path()).context(format!(
+                            "Unable to delete {}",
+                            entry.path().as_path().display()
+                        ))?;
+                        continue;
+                    }
+                }
+                let mut missing_file_hashes = HashSet::new();
+                for (guest_path, file_hash) in file_paths_and_hashes.iter() {
+                    anyhow::ensure!(file_hash.chars().all(|c| c.is_ascii_alphanumeric()));
+                    anyhow::ensure!(file_hash.len() == 64);
+                    anyhow::ensure!(
+                        split_path(guest_path, 0).map(|parts| parts.join("/"))
+                            == Some(guest_path.clone())
+                    );
+                    if self.is_file_missing(
+                        self.constructed_wrapp_dir()?.join(file_hash),
+                        &file_hash,
+                    )? {
+                        missing_file_hashes.insert(file_hash.clone());
                     }
                 }
 
                 Ok(DebugResponseBody::ListFiles(ListFilesResponse {
-                    missing_files,
+                    missing_file_hashes,
                 }))
             }
 
             DebugRequestBody::Launch(_request) => {
-                let Some(config) = self.wrapp_config.lock().await.clone() else {
-                    anyhow::bail!("Launch command is executed before SetConfig");
-                };
+                let file_paths_and_hashes = self.file_paths_and_hashes.lock().await;
+
+                // Delete files with wrong hashes
+                for (_, file_hash) in file_paths_and_hashes.iter() {
+                    anyhow::ensure!(file_hash.chars().all(|c| c.is_ascii_alphanumeric()));
+                    anyhow::ensure!(file_hash.len() == 64);
+                    let path = self.constructed_wrapp_dir()?.join(file_hash);
+                    if self.is_file_missing(path.clone(), &file_hash)? && path.exists() {
+                        std::fs::remove_file(&path)
+                            .context(format!("Unable to delete {}", path.as_path().display()))?;
+                    }
+                }
+
                 let (tx, rx) = tokio::sync::mpsc::channel(1024);
                 let _ = self.gdb_data_tx.lock().await.insert(tx);
                 let rx = tokio_util::io::StreamReader::new(
                     tokio_stream::wrappers::ReceiverStream::new(rx),
                 );
 
-                let vfs_builder =
-                    webrogue_wrapp::RealVFSBuilder::new(self.constructed_wrapp_dir()?, config)?;
+                let constructed_wrapp_dir = self.constructed_wrapp_dir()?;
+                let vfs = webrogue_vfs::VFS::build_real_mapped(
+                    file_paths_and_hashes
+                        .iter()
+                        .map(|(path, hash)| (path.clone(), constructed_wrapp_dir.join(hash)))
+                        .collect(),
+                )?;
                 self.config
-                    .run(vfs_builder, Box::new(rx), self.abort_handle.clone())
+                    .run(vfs, Box::new(rx), self.abort_handle.clone())
                     .await?;
                 Ok(DebugResponseBody::Launch(LaunchResponse {}))
             }
         }
     }
 
-    fn visit_dir(
-        &self,
-        file_hashes: &HashMap<String, String>,
-        rel_path: &str,
-    ) -> anyhow::Result<bool> {
-        let path = self.rel_to_absolute_path(rel_path)?;
-        let mut kept_something = false;
-        for entry in path.read_dir()? {
-            let entry = entry?;
-            let new_rel_path = format!(
-                "{}/{}",
-                rel_path,
-                entry.file_name().as_os_str().to_str().unwrap()
-            );
-            if entry.file_type()?.is_dir() {
-                let keep_dir = self.visit_dir(file_hashes, &new_rel_path)?;
-                kept_something |= keep_dir;
-                if !keep_dir {
-                    std::fs::remove_dir(self.rel_to_absolute_path(&new_rel_path)?)?;
-                }
-            } else if entry.file_type()?.is_file() {
-                let keep_file = file_hashes.contains_key(&new_rel_path);
-                kept_something |= keep_file;
-                if !keep_file {
-                    std::fs::remove_file(self.rel_to_absolute_path(&new_rel_path)?)?;
-                }
-            } else {
-                std::fs::remove_file(self.rel_to_absolute_path(&new_rel_path)?)?;
-            }
-        }
-        Ok(kept_something)
-    }
-
     pub async fn process_command(&self, command: DebugCommand) -> anyhow::Result<()> {
         match command {
             DebugCommand::SetFileChunk(command) => {
-                self.actual_file_hashes_cache
-                    .lock()
-                    .unwrap()
-                    .remove(&command.path);
                 let mut currently_constructed_file = self.currently_constructed_file.lock().await;
+                anyhow::ensure!(self
+                    .file_paths_and_hashes
+                    .lock()
+                    .await
+                    .values()
+                    .any(|hash| *hash == command.hash));
                 let old_file: Option<anyhow::Result<File>> = currently_constructed_file
                     .take()
-                    .and_then(|(old_path, old_file)| {
-                        if *old_path == command.path {
+                    .and_then(|(old_hash, old_file)| {
+                        if *old_hash == command.hash {
                             Some(Ok(old_file))
                         } else {
                             None
@@ -244,22 +220,14 @@ impl DebugRunnerState {
                     });
 
                 let mut file = old_file.unwrap_or_else(|| {
-                    let path = self.rel_to_absolute_path(&command.path)?;
-                    if !path.parent().unwrap().exists() {
-                        std::fs::create_dir_all(path.parent().unwrap())?;
-                    }
-                    Ok(File::create(path)?)
+                    Ok(File::create(
+                        self.constructed_wrapp_dir()?.join(&command.hash),
+                    )?)
                 })?;
 
                 file.seek(std::io::SeekFrom::Start(command.pos))?;
                 file.write_all(&command.data)?;
-                *currently_constructed_file = Some((command.path, file));
-                Ok(())
-            }
-            DebugCommand::SetConfig(set_config_command) => {
-                let mut config = set_config_command.config;
-                config.main = Some("/app/main.wasm".to_owned());
-                *self.wrapp_config.lock().await = Some(config);
+                *currently_constructed_file = Some((command.hash, file));
                 Ok(())
             }
             DebugCommand::GDBData(command) => {
@@ -273,29 +241,21 @@ impl DebugRunnerState {
         }
     }
 
-    fn is_file_missing(&self, rel_path: &str, hash: &str) -> anyhow::Result<bool> {
-        let mut actual_file_hashes_cache = self.actual_file_hashes_cache.lock().unwrap();
-        let actual_hash = if let Some(actual_hash) = actual_file_hashes_cache.get(rel_path) {
-            actual_hash.clone()
-        } else {
-            let path = self.rel_to_absolute_path(rel_path)?;
-            if !path.exists() {
-                return Ok(true);
-            }
-            let Ok(file) = File::open(path) else {
-                return Ok(true);
-            };
-
-            let mut hasher = blake3::Hasher::new();
-
-            if hasher.update_reader(file).is_err() {
-                return Ok(true);
-            }
-
-            let actual_hash = hasher.finalize().to_hex().as_str().to_owned();
-            actual_file_hashes_cache.insert(rel_path.to_owned(), actual_hash.clone());
-            actual_hash
+    fn is_file_missing(&self, path: PathBuf, hash: &str) -> anyhow::Result<bool> {
+        if !path.exists() {
+            return Ok(true);
+        }
+        let Ok(file) = File::open(path) else {
+            return Ok(true);
         };
+
+        let mut hasher = blake3::Hasher::new();
+
+        if hasher.update_reader(file).is_err() {
+            return Ok(true);
+        }
+
+        let actual_hash = hasher.finalize().to_hex().as_str().to_owned();
         Ok(actual_hash != hash)
     }
 
@@ -304,18 +264,6 @@ impl DebugRunnerState {
         if !path.exists() {
             std::fs::create_dir_all(&path)?;
         }
-        Ok(path)
-    }
-
-    fn rel_to_absolute_path(&self, rel_path: &str) -> anyhow::Result<PathBuf> {
-        let mut path = self.constructed_wrapp_dir()?;
-        for path_part in rel_path.split('/') {
-            if path_part.is_empty() {
-                continue;
-            };
-            path.push(path_part);
-        }
-
         Ok(path)
     }
 }

@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use webrogue_gfx::IBuilder as _;
+use webrogue_gfx::{AbstractBuilder as _, System};
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
@@ -8,12 +8,12 @@ use winit::{
     window::WindowId,
 };
 
-use crate::{window_registry::WindowRegistry, ProxiedWinitBuilder, WinitProxy, WinitSystem};
+use crate::{window_registry::WindowRegistry, ProxiedWinitBuilder, WinitProxy};
 
 type CreateSystemFn =
     Box<dyn FnOnce(EventLoopProxy) -> (ProxiedWinitBuilder, WinitProxy) + Send + 'static>;
 
-type BodyFn = Box<dyn FnOnce(WinitSystem) + Send + 'static>;
+type BodyFn = Box<dyn FnOnce(System) + Send + 'static>;
 
 type SetErrorFN = Box<dyn FnOnce(anyhow::Error) + Send + 'static>;
 
@@ -39,16 +39,16 @@ impl ApplicationHandler for App {
         };
         let (builder, proxy) = create_system_fn(event_loop.create_proxy());
         let error_mailbox = proxy.get_mailbox();
+        let body_fn_mailbox = proxy.get_mailbox();
         self.proxy = Some(proxy);
         let vulkan_requirement = self.vulkan_requirement;
         std::thread::Builder::new()
             .name("wasi-main".to_owned())
             .spawn(move || {
                 let result = builder.run(
-                    |winit_system| {
-                        let mailbox = winit_system.mailbox.clone();
+                    move |winit_system| {
                         body_fn(winit_system);
-                        mailbox.execute(|event_loop, _window_registry| event_loop.exit());
+                        body_fn_mailbox.execute(|event_loop, _window_registry| event_loop.exit());
                     },
                     vulkan_requirement,
                 );
@@ -110,12 +110,10 @@ impl SimpleWinitBuilder {
     }
 }
 
-impl webrogue_gfx::IBuilder for SimpleWinitBuilder {
-    type System = WinitSystem;
-
+impl webrogue_gfx::AbstractBuilder for SimpleWinitBuilder {
     fn run<Output>(
         self,
-        body_fn: impl FnOnce(WinitSystem) -> Output + Send + 'static,
+        body_fn: impl FnOnce(System) -> Output + Send + 'static,
         vulkan_requirement: Option<bool>,
     ) -> anyhow::Result<Output>
     where

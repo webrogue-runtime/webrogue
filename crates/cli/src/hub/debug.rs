@@ -14,11 +14,11 @@ use webrogue_hub_client::{
     debug_connection::OutgoingDebugConnection,
     debug_messages::{
         DebugCommand, DebugRequestBody, DebugResponseBody, GDBDataDebugCommand, LaunchRequest,
-        ListFilesRequest, SetConfigCommand, SetFileChunkCommand,
+        ListFilesRequest, SetFileChunkCommand,
     },
     ws_messages::{DebugDeviceWsCommand, DebugDeviceWsEvent},
 };
-use webrogue_wrapp::IVFSHandle as _;
+use webrogue_vfs::VFS;
 
 pub async fn debug(
     wrapp_path: &std::path::Path,
@@ -64,19 +64,8 @@ pub async fn debug(
         let sdp_answer = response.sdp_answer;
         connection.set_answer(&sdp_answer).await?;
 
-        if webrogue_wrapp::is_path_a_wrapp(wrapp_path)? {
-            launch_wrapp(
-                webrogue_wrapp::WrappVFSBuilder::from_file_path(wrapp_path)?,
-                &mut connection,
-            )
-            .await?;
-        } else {
-            launch_wrapp(
-                webrogue_wrapp::RealVFSBuilder::from_config_path(wrapp_path)?,
-                &mut connection,
-            )
-            .await?;
-        }
+        let vfs = webrogue_vfs::VFS::build_from_path(wrapp_path)?;
+        launch_wrapp(vfs, &mut connection).await?;
 
         let tcp_listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", gdb_port)).await?;
         eprintln!("Awaiting for incoming GDB Remote connection on port {gdb_port}");
@@ -140,70 +129,57 @@ pub async fn debug(
     result
 }
 
-async fn launch_wrapp<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
-    mut vfs_builder: VFSBuilder,
-    connection: &mut OutgoingDebugConnection,
-) -> anyhow::Result<()> {
-    let mut config = vfs_builder.config()?.clone();
-    config.filesystem.iter_mut().for_each(|filesystem| {
-        filesystem.resources.iter_mut().for_each(|resource| {
-            resource
-                .iter_mut()
-                .for_each(|resource| resource.real_path = resource.mapped_path.clone())
-        });
-    });
-    connection
-        .command(DebugCommand::SetConfig(SetConfigCommand { config }))
-        .await?;
-    let vfs = vfs_builder.into_vfs()?;
-    let index = vfs.get_index().clone();
+async fn launch_wrapp(vfs: VFS, connection: &mut OutgoingDebugConnection) -> anyhow::Result<()> {
+    let file_paths = vfs.list_all_files();
     let mut file_paths_and_hashes = HashMap::new();
-    for (path, position) in index {
-        let file = vfs.open_pos(position)?;
+    for path in &file_paths {
         let hash = blake3::Hasher::new()
-            .update_reader(file)?
+            .update_reader(
+                vfs.open(&path)
+                    .map_err(|_| anyhow::anyhow!("Unable to open VFS path {}", path))?
+                    .reader(),
+            )?
             .finalize()
             .to_hex()
             .as_str()
             .to_owned();
-        file_paths_and_hashes.insert(path, hash);
+        file_paths_and_hashes.insert(path.clone(), hash);
     }
 
-    loop {
-        let DebugResponseBody::ListFiles(response) = connection
-            .request(DebugRequestBody::ListFiles(ListFilesRequest {
-                file_paths_and_hashes: file_paths_and_hashes.clone(),
-            }))
-            .await?
-        else {
-            anyhow::bail!("ListFiles request returned response of wrong type")
-        };
+    let DebugResponseBody::ListFiles(response) = connection
+        .request(DebugRequestBody::ListFiles(ListFilesRequest {
+            file_paths_and_hashes: file_paths_and_hashes.clone(),
+        }))
+        .await?
+    else {
+        anyhow::bail!("ListFiles request returned response of wrong type")
+    };
 
-        if response.missing_files.is_empty() {
-            break;
+    for path in &file_paths {
+        let hash = file_paths_and_hashes.get(path).unwrap().clone();
+        if !response.missing_file_hashes.contains(&hash) {
+            continue;
         }
-
-        for file_path in response.missing_files.iter() {
-            let Some(mut file) = vfs.open_file(file_path.as_str())? else {
-                anyhow::bail!("Couldn't open {}", file_path)
-            };
-            println!("Sending {}", file_path);
-            let mut pos: u64 = 0;
-            let mut buf = [0u8; 16 * 1024];
-            loop {
-                let n = file.read(&mut buf)?;
-                if n == 0 {
-                    break;
-                }
-                connection
-                    .command(DebugCommand::SetFileChunk(SetFileChunkCommand {
-                        path: file_path.clone(),
-                        pos,
-                        data: buf[..n].to_vec(),
-                    }))
-                    .await?;
-                pos += n as u64;
+        let mut reader = vfs
+            .open(&path)
+            .map_err(|_| anyhow::anyhow!("Unable to open VFS path {}", path))?
+            .reader();
+        println!("Sending \"{}\" with hash \"{}\"", path, hash);
+        let mut pos: u64 = 0;
+        let mut buf = [0u8; 16 * 1024];
+        loop {
+            let n = reader.read(&mut buf)?;
+            if n == 0 {
+                break;
             }
+            connection
+                .command(DebugCommand::SetFileChunk(SetFileChunkCommand {
+                    hash: hash.clone(),
+                    pos,
+                    data: buf[..n].to_vec(),
+                }))
+                .await?;
+            pos += n as u64;
         }
     }
 

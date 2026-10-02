@@ -1,9 +1,5 @@
-use std::{
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::{path::PathBuf, sync::Arc};
 mod debug_runner_state;
-use webrogue_gfx_winit::WinitProxy;
 use webrogue_hub_client::{
     debug_message_receiver::DebugMessageReceiver,
     debug_message_sender::send_debug_message,
@@ -21,35 +17,20 @@ use webrtc::{
         sdp::session_description::RTCSessionDescription,
     },
 };
-use winit::event_loop::EventLoopProxy;
 
 use crate::debug_runner_state::{DebugRunnerConfig, DebugRunnerState, DropCallback};
 
 pub struct HubDebuggee {
     storage_path: PathBuf,
-    gfx: HubDebuggeeGFX,
-}
-
-#[derive(Clone)]
-pub enum HubDebuggeeGFX {
-    ProxiedWinit(HubDebuggeeProxiedWinitGFX),
-    WinitSystem(HubDebuggeeWinitSystemGFX),
-}
-
-#[derive(Clone)]
-pub struct HubDebuggeeProxiedWinitGFX {
-    pub proxy_container: Arc<Mutex<Option<WinitProxy>>>,
-    pub event_loop_proxy: EventLoopProxy,
-}
-
-#[derive(Clone)]
-pub struct HubDebuggeeWinitSystemGFX {
-    pub gfx_system: Arc<Mutex<Option<webrogue_gfx_winit::WinitSystem>>>,
+    gfx_system: webrogue_gfx::System,
 }
 
 impl HubDebuggee {
-    pub fn new(storage_path: PathBuf, gfx: HubDebuggeeGFX) -> Self {
-        Self { storage_path, gfx }
+    pub fn new(storage_path: PathBuf, gfx_system: webrogue_gfx::System) -> Self {
+        Self {
+            storage_path,
+            gfx_system,
+        }
     }
 
     pub async fn launch(
@@ -96,10 +77,10 @@ impl HubDebuggee {
             })
         }));
 
-        let gfx = self.gfx.clone();
+        let gfx_system = self.gfx_system.clone();
         let debug_runner_config = Arc::new(DebugRunnerConfig {
             storage: self.storage_path.clone(),
-            gfx: std::sync::Mutex::new(Some(gfx)),
+            gfx_system: std::sync::Mutex::new(Some(gfx_system)),
             data_channel: std::sync::Mutex::new(None),
             done_tx: done_tx.clone(),
         });

@@ -1,4 +1,4 @@
-use webrogue_debugger::PacketSender;
+use webrogue_debugger::connection::PacketSender;
 use webrogue_hub_client::{
     debug_message_sender::send_debug_message,
     debug_messages::{DebugEvent, DebugIncomingMessageBody, GDBDataDebugEvent},
