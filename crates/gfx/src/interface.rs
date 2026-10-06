@@ -16,12 +16,13 @@ pub(crate) mod generated {
         world: "gfx",
         with: {
             "webrogue:gfx/windowing.window": super::Window,
+            "webrogue:gfx/vulkan.renderer": super::VulkanRenderer,
             "webrogue:gfx/vulkan.linear-memory-marker": super::LinearMemoryMarker,
         },
         imports: {
             "webrogue:gfx/vulkan.[static]linear-memory-marker.create": trappable | store,
-            "webrogue:gfx/vulkan.create-blob": trappable | store,
-            "webrogue:gfx/vulkan.register-blob": trappable | store,
+            "webrogue:gfx/vulkan.[method]renderer.create-blob": trappable | store,
+            "webrogue:gfx/vulkan.[method]renderer.register-blob": trappable | store,
             "webrogue:gfx/windowing.[method]window.event-stream": trappable | store,
             default: trappable,
         },
@@ -83,6 +84,10 @@ impl Window {
     pub fn new(window: Arc<dyn AbstractWindow>) -> Self {
         Self(window)
     }
+}
+
+pub struct VulkanRenderer {
+    id: u32,
 }
 
 #[derive(Clone)]
@@ -229,53 +234,121 @@ impl<'a> generated::webrogue::gfx::vulkan::Host for GFXCtxView<'a> {
     fn check_presence(&mut self) -> wasmtime::Result<bool> {
         Ok(self.ctx.0.get_virgl_context().is_some())
     }
+}
 
-    fn resource_unref(&mut self, res_id: u32) -> wasmtime::Result<()> {
+impl<'a> generated::webrogue::gfx::vulkan::HostRenderer for GFXCtxView<'a> {
+    fn new(
+        &mut self,
+        name: Vec<u8>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<VulkanRenderer>> {
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
-        virgl_context.lock().unwrap().resource_unref(res_id);
+        let id = virgl_context.lock().unwrap().create_renderer(&name);
+        if id == 0 {
+            wasmtime::bail!("failed to create Vulkan renderer")
+        }
+        Ok(self.table.push(VulkanRenderer { id })?)
+    }
+
+    fn drop(&mut self, rep: wasmtime::component::Resource<VulkanRenderer>) -> wasmtime::Result<()> {
+        let renderer = self.table.delete(rep)?;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        virgl_context.lock().unwrap().destroy_renderer(renderer.id);
         Ok(())
     }
 
-    fn create_sync(&mut self, value: u64) -> wasmtime::Result<u32> {
+    fn resource_unref(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        res_id: u32,
+    ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
-        let sync_id = virgl_context.lock().unwrap().sync_create(value);
+        virgl_context
+            .lock()
+            .unwrap()
+            .resource_unref(renderer_id, res_id);
+        Ok(())
+    }
+
+    fn create_sync(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        value: u64,
+    ) -> wasmtime::Result<u32> {
+        let renderer_id = self.table.get(&self_)?.id;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        let sync_id = virgl_context
+            .lock()
+            .unwrap()
+            .sync_create(renderer_id, value);
         Ok(sync_id)
     }
 
-    fn sync_unref(&mut self, sync_id: u32) -> wasmtime::Result<()> {
+    fn sync_unref(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        sync_id: u32,
+    ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
-        virgl_context.lock().unwrap().sync_unref(sync_id);
+        virgl_context
+            .lock()
+            .unwrap()
+            .sync_unref(renderer_id, sync_id);
         Ok(())
     }
 
-    fn sync_read(&mut self, sync_id: u32) -> wasmtime::Result<u64> {
+    fn sync_read(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        sync_id: u32,
+    ) -> wasmtime::Result<u64> {
+        let renderer_id = self.table.get(&self_)?.id;
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
-        let value = virgl_context.lock().unwrap().sync_read(sync_id);
+        let value = virgl_context
+            .lock()
+            .unwrap()
+            .sync_read(renderer_id, sync_id);
         Ok(value)
     }
 
-    fn sync_write(&mut self, sync_id: u32, value: u64) -> wasmtime::Result<()> {
+    fn sync_write(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        sync_id: u32,
+        value: u64,
+    ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
-        virgl_context.lock().unwrap().sync_write(sync_id, value);
+        virgl_context
+            .lock()
+            .unwrap()
+            .sync_write(renderer_id, sync_id, value);
         Ok(())
     }
 
     fn submit_cmd(
         &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
         headers: Vec<u8>,
         cmds: Vec<u8>,
         syncs: Vec<u8>,
     ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
@@ -285,25 +358,38 @@ impl<'a> generated::webrogue::gfx::vulkan::Host for GFXCtxView<'a> {
                 .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
                 .collect()
         };
-        virgl_context
-            .lock()
-            .unwrap()
-            .submit_cmd(&words(&headers), &words(&cmds), &words(&syncs));
+        virgl_context.lock().unwrap().submit_cmd(
+            renderer_id,
+            &words(&headers),
+            &words(&cmds),
+            &words(&syncs),
+        );
         Ok(())
     }
 
-    fn sync_wait(&mut self, flags: u32, timeout: u32, syncs: Vec<u32>) -> wasmtime::Result<i32> {
+    fn sync_wait(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        flags: u32,
+        timeout: u32,
+        syncs: Vec<u32>,
+    ) -> wasmtime::Result<i32> {
+        let renderer_id = self.table.get(&self_)?.id;
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
         let result = virgl_context
             .lock()
             .unwrap()
-            .sync_wait(flags, timeout, &syncs);
+            .sync_wait(renderer_id, flags, timeout, &syncs);
         Ok(result)
     }
 
-    fn get_max_timeline_count(&mut self) -> wasmtime::Result<u32> {
+    fn get_max_timeline_count(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+    ) -> wasmtime::Result<u32> {
+        self.table.get(&self_)?;
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
@@ -311,7 +397,13 @@ impl<'a> generated::webrogue::gfx::vulkan::Host for GFXCtxView<'a> {
         Ok(result)
     }
 
-    fn get_capset(&mut self, id: u32, version: u32) -> wasmtime::Result<Vec<u8>> {
+    fn get_capset(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        id: u32,
+        version: u32,
+    ) -> wasmtime::Result<Vec<u8>> {
+        self.table.get(&self_)?;
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
@@ -320,26 +412,27 @@ impl<'a> generated::webrogue::gfx::vulkan::Host for GFXCtxView<'a> {
         Ok(data)
     }
 
-    fn context_init(&mut self, capset_id: u32) -> wasmtime::Result<()> {
+    fn context_init(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        capset_id: u32,
+    ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
         let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
-        virgl_context.lock().unwrap().context_init(capset_id);
-        Ok(())
-    }
-
-    fn create_renderer(&mut self, name: Vec<u8>) -> wasmtime::Result<()> {
-        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
-            wasmtime::bail!("get_virgl_context() failed")
-        };
-        virgl_context.lock().unwrap().create_renderer(&name);
+        virgl_context
+            .lock()
+            .unwrap()
+            .context_init(renderer_id, capset_id);
         Ok(())
     }
 }
 
-impl<T> generated::webrogue::gfx::vulkan::HostWithStore<T> for GFX {
+impl<T> generated::webrogue::gfx::vulkan::HostRendererWithStore<T> for GFX {
     fn create_blob(
         mut host: wasmtime::component::Access<T, Self>,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
         blob_id: u64,
         buf_ptr: u32,
         buf_len: u32,
@@ -348,21 +441,23 @@ impl<T> generated::webrogue::gfx::vulkan::HostWithStore<T> for GFX {
         let Some(virgl_context) = host.get().ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
+        let renderer_id = host.get().table.get(&self_)?.id;
         let memory = host.get().table.get(&memory)?.clone();
 
         let virgl_context = virgl_context.lock().unwrap();
         if blob_id != 0 {
-            Ok(virgl_context.create_blob(std::ptr::null(), buf_len as usize, blob_id))
+            Ok(virgl_context.create_blob(renderer_id, std::ptr::null(), buf_len as usize, blob_id))
         } else {
             let Some(ptr) = memory.get_range(buf_ptr, buf_len, host.as_context()) else {
                 wasmtime::bail!("create_blob: outside of linear memory")
             };
-            Ok(virgl_context.create_blob(ptr, buf_len as usize, blob_id))
+            Ok(virgl_context.create_blob(renderer_id, ptr, buf_len as usize, blob_id))
         }
     }
 
     fn register_blob(
         mut host: wasmtime::component::Access<T, Self>,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
         res_id: u32,
         buf_ptr: u32,
         buf_len: u32,
@@ -371,14 +466,17 @@ impl<T> generated::webrogue::gfx::vulkan::HostWithStore<T> for GFX {
         let Some(virgl_context) = host.get().ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
+        let renderer_id = host.get().table.get(&self_)?.id;
         let memory = host.get().table.get(&memory)?.clone();
         let Some(ptr) = memory.get_range(buf_ptr, buf_len, host.as_context()) else {
             wasmtime::bail!("register_blob: outside of linear memory")
         };
-        virgl_context
-            .lock()
-            .unwrap()
-            .register_blob(res_id.into(), ptr, buf_len as usize);
+        virgl_context.lock().unwrap().register_blob(
+            renderer_id,
+            res_id.into(),
+            ptr,
+            buf_len as usize,
+        );
         Ok(())
     }
 }

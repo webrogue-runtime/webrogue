@@ -159,11 +159,11 @@ impl ContextContainer {
         Self { renderer }
     }
 
-    pub fn register_blob(&self, blob_id: u64, buf: *const u8, size: usize) {
+    pub fn register_blob(&self, _renderer_id: u32, blob_id: u64, buf: *const u8, size: usize) {
         crate::shadow_blob::register_blob(buf as *const (), size, blob_id);
     }
 
-    pub fn create_blob(&self, ptr: *const u8, size: usize, blob_id: u64) -> u32 {
+    pub fn create_blob(&self, renderer_id: u32, ptr: *const u8, size: usize, blob_id: u64) -> u32 {
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
         if blob_id == 0 {
@@ -171,53 +171,53 @@ impl ContextContainer {
                 bindings::webrogue_virgl_setup_shmem(ptr as *mut c_void, size);
             }
         }
-        webrogue::create_blob(ptr as usize, size, blob_id)
+        webrogue::create_blob(renderer_id, ptr as usize, size, blob_id)
     }
 
-    pub fn resource_unref(&self, res_id: u32) {
+    pub fn resource_unref(&self, renderer_id: u32, res_id: u32) {
         crate::shadow_blob::flush_all();
         crate::shadow_blob::deregister_blob(res_id.into());
         let _guard = self.renderer.session.lock().unwrap();
-        webrogue::resource_unref(res_id);
+        webrogue::resource_unref(renderer_id, res_id);
     }
 
-    pub fn sync_create(&self, value: u64) -> u32 {
+    pub fn sync_create(&self, renderer_id: u32, value: u64) -> u32 {
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
-        webrogue::sync_create(value)
+        webrogue::sync_create(renderer_id, value)
     }
 
-    pub fn sync_unref(&self, sync_id: u32) {
+    pub fn sync_unref(&self, renderer_id: u32, sync_id: u32) {
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
-        webrogue::sync_unref(sync_id);
+        webrogue::sync_unref(renderer_id, sync_id);
     }
 
-    pub fn sync_read(&self, sync_id: u32) -> u64 {
+    pub fn sync_read(&self, renderer_id: u32, sync_id: u32) -> u64 {
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
-        webrogue::sync_read(sync_id)
+        webrogue::sync_read(renderer_id, sync_id)
     }
 
-    pub fn sync_write(&self, sync_id: u32, value: u64) {
+    pub fn sync_write(&self, renderer_id: u32, sync_id: u32, value: u64) {
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
-        let ret = webrogue::sync_write(sync_id, value);
+        let ret = webrogue::sync_write(renderer_id, sync_id, value);
         assert_eq!(ret, 0);
     }
 
-    pub fn submit_cmd(&self, headers: &[u32], cmds: &[u32], syncs: &[u32]) {
+    pub fn submit_cmd(&self, renderer_id: u32, headers: &[u32], cmds: &[u32], syncs: &[u32]) {
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
-        let ret = webrogue::submit_cmd(headers, cmds, syncs);
+        let ret = webrogue::submit_cmd(renderer_id, headers, cmds, syncs);
         assert_eq!(ret, 0);
         crate::shadow_blob::flush_all();
     }
 
-    pub fn sync_wait(&self, flags: u32, timeout: u32, syncs: &[u32]) -> i32 {
+    pub fn sync_wait(&self, renderer_id: u32, flags: u32, timeout: u32, syncs: &[u32]) -> i32 {
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
-        webrogue::sync_wait(flags, timeout, syncs)
+        webrogue::sync_wait(renderer_id, flags, timeout, syncs)
     }
 
     pub fn get_max_timeline_count(&self) -> u32 {
@@ -246,23 +246,22 @@ impl ContextContainer {
         caps
     }
 
-    pub fn context_init(&self, capset_id: u32) {
+    pub fn context_init(&self, renderer_id: u32, capset_id: u32) {
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
-        let ret = webrogue::context_init(capset_id);
+        let ret = webrogue::context_init(renderer_id, capset_id);
         assert_eq!(ret, 0);
     }
 
-    pub fn create_renderer(&self, name: &[u8]) {
+    pub fn create_renderer(&self, name: &[u8]) -> u32 {
         crate::shadow_blob::flush_all();
         let _guard = self.renderer.session.lock().unwrap();
-        let ret = webrogue::context_create(name);
-        assert_eq!(ret, 0);
+        webrogue::context_create(name)
     }
-}
 
-impl Drop for ContextContainer {
-    fn drop(&mut self) {
-        webrogue::context_destroy();
+    pub fn destroy_renderer(&self, renderer_id: u32) {
+        crate::shadow_blob::flush_all();
+        let _guard = self.renderer.session.lock().unwrap();
+        webrogue::context_destroy(renderer_id);
     }
 }

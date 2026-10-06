@@ -560,42 +560,43 @@ interface windowing {
 
 interface vulkan {
     check-presence: func() -> bool;
-    register-blob: func(
-        res-id: u32,
-        buf-ptr: u32,
-        buf-len: u32,
-        memory: borrow<linear-memory-marker>
-    );
-    create-blob: func(
-        blob-id: u64,
-        buf-ptr: u32,
-        buf-len: u32,
-        memory: borrow<linear-memory-marker>
-    ) -> u32;
-    resource-unref: func(res-id: u32);
-    create-sync: func(value: u64) -> u32;
-    sync-unref: func(sync-id: u32);
-    sync-read: func(sync-id: u32) -> u64;
-    sync-write: func(sync-id: u32, value: u64);
-    submit-cmd: func(
-        headers: list<u8>,
-        cmds: list<u8>,
-        syncs: list<u8>
-    );
-    sync-wait: func(
-        %flags: u32,
-        timeout: u32,
-        syncs: list<u32>,
-    ) -> s32;
-    get-max-timeline-count: func() -> u32;
-    get-capset: func(
-        id: u32,
-        version: u32
-    ) -> list<u8>;
-    context-init: func(capset-id: u32);
-    create-renderer: func(
-        name: list<u8>,
-    );
+
+    resource renderer {
+        constructor(name: list<u8>);
+        register-blob: func(
+            res-id: u32,
+            buf-ptr: u32,
+            buf-len: u32,
+            memory: borrow<linear-memory-marker>
+        );
+        create-blob: func(
+            blob-id: u64,
+            buf-ptr: u32,
+            buf-len: u32,
+            memory: borrow<linear-memory-marker>
+        ) -> u32;
+        resource-unref: func(res-id: u32);
+        create-sync: func(value: u64) -> u32;
+        sync-unref: func(sync-id: u32);
+        sync-read: func(sync-id: u32) -> u64;
+        sync-write: func(sync-id: u32, value: u64);
+        submit-cmd: func(
+            headers: list<u8>,
+            cmds: list<u8>,
+            syncs: list<u8>
+        );
+        sync-wait: func(
+            %flags: u32,
+            timeout: u32,
+            syncs: list<u32>,
+        ) -> s32;
+        get-max-timeline-count: func() -> u32;
+        get-capset: func(
+            id: u32,
+            version: u32
+        ) -> list<u8>;
+        context-init: func(capset-id: u32);
+    }
 
     resource linear-memory-marker {
         create: static func(ptr: u32, data: list<u8>) -> option<linear-memory-marker>;

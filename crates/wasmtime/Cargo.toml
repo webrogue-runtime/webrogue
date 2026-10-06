@@ -25,3 +25,7 @@ tokio = { workspace = true, features = ["net", "time", "rt-multi-thread"] }
 webrogue-aot-data = { workspace = true, optional = true }
 gdbstub_arch = { workspace = true }
 futures = { workspace = true }
+
+[target.'cfg(target = "android")'.dependencies]
+# seccomp messes with raw syscalls, so lets use libc
+rustix = { workspace = true, features = ["use-libc"] }

@@ -132,6 +132,13 @@ pub(self) async fn run_component(
             wasi_ctx_builder.env(env.0, env.1);
         }
     }
+
+    if let Some(args) = &wrapp_config.args {
+        for arg in args {
+            wasi_ctx_builder.arg(arg);
+        }
+    }
+
     let state = State {
         gfx: runtime.gfx_system,
         wasi_ctx: wasi_ctx_builder.build(),

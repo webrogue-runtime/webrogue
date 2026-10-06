@@ -45,7 +45,6 @@ struct Context {
     debug_name: Vec<u8>,
     capset_id: u32,
     context_initialized: bool,
-    next_resource_id: u32,
     next_sync_id: u32,
     resource_table: HashMap<u32, Resource>,
     sync_table: HashMap<u32, Arc<Sync>>,
@@ -53,12 +52,20 @@ struct Context {
 }
 
 struct State {
-    context: Option<Context>,
+    contexts: HashMap<u32, Context>,
+    next_context_id: u32,
+    next_resource_id: u32,
 }
 
 fn state() -> &'static Mutex<State> {
     static STATE: OnceLock<Mutex<State>> = OnceLock::new();
-    STATE.get_or_init(|| Mutex::new(State { context: None }))
+    STATE.get_or_init(|| {
+        Mutex::new(State {
+            contexts: HashMap::new(),
+            next_context_id: 1,
+            next_resource_id: 1,
+        })
+    })
 }
 
 fn completed() -> &'static CompletedQueue {
@@ -75,7 +82,7 @@ fn completed() -> &'static CompletedQueue {
 /// old 1 ms poll loop was actually sampling at ~64 Hz and every fence took at
 /// least one full sleep quantum per wait.
 struct CompletedQueue {
-    queue: Mutex<Vec<u64>>,
+    queue: Mutex<Vec<(u32, u64)>>,
     cv: Condvar,
 }
 
@@ -106,10 +113,10 @@ fn drain_completed(st: &mut State) {
     if ids.is_empty() {
         return;
     }
-    let Some(ctx) = st.context.as_mut() else {
-        return;
-    };
-    for fence_id in ids {
+    for (ctx_id, fence_id) in ids {
+        let Some(ctx) = st.contexts.get_mut(&ctx_id) else {
+            continue;
+        };
         let ptr = fence_id as usize as *const TimelineSubmit;
         if ptr.is_null() {
             continue;
@@ -165,52 +172,60 @@ pub(crate) fn init(ctx_flags: c_int) -> c_int {
     0
 }
 
-unsafe extern "C" fn write_context_fence(_ctx_id: u32, _ring_idx: u32, fence_id: u64) {
+unsafe extern "C" fn write_context_fence(ctx_id: u32, _ring_idx: u32, fence_id: u64) {
     let queue = &completed();
     if let Ok(mut done) = queue.queue.lock() {
-        done.push(fence_id);
+        done.push((ctx_id, fence_id));
         queue.cv.notify_all();
     }
 }
 
 pub(crate) fn cleanup() {
-    context_destroy();
+    let context_ids: Vec<u32> = state().lock().unwrap().contexts.keys().copied().collect();
+    for ctx_id in context_ids {
+        context_destroy(ctx_id);
+    }
     completed().queue.lock().unwrap().clear();
     unsafe { bindings::vkr_renderer_fini() };
 }
 
-pub(crate) fn context_create(name: &[u8]) -> c_int {
+pub(crate) fn context_create(name: &[u8]) -> u32 {
     let st = state();
     let mut st = st.lock().unwrap();
-    if st.context.is_some() {
-        return -1;
-    }
     if name.len() > 1024 * 1024 {
-        return -1;
+        return 0;
     }
+
+    let ctx_id = st.next_context_id;
+    if ctx_id == 0 {
+        return 0;
+    }
+    st.next_context_id = ctx_id.checked_add(1).unwrap_or(0);
 
     let mut debug_name = name.to_vec();
     if debug_name.last() != Some(&0) {
         debug_name.push(0);
     }
-    st.context = Some(Context {
-        ctx_id: 1,
-        debug_name,
-        capset_id: 0,
-        context_initialized: false,
-        next_resource_id: 1,
-        next_sync_id: 1,
-        resource_table: HashMap::new(),
-        sync_table: HashMap::new(),
-        timelines: (0..MAX_TIMELINE_COUNT).map(|_| Vec::new()).collect(),
-    });
-    0
+    st.contexts.insert(
+        ctx_id,
+        Context {
+            ctx_id,
+            debug_name,
+            capset_id: 0,
+            context_initialized: false,
+            next_sync_id: 1,
+            resource_table: HashMap::new(),
+            sync_table: HashMap::new(),
+            timelines: (0..MAX_TIMELINE_COUNT).map(|_| Vec::new()).collect(),
+        },
+    );
+    ctx_id
 }
 
-pub(crate) fn context_init(capset_id: u32) -> c_int {
+pub(crate) fn context_init(ctx_id: u32, capset_id: u32) -> c_int {
     let st = state();
     let mut st = st.lock().unwrap();
-    let Some(ctx) = st.context.as_mut() else {
+    let Some(ctx) = st.contexts.get_mut(&ctx_id) else {
         return -1;
     };
     if capset_id == 0 {
@@ -240,18 +255,25 @@ pub(crate) fn context_init(capset_id: u32) -> c_int {
     0
 }
 
-pub(crate) fn context_destroy() {
-    // Drop any fence completions whose TimelineSubmits are destroyed below.
-    completed().queue.lock().unwrap().clear();
-
+pub(crate) fn context_destroy(ctx_id: u32) {
+    // Discard fence callbacks belonging to this context; keep other renderers'
+    // completions queued for their next operation.
+    completed()
+        .queue
+        .lock()
+        .unwrap()
+        .retain(|(completed_ctx_id, _)| *completed_ctx_id != ctx_id);
     let st = state();
     let mut st = st.lock().unwrap();
-    let Some(ctx) = st.context.take() else { return };
+    let Some(ctx) = st.contexts.remove(&ctx_id) else {
+        return;
+    };
 
     if ctx.context_initialized {
         unsafe { bindings::vkr_renderer_destroy_context(ctx.ctx_id) };
     }
     for res in ctx.resource_table.values() {
+        crate::shadow_blob::deregister_blob(res.res_id.into());
         unsafe { bindings::vkr_renderer_destroy_resource(ctx.ctx_id, res.res_id) };
         if let Some((ptr, len)) = res.iov {
             unsafe { unmap(ptr as *mut c_void, len) };
@@ -260,15 +282,19 @@ pub(crate) fn context_destroy() {
     // timelines (TimelineSubmits) and hash tables are dropped here.
 }
 
-pub(crate) fn create_blob(ptr: usize, size: usize, blob_id: u64) -> u32 {
+pub(crate) fn create_blob(ctx_id: u32, ptr: usize, size: usize, blob_id: u64) -> u32 {
     let st = state();
     let mut st = st.lock().unwrap();
-    let Some(ctx) = st.context.as_mut() else {
+    if !st.contexts.contains_key(&ctx_id) {
+        return 0;
+    }
+
+    let res_id = st.next_resource_id;
+    let Some(next_resource_id) = res_id.checked_add(1) else {
         return 0;
     };
-
-    let res_id = ctx.next_resource_id;
-    ctx.next_resource_id += 1;
+    st.next_resource_id = next_resource_id;
+    let ctx = st.contexts.get_mut(&ctx_id).unwrap();
 
     let is_shmem = blob_id == 0;
 
@@ -311,18 +337,18 @@ pub(crate) fn create_blob(ptr: usize, size: usize, blob_id: u64) -> u32 {
     res_id
 }
 
-pub(crate) fn resource_unref(res_id: u32) {
+pub(crate) fn resource_unref(ctx_id: u32, res_id: u32) {
     let st = state();
     let mut st = st.lock().unwrap();
-    if let Some(ctx) = st.context.as_mut() {
+    if let Some(ctx) = st.contexts.get_mut(&ctx_id) {
         ctx.resource_table.remove(&res_id);
     }
 }
 
-pub(crate) fn sync_create(value: u64) -> u32 {
+pub(crate) fn sync_create(ctx_id: u32, value: u64) -> u32 {
     let st = state();
     let mut st = st.lock().unwrap();
-    let Some(ctx) = st.context.as_mut() else {
+    let Some(ctx) = st.contexts.get_mut(&ctx_id) else {
         return 0;
     };
     let id = ctx.next_sync_id;
@@ -336,18 +362,18 @@ pub(crate) fn sync_create(value: u64) -> u32 {
     id
 }
 
-pub(crate) fn sync_unref(sync_id: u32) {
+pub(crate) fn sync_unref(ctx_id: u32, sync_id: u32) {
     let st = state();
     let mut st = st.lock().unwrap();
-    if let Some(ctx) = st.context.as_mut() {
+    if let Some(ctx) = st.contexts.get_mut(&ctx_id) {
         ctx.sync_table.remove(&sync_id);
     }
 }
 
-pub(crate) fn sync_read(sync_id: u32) -> u64 {
+pub(crate) fn sync_read(ctx_id: u32, sync_id: u32) -> u64 {
     let st = state();
     let mut st = st.lock().unwrap();
-    let Some(ctx) = st.context.as_mut() else {
+    let Some(ctx) = st.contexts.get_mut(&ctx_id) else {
         return 0;
     };
     ctx.sync_table
@@ -355,10 +381,10 @@ pub(crate) fn sync_read(sync_id: u32) -> u64 {
         .map_or(0, |s| s.value.load(Ordering::Relaxed))
 }
 
-pub(crate) fn sync_write(sync_id: u32, value: u64) -> c_int {
+pub(crate) fn sync_write(ctx_id: u32, sync_id: u32, value: u64) -> c_int {
     let st = state();
     let mut st = st.lock().unwrap();
-    let Some(ctx) = st.context.as_mut() else {
+    let Some(ctx) = st.contexts.get_mut(&ctx_id) else {
         return -1;
     };
     let Some(sync) = ctx.sync_table.get(&sync_id).cloned() else {
@@ -375,8 +401,8 @@ pub(crate) fn sync_write(sync_id: u32, value: u64) -> c_int {
 /// so this loop just polls it and re-checks.
 ///
 /// Returns 0 (ready), 2 (VK_TIMEOUT), or a negative errno on error.
-pub(crate) fn sync_wait(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
-    sync_wait_inner(flags, timeout_ms, syncs)
+pub(crate) fn sync_wait(ctx_id: u32, flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
+    sync_wait_inner(ctx_id, flags, timeout_ms, syncs)
 }
 
 /// Waits until `poll_and_check` returns `Some(result)`. Fence retirement is
@@ -401,11 +427,11 @@ fn wait_completed<T>(st: &mut State, mut poll_and_check: impl FnMut(&mut State) 
     }
 }
 
-fn sync_wait_inner(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
+fn sync_wait_inner(ctx_id: u32, flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
     let st = state();
     let mut st = st.lock().unwrap();
 
-    let Some(ctx) = st.context.as_mut() else {
+    let Some(ctx) = st.contexts.get_mut(&ctx_id) else {
         return -1;
     };
 
@@ -452,13 +478,13 @@ fn sync_wait_inner(flags: u32, timeout_ms: u32, syncs: &[u32]) -> i32 {
     })
 }
 
-pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int {
+pub(crate) fn submit_cmd(ctx_id: u32, headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int {
     let st = state();
     let mut st = st.lock().unwrap();
 
     drain_completed(&mut st);
 
-    let Some(ctx) = st.context.as_mut() else {
+    let Some(ctx) = st.contexts.get_mut(&ctx_id) else {
         return -1;
     };
 
@@ -546,7 +572,7 @@ pub(crate) fn submit_cmd(headers: &[u32], cmds: &[u32], syncs: &[u32]) -> c_int 
 
     if !cpu_fence_ids.is_empty() {
         wait_completed(&mut st, |st| {
-            let Some(ctx) = st.context.as_ref() else {
+            let Some(ctx) = st.contexts.get(&ctx_id) else {
                 return Some(0);
             };
             let all_done = !cpu_fence_ids.iter().any(|id| {

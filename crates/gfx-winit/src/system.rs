@@ -20,7 +20,7 @@ pub struct WinitSystem {
 
 impl Drop for WinitSystem {
     fn drop(&mut self) {
-        // vurgl must be deinitialized before vulkan library is unloaded
+        // virgl must be deinitialized before vulkan library is unloaded
         self.virgl_context.take();
     }
 }

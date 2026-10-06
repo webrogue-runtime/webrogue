@@ -44,6 +44,11 @@ pub struct Config {
         description = "These values are passed to your application. Actual environment variables provided by underlying OS are never accessible."
     )]
     pub env: Option<HashMap<String, String>>,
+    #[schemars(
+        title = "Command-line arguments",
+        description = "These values are passed to your application as command-line arguments."
+    )]
+    pub args: Option<Vec<String>>,
     #[schemars(title = "Graphics configuration")]
     pub graphics_api: Option<GraphicsApiConfig>,
 }
@@ -86,6 +91,7 @@ impl Config {
             icons: self.icons.map(|icons| icons.strip()),
             version: self.version,
             env: self.env,
+            args: self.args,
             graphics_api: self.graphics_api,
         }
     }

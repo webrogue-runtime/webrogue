@@ -120,6 +120,8 @@ fn load_parsed() -> Result<(Entry, &'static str), String> {
 }
 
 fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
+    std::env::set_var("MESA_EXTENSION_MAX_YEAR", "2026");
+
     #[cfg(target_os = "macos")]
     {
         loader_state.try_load("libMoltenVK.dylib", load_dynamic_moltenvk())?;
@@ -163,7 +165,6 @@ fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
             load_dynamic(&path)
         }
     }
-
 
     loader_state.try_load(
         "System's driver",
