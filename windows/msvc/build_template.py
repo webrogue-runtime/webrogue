@@ -16,7 +16,7 @@ sdk_dir = os.environ["WindowsSdkDir"]
 sdk_version = os.environ["WindowsSDKVersion"].removesuffix("\\")
 vc_tools_install_dir = os.environ["VCToolsInstallDir"]
 
-# gfxstream doesn't seem to support MSVC
+# virgl doesn't seem to support MSVC
 os.environ["CC"] = "clang-cl"
 os.environ["CXX"] = "clang-cl"
 
@@ -36,7 +36,7 @@ if os.path.exists(empty_wrapp):
             "compile",
             "object",
             str(empty_wrapp),
-            f"windows\msvc\empty-{rust_arch}.obj",
+            f"windows\\msvc\\empty-{rust_arch}.obj",
             f"{rust_arch}-windows-msvc"
         ],
         cwd=str(repo_dir),
@@ -54,14 +54,14 @@ subprocess.run(
     cwd=str(template_dir),
 ).check_returncode()
 
-for gfxstream_type in ["impl", "stub"]:
+for virgl_type in ["impl", "stub"]:
     subprocess.run(
         [
             "cargo",
             "build",
-            "--manifest-path=../../crates/gfxstream-lib/Cargo.toml",
+            "--manifest-path=../../crates/virgl-lib/Cargo.toml",
             "--target-dir=./target",
-            f"--features={gfxstream_type}",
+            f"--features={virgl_type}",
             f"--target={rust_arch}-pc-windows-msvc",
             "--profile=aot",
         ],
@@ -73,15 +73,15 @@ for gfxstream_type in ["impl", "stub"]:
             "target",
             f"{rust_arch}-pc-windows-msvc",
             "aot",
-            "libwebrogue_gfxstream_lib.rlib",
+            "libwebrogue_virgl_lib.rlib",
         ),
         os.path.join(
             out_dir,
-            f"webrogue_gfxstream_lib_{gfxstream_type}.a",
+            f"webrogue_virgl_lib_{virgl_type}.a",
         ),
     )
 
-gfxstream_lib_impl = os.path.join(out_dir, "webrogue_gfxstream_lib_impl.a")
+virgl_lib_impl = os.path.join(out_dir, "webrogue_virgl_lib_impl.a")
 
 for win_type in ["gui", "console"]:
     subprocess.run(
@@ -189,7 +189,7 @@ lib_content = lib_content_result.stdout.decode()
 
 lld_outputs: list[str] = []
 
-for gfxstream_type in ["impl", "stub"]:
+for virgl_type in ["impl", "stub"]:
     for win_type in ["gui", "console"]:
         obj_out_path = os.path.join(out_dir, f"{win_type}.obj")
         exe_path = os.path.join(template_dir, "aot.exe")
@@ -205,7 +205,7 @@ for gfxstream_type in ["impl", "stub"]:
                 webrogue_aot_lib_path,
                 os.path.join(
                     out_dir,
-                    f"webrogue_gfxstream_lib_{gfxstream_type}.a",
+                    f"webrogue_virgl_lib_{virgl_type}.a",
                 ),
                 "/nodefaultlib",
                 "/threads:1",

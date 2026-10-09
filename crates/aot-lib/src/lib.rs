@@ -2,7 +2,6 @@
 #[no_mangle]
 extern "C" fn webrogue_aot_windows() {
     use std::io::{Read, Seek};
-    use webrogue_wasmtime::IVFSBuilder as _;
     use windows::{
         core::PCWSTR,
         Win32::{
@@ -10,6 +9,8 @@ extern "C" fn webrogue_aot_windows() {
             UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR},
         },
     };
+    use webrogue_common::RangeReader;
+    use webrogue_gfx::AbstractBuilder as _;
 
     let result = (|| {
         let mut current_file = std::fs::File::open(std::env::current_exe().unwrap()).unwrap();
@@ -18,23 +19,32 @@ extern "C" fn webrogue_aot_windows() {
         current_file.seek(std::io::SeekFrom::End(-8)).unwrap();
         current_file.read_exact(&mut wrapp_size_bytes).unwrap();
         let wrapp_size = u64::from_le_bytes(wrapp_size_bytes);
-        let mut builder = webrogue_wasmtime::WrappVFSBuilder::from_file_part(
+        
+        let vfs = webrogue_vfs::VFS::build_from_wrapp_blob(Box::new(RangeReader::new(
             current_file,
             file_size - wrapp_size - 8,
             wrapp_size,
-        )?;
+        )))?;
+
+        let config = vfs.config();
 
         let persistent_path = dirs::data_dir()
             .expect("dirs::data_dir returned None")
-            // TODO validate id
-            .join(builder.config().unwrap().id.clone().replace('.', "-"))
+            .join(config.id.clone().replace('.', "-"))
             .join("persistent");
-        webrogue_wasmtime::Runtime::new(&persistent_path).run_aot_builder(
-            webrogue_wasmtime::GFXInitParams::new(
-                webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop().unwrap(),
-            ),
-            builder,
-        )
+
+        
+        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?.run(
+            move |gfx_system| {
+                webrogue_wasmtime::block_on_default_executor(
+                    webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path)
+                        .aot()
+                        .run(),
+                )
+            },
+            config.vulkan_requirement().to_bool_option(),
+        )??;
+        anyhow::Ok(())
     })();
 
     if let Err(error) = result {
