@@ -14,7 +14,7 @@ static-moltenvk = ["static-vk", "dep:reqwest", "dep:tar"]
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 webrogue-events-macro = { workspace = true }
-wasmtime = { workspace = true, default-features = false, features = ["anyhow", "component-model", "component-model-async", "debug", "runtime", "std"] }
+wasmtime = { workspace = true, default-features = false, features = ["anyhow", "component-model", "component-model-async", "runtime", "std"] }
 lazy_static = { workspace = true }
 
 [build-dependencies]
