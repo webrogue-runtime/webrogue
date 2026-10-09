@@ -8,17 +8,6 @@ use std::time::{Duration, Instant};
 
 use crate::bindings;
 
-#[cfg(unix)]
-unsafe fn unmap(ptr: *mut c_void, len: usize) {
-    libc::munmap(ptr, len);
-}
-
-#[cfg(windows)]
-unsafe fn unmap(ptr: *mut c_void, _len: usize) {
-    use windows_sys::Win32::System::Memory::{VirtualFree, MEM_RELEASE};
-    VirtualFree(ptr as *mut _, 0, MEM_RELEASE);
-}
-
 pub(crate) const MAX_TIMELINE_COUNT: usize = 64;
 const SYNC_WAIT_FLAG_ANY: u32 = 1;
 
@@ -37,7 +26,6 @@ struct TimelineSubmit {
 
 struct Resource {
     res_id: u32,
-    iov: Option<(usize, usize)>,
 }
 
 struct Context {
@@ -275,14 +263,11 @@ pub(crate) fn context_destroy(ctx_id: u32) {
     for res in ctx.resource_table.values() {
         crate::shadow_blob::deregister_blob(res.res_id.into());
         unsafe { bindings::vkr_renderer_destroy_resource(ctx.ctx_id, res.res_id) };
-        if let Some((ptr, len)) = res.iov {
-            unsafe { unmap(ptr as *mut c_void, len) };
-        }
     }
     // timelines (TimelineSubmits) and hash tables are dropped here.
 }
 
-pub(crate) fn create_blob(ctx_id: u32, ptr: usize, size: usize, blob_id: u64) -> u32 {
+pub(crate) fn create_blob(ctx_id: u32, size: usize, blob_id: u64) -> u32 {
     let st = state();
     let mut st = st.lock().unwrap();
     if !st.contexts.contains_key(&ctx_id) {
@@ -328,10 +313,7 @@ pub(crate) fn create_blob(ctx_id: u32, ptr: usize, size: usize, blob_id: u64) ->
 
     ctx.resource_table.insert(
         res_id,
-        Resource {
-            res_id,
-            iov: if is_shmem { Some((ptr, size)) } else { None },
-        },
+        Resource { res_id },
     );
 
     res_id

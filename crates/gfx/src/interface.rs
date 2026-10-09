@@ -1,12 +1,7 @@
-use std::{
-    collections::BTreeSet,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
-use wasmtime::{
-    component::{HasData, Linker, ResourceTable},
-    AsContext, AsContextMut as _, Memory, SharedMemory,
-};
+use wasmtime::component::{HasData, Linker, ResourceTable, WasmList};
+use wasmtime::{AsContext as _, AsContextMut as _};
 
 use crate::event_sink::EventStream;
 
@@ -17,13 +12,10 @@ pub(crate) mod generated {
         with: {
             "webrogue:gfx/windowing.window": super::Window,
             "webrogue:gfx/vulkan.renderer": super::VulkanRenderer,
-            "webrogue:gfx/vulkan.linear-memory-marker": super::LinearMemoryMarker,
         },
         imports: {
-            "webrogue:gfx/vulkan.[static]linear-memory-marker.create": trappable | store,
-            "webrogue:gfx/vulkan.[method]renderer.create-blob": trappable | store,
-            "webrogue:gfx/vulkan.[method]renderer.register-blob": trappable | store,
             "webrogue:gfx/windowing.[method]window.event-stream": trappable | store,
+            "webrogue:gfx/vulkan.[method]renderer.create-device-memory-blob": trappable | store,
             default: trappable,
         },
     });
@@ -52,6 +44,24 @@ where
     generated::webrogue::gfx::cpu_rendering::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
     generated::webrogue::gfx::vulkan::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
     generated::webrogue::gfx::device_info::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
+
+    // Bindgen normally lifts lists into Vecs. These blob functions need the
+    // guest buffer's backing memory directly, so register typed WasmList
+    // callbacks instead of the generated Vec-based wrappers.
+    linker.allow_shadowing(true);
+    let result: wasmtime::Result<()> = (|| {
+        let mut root = linker.root();
+        let mut vulkan = root.instance("webrogue:gfx/vulkan")?;
+        vulkan.func_wrap("[method]renderer.create-shmem", create_shmem::<T>)?;
+        vulkan.func_wrap(
+            "[method]renderer.register-blob",
+            register_blob_with_memory::<T>,
+        )?;
+        wasmtime::Result::Ok(())
+    })();
+    linker.allow_shadowing(false);
+    result?;
+
     Ok(())
 }
 
@@ -90,32 +100,54 @@ pub struct VulkanRenderer {
     id: u32,
 }
 
-#[derive(Clone)]
-pub enum LinearMemoryMarker {
-    Unshared(Memory),
-    Shared(SharedMemory),
+fn create_shmem<T>(
+    mut store: wasmtime::StoreContextMut<'_, T>,
+    (self_, buf): (wasmtime::component::Resource<VulkanRenderer>, WasmList<u8>),
+) -> wasmtime::Result<(u32,)>
+where
+    T: GFXView + 'static,
+{
+    let (buf_ptr, buf_len) = {
+        let buf = buf.as_le_slice(store.as_context());
+        (buf.as_ptr().cast_mut(), buf.len())
+    };
+    wasmtime::ensure!(buf_len != 0, "create-shmem: buffer must not be empty");
+    let host = store.data_mut().gfx_ctx();
+    let renderer_id = host.table.get(&self_)?.id;
+    let Some(virgl_context) = host.ctx.0.get_virgl_context() else {
+        wasmtime::bail!("get_virgl_context() failed")
+    };
+
+    let virgl_context = virgl_context.lock().unwrap();
+
+    Ok((virgl_context.create_blob(renderer_id, buf_ptr, buf_len, 0),))
 }
 
-impl LinearMemoryMarker {
-    fn get_data(&self, store: impl AsContext) -> (*mut u8, usize) {
-        match self {
-            LinearMemoryMarker::Unshared(memory) => {
-                (memory.data_ptr(&store), memory.data_size(&store))
-            }
-            LinearMemoryMarker::Shared(shared_memory) => (
-                shared_memory.data().as_ptr() as *const u8 as *mut u8,
-                shared_memory.data_size(),
-            ),
-        }
-    }
-
-    fn get_range(&self, offset: u32, size: u32, store: impl AsContext) -> Option<*mut u8> {
-        let (ptr, len) = self.get_data(&store);
-        if len < (offset + size) as usize {
-            return None;
-        }
-        return Some(unsafe { ptr.add(offset as usize) });
-    }
+fn register_blob_with_memory<T>(
+    mut store: wasmtime::StoreContextMut<'_, T>,
+    (self_, res_id, buf): (
+        wasmtime::component::Resource<VulkanRenderer>,
+        u32,
+        WasmList<u8>,
+    ),
+) -> wasmtime::Result<()>
+where
+    T: GFXView + 'static,
+{
+    let (buf_ptr, buf_len) = {
+        let buf = buf.as_le_slice(store.as_context());
+        (buf.as_ptr().cast_mut(), buf.len())
+    };
+    let host = store.data_mut().gfx_ctx();
+    let renderer_id = host.table.get(&self_)?.id;
+    let Some(virgl_context) = host.ctx.0.get_virgl_context() else {
+        wasmtime::bail!("get_virgl_context() failed")
+    };
+    virgl_context
+        .lock()
+        .unwrap()
+        .register_blob(renderer_id, res_id.into(), buf_ptr, buf_len);
+    Ok(())
 }
 
 pub trait AbstractBuilder {
@@ -131,7 +163,7 @@ pub trait AbstractBuilder {
 impl<'a> generated::webrogue::gfx::windowing::Host for GFXCtxView<'a> {
     fn close_window(
         &mut self,
-        window: wasmtime::component::Resource<Window>,
+        _window: wasmtime::component::Resource<Window>,
     ) -> wasmtime::Result<()> {
         Ok(())
     }
@@ -249,6 +281,27 @@ impl<'a> generated::webrogue::gfx::vulkan::HostRenderer for GFXCtxView<'a> {
             wasmtime::bail!("failed to create Vulkan renderer")
         }
         Ok(self.table.push(VulkanRenderer { id })?)
+    }
+
+    fn create_shmem(
+        &mut self,
+        _self_: wasmtime::component::Resource<VulkanRenderer>,
+        _buf: Vec<u8>,
+    ) -> std::result::Result<u32, wasmtime::Error> {
+        wasmtime::bail!(
+            "renderer.create-shmem must use the custom lifting binding installed by add_to_linker"
+        )
+    }
+
+    fn register_blob(
+        &mut self,
+        _self_: wasmtime::component::Resource<VulkanRenderer>,
+        _res_id: u32,
+        _buf: Vec<u8>,
+    ) -> wasmtime::Result<()> {
+        wasmtime::bail!(
+            "renderer.register-blob must use the custom lifting binding installed by add_to_linker"
+        )
     }
 
     fn drop(&mut self, rep: wasmtime::component::Resource<VulkanRenderer>) -> wasmtime::Result<()> {
@@ -430,104 +483,30 @@ impl<'a> generated::webrogue::gfx::vulkan::HostRenderer for GFXCtxView<'a> {
 }
 
 impl<T> generated::webrogue::gfx::vulkan::HostRendererWithStore<T> for GFX {
-    fn create_blob(
+    fn create_device_memory_blob(
         mut host: wasmtime::component::Access<T, Self>,
         self_: wasmtime::component::Resource<VulkanRenderer>,
         blob_id: u64,
-        buf_ptr: u32,
-        buf_len: u32,
-        memory: wasmtime::component::Resource<LinearMemoryMarker>,
+        size: u64,
     ) -> wasmtime::Result<u32> {
         let Some(virgl_context) = host.get().ctx.0.get_virgl_context() else {
             wasmtime::bail!("get_virgl_context() failed")
         };
         let renderer_id = host.get().table.get(&self_)?.id;
-        let memory = host.get().table.get(&memory)?.clone();
 
-        let virgl_context = virgl_context.lock().unwrap();
-        if blob_id != 0 {
-            Ok(virgl_context.create_blob(renderer_id, std::ptr::null(), buf_len as usize, blob_id))
-        } else {
-            let Some(ptr) = memory.get_range(buf_ptr, buf_len, host.as_context()) else {
-                wasmtime::bail!("create_blob: outside of linear memory")
-            };
-            Ok(virgl_context.create_blob(renderer_id, ptr, buf_len as usize, blob_id))
-        }
-    }
-
-    fn register_blob(
-        mut host: wasmtime::component::Access<T, Self>,
-        self_: wasmtime::component::Resource<VulkanRenderer>,
-        res_id: u32,
-        buf_ptr: u32,
-        buf_len: u32,
-        memory: wasmtime::component::Resource<LinearMemoryMarker>,
-    ) -> wasmtime::Result<()> {
-        let Some(virgl_context) = host.get().ctx.0.get_virgl_context() else {
-            wasmtime::bail!("get_virgl_context() failed")
-        };
-        let renderer_id = host.get().table.get(&self_)?.id;
-        let memory = host.get().table.get(&memory)?.clone();
-        let Some(ptr) = memory.get_range(buf_ptr, buf_len, host.as_context()) else {
-            wasmtime::bail!("register_blob: outside of linear memory")
-        };
-        virgl_context.lock().unwrap().register_blob(
-            renderer_id,
-            res_id.into(),
-            ptr,
-            buf_len as usize,
+        wasmtime::ensure!(
+            blob_id != 0,
+            "create_device_memory_blob_with_memory: blob_id can't be zero"
         );
-        Ok(())
-    }
-}
+        wasmtime::ensure!(
+            size != 0,
+            "create_device_memory_blob_with_memory: size can't be zero"
+        );
+        let virgl_context = virgl_context.lock().unwrap();
+        let size = size.try_into().map_err(|_| {
+            wasmtime::format_err!("create_device_memory_blob_with_memory: error converting size")
+        })?;
 
-impl<T> generated::webrogue::gfx::vulkan::HostLinearMemoryMarkerWithStore<T> for GFX {
-    fn create(
-        mut host: wasmtime::component::Access<T, Self>,
-        ptr: u32,
-        data: Vec<u8>,
-    ) -> wasmtime::Result<Option<wasmtime::component::Resource<LinearMemoryMarker>>> {
-        let instances = host.as_context_mut().debug_all_instances();
-        let mut memories = Vec::new();
-        let mut present_indices = BTreeSet::new();
-        let mut buffer = vec![0u8; data.len()];
-        for instance in instances {
-            for i in 0.. {
-                if let Some(memory) = instance.debug_memory(host.as_context_mut(), i) {
-                    if memory
-                        .read(host.as_context_mut(), ptr as usize, &mut buffer)
-                        .is_err()
-                    {
-                        continue;
-                    }
-                    if data != buffer {
-                        continue;
-                    }
-
-                    if present_indices.insert(memory.debug_index_in_store()) {
-                        memories.push(LinearMemoryMarker::Unshared(memory));
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-
-        if memories.len() != 1 {
-            return Ok(None);
-        }
-        let memory = memories.pop().unwrap();
-
-        Ok(Some(host.get().table.push(memory)?))
-    }
-}
-
-impl<'a> generated::webrogue::gfx::vulkan::HostLinearMemoryMarker for GFXCtxView<'a> {
-    fn drop(
-        &mut self,
-        rep: wasmtime::component::Resource<LinearMemoryMarker>,
-    ) -> wasmtime::Result<()> {
-        self.table.delete(rep)?;
-        Ok(())
+        Ok(virgl_context.create_blob(renderer_id, std::ptr::null(), size, blob_id))
     }
 }

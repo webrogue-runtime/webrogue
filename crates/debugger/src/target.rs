@@ -73,7 +73,6 @@ impl Wasm32Target {
                 })
             }
             Some(RunnerMessage::Initialized(_, _)) => unreachable!(),
-            Some(RunnerMessage::Finished) => self.state = State::Finished,
             None => self.state = State::Finished,
         }
     }

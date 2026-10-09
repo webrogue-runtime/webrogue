@@ -12,7 +12,6 @@ pub enum RunnerMessage {
         PauseReason,
         Stacktrace,
     ),
-    Finished,
 }
 
 pub enum PauseReason {

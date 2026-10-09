@@ -171,7 +171,7 @@ impl ContextContainer {
                 bindings::webrogue_virgl_setup_shmem(ptr as *mut c_void, size);
             }
         }
-        webrogue::create_blob(renderer_id, ptr as usize, size, blob_id)
+        webrogue::create_blob(renderer_id, size, blob_id)
     }
 
     pub fn resource_unref(&self, renderer_id: u32, res_id: u32) {

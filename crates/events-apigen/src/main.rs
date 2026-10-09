@@ -29,7 +29,6 @@ fn main() -> anyhow::Result<()> {
                 for case in r#enum.cases.clone() {
                     w!("{} = {},", case.c_name(&r#enum), case.value);
                 }
-                w!("");
                 w!(
                     "{}_MAX = {},",
                     r#enum.c_name().to_uppercase(),
