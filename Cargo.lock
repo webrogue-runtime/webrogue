@@ -8426,6 +8426,7 @@ dependencies = [
  "webrogue-gfx",
  "webrogue-gfx-winit",
  "webrogue-launcher",
+ "webrogue-vfs",
  "webrogue-wasmtime",
  "webrogue-wrapp",
  "winit",

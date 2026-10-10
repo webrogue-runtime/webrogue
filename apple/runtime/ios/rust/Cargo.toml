@@ -21,4 +21,5 @@ webrogue-wrapp = { workspace = true }
 webrogue-launcher = { workspace = true, optional = true, features = ["winit"] }
 winit = { workspace = true, default-features = true }
 webrogue-gfx-winit = { workspace = true }
+webrogue-vfs = { workspace = true }
 webrogue-gfx = { workspace = true, features = ["static-vk"] }

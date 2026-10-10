@@ -10,8 +10,7 @@ webrogue-launcher = { workspace = true, features = ["winit"] }
 winit = { workspace = true, default-features = true }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
-gtk = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+gtk = { workspace = true }
 winit-x11 = { workspace = true }
-

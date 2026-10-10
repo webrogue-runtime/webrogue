@@ -64,14 +64,14 @@ pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
                     .unwrap_or(platform != "iphonesimulator");
 
                 let bin_dir = args.build_dir.join("bin").join(platform);
-                let impl_lib_name = "libGFXStreamImpl.a";
-                let stub_lib_name = "libGFXStreamStub.a";
+                let impl_lib_name = "libVirGLImpl.a";
+                let stub_lib_name = "libVirGLStub.a";
                 let (used_lib_name, unused_lib_name) = if is_vulkan_needed {
                     (impl_lib_name, stub_lib_name)
                 } else {
                     (stub_lib_name, impl_lib_name)
                 };
-                std::fs::rename(bin_dir.join(used_lib_name), bin_dir.join("libGFXStream.a"))?;
+                std::fs::rename(bin_dir.join(used_lib_name), bin_dir.join("libVirGL.a"))?;
                 std::fs::remove_file(bin_dir.join(unused_lib_name))?;
             }
 

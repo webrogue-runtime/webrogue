@@ -55,7 +55,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: $(WEBROGUE_APPLICATION_NAME)
         OTHER_LDFLAGS:
           - "-lwebrogue_macos"
-          - "-lGFXStream"
+          - "-lVirGL"
           - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
     dependencies:
@@ -84,10 +84,10 @@ targets:
           - ${SRCROOT}/scripts/copy_bin.sh
           - ${SRCROOT}/bin/macos/libMoltenVK.dylib
           - ${SRCROOT}/bin/macos/libwebrogue_macos.a
-          - ${SRCROOT}/bin/macos/libGFXStream.a
+          - ${SRCROOT}/bin/macos/libVirGL.a
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/libMoltenVK.dylib
-          - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
+          - ${BUILT_PRODUCTS_DIR}/libVirGL.a
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_macos.a
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         name: Combine object to lipo
@@ -122,7 +122,7 @@ targets:
         OTHER_LDFLAGS:
         - "-lwebrogue_ios"
         - "-lrunnerlib"
-        - "-lGFXStream"
+        - "-lVirGL"
         - "${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         LIBRARY_SEARCH_PATHS: "$(BUILT_PRODUCTS_DIR)"
         INFOPLIST_KEY_CFBundleDisplayName: $(WEBROGUE_APPLICATION_NAME)
@@ -158,14 +158,14 @@ targets:
           - ${SRCROOT}/scripts/copy_bin_ios.sh
           - ${SRCROOT}/bin/iphonesimulator/libwebrogue_ios.a
           - ${SRCROOT}/bin/iphonesimulator/librunnerlib.a
-          - ${SRCROOT}/bin/iphonesimulator/libGFXStream.a
+          - ${SRCROOT}/bin/iphonesimulator/libVirGL.a
           - ${SRCROOT}/bin/iphoneos/libwebrogue_ios.a
           - ${SRCROOT}/bin/iphoneos/librunnerlib.a
-          - ${SRCROOT}/bin/iphoneos/libGFXStream.a
+          - ${SRCROOT}/bin/iphoneos/libVirGL.a
         outputFiles:
           - ${BUILT_PRODUCTS_DIR}/libwebrogue_ios.a
           - ${BUILT_PRODUCTS_DIR}/librunnerlib.a
-          - ${BUILT_PRODUCTS_DIR}/libGFXStream.a
+          - ${BUILT_PRODUCTS_DIR}/libVirGL.a
       - script: "sh ${SRCROOT}/scripts/lipo_object_combiner.sh ${SRCROOT}/aot ${BUILT_PRODUCTS_DIR}/aot_lipo.o"
         name: Combine object to lipo
         inputFiles:
