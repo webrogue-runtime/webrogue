@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub const VERSION: u32 = 2;
 
@@ -82,7 +82,7 @@ pub struct ListFilesRequest {
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct ListFilesResponse {
-    pub missing_files: Vec<String>,
+    pub missing_file_hashes: HashSet<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -93,19 +93,18 @@ pub struct LaunchResponse {}
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum DebugCommand {
-    SetConfig(SetConfigCommand),
     SetFileChunk(SetFileChunkCommand),
     GDBData(GDBDataDebugCommand),
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct SetConfigCommand {
-    pub config: webrogue_wrapp::config::Config,
+    pub config: webrogue_vfs::config::Config,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct SetFileChunkCommand {
-    pub path: String,
+    pub hash: String,
     pub pos: u64,
     pub data: Vec<u8>,
 }

@@ -10,7 +10,7 @@ XC_FLAGS="-destination generic/platform=macOS -project webrogue.xcodeproj -schem
 XC_BUILD_DIR=$(xcodebuild $XC_FLAGS -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
 xcodebuild $XC_FLAGS -parallelizeTargets -allowProvisioningUpdates
 
-XC_FLAGS="-destination generic/platform=macOS -project webrogue.xcodeproj -scheme GFXStreamStub_macOS -configuration ReleaseLocal"
+XC_FLAGS="-destination generic/platform=macOS -project webrogue.xcodeproj -scheme VirGLStub_macOS -configuration ReleaseLocal"
 XC_BUILD_DIR=$(xcodebuild $XC_FLAGS -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
 xcodebuild $XC_FLAGS -parallelizeTargets -allowProvisioningUpdates
 
@@ -18,9 +18,9 @@ rm -rf ../template/bin
 mkdir -p ../template/bin
 mkdir -p ../template/bin/macos
 cp $XC_BUILD_DIR/rust_artifacts/runner/ReleaseLocal/macosx/libwebrogue_macos.a ../template/bin/macos/libwebrogue_macos.a
-cp $XC_BUILD_DIR/ReleaseLocal/libGFXStreamImpl.a ../template/bin/macos/libGFXStreamImpl.a
-cp $XC_BUILD_DIR/ReleaseLocal/libGFXStreamStub.a ../template/bin/macos/libGFXStreamStub.a
-cp ../template/bin/macos/libGFXStreamImpl.a ../template/bin/macos/libGFXStream.a
+cp $XC_BUILD_DIR/ReleaseLocal/libVirGLImpl.a ../template/bin/macos/libVirGLImpl.a
+cp $XC_BUILD_DIR/ReleaseLocal/libVirGLStub.a ../template/bin/macos/libVirGLStub.a
+cp ../template/bin/macos/libVirGLImpl.a ../template/bin/macos/libVirGL.a
 cp external/MoltenVK/MoltenVK/dylib/macOS/libMoltenVK.dylib ../template/bin/macos/libMoltenVK.dylib
 
 # XC_FLAGS="-project webrogue.xcodeproj -scheme iOS_Runner_ReleaseLocal -configuration ReleaseLocal -destination"
@@ -53,16 +53,16 @@ do
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
     cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/librunnerlib.a ../template/bin/$IOS_ENV/librunnerlib.a
 
-    XC_FLAGS="-project webrogue.xcodeproj -scheme GFXStreamImpl_iOS -configuration ReleaseLocal -destination"
+    XC_FLAGS="-project webrogue.xcodeproj -scheme VirGLImpl_iOS -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
-    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libGFXStreamImpl.a ../template/bin/$IOS_ENV/libGFXStreamImpl.a
-    cp ../template/bin/$IOS_ENV/libGFXStreamImpl.a ../template/bin/$IOS_ENV/libGFXStream.a
+    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libVirGLImpl.a ../template/bin/$IOS_ENV/libVirGLImpl.a
+    cp ../template/bin/$IOS_ENV/libVirGLImpl.a ../template/bin/$IOS_ENV/libVirGL.a
 
-    XC_FLAGS="-project webrogue.xcodeproj -scheme GFXStreamStub_iOS -configuration ReleaseLocal -destination"
+    XC_FLAGS="-project webrogue.xcodeproj -scheme VirGLStub_iOS -configuration ReleaseLocal -destination"
     XC_BUILD_DIR=$(xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -showBuildSettings | grep -m 1 "BUILD_DIR =" | grep -oEi "\/.*" || exit 3)
     xcodebuild $XC_FLAGS "$XC_DESTINATION_FLAG" -parallelizeTargets -allowProvisioningUpdates
-    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libGFXStreamStub.a ../template/bin/$IOS_ENV/libGFXStreamStub.a
+    cp $XC_BUILD_DIR/ReleaseLocal-$IOS_ENV/libVirGLStub.a ../template/bin/$IOS_ENV/libVirGLStub.a
 done
 
 # apple
@@ -93,6 +93,8 @@ cp -r runtime/AppIcon.icon template/AppIcon.icon
 # apple/template
 cd template
 xcodegen
+# a strange bug in xcconfig. TODO remove this line when it works without it
+sed -i '' 's/..\/aot.xcconfig/aot.xcconfig/g' webrogue.xcodeproj/project.pbxproj
 
 rm -rf ../../aot_artifacts/apple_xcode
 mkdir -p ../../aot_artifacts/apple_xcode

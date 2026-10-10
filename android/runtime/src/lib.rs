@@ -1,6 +1,7 @@
 #[cfg(target_os = "android")]
 #[no_mangle]
 fn android_main(app: android_activity::AndroidApp) {
+    use webrogue_gfx::AbstractBuilder as _;
     use winit_android::EventLoopBuilderExtAndroid as _;
 
     let mut event_loop_builder = winit::event_loop::EventLoopBuilder::default();
@@ -29,19 +30,28 @@ fn android_main(app: android_activity::AndroidApp) {
             .open_file_descriptor()
             .unwrap();
 
-        let vfs_builder = webrogue_wasmtime::WrappVFSBuilder::from_file_part(
-            std::fs::File::from(asset.fd),
-            asset.offset as u64,
-            asset.size as u64,
-        )
-        .unwrap();
+        let vfs =
+            webrogue_vfs::VFS::build_from_wrapp_blob(Box::new(webrogue_common::RangeReader::new(
+                std::fs::File::from(asset.fd),
+                asset.offset as u64,
+                asset.size as u64,
+            )))
+            .unwrap();
+        let config = vfs.config();
 
         let data_dir = app.internal_data_path().unwrap();
 
-        webrogue_wasmtime::Runtime::new(&data_dir)
-            .run_builder(
-                webrogue_wasmtime::GFXInitParams::new(gfx_builder),
-                vfs_builder,
+        gfx_builder
+            .run(
+                move |gfx_system| {
+                    webrogue_wasmtime::block_on_default_executor(
+                        webrogue_wasmtime::Runtime::new(gfx_system, vfs, &data_dir)
+                            .aot()
+                            .run(),
+                    )
+                    .unwrap();
+                },
+                config.vulkan_requirement().to_bool_option(),
             )
             .unwrap();
     };
@@ -50,7 +60,6 @@ fn android_main(app: android_activity::AndroidApp) {
     {
         use jni::objects::JString;
         use std::str::FromStr as _;
-        use webrogue_gfx::IBuilder as _;
 
         let activity = app.activity_as_ptr() as jni::sys::jobject;
 
@@ -118,34 +127,23 @@ fn android_main(app: android_activity::AndroidApp) {
 
         gfx_builder
             .run(
-                move |winit_system| {
-                    tokio::runtime::Builder::new_current_thread()
-                        .enable_all()
-                        .build()
-                        .unwrap()
-                        .block_on(async {
-                            use std::sync::{Arc, Mutex};
+                move |gfx_system| {
+                    webrogue_wasmtime::block_on_default_executor(async {
+                        use std::sync::{Arc, Mutex};
 
-                            use webrogue_hub_debuggee::{
-                                HubDebuggeeGFX, HubDebuggeeWinitSystemGFX,
-                            };
-
-                            webrogue_hub_debuggee::HubDebuggee::new(
-                                std::path::PathBuf::from_str(&launch_intent_data.storage_path)
-                                    .unwrap(),
-                                HubDebuggeeGFX::WinitSystem(HubDebuggeeWinitSystemGFX {
-                                    gfx_system: Arc::new(Mutex::new(Some(winit_system))),
-                                }),
-                            )
-                            .launch(
-                                launch_intent_data.sdp_offer,
-                                Box::new(|sdp_answer| {
-                                    on_sdp_answer(sdp_answer, vm, activity);
-                                }),
-                            )
-                            .await
-                            .unwrap();
-                        });
+                        webrogue_hub_debuggee::HubDebuggee::new(
+                            std::path::PathBuf::from_str(&launch_intent_data.storage_path).unwrap(),
+                            gfx_system,
+                        )
+                        .launch(
+                            launch_intent_data.sdp_offer,
+                            Box::new(|sdp_answer| {
+                                on_sdp_answer(sdp_answer, vm, activity);
+                            }),
+                        )
+                        .await
+                        .unwrap();
+                    });
                 },
                 Some(true),
             )

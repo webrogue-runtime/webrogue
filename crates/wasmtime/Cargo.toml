@@ -9,18 +9,23 @@ edition.workspace = true
 jit = ["wasmtime/cranelift", "wasmtime/parallel-compilation", "wasmtime/addr2line"]
 aot = ["dep:webrogue-aot-data"]
 cache = ["wasmtime/cache"] # TODO "wasmtime/incremental-cache"
-async = ["wasmtime/async"]
-debug = ["wasmtime/debug", "wasmtime/debug-builtins"] # 
+debug = ["jit", "wasmtime/debug"] # , "wasmtime/debug-builtins"
+pulley = ["wasmtime/pulley"]
 
 [dependencies]
 webrogue-gfx = { workspace = true }
 webrogue-virgl = { workspace = true }
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
-webrogue-wasip1 = { workspace = true }
-wasmtime = { workspace = true, default-features = false, features = ["runtime", "threads", "gc", "gc-drc", "anyhow", "component-model"] }
-webrogue-wasi-common = { workspace = true, default-features = false, features = ["sync"] }
-wiggle = { workspace = true, default-features = false, features = ["wasmtime"] }
+wasmtime = { workspace = true, default-features = false, features = ["runtime", "threads", "gc", "gc-drc", "anyhow", "component-model-async", "debug"] }
+wasmtime-wasi = { workspace = true, default-features = false, features = ["p3"] }
+webrogue-vfs = { workspace = true, features = ["wasmtime"] }
+webrogue-debugger = { workspace = true }
+tokio = { workspace = true, features = ["net", "time", "rt-multi-thread"] }
 webrogue-aot-data = { workspace = true, optional = true }
 gdbstub_arch = { workspace = true }
 futures = { workspace = true }
+
+[target.'cfg(target = "android")'.dependencies]
+# seccomp messes with raw syscalls, so lets use libc
+rustix = { workspace = true, features = ["use-libc"] }

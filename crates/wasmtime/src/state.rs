@@ -1,21 +1,27 @@
-use std::sync::Arc;
+use wasmtime::component::ResourceTable;
+use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
+use webrogue_gfx::GFXView;
 
-use crate::{wasi_threads::WasiThreadsCtx, WasmThread};
-
-pub struct State<System: webrogue_gfx::ISystem + 'static> {
-    pub preview1_ctx: Option<webrogue_wasi_common::WasiCtx>,
-    pub wasi_threads_ctx: Option<Arc<WasiThreadsCtx<System>>>,
-    pub gfx: Option<webrogue_gfx::Interface<System>>,
-    pub wasm_thread: Option<WasmThread>,
+pub struct State {
+    pub wasi_ctx: WasiCtx,
+    pub gfx: webrogue_gfx::System,
+    pub resource_table: ResourceTable,
 }
 
-impl<System: webrogue_gfx::ISystem + 'static> Clone for State<System> {
-    fn clone(&self) -> Self {
-        Self {
-            preview1_ctx: self.preview1_ctx.clone(),
-            wasi_threads_ctx: self.wasi_threads_ctx.clone(),
-            gfx: self.gfx.clone(),
-            wasm_thread: None,
+impl WasiView for State {
+    fn ctx(&mut self) -> WasiCtxView<'_> {
+        WasiCtxView {
+            ctx: &mut self.wasi_ctx,
+            table: &mut self.resource_table,
+        }
+    }
+}
+
+impl GFXView for State {
+    fn gfx_ctx(&mut self) -> webrogue_gfx::GFXCtxView<'_> {
+        webrogue_gfx::GFXCtxView {
+            ctx: &mut self.gfx,
+            table: &mut self.resource_table,
         }
     }
 }

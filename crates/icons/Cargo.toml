@@ -13,6 +13,6 @@ rayon = ["image/rayon"]
 image = { workspace = true, default-features = false, features = ["png", "rayon", "webp"] }
 imageproc = { workspace = true, default-features = false, features = ["rayon"] }
 anyhow = { workspace = true }
-webrogue-wrapp = { workspace = true }
+webrogue-vfs = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
 ico = { workspace = true }

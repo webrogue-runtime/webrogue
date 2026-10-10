@@ -15,11 +15,12 @@ enum ShadowBlobImpl {
 }
 
 impl ShadowBlobImpl {
-    fn get() -> Self {
+    fn get() -> Option<Self> {
         match SHADOW_BLOB_IMPL.load(Ordering::Relaxed) {
-            1 => Self::Hash,
+            -1 => None,
+            1 => Some(Self::Hash),
             #[cfg(signal_based_shadow_blob)]
-            2 => Self::Signal,
+            2 => Some(Self::Signal),
             _ => unreachable!(),
         }
     }
@@ -49,9 +50,10 @@ pub fn init() {
     #[cfg(not(signal_based_shadow_blob))]
     ShadowBlobImpl::Hash.set();
     match ShadowBlobImpl::get() {
-        ShadowBlobImpl::Hash => hash_based_blob::init(),
+        Some(ShadowBlobImpl::Hash) => hash_based_blob::init(),
         #[cfg(signal_based_shadow_blob)]
-        ShadowBlobImpl::Signal => signal_based_blob::init(),
+        Some(ShadowBlobImpl::Signal) => signal_based_blob::init(),
+        None => unreachable!(),
     }
 }
 
@@ -61,17 +63,19 @@ pub fn external_signal_handler_installed() {
 
 pub fn flush_all() {
     match ShadowBlobImpl::get() {
-        ShadowBlobImpl::Hash => hash_based_blob::flush_all(),
+        Some(ShadowBlobImpl::Hash) => hash_based_blob::flush_all(),
         #[cfg(signal_based_shadow_blob)]
-        ShadowBlobImpl::Signal => signal_based_blob::flush_all(),
+        Some(ShadowBlobImpl::Signal) => signal_based_blob::flush_all(),
+        None => {}
     }
 }
 
 pub fn handle_segfault(segfault_addr: *const ()) -> bool {
     match ShadowBlobImpl::get() {
-        ShadowBlobImpl::Hash => hash_based_blob::handle_segfault(segfault_addr),
+        Some(ShadowBlobImpl::Hash) => hash_based_blob::handle_segfault(segfault_addr),
         #[cfg(signal_based_shadow_blob)]
-        ShadowBlobImpl::Signal => signal_based_blob::handle_segfault(segfault_addr),
+        Some(ShadowBlobImpl::Signal) => signal_based_blob::handle_segfault(segfault_addr),
+        None => false,
     }
 }
 
@@ -82,16 +86,22 @@ pub fn register_blob(vm_ptr: *const (), size: usize, blob_id: u64) {
         return;
     }
     match ShadowBlobImpl::get() {
-        ShadowBlobImpl::Hash => hash_based_blob::register_blob(vm_ptr, size, host_ptr, blob_id),
+        Some(ShadowBlobImpl::Hash) => {
+            hash_based_blob::register_blob(vm_ptr, size, host_ptr, blob_id)
+        }
         #[cfg(signal_based_shadow_blob)]
-        ShadowBlobImpl::Signal => signal_based_blob::register_blob(vm_ptr, size, host_ptr, blob_id),
+        Some(ShadowBlobImpl::Signal) => {
+            signal_based_blob::register_blob(vm_ptr, size, host_ptr, blob_id)
+        }
+        None => unreachable!(),
     }
 }
 
 pub fn deregister_blob(blob_id: u64) {
     match ShadowBlobImpl::get() {
-        ShadowBlobImpl::Hash => hash_based_blob::deregister_blob(blob_id),
+        Some(ShadowBlobImpl::Hash) => hash_based_blob::deregister_blob(blob_id),
         #[cfg(signal_based_shadow_blob)]
-        ShadowBlobImpl::Signal => signal_based_blob::deregister_blob(blob_id),
+        Some(ShadowBlobImpl::Signal) => signal_based_blob::deregister_blob(blob_id),
+        None => unreachable!(),
     }
 }

@@ -1,6 +1,4 @@
 mod artifacts;
-pub mod icons;
-use anyhow::Context as _;
 pub use artifacts::*;
 use std::{fmt::Display, fs::File};
 
@@ -18,7 +16,6 @@ macro_rules! lld {
 }
 
 pub(crate) use lld;
-use webrogue_wrapp::{config::Config, IVFSBuilder as _};
 
 pub struct TemporaryFile {
     path: std::path::PathBuf,
@@ -88,21 +85,4 @@ pub fn path_to_arg<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<String>
         .to_str()
         .ok_or_else(|| anyhow::anyhow!("Path error: {}", path.as_ref().display()))?
         .to_owned())
-}
-
-pub fn extract_config<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Config> {
-    if webrogue_wrapp::is_path_a_wrapp(&path).with_context(|| {
-        format!(
-            "Unable to determine file type for {}",
-            path.as_ref().display()
-        )
-    })? {
-        Ok(webrogue_wrapp::WrappVFSBuilder::from_file_path(path)?
-            .config()?
-            .clone())
-    } else {
-        Ok(webrogue_wrapp::RealVFSBuilder::from_config_path(path)?
-            .config()?
-            .clone())
-    }
 }

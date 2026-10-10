@@ -1,312 +1,150 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
-
-use anyhow::Context;
-
-#[cfg(feature = "async")]
-use crate::gfx_init_params::AsyncFuncRunnerParams;
-#[cfg(any(feature = "jit", feature = "aot"))]
-use crate::GFXInitParams;
-use crate::{
-    state::State,
-    thread::{StopReason, WasmThreadRegistry},
-};
-
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+#[cfg(feature = "aot")]
+mod aot;
+#[cfg(feature = "aot")]
+pub use aot::*;
 #[cfg(feature = "jit")]
-pub enum JitProfile {
-    #[cfg(feature = "debug")]
-    Debug,
-    FastExecution,
-    FastCompilation,
-}
+mod jit;
+#[cfg(feature = "jit")]
+pub use jit::*;
+
+use wasmtime::component::Component;
+use wasmtime::error::Context;
+use wasmtime_wasi::p3::bindings::Command;
+use webrogue_vfs::{RESOURCES_ROOT_VFS_PATH, VFS};
+
+use crate::state::State;
 
 pub struct Runtime {
+    gfx_system: webrogue_gfx::System,
+    vfs: VFS,
     persistent_dir: PathBuf,
     wasmtime_config: wasmtime::Config,
-    #[cfg(all(feature = "jit", feature = "cache"))]
-    jit_cache_config: Option<PathBuf>,
-    #[cfg(feature = "jit")]
-    jit_profile: JitProfile,
-    #[cfg(feature = "jit")]
-    is_panic_allowed: bool,
+    #[cfg(feature = "debug")]
+    debug_connection_factory: Option<webrogue_debugger::connection::ConnectionFactory>,
 }
 
 impl Runtime {
-    pub fn new(persistent_dir: &Path) -> Self {
+    pub fn new(gfx_system: webrogue_gfx::System, vfs: VFS, persistent_dir: &Path) -> Self {
         let mut wasmtime_config = wasmtime::Config::new();
         wasmtime_config.shared_memory(true);
         wasmtime_config.wasm_exceptions(true);
         wasmtime_config.memory_may_move(false);
         wasmtime_config.macos_use_mach_ports(false);
+        wasmtime_config.wasm_component_model_threading(true);
 
         Runtime {
+            gfx_system,
+            vfs,
             persistent_dir: persistent_dir.to_path_buf(),
             wasmtime_config,
-            #[cfg(all(feature = "jit", feature = "cache"))]
-            jit_cache_config: None,
-            #[cfg(feature = "jit")]
-            jit_profile: JitProfile::FastExecution,
-            #[cfg(feature = "jit")]
-            is_panic_allowed: false,
+            #[cfg(feature = "debug")]
+            debug_connection_factory: None,
         }
     }
-}
 
-#[cfg(feature = "jit")]
-impl Runtime {
-    pub fn jit_profile(&mut self, value: JitProfile) -> &mut Self {
-        self.jit_profile = value;
-        self
-    }
-
-    #[cfg(feature = "cache")]
-    pub fn jit_cache_config(&mut self, value: &Path) -> &mut Self {
-        self.jit_cache_config = Some(value.to_path_buf());
-        self
-    }
-
-    pub unsafe fn allow_panic(&mut self) -> &mut Self {
-        self.is_panic_allowed = true;
-        self
-    }
-
-    pub fn run_jit_builder<
-        Builder: webrogue_gfx::IBuilder,
-        VFSBuilder: webrogue_wrapp::IVFSBuilder,
-    >(
-        self,
-        gfx_init_params: GFXInitParams<Builder>,
-        mut vfs_builder: VFSBuilder,
-    ) -> anyhow::Result<()> {
-        let config = vfs_builder.config()?.clone();
-        let handle = vfs_builder.into_vfs()?;
-        self.run_jit(gfx_init_params, handle, &config)
-    }
-
-    pub fn run_jit<
-        Builder: webrogue_gfx::IBuilder,
-        VFSHandle: webrogue_wrapp::IVFSHandle + 'static,
-    >(
-        mut self,
-        gfx_init_params: GFXInitParams<Builder>,
-        handle: VFSHandle,
-        wrapp_config: &webrogue_wrapp::config::Config,
-    ) -> anyhow::Result<()> {
-        use std::io::Read as _;
-
-        use anyhow::Context;
-        use wasmtime::Inlining;
-
+    #[cfg(feature = "pulley")]
+    pub fn use_pulley(&mut self) -> &mut Self {
         self.wasmtime_config
-            .wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable)
-            .debug_info(false);
-        // self.wasmtime_config
-        //     .max_wasm_stack(2 * 1024 * 1024)
-        //     .async_stack_size(2 * 1024 * 1024 + 2 * 1024 * 1024);
+            .target(cfg_select! {
+                all(target_endian = "little", target_pointer_width = "32")  => "pulley32",
+                all(target_endian = "little", target_pointer_width = "64")  => "pulley64",
+                all(target_endian = "big",    target_pointer_width = "32")  => "pulley32be",
+                all(target_endian = "big",    target_pointer_width = "64")  => "pulley64be",
+            })
+            .unwrap();
+        self
+    }
 
-        #[cfg(feature = "cache")]
-        if let Some(cache_config) = self.jit_cache_config {
-            let cache_config = if cache_config.is_absolute() {
-                cache_config
-            } else {
-                std::path::absolute(cache_config)?
-            };
-            std::fs::create_dir_all(&cache_config)?;
-            let mut cache = wasmtime::CacheConfig::new();
-            cache.with_directory(&cache_config);
-            self.wasmtime_config
-                .cache(Some(wasmtime::Cache::new(cache)?));
-            // TODO config.enable_incremental_compilation(cache_store)
-        }
-        match &self.jit_profile {
-            #[cfg(feature = "debug")]
-            JitProfile::Debug => {
-                self.wasmtime_config
-                    .cranelift_opt_level(wasmtime::OptLevel::None)
-                    .guest_debug(true)
-                    .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
-                    .compiler_inlining(Inlining::No);
-            }
-            JitProfile::FastExecution => {
-                self.wasmtime_config
-                    .cranelift_opt_level(wasmtime::OptLevel::Speed)
-                    .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
-                    .compiler_inlining(Inlining::Intrinsics)
-                    .signals_based_traps(true);
-                webrogue_virgl::shadow_blob::external_signal_handler_installed();
-            }
-            JitProfile::FastCompilation => {
-                self.wasmtime_config
-                    .cranelift_opt_level(wasmtime::OptLevel::Speed)
-                    .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
-                    .compiler_inlining(Inlining::Intrinsics)
-                    .signals_based_traps(true);
-                webrogue_virgl::shadow_blob::external_signal_handler_installed();
-            }
-        };
+    #[cfg(feature = "jit")]
+    pub fn jit(self) -> jit::JitRuntime {
+        jit::JitRuntime::new(self)
+    }
 
-        let enable_epoch_interruption = !self.is_panic_allowed || {
-            #[cfg(feature = "debug")]
-            {
-                matches!(self.jit_profile, JitProfile::Debug)
-            }
-            #[cfg(not(feature = "debug"))]
-            false
-        };
-        self.wasmtime_config
-            .epoch_interruption(enable_epoch_interruption);
-        let engine = wasmtime::Engine::new(&self.wasmtime_config)?;
-        let mut wasm_binary = Vec::new();
-        let mut file = handle
-            .open_file("/app/main.wasm")
-            .with_context(|| {
-                anyhow::anyhow!("Unable to open file specified as \"main\" in webrogue.json")
-            })?
-            .ok_or(anyhow::anyhow!(
-                "/app/main.wasm not found. Maybe you are trying to run a stripped WRAPP using JIT?"
-            ))?;
-        file.read_to_end(&mut wasm_binary)?;
-        drop(file);
-
-        let module = wasmtime::Module::from_binary(&engine, &wasm_binary)?;
-        run_module(
-            gfx_init_params,
-            handle,
-            wrapp_config,
-            self.persistent_dir,
-            engine,
-            enable_epoch_interruption,
-            module,
-        )
+    #[cfg(feature = "aot")]
+    pub fn aot(self) -> aot::AotRuntime {
+        aot::AotRuntime::new(self)
     }
 }
 
-#[cfg(feature = "aot")]
-impl Runtime {
-    pub fn run_aot_builder<
-        Builder: webrogue_gfx::IBuilder,
-        VFSBuilder: webrogue_wrapp::IVFSBuilder,
-    >(
-        self,
-
-        gfx_init_params: GFXInitParams<Builder>,
-        mut vfs_builder: VFSBuilder,
-    ) -> anyhow::Result<()> {
-        let config = vfs_builder.config()?.clone();
-        let handle = vfs_builder.into_vfs()?;
-        self.run_aot(gfx_init_params, handle, &config)
-    }
-
-    pub fn run_aot<
-        Builder: webrogue_gfx::IBuilder,
-        VFSHandle: webrogue_wrapp::IVFSHandle + 'static,
-    >(
-        mut self,
-        gfx_init_params: GFXInitParams<Builder>,
-        handle: VFSHandle,
-        wrapp_config: &webrogue_wrapp::config::Config,
-    ) -> anyhow::Result<()> {
-        self.wasmtime_config.with_custom_code_memory(Some(Arc::new(
-            crate::static_code_memory::StaticCodeMemory {},
-        )));
-        self.wasmtime_config.epoch_interruption(false);
-        self.wasmtime_config.signals_based_traps(true);
-        webrogue_virgl::shadow_blob::external_signal_handler_installed();
-        let engine = wasmtime::Engine::new(&self.wasmtime_config)?;
-        let module = unsafe {
-            wasmtime::Module::deserialize_raw(&engine, webrogue_aot_data::aot_data().into())?
-        };
-
-        run_module(
-            gfx_init_params,
-            handle,
-            wrapp_config,
-            self.persistent_dir,
-            engine,
-            false,
-            module,
-        )
-    }
-}
-
-#[cfg(any(feature = "jit", feature = "aot"))]
-#[allow(unreachable_code, reason = "Not gonna fight this lint error")]
-impl Runtime {
-    pub fn run_builder<Builder: webrogue_gfx::IBuilder, VFSBuilder: webrogue_wrapp::IVFSBuilder>(
-        self,
-        gfx_init_params: GFXInitParams<Builder>,
-        vfs_builder: VFSBuilder,
-    ) -> anyhow::Result<()> {
-        #[cfg(feature = "jit")]
-        return self.run_jit_builder(gfx_init_params, vfs_builder);
-        #[cfg(feature = "aot")]
-        return self.run_aot_builder(gfx_init_params, vfs_builder);
-    }
-
-    pub fn run<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
-        self,
-        gfx_init_params: GFXInitParams<Builder>,
-        handle: VFSHandle,
-        wrapp_config: &webrogue_wrapp::config::Config,
-    ) -> anyhow::Result<()> {
-        #[cfg(feature = "jit")]
-        return self.run_jit(gfx_init_params, handle, wrapp_config);
-        #[cfg(feature = "aot")]
-        return self.run_aot(gfx_init_params, handle, wrapp_config);
-    }
-}
-
-#[cfg(any(feature = "jit", feature = "aot"))]
-fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHandle + 'static>(
-    gfx_init_params: GFXInitParams<Builder>,
-    handle: VFSHandle,
-    wrapp_config: &webrogue_wrapp::config::Config,
-    persistent_dir: PathBuf,
+pub(self) async fn run_component(
+    runtime: Runtime,
     engine: wasmtime::Engine,
-    epoch_interruption: bool,
-    module: wasmtime::Module,
+    component: wasmtime::component::Component,
 ) -> anyhow::Result<()> {
-    let mut linker: wasmtime::Linker<State<Builder::System>> = wasmtime::Linker::new(&engine);
-    let state = State {
-        preview1_ctx: None,
-        wasi_threads_ctx: None,
-        gfx: None,
-        wasm_thread: None,
-    };
-    let gfx_builder = gfx_init_params.builder;
-    #[cfg(feature = "async")]
-    let async_func_runner = gfx_init_params.async_func_runner;
-    let mut store = wasmtime::Store::new(&engine, state);
+    let wrapp_config = runtime.vfs.config();
 
-    #[cfg(feature = "async")]
-    let is_async = async_func_runner.is_some();
-    #[cfg(not(feature = "async"))]
-    let is_async = false;
+    let mut linker = wasmtime::component::Linker::new(&engine);
+    wasmtime_wasi::p3::add_to_linker(&mut linker)?;
+    webrogue_gfx::add_to_linker(&mut linker)?;
+    let mut wasi_ctx_builder = wasmtime_wasi::WasiCtx::builder();
 
-    let thread_registry = WasmThreadRegistry::new(is_async, epoch_interruption);
-    let main_thread = thread_registry.make_thread(engine.weak());
+    wasi_ctx_builder
+        .inherit_stdout()
+        .inherit_stderr()
+        .allow_tcp(true)
+        .allow_udp(true)
+        .allow_ip_name_lookup(true)
+        .inherit_network();
 
-    {
-        let main_thread = main_thread.clone();
-        store.data_mut().wasm_thread = Some(main_thread.clone());
-        store.epoch_deadline_callback(move |_| main_thread.on_epoch_update_deadline());
-        store.set_epoch_deadline(1);
+    for persistent in wrapp_config.filesystem.map_or_else(
+        || Vec::new(),
+        |config| config.persistent.unwrap_or_default(),
+    ) {
+        let host_path = runtime.persistent_dir.join(&persistent.name);
+        if !host_path.exists() {
+            std::fs::create_dir_all(&host_path).with_context(|| {
+                anyhow::anyhow!(
+                    "Unable to create persistent directory for \"{}\" to mount at \"{}\"",
+                    persistent.name,
+                    persistent.mapped_path
+                )
+            })?;
+        }
+        wasi_ctx_builder
+            .preopened_dir(
+                host_path,
+                format!("/{}", persistent.mapped_path),
+                wasmtime_wasi::FsPerms::ReadWrite,
+            )
+            .with_context(|| {
+                anyhow::anyhow!(
+                    "Unable mount persistent directory \"{}\" at path \"{}\"",
+                    persistent.name,
+                    persistent.mapped_path
+                )
+            })?;
     }
 
-    store.data_mut().wasi_threads_ctx = Some(Arc::new(crate::wasi_threads::WasiThreadsCtx::new(
-        thread_registry.clone(),
-        #[cfg(feature = "async")]
-        async_func_runner.clone(),
-    )));
-
-    add_wasip1_to_linker::<Builder>(
-        &mut linker,
-        #[cfg(feature = "async")]
-        &async_func_runner,
+    wasi_ctx_builder.virt_preopened_dir(
+        Arc::new(
+            runtime
+                .vfs
+                .open(RESOURCES_ROOT_VFS_PATH)
+                .map_err(|_| anyhow::anyhow!("An error occurred while opening VFS root"))?,
+        ),
+        "/",
     )?;
 
+    if let Some(env) = &wrapp_config.env {
+        for env in env {
+            wasi_ctx_builder.env(env.0, env.1);
+        }
+    }
+
+    if let Some(args) = &wrapp_config.args {
+        for arg in args {
+            wasi_ctx_builder.arg(arg);
+        }
+    }
+
+    let state = State {
+        gfx: runtime.gfx_system,
+        wasi_ctx: wasi_ctx_builder.build(),
+        resource_table: wasmtime_wasi::ResourceTable::new(),
+    };
+    let mut store = wasmtime::Store::new(&engine, state);
     #[cfg(not(target_os = "windows"))]
     unsafe {
         use wasmtime::unix::StoreExt;
@@ -329,147 +167,37 @@ fn run_module<Builder: webrogue_gfx::IBuilder, VFSHandle: webrogue_wrapp::IVFSHa
             webrogue_virgl::shadow_blob::handle_segfault(addr)
         });
     }
+    async fn run(
+        store: &mut wasmtime::Store<State>,
+        component: Component,
+        linker: wasmtime::component::Linker<State>,
+    ) -> anyhow::Result<()> {
+        let command = Command::instantiate_async(&mut *store, &component, &linker)
+            .await
+            .context("Unable to instantiate command")?;
 
-    bindings::add_webrogue_gfx_to_linker(
-        &mut linker,
-        |state| state.gfx.as_mut().unwrap(),
-        |state| state.wasm_thread.as_ref().unwrap().clone(),
-    )?;
-    crate::wasi_threads::add_to_linker_sync(&mut linker, &mut store, &module, |host| {
-        host.wasi_threads_ctx.as_ref().unwrap()
-    })?;
-    let linker = Arc::new(linker);
-    store
-        .data()
-        .wasi_threads_ctx
-        .as_ref()
-        .unwrap()
-        .fill(module.clone(), linker.clone())?;
+        #[cfg(feature = "debug")]
+        if let Some(mut breakpoints) = store.edit_breakpoints() {
+            breakpoints.single_step(true)?;
+        }
 
-    store.data_mut().preview1_ctx = Some(webrogue_wasip1::make_ctx(
-        handle,
-        wrapp_config,
-        &persistent_dir,
-    )?);
+        let program_result = store
+            .run_concurrent(async |accessor| command.wasi_cli_run().call_run(&accessor).await)
+            .await??;
+        let _ = program_result;
+        anyhow::Ok(())
+    }
 
-    gfx_builder.run(
-        move |system| -> anyhow::Result<()> {
-            webrogue_gfx::run(system, |gfx| -> anyhow::Result<()> {
-                store.data_mut().gfx = Some(gfx);
-
-                let pre = linker.instantiate_pre(&module)?;
-
-                let call_result = (|| {
-                    #[cfg(feature = "async")]
-                    if let Some(async_func_runner) = async_func_runner {
-                        let main_thread = main_thread.clone();
-                        return async_func_runner(
-                            AsyncFuncRunnerParams {
-                                store,
-                                thread: main_thread.clone(),
-                            },
-                            Box::new(move |store| {
-                                use wasmtime::AsContextMut as _;
-
-                                Box::pin(async move {
-                                    let instance =
-                                        pre.instantiate_async(store.as_context_mut()).await?;
-                                    let func = instance.get_typed_func::<(), ()>(
-                                        store.as_context_mut(),
-                                        "_start",
-                                    )?;
-                                    #[cfg(feature = "debug")]
-                                    store
-                                        .edit_breakpoints()
-                                        .as_mut()
-                                        .map(|edit_breakpoints| edit_breakpoints.single_step(true));
-                                    #[cfg(feature = "debug")]
-                                    main_thread.debug_init(store)?;
-                                    func.call_async(store.as_context_mut(), ())
-                                        .await
-                                        .map_err(|err| anyhow::anyhow!(err))
-                                })
-                            }),
-                        )
-                        .map(|_| ());
-                    };
-                    let instance = pre.instantiate(&mut store)?;
-                    let func = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
-                    #[cfg(feature = "debug")]
-                    main_thread.debug_init(&mut store)?;
-                    func.call(&mut store, ())
-                        .map_err(|err| anyhow::anyhow!(err))
-                })();
-
-                let tid = main_thread.tid();
-                thread_registry.remove_thread(main_thread);
-                thread_registry.stop_all_threads(
-                    call_result
-                        .err()
-                        .map(|error| StopReason::ThreadError(tid, error))
-                        .unwrap_or(StopReason::MainFinished),
-                );
-                match thread_registry.wait_for_all_threads_to_stop() {
-                    StopReason::MainFinished => Ok(()),
-                    StopReason::ThreadError(tid, error) => {
-                        Err(error).context(format!("An error occurred in WASI thread #{tid}"))
-                    }
-                }
-            })
-        },
-        wrapp_config.vulkan_requirement().to_bool_option(),
-    )??;
-
+    #[cfg(feature = "debug")]
+    if let Some(debug_connection_factory) = runtime.debug_connection_factory {
+        webrogue_debugger::debug(store, debug_connection_factory, |store| {
+            Box::pin(run(store, component, linker))
+        })
+        .await?;
+    } else {
+        run(&mut store, component, linker).await?;
+    };
+    #[cfg(not(feature = "debug"))]
+    run(&mut store, component, linker).await?;
     Ok(())
-}
-
-fn add_wasip1_to_linker<Builder: webrogue_gfx::IBuilder>(
-    linker: &mut wasmtime::Linker<State<<Builder>::System>>,
-    #[cfg(feature = "async")] async_func_runner: &Option<
-        crate::AsyncFuncRunner<State<Builder::System>>,
-    >,
-) -> Result<(), anyhow::Error> {
-    #[cfg(feature = "async")]
-    if async_func_runner.is_some() {
-        bindings::not_sync::add_wasi_snapshot_preview1_to_linker(
-            linker,
-            |state| state.preview1_ctx.as_mut().unwrap(),
-            |state| state.wasm_thread.as_ref().unwrap().clone(),
-        )?;
-        return Ok(());
-    }
-    bindings::sync::add_wasi_snapshot_preview1_to_linker(
-        linker,
-        |state| state.preview1_ctx.as_mut().unwrap(),
-        |state| state.wasm_thread.as_ref().unwrap().clone(),
-    )?;
-    Ok(())
-}
-
-mod bindings {
-    use crate::WasmThread;
-
-    wiggle::wasmtime_integration!({
-        target: webrogue_gfx,
-        witx: ["../gfx/witx/webrogue_gfx.witx"],
-    });
-
-    pub mod sync {
-        use super::WasmThread;
-        wiggle::wasmtime_integration!({
-            target: webrogue_wasi_common::snapshots::preview_1,
-            witx: ["../wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
-            block_on [webrogue_wasip1::run_in_executor]: *
-        });
-    }
-    #[cfg(feature = "async")]
-    // Not gonna fight compiler again
-    pub mod not_sync {
-        use super::WasmThread;
-        wiggle::wasmtime_integration!({
-            target: webrogue_wasi_common::snapshots::preview_1,
-            witx: ["../wasi-common/witx/preview1/wasi_snapshot_preview1.witx"],
-            async: *
-        });
-    }
 }

@@ -71,7 +71,11 @@ impl CodeWriter {
                 * 4,
         ) + s
             + "\n";
-        std::io::Write::write_all(&mut self.buf, new_string.as_bytes())?;
+        self.write_raw(&new_string)
+    }
+
+    pub fn write_raw(&mut self, s: &str) -> anyhow::Result<()> {
+        std::io::Write::write_all(&mut self.buf, s.as_bytes())?;
         anyhow::Ok(())
     }
 

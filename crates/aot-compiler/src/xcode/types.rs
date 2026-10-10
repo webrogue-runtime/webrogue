@@ -1,5 +1,5 @@
 use clap::ValueEnum;
-use webrogue_wrapp::config::Config;
+use webrogue_vfs::config::Config;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Configuration {

@@ -1,94 +1,85 @@
-use std::{
-    num::NonZeroI32,
-    sync::{Arc, Mutex},
-};
+use std::{future::Future, pin::Pin};
 
-mod code_runner_loop;
+use anyhow::Context;
+use wasmtime::Store;
+
+use crate::{communication::RunnerMessage, connection::ConnectionFactory};
+
 mod communication;
-mod connection;
-mod gdb_stub_loop;
-mod gdb_stub_target;
-mod state;
-mod thread_info;
+pub mod connection;
+mod gdbstub_loop;
+mod runner;
+mod target;
+mod wasm_addr_map;
 
-pub use crate::connection::ConnectionFactory;
-pub use connection::{
-    premade_connection, tokio_tcp_connection, AsyncRead, BoxedPacketReceiver, BoxedPacketSender,
-    PacketSender,
-};
-pub use state::State;
-use webrogue_wasmtime::WasmThread;
-
-pub async fn debug<T: Send + 'static, GFXBuilder: webrogue_gfx::IBuilder + Send + 'static>(
-    rt_handle: tokio::runtime::Handle,
-    runtime: webrogue_wasmtime::Runtime,
-    mut gfx_init_params: webrogue_wasmtime::GFXInitParams<GFXBuilder>,
+pub async fn debug<F, T: Send>(
+    store: Store<T>,
     connection_factory: ConnectionFactory,
-    skip_stale_threads: bool,
-    func: impl FnOnce(
-            webrogue_wasmtime::Runtime,
-            webrogue_wasmtime::GFXInitParams<GFXBuilder>,
-        ) -> anyhow::Result<T>
+    f: F,
+) -> anyhow::Result<()>
+where
+    F: for<'a> FnOnce(
+            &'a mut Store<T>,
+        ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>>
         + Send
         + 'static,
-) -> anyhow::Result<T> {
-    let (mut target, target_proxy) = gdb_stub_target::create_wasm32_target(skip_stale_threads);
+{
+    anyhow::ensure!(store.engine().get_guest_debug());
+    let (message_tx, message_rx) = tokio::sync::mpsc::channel::<RunnerMessage>(1);
 
-    let threads: Arc<Mutex<Vec<WasmThread>>> = Arc::default();
-    let threads2 = threads.clone();
-    let drop_callback = DropCallback(Some(move || {
-        for thread in threads2.lock().unwrap().iter() {
-            thread.trap();
-        }
-    }));
-    gfx_init_params.async_func_runner(code_runner_loop::runner(
-        target_proxy.clone(),
-        threads.clone(),
-    ));
+    // Needed because Wasmtime may lose an error returned by f(store).await and return Ok instead, no idea why
+    let (f_result_tx, f_result_rx) = tokio::sync::oneshot::channel();
 
-    let wasi_main_join_handle = rt_handle.spawn_blocking(move || {
-        let result = func(runtime, gfx_init_params);
-        let _ = target_proxy.send(communication::DebuggerLoopMessage::ThreadFinished(
-            NonZeroI32::new(1).unwrap(),
-        ));
-        result
+    let mut runner_task = tokio::task::spawn(async move {
+        runner::runner(
+            store,
+            move |store| {
+                Box::pin(async move {
+                    let result = f(store).await;
+                    let _ = f_result_tx.send(result);
+                    Ok(())
+                })
+            },
+            message_tx,
+            f_result_rx,
+        )
+        .await
     });
-    let debugger_error = target.wait_for_first_step().await;
-    if wasi_main_join_handle.is_finished() {
-        return wasi_main_join_handle.await?;
-    }
 
-    let debugger_error = match debugger_error {
-        Ok(_) => {
-            let (receiver, sender) = connection_factory().await?;
-            rt_handle
-                .spawn_blocking(|| gdb_stub_loop::run(receiver, sender, target))
-                .await?
+    let (gdb_rx, gdb_tx) = tokio::select! {
+        connection = connection_factory() => connection?,
+        runner_result = &mut runner_task => {
+            runner_result?.context("Early error in gdbstub runner")?;
+            anyhow::bail!("gdbstub runner returned early without error. What?")
         }
-        Err(error) => Err(error),
     };
-    drop(drop_callback);
-    let wasi_main_error = wasi_main_join_handle.await?;
-    match (wasi_main_error, debugger_error) {
-        (Ok(result), Ok(_)) => Ok(result),
-        (Ok(_), Err(err)) => Err(err),
-        (Err(err), Ok(_)) => Err(err),
-        (Err(wasi_main_error), Err(debugger_error)) => {
-            let root_cause = wasi_main_error.root_cause().to_string();
-            if root_cause == "Debugger disconnected"
-                || root_cause == "Debugger disconnected during imported function invocation"
-            {
-                Err(debugger_error)
+    let rt = tokio::runtime::Handle::current();
+    let (gdbstub_loop_tx, mut gdbstub_loop_rx) = tokio::sync::oneshot::channel();
+    std::thread::Builder::new()
+        .name("gdbstub_loop".to_owned())
+        .spawn(move || {
+            let result = gdbstub_loop::gdbstub_loop(message_rx, gdb_rx, gdb_tx, rt);
+            let _ = gdbstub_loop_tx.send(result);
+        })
+        .unwrap();
+    tokio::select! {
+        gdbstub_loop_result = &mut gdbstub_loop_rx => {
+            let gdbstub_loop_result = gdbstub_loop_result?.context("Error in gdbstub loop");
+            if gdbstub_loop_result.is_err() {
+                runner_task.abort();
             } else {
-                Err(wasi_main_error)
+                runner_task.await?.context("Error in gdbstub runner")?;
             }
+            gdbstub_loop_result
+        },
+        runner_result = &mut runner_task => {
+            let runner_result = runner_result?.context("Error in gdbstub runner");
+            if runner_result.is_err() {
+                // TODO stop gdbstub loop somehow
+            } else {
+                gdbstub_loop_rx.await?.context("Error in gdbstub loop")?;
+            }
+            runner_result
         }
-    }
-}
-struct DropCallback<F: FnOnce()>(Option<F>);
-
-impl<F: FnOnce()> Drop for DropCallback<F> {
-    fn drop(&mut self) {
-        (self.0.take().unwrap())();
     }
 }

@@ -1,7 +1,7 @@
+use anyhow::Context;
 use clap::Args;
 use std::path::PathBuf;
-use webrogue_debugger::ConnectionFactory;
-use webrogue_wrapp::IVFSBuilder;
+use webrogue_vfs::VFS;
 
 #[derive(Args, Debug, Clone)]
 pub struct RunCommand {
@@ -16,107 +16,57 @@ pub struct RunCommand {
 
 impl RunCommand {
     pub fn run(&self) -> anyhow::Result<()> {
-        use anyhow::Context as _;
+        use webrogue_gfx::AbstractBuilder;
 
-        let connection_factory = self
-            .gdb_port
-            .map(|port| webrogue_debugger::tokio_tcp_connection(port));
+        let cache = self.cache.clone();
 
-        if webrogue_wrapp::is_path_a_wrapp(&self.path)
-            .with_context(|| format!("Unable to determine file type for {}", self.path.display()))?
-        {
-            crate::run::run_builder(
-                webrogue_wasmtime::WrappVFSBuilder::from_file_path(&self.path)?,
-                self.cache.as_ref(),
-                connection_factory,
-            )?;
-        } else {
-            crate::run::run_builder(
-                webrogue_wasmtime::RealVFSBuilder::from_config_path(&self.path)?,
-                self.cache.as_ref(),
-                connection_factory,
-            )?;
-        }
+        let vfs = VFS::build_from_path(&self.path).with_context(|| {
+            anyhow::anyhow!(
+                "Unable to build VFS for path \"{}\"",
+                self.path.as_os_str().to_string_lossy()
+            )
+        })?;
+
+        let config = vfs.config();
+        let vulkan_requirement = config.vulkan_requirement().to_bool_option();
+
+        let gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
+        let gdb_port = self.gdb_port.clone();
+
+        gfx_builder.run(
+            move |gfx_system| -> anyhow::Result<()> {
+                webrogue_wasmtime::block_on_default_executor(async {
+                    let persistent_path = std::env::home_dir()
+                        .map_or_else(|| std::env::current_dir(), |dir| Ok(dir))?
+                        .join(".webrogue")
+                        .join(&config.id)
+                        .join("persistent");
+
+                    let runtime =
+                        webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path);
+                    let mut runtime = runtime.jit();
+                    if let Some(cache) = cache.as_ref() {
+                        runtime.jit_cache_config(cache);
+                    }
+                    unsafe {
+                        // Let it crash. It's just a CLI utility
+                        runtime.allow_panic();
+                    }
+                    if let Some(gdb_port) = gdb_port {
+                        runtime
+                            .debug_connection_factory(
+                                webrogue_wasmtime::debugger::connection::tokio_tcp_connection(
+                                    gdb_port,
+                                ),
+                            )
+                            .jit_profile(webrogue_wasmtime::JitProfile::Debug);
+                    }
+                    runtime.run().await
+                })
+            },
+            vulkan_requirement,
+        )??;
+
         Ok(())
     }
-}
-
-pub fn run_builder(
-    mut vfs_builder: impl IVFSBuilder,
-    cache: Option<&PathBuf>,
-    connection_factory: Option<ConnectionFactory>,
-) -> anyhow::Result<()> {
-    use webrogue_gfx::IBuilder;
-
-    let config = vfs_builder.config()?.clone();
-
-    let persistent_path_base = if let Some(home_dir) = std::env::home_dir() {
-        home_dir
-    } else {
-        std::env::current_dir()?
-    };
-
-    let persistent_path = persistent_path_base
-        .join(".webrogue")
-        .join(&config.id)
-        .join("persistent");
-    let handle = vfs_builder.into_vfs()?;
-
-    let mut runtime = webrogue_wasmtime::Runtime::new(&persistent_path);
-    if let Some(cache) = cache.as_ref() {
-        runtime.jit_cache_config(cache);
-    }
-
-    runtime.jit_profile(if connection_factory.is_some() {
-        webrogue_wasmtime::JitProfile::Debug
-    } else {
-        webrogue_wasmtime::JitProfile::FastCompilation
-    });
-
-    unsafe {
-        // Let it crash. It's just a CLI utility
-        runtime.allow_panic();
-    }
-
-    let gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
-
-    let vulkan_requirement = config.vulkan_requirement().to_bool_option();
-
-    gfx_builder.run(
-        move |gfx_system| -> anyhow::Result<()> {
-            let gfx_init_params =
-                webrogue_wasmtime::GFXInitParams::new(webrogue_gfx::ChildBuilder::new(gfx_system));
-
-            if let Some(connection_factory) = connection_factory {
-                tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()?
-                    .block_on((async move || -> anyhow::Result<()> {
-                        let rt_handle = tokio::runtime::Handle::current();
-                        webrogue_debugger::debug(
-                            rt_handle,
-                            runtime,
-                            gfx_init_params,
-                            connection_factory,
-                            true,
-                            move |runtime, gfx_init_params| -> anyhow::Result<()> {
-                                runtime.run_jit(gfx_init_params, handle, &config)?;
-                                Ok(())
-                            },
-                        )
-                        .await?;
-                        Ok(())
-                    })())?;
-                return Ok(());
-            }
-
-            {
-                runtime.run_jit(gfx_init_params, handle, &config)?;
-                Ok(())
-            }
-        },
-        vulkan_requirement,
-    )??;
-
-    Ok(())
 }

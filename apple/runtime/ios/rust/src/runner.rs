@@ -1,15 +1,23 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
+
+use webrogue_gfx::AbstractBuilder;
 
 fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
-    let builder = webrogue_wasmtime::WrappVFSBuilder::from_file_path(wrapp_path)?;
+    let vfs = webrogue_vfs::VFS::build_from_path(&PathBuf::from_str(&wrapp_path)?)?;
+    let persistent_dir = PathBuf::from_str(&persistent_path)?;
+    let config = vfs.config();
+    let vulkan_requirement = config.vulkan_requirement().to_bool_option();
 
-    return webrogue_wasmtime::Runtime::new(&std::path::PathBuf::from(persistent_path))
-        .run_builder(
-            webrogue_wasmtime::GFXInitParams::new(
-                webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?,
-            ),
-            builder,
-        );
+    webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?.run(
+        move |gfx_system| {
+            webrogue_wasmtime::block_on_default_executor(
+                webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_dir)
+                    .aot()
+                    .run(),
+            )
+        },
+        vulkan_requirement,
+    )?
 }
 
 #[no_mangle]

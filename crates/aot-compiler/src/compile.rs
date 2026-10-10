@@ -1,8 +1,7 @@
 use std::io::Write;
 
-use anyhow::Context;
 use wasmtime::Cache;
-use webrogue_wrapp::{IVFSHandle as _};
+use webrogue_vfs::{MAIN_WASM_VFS_PATH, VFS};
 
 pub fn compile_wrapp_to_object(
     wrapp_file_path: &std::path::Path,
@@ -12,40 +11,8 @@ pub fn compile_wrapp_to_object(
     is_pic: bool,
     export_dynamic: bool,
 ) -> anyhow::Result<()> {
-    if webrogue_wrapp::is_path_a_wrapp(&wrapp_file_path).with_context(|| {
-        format!(
-            "Unable to determine file type for {}",
-            wrapp_file_path.display()
-        )
-    })? {
-        compile_wrapp_to_object_using_vfs(
-            || webrogue_wrapp::WrappVFSBuilder::from_file_path(&wrapp_file_path),
-            object_file_path,
-            target,
-            cache,
-            is_pic,
-            export_dynamic,
-        )
-    } else {
-        compile_wrapp_to_object_using_vfs(
-            || webrogue_wrapp::RealVFSBuilder::from_config_path(&wrapp_file_path),
-            object_file_path,
-            target,
-            cache,
-            is_pic,
-            export_dynamic,
-        )
-    }
-}
+    let vfs = VFS::build_from_path(wrapp_file_path)?;
 
-pub fn compile_wrapp_to_object_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
-    vfs_builder_factory: impl Fn() -> anyhow::Result<VFSBuilder>,
-    object_file_path: &std::path::Path,
-    target: crate::Target,
-    cache: Option<&std::path::PathBuf>,
-    is_pic: bool,
-    export_dynamic: bool,
-) -> anyhow::Result<()> {
     let mut config = wasmtime::Config::new();
     config.target(target.name())?;
     config.cranelift_opt_level(wasmtime::OptLevel::SpeedAndSize);
@@ -55,6 +22,7 @@ pub fn compile_wrapp_to_object_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder
     config.epoch_interruption(false);
     config.memory_may_move(false);
     config.wasm_exceptions(true);
+    config.wasm_component_model_threading(true);
     if let Some(cache) = cache {
         config.cache(Some(Cache::from_file(Some(cache))?));
     }
@@ -65,22 +33,17 @@ pub fn compile_wrapp_to_object_using_vfs<VFSBuilder: webrogue_wrapp::IVFSBuilder
     }
     let engine = wasmtime::Engine::new(&config)?;
 
-    let mut wasm_binary = Vec::new();
+    let wasm_binary = vfs
+        .read_as_vec(MAIN_WASM_VFS_PATH)
+        .map_err(|_| anyhow::anyhow!("Unable to read WebAssembly code"))?;
 
-    let vfs = vfs_builder_factory()?.into_vfs()?;
-    let mut file = vfs
-        .open_file("/app/main.wasm")
-        .context("Unable to read WebAssembly code")?
-        .ok_or(anyhow::anyhow!("/app/main.wasm not found"))?;
-    std::io::Read::read_to_end(&mut file, &mut wasm_binary)?;
-
-    let cwasm = engine.precompile_module(&wasm_binary)?;
+    let cwasm = engine.precompile_component(&wasm_binary)?;
 
     let cwasm_info = crate::cwasm_analyzer::analyze_cwasm(&cwasm)?;
 
     let mut obj = object::write::Object::new(target.format(), target.arch(), target.endianness());
 
-    obj.add_file_symbol(b"/app/main.wasm".into());
+    obj.add_file_symbol(b"/main.wasm".into());
     let mut main_data = Vec::new();
     main_data.extend_from_slice(&(cwasm.len() as u64).to_le_bytes());
     main_data.extend_from_slice(&(cwasm_info.max_alignment as u64).to_le_bytes());

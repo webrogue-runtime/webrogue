@@ -1,0 +1,23 @@
+[package]
+name = "webrogue-vfs"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[features]
+wasmtime = ["dep:wasmtime", "dep:wasmtime-wasi", "dep:tokio"]
+archive = ["webrogue-wrapp/write"]
+
+[dependencies]
+anyhow = { workspace = true }
+webrogue-wrapp = { workspace = true }
+webrogue-common = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+schemars = { workspace = true, features = ["semver1"] }
+serde_json = { workspace = true }
+semver = { workspace = true, default-features = false, features = ["serde"] }
+
+wasmtime = { workspace = true, optional = true, default-features = false }
+wasmtime-wasi = { workspace = true, optional = true, default-features = false, features = ["p3"] }
+tokio = { workspace = true, optional = true }

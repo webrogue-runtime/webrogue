@@ -13,3 +13,4 @@ anyhow = { workspace = true }
 
 [build-dependencies]
 reqwest = { workspace = true, features = ["blocking"] }
+anyhow = { workspace = true }

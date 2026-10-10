@@ -41,7 +41,7 @@ impl HubCommand {
         match self {
             #[cfg(feature = "run")]
             HubCommand::HostRunner { storage, api_key } => {
-                use webrogue_gfx::IBuilder;
+                use webrogue_gfx::AbstractBuilder as _;
 
                 let gfx_builder =
                     webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
@@ -49,13 +49,10 @@ impl HubCommand {
                 let api_key = api_key.clone();
                 gfx_builder.run(
                     move |system| {
-                        tokio::runtime::Builder::new_current_thread()
-                            .enable_all()
-                            .build()?
-                            .block_on(async {
-                                crate::hub::runner::host(&storage, &api_key, system).await?;
-                                anyhow::Ok(())
-                            })
+                        webrogue_wasmtime::block_on_default_executor(async {
+                            crate::hub::runner::host(&storage, &api_key, system).await?;
+                            anyhow::Ok(())
+                        })
                     },
                     Some(true),
                 )??;

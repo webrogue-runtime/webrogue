@@ -7,6 +7,7 @@ fn main() {
     use std::env;
 
     let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    let target = env::var("TARGET").unwrap_or_default();
     if target_arch == "wasm32" {
         return;
     }
@@ -119,10 +120,7 @@ fn main() {
         ("HAVE_TIMESPEC_GET", Some("1")),
         ("HAVE_SYS_UIO_H", Some("1")),
         ("HAVE_PTHREAD", def_if(!is_windows)),
-        (
-            "HAVE_PTHREAD_SETAFFINITY",
-            def_if(is_linux && !is_android),
-        ),
+        ("HAVE_PTHREAD_SETAFFINITY", def_if(is_linux && !is_android)),
         ("HAVE_PTHREAD_NP_H", def_if(is_freebsd)),
         ("HAVE_EPOXY_EGL_H", None),
         ("HAVE_EPOXY_GLX_H", None),
@@ -421,15 +419,36 @@ fn main() {
     build.include(&_crate_manifest_dir);
 
     #[cfg(not(target_env = "musl"))]
-    bindgen::Builder::default()
+    let mut bindgen_builder = bindgen::Builder::default()
         .header(
             _crate_manifest_dir
                 .join("webrogue_virgl.h")
                 .to_str()
                 .unwrap(),
         )
-        .clang_args(bindgen_args)
-        .allowlist_function(
+        .clang_args(bindgen_args);
+
+    if is_android {
+        let mut api_level = "".to_string();
+        std::fs::File::open(
+            _crate_manifest_dir
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("android")
+                .join("android_api_version.txt"),
+        )
+        .unwrap()
+        .read_to_string(&mut api_level)
+        .unwrap();
+
+        // Construct the versioned triple (e.g., aarch64-linux-android30)
+        let versioned_target = format!("--target={}{}", target, api_level);
+        bindgen_builder = bindgen_builder.clang_arg(versioned_target);
+    }
+
+    bindgen_builder.allowlist_function(
             "webrogue.*|vkr_get_capset|vkr_renderer_create_context|vkr_renderer_destroy_context|vkr_renderer_fini|vkr_renderer_submit_cmd|vkr_renderer_submit_fence|vkr_renderer_create_resource|vkr_renderer_destroy_resource",
         )
         .allowlist_type("virgl_resource_fd_type|virgl_resource_vulkan_info")

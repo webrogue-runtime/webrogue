@@ -3,6 +3,7 @@ use std::{fs::File, io::Cursor};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use image::DynamicImage;
 use webrogue_icons::{background_image, insetted_foreground_image, IconsData};
+use webrogue_vfs::VFS;
 
 use crate::vscode::example::types::Requirement;
 
@@ -14,17 +15,8 @@ struct WRAPPReader;
 
 impl Guest for WRAPPReader {
     fn analyze(i: AnalyzeInput) -> AnalyzeOutputResult {
-        let result: anyhow::Result<vscode::example::types::AnalyzeOutput> = (|| {
-            if webrogue_wrapp::is_path_a_wrapp(&i.path)? {
-                Ok(extract_config(webrogue_wrapp::WrappVFSBuilder::from_file(
-                    File::open(i.path)?,
-                )?)?)
-            } else {
-                Ok(extract_config(
-                    webrogue_wrapp::RealVFSBuilder::from_config_path(i.path)?,
-                )?)
-            }
-        })();
+        let result: anyhow::Result<vscode::example::types::AnalyzeOutput> =
+            (|| Ok(extract_config(VFS::build_from_path(&i.path)?)?))();
         match result {
             Ok(output) => AnalyzeOutputResult::Success(output),
             Err(e) => AnalyzeOutputResult::Error(format!("{:#}", e)),
@@ -32,11 +24,9 @@ impl Guest for WRAPPReader {
     }
 }
 
-fn extract_config<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
-    mut builder: VFSBuilder,
-) -> anyhow::Result<vscode::example::types::AnalyzeOutput> {
-    let config = builder.config()?.clone();
-    let icons_data = IconsData::from_vfs_builder(&mut builder)?;
+fn extract_config(vfs: VFS) -> anyhow::Result<vscode::example::types::AnalyzeOutput> {
+    let config = vfs.config();
+    let icons_data = IconsData::from_vfs(&vfs)?;
 
     let android_light_icon_bytes = &icons_data.light_bytes;
     let android_light_icon_config = &icons_data.light_config;
@@ -67,9 +57,9 @@ fn extract_config<VFSBuilder: webrogue_wrapp::IVFSBuilder>(
             1024,
         )?)?,
         vulkan_requirement: match config.vulkan_requirement() {
-            webrogue_wrapp::config::Requirement::Disabled => Requirement::Disabled,
-            webrogue_wrapp::config::Requirement::Optional => Requirement::Optional,
-            webrogue_wrapp::config::Requirement::Required => Requirement::Required,
+            webrogue_vfs::config::Requirement::Disabled => Requirement::Disabled,
+            webrogue_vfs::config::Requirement::Optional => Requirement::Optional,
+            webrogue_vfs::config::Requirement::Required => Requirement::Required,
         },
     })
 }

@@ -1,449 +1,228 @@
-wiggle::from_witx!({
-    witx: ["witx/webrogue_gfx.witx"],
-    wasmtime: false,
-});
+use std::sync::{Arc, Mutex};
 
-use types::Size as GuestSize;
-use types::WindowHandle as GuestWindowHandle;
-use types::WindowSize as GuestWindowSize;
-use wiggle::GuestPtr;
+use wasmtime::component::{HasData, Linker, ResourceTable, WasmList};
+use wasmtime::{AsContext as _, AsContextMut as _};
 
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex},
-};
+use crate::event_sink::EventStream;
 
-pub trait IBuilder {
-    type System: ISystem + 'static;
+pub(crate) mod generated {
+    wasmtime::component::bindgen!({
+        path: "wit/webrogue-gfx.wit",
+        world: "gfx",
+        with: {
+            "webrogue:gfx/windowing.window": super::Window,
+            "webrogue:gfx/vulkan.renderer": super::VulkanRenderer,
+        },
+        imports: {
+            "webrogue:gfx/windowing.[method]window.event-stream": trappable | store,
+            "webrogue:gfx/vulkan.[method]renderer.create-device-memory-blob": trappable | store,
+            default: trappable,
+        },
+    });
+}
 
+pub trait GFXView: Send {
+    fn gfx_ctx(&mut self) -> GFXCtxView<'_>;
+}
+
+struct GFX;
+
+impl HasData for GFX {
+    type Data<'a> = GFXCtxView<'a>;
+}
+
+pub struct GFXCtxView<'a> {
+    pub ctx: &'a mut System,
+    pub table: &'a mut ResourceTable,
+}
+
+pub fn add_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>
+where
+    T: GFXView + 'static,
+{
+    generated::webrogue::gfx::windowing::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
+    generated::webrogue::gfx::cpu_rendering::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
+    generated::webrogue::gfx::vulkan::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
+    generated::webrogue::gfx::device_info::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
+
+    // Bindgen normally lifts lists into Vecs. These blob functions need the
+    // guest buffer's backing memory directly, so register typed WasmList
+    // callbacks instead of the generated Vec-based wrappers.
+    linker.allow_shadowing(true);
+    let result: wasmtime::Result<()> = (|| {
+        let mut root = linker.root();
+        let mut vulkan = root.instance("webrogue:gfx/vulkan")?;
+        vulkan.func_wrap("[method]renderer.create-shmem", create_shmem::<T>)?;
+        vulkan.func_wrap(
+            "[method]renderer.register-blob",
+            register_blob_with_memory::<T>,
+        )?;
+        wasmtime::Result::Ok(())
+    })();
+    linker.allow_shadowing(false);
+    result?;
+
+    Ok(())
+}
+
+pub trait AbstractSystem: Send + Sync {
+    fn make_window(&self) -> Window;
+    fn pump(&self);
+    fn get_virgl_context(&self) -> Option<Arc<Mutex<webrogue_virgl::ContextContainer>>>;
+}
+
+#[derive(Clone)]
+pub struct System(Arc<dyn AbstractSystem>);
+
+impl System {
+    pub fn new(system: Arc<dyn AbstractSystem>) -> Self {
+        Self(system)
+    }
+}
+
+pub trait AbstractWindow: Send + Sync {
+    fn get_size(&self) -> (u32, u32);
+    fn get_gl_size(&self) -> (u32, u32);
+    fn get_vk_id(&self) -> Option<u32>;
+    fn present_pixels(&self, pixels: &[u32]) -> anyhow::Result<bool>;
+    fn get_event_stream(&self) -> EventStream;
+}
+
+pub struct Window(Arc<dyn AbstractWindow>);
+
+impl Window {
+    pub fn new(window: Arc<dyn AbstractWindow>) -> Self {
+        Self(window)
+    }
+}
+
+pub struct VulkanRenderer {
+    id: u32,
+}
+
+fn create_shmem<T>(
+    mut store: wasmtime::StoreContextMut<'_, T>,
+    (self_, buf): (wasmtime::component::Resource<VulkanRenderer>, WasmList<u8>),
+) -> wasmtime::Result<(u32,)>
+where
+    T: GFXView + 'static,
+{
+    let (buf_ptr, buf_len) = {
+        let buf = buf.as_le_slice(store.as_context());
+        (buf.as_ptr().cast_mut(), buf.len())
+    };
+    wasmtime::ensure!(buf_len != 0, "create-shmem: buffer must not be empty");
+    let host = store.data_mut().gfx_ctx();
+    let renderer_id = host.table.get(&self_)?.id;
+    let Some(virgl_context) = host.ctx.0.get_virgl_context() else {
+        wasmtime::bail!("get_virgl_context() failed")
+    };
+
+    let virgl_context = virgl_context.lock().unwrap();
+
+    Ok((virgl_context.create_blob(renderer_id, buf_ptr, buf_len, 0),))
+}
+
+fn register_blob_with_memory<T>(
+    mut store: wasmtime::StoreContextMut<'_, T>,
+    (self_, res_id, buf): (
+        wasmtime::component::Resource<VulkanRenderer>,
+        u32,
+        WasmList<u8>,
+    ),
+) -> wasmtime::Result<()>
+where
+    T: GFXView + 'static,
+{
+    let (buf_ptr, buf_len) = {
+        let buf = buf.as_le_slice(store.as_context());
+        (buf.as_ptr().cast_mut(), buf.len())
+    };
+    let host = store.data_mut().gfx_ctx();
+    let renderer_id = host.table.get(&self_)?.id;
+    let Some(virgl_context) = host.ctx.0.get_virgl_context() else {
+        wasmtime::bail!("get_virgl_context() failed")
+    };
+    virgl_context
+        .lock()
+        .unwrap()
+        .register_blob(renderer_id, res_id.into(), buf_ptr, buf_len);
+    Ok(())
+}
+
+pub trait AbstractBuilder {
     fn run<Output>(
         self,
-        body_fn: impl FnOnce(Self::System) -> Output + Send + 'static,
+        body_fn: impl FnOnce(System) -> Output + Send + 'static,
         vulkan_requirement: Option<bool>,
     ) -> anyhow::Result<Output>
     where
         Output: Send + 'static;
 }
 
-pub trait ISystem {
-    type Window: IWindow + 'static;
-    fn make_window(&self, id: u32) -> Self::Window;
-    fn pump(&self);
-    fn get_virgl_context(&self) -> Option<Arc<Mutex<webrogue_virgl::ContextContainer>>>;
-}
-pub trait IWindow {
-    fn get_size(&self) -> (u32, u32);
-    fn get_gl_size(&self) -> (u32, u32);
-    #[cfg(not(target_arch = "wasm32"))]
-    fn make_vk_surface(&self, vk_instance: *mut ()) -> Option<*mut ()>;
-    fn poll(&self, events_buffer: &mut Vec<u8>);
-    fn present_pixels(&self, pixels: &[u32]) -> anyhow::Result<()>;
-}
-
-pub struct Interface<System: ISystem> {
-    system: Arc<System>,
-    windows: Arc<Mutex<BTreeMap<u32, Arc<System::Window>>>>,
-    event_buf: Arc<Mutex<Vec<u8>>>,
-}
-
-pub fn run<T, System: ISystem + 'static>(
-    system: System,
-    f: impl FnOnce(Interface<System>) -> T,
-) -> T {
-    let interface = Interface::new(Arc::new(system));
-
-    f(interface)
-}
-
-// gfx can be shared
-// window can't TODO
-// gfxstream_decoder is not cloned/copied across threads
-// TODO make wasi-threads not to force Send implementation
-unsafe impl<System: ISystem + 'static> Send for Interface<System> {}
-
-impl<System: ISystem + 'static> Interface<System> {
-    pub fn new(system: Arc<System>) -> Self {
-        // let dispatcher = gfx.dispatcher;
-        Self {
-            system,
-            windows: Arc::new(Mutex::new(BTreeMap::new())),
-            event_buf: Arc::new(Mutex::new(Vec::new())),
-        }
+impl<'a> generated::webrogue::gfx::windowing::Host for GFXCtxView<'a> {
+    fn close_window(
+        &mut self,
+        _window: wasmtime::component::Resource<Window>,
+    ) -> wasmtime::Result<()> {
+        Ok(())
     }
 }
 
-impl<System: ISystem + 'static> Clone for Interface<System> {
-    fn clone(&self) -> Self {
-        Self {
-            system: self.system.clone(),
-            windows: self.windows.clone(),
-            event_buf: self.event_buf.clone(),
-        }
+impl<T> generated::webrogue::gfx::windowing::HostWindowWithStore<T> for GFX {
+    fn event_stream(
+        mut host: wasmtime::component::Access<T, Self>,
+        self_: wasmtime::component::Resource<Window>,
+    ) -> wasmtime::Result<
+        wasmtime::component::StreamReader<generated::webrogue::gfx::windowing::WindowEvent>,
+    > {
+        let window = &host.get().table.get(&self_)?.0.clone();
+
+        Ok(wasmtime::component::StreamReader::new(
+            host.as_context_mut(),
+            window.get_event_stream(),
+        )?)
     }
 }
 
-impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> {
-    // Window manipulation
-
-    fn make_window(
+impl<'a> generated::webrogue::gfx::windowing::HostWindow for GFXCtxView<'a> {
+    fn get_logical_size(
         &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        out_window: wiggle::GuestPtr<GuestWindowHandle>,
-    ) {
-        let mut windows = self.windows.lock().unwrap();
-
-        // TODO make something better
-        let new_window_id = (windows.len() + 1) as GuestWindowHandle;
-        assert!(!windows.contains_key(&new_window_id));
-
-        windows.insert(
-            new_window_id,
-            Arc::new(self.system.make_window(new_window_id)),
-        );
-        let _ = mem.write(out_window, new_window_id);
+        self_: wasmtime::component::Resource<Window>,
+    ) -> wasmtime::Result<(u32, u32)> {
+        Ok(self.table.get(&self_)?.0.get_size())
     }
 
-    fn destroy_window(&mut self, _mem: &mut wiggle::GuestMemory<'_>, window: GuestWindowHandle) {
-        let mut windows = self.windows.lock().unwrap();
-        windows.remove(&window);
-    }
-
-    fn get_window_size(
+    fn get_physical_size(
         &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        window: GuestWindowHandle,
-        out_width: wiggle::GuestPtr<GuestWindowSize>,
-        out_height: wiggle::GuestPtr<GuestWindowSize>,
-    ) {
-        let size = self
-            .get_window(window)
-            .map(|window| window.get_size())
-            .unwrap_or_default();
-        let _ = mem.write(out_width, size.0);
-        let _ = mem.write(out_height, size.1);
+        self_: wasmtime::component::Resource<Window>,
+    ) -> wasmtime::Result<(u32, u32)> {
+        Ok(self.table.get(&self_)?.0.get_gl_size())
     }
 
-    fn get_gl_size(
+    fn drop(&mut self, rep: wasmtime::component::Resource<Window>) -> wasmtime::Result<()> {
+        self.table.delete(rep)?;
+        Ok(())
+    }
+
+    fn new(&mut self) -> wasmtime::Result<wasmtime::component::Resource<Window>> {
+        let window = self.ctx.0.make_window();
+        Ok(self.table.push(window)?)
+    }
+
+    fn get_vulkan_id(
         &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        window: GuestWindowHandle,
-        out_width: wiggle::GuestPtr<GuestWindowSize>,
-        out_height: wiggle::GuestPtr<GuestWindowSize>,
-    ) {
-        let size = self
-            .get_window(window)
-            .map(|window| window.get_gl_size())
-            .unwrap_or_default();
-        let _ = mem.write(out_width, size.0);
-        let _ = mem.write(out_height, size.1);
+        self_: wasmtime::component::Resource<Window>,
+    ) -> wasmtime::Result<u32> {
+        let Some(id) = self.table.get(&self_)?.0.get_vk_id() else {
+            wasmtime::bail!("get_vulkan_id failed")
+        };
+        Ok(id)
     }
+}
 
-    // Events
-
-    fn poll(&mut self, mem: &mut wiggle::GuestMemory<'_>, out_len: wiggle::GuestPtr<GuestSize>) {
-        let mut event_buf = self.event_buf.lock().unwrap();
-        event_buf.clear();
-
-        self.system.pump();
-        for (_window_id, window) in self.windows.lock().unwrap().iter() {
-            window.poll(&mut event_buf);
-        }
-
-        let result = event_buf.len() as u32;
-        let _ = mem.write(out_len, result);
-    }
-
-    fn poll_read(&mut self, mem: &mut wiggle::GuestMemory<'_>, buf: wiggle::GuestPtr<u8>) {
-        let event_buf = self.event_buf.lock().unwrap();
-        let _ = mem.copy_from_slice(&event_buf, buf.as_array(event_buf.len() as u32));
-    }
-
-    // Vulkan
-
-    fn check_vk(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        out_error: wiggle::GuestPtr<u8>,
-    ) -> () {
-        let ret = if self.system.get_virgl_context().is_some() {
-            1
-        } else {
-            0
-        };
-        let _ = mem.write(out_error, ret);
-    }
-
-    fn vulkan_register_blob(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        res_id: u32,
-        buf: wiggle::GuestPtr<u8>,
-        buf_len: GuestSize,
-    ) -> () {
-        let (linear_memory_ptr, linear_memory_len) = match mem {
-            wiggle::GuestMemory::Unshared(items) => (items.as_ptr(), items.len()),
-            wiggle::GuestMemory::Shared(unsafe_cells) => {
-                (unsafe_cells.as_ptr() as *const u8, unsafe_cells.len())
-            }
-            wiggle::GuestMemory::Dynamic(_) => todo!(),
-        };
-        if buf.offset() + buf_len > linear_memory_len as u32 {
-            return;
-        }
-        let buf_ptr = unsafe { linear_memory_ptr.add(buf.offset() as usize) };
-
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        virgl_context
-            .lock()
-            .unwrap()
-            .register_blob(res_id.into(), buf_ptr, buf_len as usize);
-    }
-
-    fn vulkan_create_blob(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        ptr: wiggle::GuestPtr<u8>,
-        size: GuestSize,
-        blob_id: u64,
-        out_res_id: wiggle::GuestPtr<u32>,
-    ) -> () {
-        let res_id = (|| {
-            let Some(virgl_context) = self.system.get_virgl_context() else {
-                return 0;
-            };
-            let virgl_context = virgl_context.lock().unwrap();
-            if blob_id != 0 {
-                // device memory blob: no guest buffer, just reference the blob id
-                return virgl_context.create_blob(std::ptr::null(), size as usize, blob_id);
-            }
-
-            let (linear_memory_ptr, linear_memory_len) = match mem {
-                wiggle::GuestMemory::Unshared(items) => (items.as_ptr(), items.len()),
-                wiggle::GuestMemory::Shared(unsafe_cells) => {
-                    (unsafe_cells.as_ptr() as *const u8, unsafe_cells.len())
-                }
-                wiggle::GuestMemory::Dynamic(_) => todo!(),
-            };
-            if ptr.offset() + size > linear_memory_len as u32 {
-                return 0;
-            }
-            let buf_ptr = unsafe { linear_memory_ptr.add(ptr.offset() as usize) };
-            virgl_context.create_blob(buf_ptr, size as usize, blob_id)
-        })();
-        let _ = mem.write(out_res_id, res_id);
-    }
-
-    fn vulkan_resource_unref(&mut self, _mem: &mut wiggle::GuestMemory<'_>, res_id: u32) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        virgl_context.lock().unwrap().resource_unref(res_id);
-    }
-
-    fn vulkan_sync_create(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        value: u64,
-        out_sync_id: wiggle::GuestPtr<u32>,
-    ) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let sync_id = virgl_context.lock().unwrap().sync_create(value);
-        let _ = mem.write(out_sync_id, sync_id);
-    }
-
-    fn vulkan_sync_unref(&mut self, _mem: &mut wiggle::GuestMemory<'_>, sync_id: u32) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        virgl_context.lock().unwrap().sync_unref(sync_id);
-    }
-
-    fn vulkan_sync_read(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        sync_id: u32,
-        out_value: wiggle::GuestPtr<u64>,
-    ) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let value = virgl_context.lock().unwrap().sync_read(sync_id);
-        let _ = mem.write(out_value, value);
-    }
-
-    fn vulkan_sync_write(&mut self, _mem: &mut wiggle::GuestMemory<'_>, sync_id: u32, value: u64) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        virgl_context.lock().unwrap().sync_write(sync_id, value);
-    }
-
-    fn vulkan_submit_cmd(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        headers: wiggle::GuestPtr<u8>,
-        headers_len: u32,
-        cmds: wiggle::GuestPtr<u8>,
-        cmds_len: u32,
-        syncs: wiggle::GuestPtr<u8>,
-        syncs_len: u32,
-    ) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let Ok(headers) = mem.as_cow(headers.as_array(headers_len)) else {
-            return;
-        };
-        let Ok(cmds) = mem.as_cow(cmds.as_array(cmds_len)) else {
-            return;
-        };
-        let Ok(syncs) = mem.as_cow(syncs.as_array(syncs_len)) else {
-            return;
-        };
-        let words = |bytes: &[u8]| -> Vec<u32> {
-            bytes
-                .chunks_exact(4)
-                .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
-                .collect()
-        };
-        virgl_context
-            .lock()
-            .unwrap()
-            .submit_cmd(&words(&headers), &words(&cmds), &words(&syncs));
-    }
-
-    fn vulkan_sync_wait(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        flags: u32,
-        timeout: u32,
-        syncs: wiggle::GuestPtr<u8>,
-        syncs_len: u32,
-        out_result: wiggle::GuestPtr<u32>,
-    ) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let Ok(syncs) = mem.as_cow(syncs.as_array(syncs_len)) else {
-            return;
-        };
-        let words: Vec<u32> = syncs
-            .chunks_exact(4)
-            .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
-            .collect();
-        let result = virgl_context
-            .lock()
-            .unwrap()
-            .sync_wait(flags, timeout, &words);
-        let _ = mem.write(out_result, result as u32);
-    }
-
-    fn vulkan_get_max_timeline_count(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        out_value: wiggle::GuestPtr<u32>,
-    ) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let value = virgl_context.lock().unwrap().get_max_timeline_count();
-        let _ = mem.write(out_value, value);
-    }
-
-    fn vulkan_get_capset(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        id: u32,
-        version: u32,
-        capset: wiggle::GuestPtr<u8>,
-        capset_size: u32,
-        out_size: wiggle::GuestPtr<u32>,
-    ) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let data = virgl_context.lock().unwrap().get_capset(id, version);
-        let size = data.len() as u32;
-        let _ = mem.copy_from_slice(
-            &data[..size.min(capset_size) as usize],
-            capset.as_array(size.min(capset_size)),
-        );
-        let _ = mem.write(out_size, size);
-    }
-
-    fn vulkan_context_init(&mut self, _mem: &mut wiggle::GuestMemory<'_>, capset_id: u32) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        virgl_context.lock().unwrap().context_init(capset_id);
-    }
-
-    fn vulkan_create_renderer(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        name: wiggle::GuestPtr<u8>,
-        name_len: u32,
-    ) {
-        let Some(virgl_context) = self.system.get_virgl_context() else {
-            return;
-        };
-        let Ok(name) = mem.as_cow(name.as_array(name_len)) else {
-            return;
-        };
-        virgl_context.lock().unwrap().create_renderer(&name);
-    }
-
-    // CPU rendering
-
-    fn present_pixels(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        window: GuestWindowHandle,
-        buff: wiggle::GuestPtr<u8>,
-        len: GuestSize,
-        out_error: wiggle::GuestPtr<u8>,
-    ) -> () {
-        let result: Result<(), u8> = (|| {
-            let Some(window) = self.get_window(window) else {
-                return Err(1);
-            };
-            let offset = buff.offset() as usize;
-            let size = len as usize;
-            let pixels = mem
-                .as_cow(GuestPtr::new((offset as u32, size as u32)))
-                .unwrap();
-            let (prefix, pixels, suffix) = unsafe { pixels.align_to::<u32>() };
-
-            // If there is a prefix or suffix, the slice wasn't perfectly aligned
-            // to the u32 boundary or the length wasn't a multiple of 4.
-            if !prefix.is_empty() || !suffix.is_empty() {
-                return Err(1);
-            }
-            let result = window.present_pixels(pixels);
-            // assert_eq!(result, Ok(()));
-            result.map_err(|_| 3)?;
-            Ok(())
-        })();
-        // assert_eq!(result, Ok(()));
-        match result {
-            Ok(_) => {
-                let _ = mem.write(out_error, 0);
-            }
-            Err(error_code) => {
-                let _ = mem.write(out_error, error_code);
-            }
-        }
-    }
-
-    fn get_os_family(
-        &mut self,
-        mem: &mut wiggle::GuestMemory<'_>,
-        out_os_family: wiggle::GuestPtr<u8>,
-    ) {
+impl<'a> generated::webrogue::gfx::device_info::Host for GFXCtxView<'a> {
+    fn get_os_family(&mut self) -> wasmtime::Result<u8> {
         let os_family = cfg_select! {
             target_os = "linux" => {
                 1
@@ -464,12 +243,270 @@ impl<System: ISystem + 'static> webrogue_gfx::WebrogueGfx for Interface<System> 
                 0
             }
         };
-        let _ = mem.write(out_os_family, os_family);
+        Ok(os_family)
     }
 }
 
-impl<System: ISystem + 'static> Interface<System> {
-    fn get_window(&self, window_handle: GuestWindowHandle) -> Option<Arc<System::Window>> {
-        self.windows.lock().unwrap().get(&window_handle).cloned()
+impl<'a> generated::webrogue::gfx::cpu_rendering::Host for GFXCtxView<'a> {
+    fn present_pixels(
+        &mut self,
+        window: wasmtime::component::Resource<Window>,
+        buf: Vec<u32>,
+    ) -> wasmtime::Result<()> {
+        self.table
+            .get(&window)?
+            .0
+            .present_pixels(&buf)
+            .map_err(wasmtime::Error::from_anyhow)?;
+        Ok(())
+    }
+}
+
+impl<'a> generated::webrogue::gfx::vulkan::Host for GFXCtxView<'a> {
+    fn check_presence(&mut self) -> wasmtime::Result<bool> {
+        Ok(self.ctx.0.get_virgl_context().is_some())
+    }
+}
+
+impl<'a> generated::webrogue::gfx::vulkan::HostRenderer for GFXCtxView<'a> {
+    fn new(
+        &mut self,
+        name: Vec<u8>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<VulkanRenderer>> {
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        let id = virgl_context.lock().unwrap().create_renderer(&name);
+        if id == 0 {
+            wasmtime::bail!("failed to create Vulkan renderer")
+        }
+        Ok(self.table.push(VulkanRenderer { id })?)
+    }
+
+    fn create_shmem(
+        &mut self,
+        _self_: wasmtime::component::Resource<VulkanRenderer>,
+        _buf: Vec<u8>,
+    ) -> std::result::Result<u32, wasmtime::Error> {
+        wasmtime::bail!(
+            "renderer.create-shmem must use the custom lifting binding installed by add_to_linker"
+        )
+    }
+
+    fn register_blob(
+        &mut self,
+        _self_: wasmtime::component::Resource<VulkanRenderer>,
+        _res_id: u32,
+        _buf: Vec<u8>,
+    ) -> wasmtime::Result<()> {
+        wasmtime::bail!(
+            "renderer.register-blob must use the custom lifting binding installed by add_to_linker"
+        )
+    }
+
+    fn drop(&mut self, rep: wasmtime::component::Resource<VulkanRenderer>) -> wasmtime::Result<()> {
+        let renderer = self.table.delete(rep)?;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        virgl_context.lock().unwrap().destroy_renderer(renderer.id);
+        Ok(())
+    }
+
+    fn resource_unref(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        res_id: u32,
+    ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        virgl_context
+            .lock()
+            .unwrap()
+            .resource_unref(renderer_id, res_id);
+        Ok(())
+    }
+
+    fn create_sync(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        value: u64,
+    ) -> wasmtime::Result<u32> {
+        let renderer_id = self.table.get(&self_)?.id;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        let sync_id = virgl_context
+            .lock()
+            .unwrap()
+            .sync_create(renderer_id, value);
+        Ok(sync_id)
+    }
+
+    fn sync_unref(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        sync_id: u32,
+    ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        virgl_context
+            .lock()
+            .unwrap()
+            .sync_unref(renderer_id, sync_id);
+        Ok(())
+    }
+
+    fn sync_read(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        sync_id: u32,
+    ) -> wasmtime::Result<u64> {
+        let renderer_id = self.table.get(&self_)?.id;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        let value = virgl_context
+            .lock()
+            .unwrap()
+            .sync_read(renderer_id, sync_id);
+        Ok(value)
+    }
+
+    fn sync_write(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        sync_id: u32,
+        value: u64,
+    ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        virgl_context
+            .lock()
+            .unwrap()
+            .sync_write(renderer_id, sync_id, value);
+        Ok(())
+    }
+
+    fn submit_cmd(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        headers: Vec<u8>,
+        cmds: Vec<u8>,
+        syncs: Vec<u8>,
+    ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        let words = |bytes: &[u8]| -> Vec<u32> {
+            bytes
+                .chunks_exact(4)
+                .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
+                .collect()
+        };
+        virgl_context.lock().unwrap().submit_cmd(
+            renderer_id,
+            &words(&headers),
+            &words(&cmds),
+            &words(&syncs),
+        );
+        Ok(())
+    }
+
+    fn sync_wait(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        flags: u32,
+        timeout: u32,
+        syncs: Vec<u32>,
+    ) -> wasmtime::Result<i32> {
+        let renderer_id = self.table.get(&self_)?.id;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        let result = virgl_context
+            .lock()
+            .unwrap()
+            .sync_wait(renderer_id, flags, timeout, &syncs);
+        Ok(result)
+    }
+
+    fn get_max_timeline_count(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+    ) -> wasmtime::Result<u32> {
+        self.table.get(&self_)?;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        let result = virgl_context.lock().unwrap().get_max_timeline_count();
+        Ok(result)
+    }
+
+    fn get_capset(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        id: u32,
+        version: u32,
+    ) -> wasmtime::Result<Vec<u8>> {
+        self.table.get(&self_)?;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+
+        let data = virgl_context.lock().unwrap().get_capset(id, version);
+        Ok(data)
+    }
+
+    fn context_init(
+        &mut self,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        capset_id: u32,
+    ) -> wasmtime::Result<()> {
+        let renderer_id = self.table.get(&self_)?.id;
+        let Some(virgl_context) = self.ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        virgl_context
+            .lock()
+            .unwrap()
+            .context_init(renderer_id, capset_id);
+        Ok(())
+    }
+}
+
+impl<T> generated::webrogue::gfx::vulkan::HostRendererWithStore<T> for GFX {
+    fn create_device_memory_blob(
+        mut host: wasmtime::component::Access<T, Self>,
+        self_: wasmtime::component::Resource<VulkanRenderer>,
+        blob_id: u64,
+        size: u64,
+    ) -> wasmtime::Result<u32> {
+        let Some(virgl_context) = host.get().ctx.0.get_virgl_context() else {
+            wasmtime::bail!("get_virgl_context() failed")
+        };
+        let renderer_id = host.get().table.get(&self_)?.id;
+
+        wasmtime::ensure!(
+            blob_id != 0,
+            "create_device_memory_blob_with_memory: blob_id can't be zero"
+        );
+        wasmtime::ensure!(
+            size != 0,
+            "create_device_memory_blob_with_memory: size can't be zero"
+        );
+        let virgl_context = virgl_context.lock().unwrap();
+        let size = size.try_into().map_err(|_| {
+            wasmtime::format_err!("create_device_memory_blob_with_memory: error converting size")
+        })?;
+
+        Ok(virgl_context.create_blob(renderer_id, std::ptr::null(), size, blob_id))
     }
 }

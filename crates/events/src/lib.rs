@@ -562,7 +562,6 @@ fn build() -> EventsBuilder {
         .field("down", Bool)
         .enum_field("named key", named_key_enum)
         .enum_field("physical key", physical_key_enum)
-        .field("text length", U8)
         .bytes_field("text", 32);
 
     builder.add_event("quit", 4);
