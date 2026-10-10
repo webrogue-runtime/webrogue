@@ -68,7 +68,7 @@ jobs:
       if: startsWith(matrix.os, 'windows') == false
       run: |
         COMPONENTS=${{ matrix.components }} python3 scripts/cargo_check.py
-        cargo test --package webrogue-wasip1
+        cargo test --package webrogue-common
 
     - name: Run test scripts (on Windows)
       if: startsWith(matrix.os, 'windows') == true
@@ -82,7 +82,7 @@ jobs:
         set CC=clang-cl
         set COMPONENTS=${{ matrix.components }}
         python3 scripts\cargo_check.py || exit /b 1
-        cargo test --package webrogue-wasip1 || exit /b 1
+        cargo test --package webrogue-common || exit /b 1
 
   typos:
     runs-on: ubuntu-24.04
