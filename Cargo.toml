@@ -15,7 +15,7 @@ doc = false
 [features]
 default = ["run", "compile", "hub", "llvm"]
 full = ["run", "compile", "hub", "llvm", "appended_artifacts"]
-internal = ["webrogue-cli/internal"]
+internal-run = ["webrogue-cli/internal-run"]
 run = ["webrogue-cli/run"]
 compile = ["webrogue-cli/compile"]
 hub = ["webrogue-cli/hub"]

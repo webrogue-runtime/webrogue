@@ -1,16 +1,16 @@
-#[cfg(feature = "run")]
+#[cfg(feature = "internal-run")]
 use std::path::PathBuf;
-#[cfg(feature = "run")]
+#[cfg(feature = "internal-run")]
 use std::sync::{Arc, Mutex};
 
 use clap::Subcommand;
-#[cfg(feature = "run")]
+#[cfg(feature = "internal-run")]
 use webrogue_gfx::{AbstractSystem, AbstractWindow, EventSink, System, Window};
 
 #[derive(Subcommand, Debug)]
 pub enum InternalCommand {
     /// Run a WRAPP file without creating a platform window.
-    #[cfg(feature = "run")]
+    #[cfg(feature = "internal-run")]
     Run {
         /// Path to a WRAPP file or webrogue.json configuration.
         path: PathBuf,
@@ -32,7 +32,7 @@ pub enum InternalCommand {
 impl InternalCommand {
     pub fn run(self) -> anyhow::Result<()> {
         match self {
-            #[cfg(feature = "run")]
+            #[cfg(feature = "internal-run")]
             Self::Run {
                 path,
                 persistent_dir,
@@ -72,14 +72,14 @@ impl InternalCommand {
     }
 }
 
-#[cfg(feature = "run")]
+#[cfg(feature = "internal-run")]
 struct HeadlessSystem {
     width: u32,
     height: u32,
     last_frame: Arc<Mutex<Option<Vec<u32>>>>,
 }
 
-#[cfg(feature = "run")]
+#[cfg(feature = "internal-run")]
 impl AbstractSystem for HeadlessSystem {
     fn make_window(&self) -> Window {
         Window::new(Arc::new(HeadlessWindow {
@@ -97,7 +97,7 @@ impl AbstractSystem for HeadlessSystem {
     }
 }
 
-#[cfg(feature = "run")]
+#[cfg(feature = "internal-run")]
 struct HeadlessWindow {
     width: u32,
     height: u32,
@@ -105,7 +105,7 @@ struct HeadlessWindow {
     events: EventSink,
 }
 
-#[cfg(feature = "run")]
+#[cfg(feature = "internal-run")]
 impl AbstractWindow for HeadlessWindow {
     fn get_size(&self) -> (u32, u32) {
         (self.width, self.height)
@@ -144,7 +144,7 @@ impl AbstractWindow for HeadlessWindow {
     }
 }
 
-#[cfg(feature = "run")]
+#[cfg(feature = "internal-run")]
 fn write_ppm(
     path: &std::path::Path,
     width: u32,

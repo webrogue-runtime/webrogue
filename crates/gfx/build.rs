@@ -58,6 +58,7 @@ fn link_moltenvk() {
             .display()
     );
     println!("cargo:rustc-link-lib=static=MoltenVK");
+    println!("cargo:rustc-link-lib=dylib=c++");
     println!("cargo:rustc-link-lib=framework=IOKit");
     println!("cargo:rustc-link-lib=framework=IOSurface");
     println!("cargo:rustc-link-lib=framework=Metal");

@@ -39,6 +39,13 @@ llvm = ["webrogue-aot-compiler/llvm"]
 appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
 __rustls = ["dep:rustls"]
 internal = []
+internal-run = [
+    "internal",
+    "dep:webrogue-wasmtime",
+    "dep:webrogue-gfx",
+    "dep:webrogue-virgl",
+    "webrogue-virgl/lib-stub",
+]
 
 [dependencies]
 anyhow = { workspace = true }

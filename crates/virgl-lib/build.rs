@@ -362,7 +362,7 @@ fn main() {
             "external/virglrenderer/server/render_common.c",
         ]);
     };
-    #[cfg(feature = "stub")]
+    #[cfg(not(feature = "impl"))]
     {
         sources.push("$CRATE/webrogue_virgl_stub.c");
     }
@@ -424,6 +424,7 @@ fn main() {
         )
         .clang_args(bindgen_args);
 
+    #[cfg(not(target_env = "musl"))]
     if is_android {
         let mut api_level = "".to_string();
         std::fs::File::open(
@@ -441,9 +442,11 @@ fn main() {
 
         // Construct the versioned triple (e.g., aarch64-linux-android30)
         let versioned_target = format!("--target={}{}", target, api_level);
+
         bindgen_builder = bindgen_builder.clang_arg(versioned_target);
     }
 
+    #[cfg(not(target_env = "musl"))]
     bindgen_builder.allowlist_function(
             "webrogue.*|vkr_get_capset|vkr_renderer_create_context|vkr_renderer_destroy_context|vkr_renderer_fini|vkr_renderer_submit_cmd|vkr_renderer_submit_fence|vkr_renderer_create_resource|vkr_renderer_destroy_resource",
         )

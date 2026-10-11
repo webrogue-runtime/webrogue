@@ -1,4 +1,4 @@
-#![cfg(all(feature = "internal", feature = "run"))]
+#![cfg(feature = "internal-run")]
 
 use std::process::{Command, Output};
 
