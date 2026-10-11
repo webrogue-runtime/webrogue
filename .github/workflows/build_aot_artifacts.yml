@@ -1,0 +1,216 @@
+name: Build Webrogue AOT artifacts
+
+on:
+  workflow_call:
+
+jobs:
+  linux_artifacts:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+        - artifact: Artifacts-Linux-GNU-x86_64
+          runner: ubuntu-24.04
+          libc: gnu
+        - artifact: Artifacts-Linux-GNU-aarch64
+          runner: ubuntu-24.04-arm
+          libc: gnu
+        - artifact: Artifacts-Linux-MUSL-x86_64
+          runner: ubuntu-24.04
+          libc: musl
+        - artifact: Artifacts-Linux-MUSL-aarch64
+          runner: ubuntu-24.04-arm
+          libc: musl
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/virglrenderer external/zstd-rs webrogue-sdk
+        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
+
+    - name: Build AOT artifacts
+      run: COMPONENTS=template LIBCS=${{ matrix.libc }} sh linux/build.sh
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: ${{ matrix.artifact }}
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts
+
+  windows_artifacts:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+        - runner: windows-11-arm
+          rust_arch: x86_64
+          win_arch: x64
+          artifact: Artifacts-Windows-x86_64
+        - runner: windows-11-arm
+          rust_arch: aarch64
+          win_arch: arm64
+          artifact: Artifacts-Windows-aarch64
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/virglrenderer external/zstd-rs
+        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
+
+    - name: Setup Python
+      run: python3 -m pip install requests
+
+    - name: Install Rust target
+      run: rustup target add ${{ matrix.rust_arch }}-pc-windows-msvc
+
+    - name: Build AOT artifacts
+      shell: cmd
+      run: |
+        for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
+          call "%%i"
+        )
+        python3 windows/msvc/build_template.py ${{ matrix.rust_arch }} ${{ matrix.win_arch }} || exit /b 1
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: ${{ matrix.artifact }}
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts
+
+  android_artifacts:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/virglrenderer external/zstd-rs webrogue-sdk
+        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
+
+    - name: Setup Rust
+      run: rustup target add aarch64-linux-android
+
+    - name: Build AOT artifacts
+      run: |
+        sh android/runtime/build_native_code.sh aot
+        sh android/template/build_template.sh
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: Artifacts-Android
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts
+
+  apple_artifacts:
+    runs-on: macos-26
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/virglrenderer external/zstd-rs
+        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
+
+    - name: Install Xcodegen
+      run: brew install xcodegen
+
+    - name: Setup Rust
+      run: |
+        rustup target add x86_64-apple-darwin
+        rustup target add x86_64-apple-ios
+        rustup target add aarch64-apple-darwin
+        rustup target add aarch64-apple-ios
+        rustup target add aarch64-apple-ios-sim
+
+    - name: Build AOT artifacts
+      run: sh apple/template/build_template.sh
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: Artifacts-Apple
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts
+
+  combine_artifacts:
+    runs-on: ubuntu-24.04
+    needs:
+    - linux_artifacts
+    - windows_artifacts
+    - android_artifacts
+    - apple_artifacts
+
+    steps:
+    - uses: actions/download-artifact@v8
+      with:
+        name: Artifacts-Linux-GNU-x86_64
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: Artifacts-Linux-GNU-aarch64
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: Artifacts-Linux-MUSL-x86_64
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: Artifacts-Linux-MUSL-aarch64
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: Artifacts-Windows-x86_64
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: Artifacts-Windows-aarch64
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: Artifacts-Android
+        path: aot_artifacts
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: Artifacts-Apple
+        path: aot_artifacts
+
+    - name: Archive artifacts
+      run: |
+        cd aot_artifacts && zip -r ../aot_artifacts.zip \
+          android_gradle \
+          x86_64-linux-gnu aarch64-linux-gnu \
+          x86_64-linux-musl aarch64-linux-musl \
+          x86_64-windows-msvc \
+          && cd ..
+        cp aot_artifacts.zip aot_artifacts_macos.zip
+        cd aot_artifacts && zip -r ../aot_artifacts_macos.zip apple_xcode && cd ..
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: AOT-Artifacts
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts.zip
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: AOT-Artifacts-macOS
+        retention-days: 1
+        if-no-files-found: error
+        path: aot_artifacts_macos.zip

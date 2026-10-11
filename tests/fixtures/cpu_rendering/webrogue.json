@@ -1,0 +1,10 @@
+{
+    "name": "Webrogue CPU rendering golden test",
+    "id": "io.github.webrogue-runtime.tests.cpu-rendering",
+    "version": "0.1.0",
+    "main": "main.wasm",
+    "graphics_api": {
+        "vulkan": "disabled",
+        "cpu_rendering": "required"
+    }
+}

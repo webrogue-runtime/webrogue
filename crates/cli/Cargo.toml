@@ -38,6 +38,7 @@ hub = [
 llvm = ["webrogue-aot-compiler/llvm"]
 appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
 __rustls = ["dep:rustls"]
+internal = []
 
 [dependencies]
 anyhow = { workspace = true }

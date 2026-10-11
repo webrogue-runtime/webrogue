@@ -1,0 +1,84 @@
+name: AOT integration tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  aot_artifacts:
+    uses: ./.github/workflows/build_aot_artifacts.yml
+
+  aot_stdio:
+    needs: aot_artifacts
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - runner: ubuntu-24.04
+          libc: gnu
+          arch: x86_64
+        - runner: ubuntu-24.04-arm
+          libc: gnu
+          arch: aarch64
+        - runner: ubuntu-24.04
+          libc: musl
+          arch: x86_64
+        - runner: ubuntu-24.04-arm
+          libc: musl
+          arch: aarch64
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/zstd-rs
+        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: AOT-Artifacts
+        path: .
+
+    - uses: Swatinem/rust-cache@v2
+      if: matrix.libc == 'gnu'
+      with:
+        shared-key: ${{ matrix.runner }}-aot-test
+
+    - name: Install Xvfb
+      run: sudo apt-get update && sudo apt-get install -y xvfb
+
+    - name: Run native glibc AOT test
+      if: matrix.libc == 'gnu'
+      run: |
+        test "$(uname -m)" = "${{ matrix.arch }}"
+        xvfb-run -a cargo test --locked --no-default-features --features compile,llvm --test aot_stdio
+
+    - name: Run native musl AOT test
+      if: matrix.libc == 'musl'
+      run: |
+        Xvfb :99 -screen 0 1024x768x24 -ac &
+        xvfb_pid=$!
+        trap 'kill "$xvfb_pid" 2>/dev/null || true' EXIT
+        for attempt in $(seq 1 50); do
+          test -S /tmp/.X11-unix/X99 && break
+          sleep 0.1
+        done
+
+        docker run --rm \
+          --volume "$GITHUB_WORKSPACE:/workspace" \
+          --volume /tmp/.X11-unix:/tmp/.X11-unix \
+          --workdir /workspace \
+          --env DISPLAY=:99 \
+          rust:1.90-alpine3.22 \
+          sh -euxc '
+            test "$(uname -m)" = "${{ matrix.arch }}"
+            apk add --no-cache build-base ca-certificates cmake git libgcc libstdc++ pkgconf zlib \
+              libx11 libxrandr libxcursor libxinerama libxi libxfixes libxext libxcb \
+              libxkbcommon libxkbcommon-x11 libxscrnsaver
+            cargo test --locked --no-default-features --features compile,llvm --test aot_stdio
+          '

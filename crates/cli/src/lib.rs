@@ -5,6 +5,8 @@ use clap::Parser;
 mod android_gen_key;
 #[cfg(feature = "hub")]
 mod hub;
+#[cfg(feature = "internal")]
+mod internal;
 mod licenses;
 #[cfg(feature = "run")]
 mod run;
@@ -44,6 +46,12 @@ enum Cli {
         #[command(subcommand)]
         command: crate::hub::HubCommand,
     },
+    #[cfg(feature = "internal")]
+    #[command(hide = true)]
+    Internal {
+        #[command(subcommand)]
+        command: crate::internal::InternalCommand,
+    },
     /// Show licenses of Webrogue CLI and of it's dependencies and embedded resources
     Licenses {
         #[command(flatten)]
@@ -69,12 +77,22 @@ enum Cli {
 }
 
 pub fn main() -> anyhow::Result<()> {
+    let args = Cli::parse();
     #[cfg(debug_assertions)]
-    tracing_subscriber::fmt().init();
+    {
+        #[cfg(feature = "internal")]
+        let is_internal = matches!(&args, Cli::Internal { .. });
+        #[cfg(not(feature = "internal"))]
+        let is_internal = false;
+
+        // Keep host diagnostics out of the guest's captured stderr in tests.
+        if !is_internal {
+            tracing_subscriber::fmt().init();
+        }
+    }
     #[cfg(feature = "__rustls")]
     let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
 
-    let args = Cli::parse();
     match args {
         #[cfg(feature = "run")]
         Cli::Run { command } => {
@@ -100,6 +118,8 @@ pub fn main() -> anyhow::Result<()> {
             command.run()?;
             Ok(())
         }
+        #[cfg(feature = "internal")]
+        Cli::Internal { command } => command.run(),
         Cli::Licenses { command } => {
             command.run()?;
             Ok(())

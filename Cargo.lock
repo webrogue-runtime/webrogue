@@ -8142,6 +8142,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
+ "tempfile",
  "webrogue-cli",
 ]
 
