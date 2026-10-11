@@ -66,3 +66,27 @@ impl Color {
         Ok(Self { red, green, blue })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Color;
+
+    #[test]
+    fn parses_rgb_hex_color() {
+        assert_eq!(
+            Color::parse("#aBcD09").unwrap(),
+            Color {
+                red: 0xab,
+                green: 0xcd,
+                blue: 0x09,
+            }
+        );
+    }
+
+    #[test]
+    fn rejects_malformed_rgb_hex_colors() {
+        for color in ["123456", "#12345", "#GG0000"] {
+            assert!(Color::parse(color).is_err(), "accepted {color:?}");
+        }
+    }
+}

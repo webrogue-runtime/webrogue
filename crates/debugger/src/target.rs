@@ -386,7 +386,7 @@ impl gdbstub::target::ext::base::single_register_access::SingleRegisterAccess<()
 }
 
 impl gdbstub::target::ext::base::singlethread::SingleThreadResume for Wasm32Target {
-    fn resume(&mut self, signal: Option<gdbstub::common::Signal>) -> Result<(), Self::Error> {
+    fn resume(&mut self, _signal: Option<gdbstub::common::Signal>) -> Result<(), Self::Error> {
         let State::Paused(state) = &self.state else {
             todo!();
         };
@@ -410,7 +410,7 @@ impl gdbstub::target::ext::base::singlethread::SingleThreadResume for Wasm32Targ
 }
 
 impl gdbstub::target::ext::base::singlethread::SingleThreadSingleStep for Wasm32Target {
-    fn step(&mut self, signal: Option<gdbstub::common::Signal>) -> Result<(), Self::Error> {
+    fn step(&mut self, _signal: Option<gdbstub::common::Signal>) -> Result<(), Self::Error> {
         let State::Paused(state) = &mut self.state else {
             todo!();
         };

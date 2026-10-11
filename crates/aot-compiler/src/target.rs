@@ -129,14 +129,16 @@ impl Target {
         use Target::*;
         match (self, is_pic) {
             (
-                X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL | x86_64AppleDarwin | x86_64WindowsGNU
-                | x86_64WindowsMSVC | Aarch64WindowsMSVC | X86_64LinuxAndroid,
+                X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL
+                | x86_64AppleDarwin | x86_64WindowsGNU | x86_64WindowsMSVC | Aarch64WindowsMSVC
+                | X86_64LinuxAndroid,
                 false,
             ) => (-4, Relative, Generic, 32),
             (
-                X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL | x86_64AppleDarwin | X86_64AppleIOSSIM
-                | ARM64AppleDarwin | ARM64AppleIOSSIM | ARM64AppleIOS | x86_64WindowsGNU
-                | x86_64WindowsMSVC | Aarch64WindowsMSVC | ARM64LinuxAndroid,
+                X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL
+                | x86_64AppleDarwin | X86_64AppleIOSSIM | ARM64AppleDarwin | ARM64AppleIOSSIM
+                | ARM64AppleIOS | x86_64WindowsGNU | x86_64WindowsMSVC | Aarch64WindowsMSVC
+                | ARM64LinuxAndroid,
                 true,
             ) => (-4, GotRelative, Generic, 32),
             _ => unimplemented!("target: {}, is_pic: {}", self.name(), is_pic),

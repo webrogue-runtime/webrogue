@@ -1,12 +1,7 @@
-use std::{
-    collections::{BTreeMap, HashSet},
-    future::Future,
-    pin::Pin,
-    time::Duration,
-};
+use std::{collections::HashSet, future::Future, pin::Pin, time::Duration};
 
 use anyhow::Context as _;
-use gdbstub_arch::wasm::addr::{WasmAddr, WasmAddrType};
+use gdbstub_arch::wasm::addr::WasmAddr;
 use wasmtime::{AsContextMut as _, ModulePC, Store};
 use wasmtime_internal_debugger::DebugRunResult;
 use webrogue_common::get_safe_range;

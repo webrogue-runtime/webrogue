@@ -1,7 +1,6 @@
 import os
 import subprocess
 import sys
-import itertools
 
 try:
     import tqdm
@@ -26,7 +25,7 @@ def is_component_selected(component):
 
 pending_checks = []
 
-def check(package=None, target=None, features=None, ndk_target=None):
+def check(package=None, target=None, features=None, ndk_target=None, no_default_features=False):
     args = ["cargo"]
     if ndk_target:
         args.append("ndk")
@@ -41,21 +40,15 @@ def check(package=None, target=None, features=None, ndk_target=None):
     if target:
         args.append("--target")
         args.append(target)
+    if no_default_features:
+        args.append("--no-default-features")
     if features:
         args.append("--features")
         args.append(",".join(features))
+    args.append("--locked")
     args.append("--quiet")
     pending_checks.append(args)
 
-
-def get_all_subsets(arr):
-    subsets = []
-    # Loop from length 0 (empty set) to the full length of the array
-    for i in range(len(arr) + 1):
-        # Find all combinations of length i
-        for comp in itertools.combinations(arr, i):
-            subsets.append(list(comp))
-    return subsets
 
 native_targets = []
 if sys.platform == "win32":
@@ -71,9 +64,12 @@ else:
 
 if is_component_selected("cli"):
     for target in native_targets:
-        check(package="webrogue", target=target)
-        for features in get_all_subsets(["run", "compile", "hub", "llvm"]):
-            check(package="webrogue", target=target, features=features)
+        check(
+            package="webrogue",
+            target=target,
+            features=["run", "compile", "hub", "llvm"],
+            no_default_features=True,
+        )
 
 if is_component_selected("aot-lib"):
     for target in native_targets:

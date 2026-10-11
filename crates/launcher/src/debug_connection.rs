@@ -1,4 +1,4 @@
-use std::{ sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use futures_util::{future::try_join, SinkExt, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
@@ -63,7 +63,7 @@ impl DebugConnection {
                         tracing::info!("Connecting to WebSocket: {}", url);
                         let (ws_stream, _) = connect_async(url).await?;
                         tracing::info!("WebSocket connected, splitting streams");
-                        let (mut write, mut read) = ws_stream.split(); 
+                        let (mut write, mut read) = ws_stream.split();
 
                         let command = ConnectDeviceWsCommand {
                             name: Some(device_name.clone()),

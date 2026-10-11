@@ -98,7 +98,6 @@ webrogue-gfx-winit = { path = "crates/gfx-winit" }
 webrogue-virgl = { path = "crates/virgl" }
 webrogue-virgl-lib  = { path = "crates/virgl-lib" }
 webrogue-lld = { path = "crates/lld" }
-webrogue-wasi = { path = "crates/wasi" }
 webrogue-wrapp = { path = "crates/wrapp" }
 webrogue-launcher = { path = "crates/launcher" }
 webrogue-launcher-server-openapi = { path = "crates/launcher/server-openapi", default-features = false }

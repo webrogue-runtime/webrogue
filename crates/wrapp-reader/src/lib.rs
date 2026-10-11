@@ -1,4 +1,4 @@
-use std::{fs::File, io::Cursor};
+use std::io::Cursor;
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use image::DynamicImage;
