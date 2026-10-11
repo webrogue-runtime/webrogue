@@ -8025,6 +8025,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-environ",
  "webrogue-cli-goodies",
+ "webrogue-common",
  "webrogue-icons",
  "webrogue-lld",
  "webrogue-vfs",

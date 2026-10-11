@@ -8,12 +8,13 @@ edition.workspace = true
 [features]
 default = []
 llvm = ["dep:webrogue-lld", "webrogue-lld/link-llvm"]
-appended_artifacts = []
+appended_artifacts = ["dep:webrogue-common"]
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 webrogue-lld = { workspace = true, optional = true }
+webrogue-common = { workspace = true, optional = true }
 webrogue-icons = { workspace = true, features = ['rayon'] }
 wasmtime = { workspace = true, default-features = false, features = ["cranelift", "all-arch", "component-model-async", "parallel-compilation", "cache", "anyhow", "gc-drc"] }
 webrogue-vfs = { workspace = true, features = ["archive"] }

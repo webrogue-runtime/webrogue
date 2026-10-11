@@ -17,7 +17,7 @@ impl Artifacts {
             current_file.read_exact(&mut wrapp_size_bytes)?;
             let wrapp_size = u64::from_le_bytes(wrapp_size_bytes);
 
-            let reader = webrogue_vfs::RangeReader::new(
+            let reader = webrogue_common::RangeReader::new(
                 current_file,
                 file_size - wrapp_size - 8,
                 wrapp_size,
