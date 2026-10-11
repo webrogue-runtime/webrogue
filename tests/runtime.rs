@@ -4,7 +4,6 @@ use std::process::{Command, Output};
 
 const CPU_RENDERING_WIDTH: u32 = 32;
 const CPU_RENDERING_HEIGHT: u32 = 24;
-const EXPECTED_RESOURCE: &[u8] = b"bundled asset payload\n";
 
 #[test]
 fn runner_forwards_guest_stdout_and_stderr() {
@@ -121,7 +120,7 @@ fn run_app(app: &std::path::Path, persistent_dir: &std::path::Path) -> Output {
 
 fn assert_resource_output(output: &Output, operation: &str) {
     assert_success(output, operation);
-    assert_eq!(output.stdout, EXPECTED_RESOURCE);
+    assert_eq!(output.stdout, b"bundled asset payload\n");
     assert!(output.stderr.is_empty(), "unexpected guest stderr");
 }
 

@@ -16,6 +16,11 @@ int main(void) {
     }
   }
 
+  if (fputc('\n', stdout) == EOF) {
+    fclose(resource);
+    return 5;
+  }
+
   if (ferror(resource)) {
     fclose(resource);
     return 3;

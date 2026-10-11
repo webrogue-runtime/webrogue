@@ -59,7 +59,13 @@ fn link_moltenvk() {
     );
     println!("cargo:rustc-link-lib=static=MoltenVK");
     println!("cargo:rustc-link-lib=dylib=c++");
+    println!("cargo:rustc-link-lib=dylib=objc");
+    println!("cargo:rustc-link-lib=framework=AppKit");
+    println!("cargo:rustc-link-lib=framework=CoreFoundation");
+    println!("cargo:rustc-link-lib=framework=CoreGraphics");
+    println!("cargo:rustc-link-lib=framework=Foundation");
     println!("cargo:rustc-link-lib=framework=IOKit");
     println!("cargo:rustc-link-lib=framework=IOSurface");
     println!("cargo:rustc-link-lib=framework=Metal");
+    println!("cargo:rustc-link-lib=framework=QuartzCore");
 }
