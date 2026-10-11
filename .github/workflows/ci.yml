@@ -72,7 +72,7 @@ jobs:
 
     - uses: Swatinem/rust-cache@v2
       with:
-        shared-key: ${{ matrix.os }}-${{ matrix.components }}
+        shared-key: ${{ matrix.os }}-${{ strategy.job-index }}
 
     - name: Run check scripts (on UNIX)
       if: startsWith(matrix.os, 'windows') == false
