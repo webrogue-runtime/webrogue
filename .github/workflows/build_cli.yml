@@ -62,7 +62,7 @@ jobs:
   
     - name: Build
       run: |
-        cargo build --profile=cli --target=aarch64-apple-darwin --features=full
+        cargo build --no-default-features --profile=cli --target=aarch64-apple-darwin --features=full
 
     - uses: actions/upload-artifact@v7
       with:
@@ -88,7 +88,7 @@ jobs:
   
     - name: Build
       run: |
-        cargo build --profile=cli --target=x86_64-apple-darwin --features=full
+        cargo build --no-default-features --profile=cli --target=x86_64-apple-darwin --features=full
 
     - uses: actions/upload-artifact@v7
       with:
@@ -130,7 +130,7 @@ jobs:
         REM gfxstream doesn't seem to support MSVC
         set CC=clang-cl
         set CXX=clang-cl
-        cargo build --target=${{ matrix.arch }}-pc-windows-msvc --features=full --profile cli  || exit /b 1
+        cargo build --no-default-features --target=${{ matrix.arch }}-pc-windows-msvc --features=full --profile cli  || exit /b 1
 
     - uses: actions/upload-artifact@v7
       with:
