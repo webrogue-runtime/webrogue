@@ -115,7 +115,7 @@ jobs:
       run: cargo test --locked --package webrogue-common --package webrogue-icons
 
   typos:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
 
     steps:

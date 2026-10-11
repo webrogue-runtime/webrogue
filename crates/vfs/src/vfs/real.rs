@@ -132,7 +132,9 @@ impl RealVFS {
         };
         let file = File::open(&real_path).map_err(|_| VFSError::NotExists)?;
         return Ok(RealFD {
+            #[cfg(feature = "wasmtime")]
             vfs: self.clone(),
+            #[cfg(feature = "wasmtime")]
             vfs_path: path.to_string(),
             file: Arc::new(Mutex::new(file)),
         });
