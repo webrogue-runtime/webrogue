@@ -6,7 +6,9 @@ on:
 jobs:
   linux_artifacts:
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
     strategy:
+      fail-fast: false
       matrix:
         include:
         - artifact: Artifacts-Linux-GNU-x86_64
