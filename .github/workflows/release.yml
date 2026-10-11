@@ -12,11 +12,14 @@ jobs:
   build:
     uses: ./.github/workflows/build_cli.yml
 
-  aot_artifacts:
-    uses: ./.github/workflows/build_aot_artifacts.yml
+  aot_integration:
+    uses: ./.github/workflows/aot_integration.yml
+
+  ci:
+    uses: ./.github/workflows/ci.yml
 
   release:
-    needs: [ build, aot_artifacts ]
+    needs: [ build, aot_integration, ci ]
     runs-on: ubuntu-slim
     permissions:
       contents: write

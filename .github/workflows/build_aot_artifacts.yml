@@ -44,7 +44,9 @@ jobs:
 
   windows_artifacts:
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
     strategy:
+      fail-fast: false
       matrix:
         include:
         - runner: windows-11-arm
@@ -144,7 +146,7 @@ jobs:
         path: aot_artifacts
 
   combine_artifacts:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs:
     - linux_artifacts
     - windows_artifacts
@@ -198,7 +200,7 @@ jobs:
           android_gradle \
           x86_64-linux-gnu aarch64-linux-gnu \
           x86_64-linux-musl aarch64-linux-musl \
-          x86_64-windows-msvc \
+          x86_64-windows-msvc aarch64-windows-msvc \
           && cd ..
         cp aot_artifacts.zip aot_artifacts_macos.zip
         cd aot_artifacts && zip -r ../aot_artifacts_macos.zip apple_xcode && cd ..
