@@ -83,10 +83,10 @@ impl Target {
         object::Architecture,
         object::Endianness,
     ) {
+        use Target::*;
         use object::Architecture::*;
         use object::BinaryFormat::*;
         use object::Endianness::*;
-        use Target::*;
         match self {
             X86_64LinuxGNU => (Elf, X86_64, Little),
             X86_64LinuxMUSL => (Elf, X86_64, Little),
@@ -124,19 +124,21 @@ impl Target {
         &self,
         is_pic: bool,
     ) -> (i64, object::RelocationKind, object::RelocationEncoding, u8) {
+        use Target::*;
         use object::RelocationEncoding::*;
         use object::RelocationKind::*;
-        use Target::*;
         match (self, is_pic) {
             (
-                X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL | x86_64AppleDarwin | x86_64WindowsGNU
-                | x86_64WindowsMSVC | Aarch64WindowsMSVC | X86_64LinuxAndroid,
+                X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL
+                | x86_64AppleDarwin | x86_64WindowsGNU | x86_64WindowsMSVC | Aarch64WindowsMSVC
+                | X86_64LinuxAndroid,
                 false,
             ) => (-4, Relative, Generic, 32),
             (
-                X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL | x86_64AppleDarwin | X86_64AppleIOSSIM
-                | ARM64AppleDarwin | ARM64AppleIOSSIM | ARM64AppleIOS | x86_64WindowsGNU
-                | x86_64WindowsMSVC | Aarch64WindowsMSVC | ARM64LinuxAndroid,
+                X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL
+                | x86_64AppleDarwin | X86_64AppleIOSSIM | ARM64AppleDarwin | ARM64AppleIOSSIM
+                | ARM64AppleIOS | x86_64WindowsGNU | x86_64WindowsMSVC | Aarch64WindowsMSVC
+                | ARM64LinuxAndroid,
                 true,
             ) => (-4, GotRelative, Generic, 32),
             _ => unimplemented!("target: {}, is_pic: {}", self.name(), is_pic),

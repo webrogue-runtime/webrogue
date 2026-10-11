@@ -13,7 +13,7 @@ use crate::{models, types::*};
 #[allow(clippy::large_enum_variant)]
 pub enum ConnectDeviceResponse {
     /// Success
-    Status200_Success
+    Status200_Success,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -21,12 +21,8 @@ pub enum ConnectDeviceResponse {
 #[allow(clippy::large_enum_variant)]
 pub enum GetDeviceNameResponse {
     /// Success
-    Status200_Success
-    (models::GetDeviceNameResponse)
+    Status200_Success(models::GetDeviceNameResponse),
 }
-
-
-
 
 /// Default
 #[async_trait]
@@ -36,22 +32,22 @@ pub trait Default<E: std::fmt::Debug + Send + Sync + 'static = ()>: super::Error
     ///
     /// ConnectDevice - POST /connect_device
     async fn connect_device(
-    &self,
-    
-    method: &Method,
-    host: &Host,
-    cookies: &CookieJar,
-            body: &models::ConnectDeviceRequest,
+        &self,
+
+        method: &Method,
+        host: &Host,
+        cookies: &CookieJar,
+        body: &models::ConnectDeviceRequest,
     ) -> Result<ConnectDeviceResponse, E>;
 
     /// Get device name.
     ///
     /// GetDeviceName - GET /get_device_name
     async fn get_device_name(
-    &self,
-    
-    method: &Method,
-    host: &Host,
-    cookies: &CookieJar,
+        &self,
+
+        method: &Method,
+        host: &Host,
+        cookies: &CookieJar,
     ) -> Result<GetDeviceNameResponse, E>;
 }

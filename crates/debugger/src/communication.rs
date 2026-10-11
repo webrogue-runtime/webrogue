@@ -1,4 +1,4 @@
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::{Arc, atomic::AtomicBool};
 
 use gdbstub_arch::wasm::addr::WasmAddr;
 use wasmtime::Engine;

@@ -4,11 +4,16 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{vfs::real::RealVFS, VFSError, VFSResult};
+use crate::{VFSError, VFSResult};
+
+#[cfg(feature = "wasmtime")]
+use crate::vfs::real::RealVFS;
 
 #[derive(Clone)]
 pub struct RealFD {
+    #[cfg(feature = "wasmtime")]
     pub(crate) vfs: Arc<RealVFS>,
+    #[cfg(feature = "wasmtime")]
     pub(crate) vfs_path: String,
     pub(crate) file: Arc<Mutex<File>>, // None means directory
 }
@@ -31,6 +36,7 @@ impl RealFD {
         Ok(read_total)
     }
 
+    #[cfg(feature = "wasmtime")]
     pub fn size(&self) -> VFSResult<u64> {
         Ok(self
             .file

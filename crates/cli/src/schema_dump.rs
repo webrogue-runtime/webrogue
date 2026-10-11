@@ -1,8 +1,8 @@
 use clap::Args;
 use schemars::{
-    generate::SchemaSettings,
-    transform::{transform_subschemas, Transform},
     Schema, SchemaGenerator,
+    generate::SchemaSettings,
+    transform::{Transform, transform_subschemas},
 };
 
 #[derive(Clone)]

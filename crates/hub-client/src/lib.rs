@@ -10,6 +10,6 @@ pub use webrogue_hub_client_openapi as openapi;
 
 // Re-exports for convenience
 pub use ws_connection::{
-    handle_websocket_message, wait_for_text_message_with_pings, MessageHandleResult, PING_INTERVAL,
+    MessageHandleResult, PING_INTERVAL, handle_websocket_message, wait_for_text_message_with_pings,
 };
 pub use ws_messages::{ConnectDeviceWsCommand, ConnectDeviceWsEvent};

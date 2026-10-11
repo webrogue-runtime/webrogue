@@ -1,12 +1,12 @@
-use std::{ sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
-use futures_util::{future::try_join, SinkExt, StreamExt};
+use futures_util::{SinkExt, StreamExt, future::try_join};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use webrogue_hub_client::{
     api_base_path::ws_api_url,
     ws_connection::{
-        handle_websocket_message, wait_for_text_message_with_pings, MessageHandleResult,
-        PING_INTERVAL,
+        MessageHandleResult, PING_INTERVAL, handle_websocket_message,
+        wait_for_text_message_with_pings,
     },
     ws_messages::{ConnectDeviceWsCommand, ConnectDeviceWsEvent},
 };
@@ -63,7 +63,7 @@ impl DebugConnection {
                         tracing::info!("Connecting to WebSocket: {}", url);
                         let (ws_stream, _) = connect_async(url).await?;
                         tracing::info!("WebSocket connected, splitting streams");
-                        let (mut write, mut read) = ws_stream.split(); 
+                        let (mut write, mut read) = ws_stream.split();
 
                         let command = ConnectDeviceWsCommand {
                             name: Some(device_name.clone()),

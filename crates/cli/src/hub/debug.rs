@@ -5,8 +5,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio_tungstenite::{
     connect_async,
     tungstenite::{
-        protocol::{frame::coding::CloseCode, CloseFrame},
         Message,
+        protocol::{CloseFrame, frame::coding::CloseCode},
     },
 };
 use webrogue_hub_client::{

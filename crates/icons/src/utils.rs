@@ -50,7 +50,10 @@ pub struct Color {
 
 impl Color {
     pub fn parse(data: &str) -> anyhow::Result<Self> {
-        anyhow::ensure!(data.len() == 7, "Color specification must consist of 7 characters: 1 hash (#) character and 6 hex RRGGBB characters");
+        anyhow::ensure!(
+            data.len() == 7,
+            "Color specification must consist of 7 characters: 1 hash (#) character and 6 hex RRGGBB characters"
+        );
         anyhow::ensure!(
             data.chars().next().unwrap() == '#',
             "Color specification must begin with hash (#) character"
@@ -64,5 +67,29 @@ impl Color {
             u8::from_str_radix(&data[5..7], 16).context("Failed to parse color's blue channel")?;
 
         Ok(Self { red, green, blue })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Color;
+
+    #[test]
+    fn parses_rgb_hex_color() {
+        assert_eq!(
+            Color::parse("#aBcD09").unwrap(),
+            Color {
+                red: 0xab,
+                green: 0xcd,
+                blue: 0x09,
+            }
+        );
+    }
+
+    #[test]
+    fn rejects_malformed_rgb_hex_colors() {
+        for color in ["123456", "#12345", "#GG0000"] {
+            assert!(Color::parse(color).is_err(), "accepted {color:?}");
+        }
     }
 }

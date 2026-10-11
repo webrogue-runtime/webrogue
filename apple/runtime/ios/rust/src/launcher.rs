@@ -1,7 +1,7 @@
 use webrogue_launcher::App;
 use winit::event_loop::EventLoop;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn webrogue_ios_rs_main_launcher(persistent_path: *const i8) {
     let event_loop = EventLoop::new().unwrap();
 

@@ -9,12 +9,12 @@ use crate::{
 use futures_util::future::select;
 use std::{collections::BTreeMap, sync::Arc};
 use tokio::sync::{
-    mpsc::{Receiver, Sender},
     Mutex,
+    mpsc::{Receiver, Sender},
 };
 use webrtc::{
     api::{
-        interceptor_registry::register_default_interceptors, media_engine::MediaEngine, APIBuilder,
+        APIBuilder, interceptor_registry::register_default_interceptors, media_engine::MediaEngine,
     },
     data_channel::data_channel_message::DataChannelMessage,
     ice_transport::ice_server::RTCIceServer,

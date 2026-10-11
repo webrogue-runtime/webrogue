@@ -1,7 +1,7 @@
 use clap::Subcommand;
 use std::{fs::File, io::Write as _};
 use webrogue_cli_goodies::step;
-use webrogue_vfs::{archive_to_file, config::Requirement, ArchiveOptions, VFS};
+use webrogue_vfs::{ArchiveOptions, VFS, archive_to_file, config::Requirement};
 
 mod build;
 mod icons;

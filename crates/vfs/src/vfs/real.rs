@@ -10,8 +10,8 @@ use anyhow::Context as _;
 use webrogue_common::split_path;
 
 use crate::{
-    fd::real::RealFD, VFSError, VFSResult, CONFIG_VFS_PATH, MAIN_WASM_VFS_PATH,
-    RESOURCES_ROOT_VFS_PATH,
+    CONFIG_VFS_PATH, MAIN_WASM_VFS_PATH, RESOURCES_ROOT_VFS_PATH, VFSError, VFSResult,
+    fd::real::RealFD,
 };
 
 pub struct RealVFS {
@@ -132,7 +132,9 @@ impl RealVFS {
         };
         let file = File::open(&real_path).map_err(|_| VFSError::NotExists)?;
         return Ok(RealFD {
+            #[cfg(feature = "wasmtime")]
             vfs: self.clone(),
+            #[cfg(feature = "wasmtime")]
             vfs_path: path.to_string(),
             file: Arc::new(Mutex::new(file)),
         });

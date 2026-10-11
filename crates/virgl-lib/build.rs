@@ -80,11 +80,7 @@ fn main() {
     let virglrenderer_version = virglrenderer_version.trim();
 
     fn def_if(condition: bool) -> Option<&'static str> {
-        if condition {
-            Some("1")
-        } else {
-            None
-        }
+        if condition { Some("1") } else { None }
     }
 
     let mut bindgen_args = Vec::new();
@@ -456,6 +452,7 @@ fn main() {
         .raw_line("#![allow(dead_code)]")
         .raw_line("#![allow(nonstandard_style)]")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .rust_edition(bindgen::RustEdition::Edition2024)
         .generate()
         .unwrap()
         .write_to_file(

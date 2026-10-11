@@ -1,6 +1,6 @@
 use std::{
     future::Future,
-    io::{stdout, Write},
+    io::{Write, stdout},
     sync::atomic::{AtomicBool, Ordering},
     time::Instant,
 };

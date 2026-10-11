@@ -1,7 +1,7 @@
 use std::{
     fs::File,
     io::Read as _,
-    sync::{atomic::AtomicUsize, Arc},
+    sync::{Arc, atomic::AtomicUsize},
 };
 
 const BEGIN_GENERATED_CODE_SEP: &str = "// BEGIN GENERATED CODE";

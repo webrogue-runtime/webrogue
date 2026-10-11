@@ -1,4 +1,4 @@
-extern "C" {
+unsafe extern "C" {
     pub fn webrogue_virgl_stub_fn();
 }
 pub fn stub_fn() {

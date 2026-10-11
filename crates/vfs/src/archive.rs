@@ -2,7 +2,7 @@ use std::{fs::File, io::Write, path::Path};
 
 use webrogue_wrapp::writer::WRAPPWriter;
 
-use crate::{config::Config, CONFIG_VFS_PATH, MAIN_WASM_VFS_PATH, VFS};
+use crate::{CONFIG_VFS_PATH, MAIN_WASM_VFS_PATH, VFS, config::Config};
 
 pub struct ArchiveOptions {
     pub keep_wasm: bool,

@@ -7,13 +7,18 @@ on:
     types: [ checks_requested ]
 
 concurrency:
-  group: ci-${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  tests:
+  platform-checks:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     strategy:
+      fail-fast: false
       matrix:
         include:
         - os: ubuntu-24.04-arm
@@ -36,6 +41,7 @@ jobs:
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - uses: taiki-e/install-action@v2.87.23
+      if: contains(matrix.components, 'android')
       with:
         tool: cargo-ndk
 
@@ -64,13 +70,16 @@ jobs:
         rustup target add aarch64-apple-ios-sim
         rustup target add x86_64-apple-ios
 
-    - name: Run test scripts (on UNIX)
+    - uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: ${{ matrix.os }}-${{ strategy.job-index }}
+
+    - name: Run check scripts (on UNIX)
       if: startsWith(matrix.os, 'windows') == false
       run: |
         COMPONENTS=${{ matrix.components }} python3 scripts/cargo_check.py
-        cargo test --package webrogue-common
 
-    - name: Run test scripts (on Windows)
+    - name: Run check scripts (on Windows)
       if: startsWith(matrix.os, 'windows') == true
       shell: cmd
       run: |
@@ -82,21 +91,44 @@ jobs:
         set CC=clang-cl
         set COMPONENTS=${{ matrix.components }}
         python3 scripts\cargo_check.py || exit /b 1
-        cargo test --package webrogue-common || exit /b 1
 
-  typos:
+  unit-tests:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     steps:
     - uses: actions/checkout@v7
 
-    - name: Install and run typos-cli
+    - name: Submodules
       run: |
-        curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-        cargo binstall --locked typos-cli
-        typos
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/zstd-rs
+        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: ubuntu-unit-tests
+
+    - name: Check Rust formatting
+      run: python3 scripts/cargo_fmt_check.py
+
+    - name: Run unit tests
+      run: cargo test --locked --package webrogue-common --package webrogue-icons
+
+  typos:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: taiki-e/install-action@v2.87.23
+      with:
+        tool: typos@1.51.1
+
+    - name: Run typos-cli
+      run: typos
 
   # Additional checks
   # build_cli:
-  #   needs: [ tests, typos ]
+  #   needs: [ platform-checks, unit-tests, typos ]
   #   uses: ./.github/workflows/build_cli.yml

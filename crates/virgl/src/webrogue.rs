@@ -311,10 +311,7 @@ pub(crate) fn create_blob(ctx_id: u32, size: usize, blob_id: u64) -> u32 {
         return 0;
     }
 
-    ctx.resource_table.insert(
-        res_id,
-        Resource { res_id },
-    );
+    ctx.resource_table.insert(res_id, Resource { res_id });
 
     res_id
 }

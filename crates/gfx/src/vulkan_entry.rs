@@ -6,8 +6,8 @@ use std::{
 
 use anyhow::Context;
 use ash::{
-    vk::{Instance, InstanceCreateInfo},
     Entry,
+    vk::{Instance, InstanceCreateInfo},
 };
 
 pub fn load_vulkan_entry(required: bool) -> Option<Entry> {
@@ -49,10 +49,10 @@ Drivers tried:
                     #[cfg(windows)]
                     {
                         use windows::{
-                            core::PCWSTR,
                             Win32::UI::WindowsAndMessaging::{
-                                MessageBoxW, IDRETRY, MB_ICONERROR, MB_RETRYCANCEL, MB_TASKMODAL,
+                                IDRETRY, MB_ICONERROR, MB_RETRYCANCEL, MB_TASKMODAL, MessageBoxW,
                             },
+                            core::PCWSTR,
                         };
 
                         let mut title =
@@ -101,7 +101,9 @@ Drivers tried:
 
 fn load_parsed() -> Result<(Entry, &'static str), String> {
     #[cfg(any(target_os = "macos", target_os = "ios"))]
-    std::env::set_var("MVK_CONFIG_LOG_LEVEL", "1");
+    unsafe {
+        std::env::set_var("MVK_CONFIG_LOG_LEVEL", "1")
+    };
 
     let mut loader_state = LoaderState::Loading(Vec::new());
 
@@ -120,7 +122,7 @@ fn load_parsed() -> Result<(Entry, &'static str), String> {
 }
 
 fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
-    std::env::set_var("MESA_EXTENSION_MAX_YEAR", "2026");
+    unsafe { std::env::set_var("MESA_EXTENSION_MAX_YEAR", "2026") };
 
     #[cfg(target_os = "macos")]
     {
@@ -176,7 +178,7 @@ fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
         loader_state.try_load("Statically linked Vulkan", load_static())?;
 
         fn load_static() -> anyhow::Result<Entry> {
-            extern "system" {
+            unsafe extern "system" {
                 fn vkGetInstanceProcAddr(
                     instance: ash::vk::Instance,
                     name: *const std::ffi::c_char,
@@ -196,7 +198,7 @@ fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
         loader_state.try_load("Statically linked ICD", load_static_icd())?;
 
         fn load_static_icd() -> anyhow::Result<Entry> {
-            extern "system" {
+            unsafe extern "system" {
                 fn vk_icdGetInstanceProcAddr(
                     instance: ash::vk::Instance,
                     name: *const std::ffi::c_char,

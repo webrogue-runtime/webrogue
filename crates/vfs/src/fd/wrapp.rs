@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use webrogue_wrapp::WRAPPReaderFile;
 
-use crate::{vfs::wrapp::WrappVFS, VFSResult};
+use crate::{VFSResult, vfs::wrapp::WrappVFS};
 
 pub struct WrappFD {
     pub vfs: Arc<WrappVFS>,
+    #[cfg(feature = "wasmtime")]
     pub vfs_path: String,
     pub file: WRAPPReaderFile,
 }
@@ -16,6 +17,7 @@ impl WrappFD {
         Some(WrappFD {
             vfs,
             file,
+            #[cfg(feature = "wasmtime")]
             vfs_path: path.to_string(),
         })
     }
@@ -29,6 +31,7 @@ impl WrappFD {
             .read_at(buf, offset, &self.file))
     }
 
+    #[cfg(feature = "wasmtime")]
     pub fn size(&self) -> VFSResult<u64> {
         Ok(self.file.size())
     }

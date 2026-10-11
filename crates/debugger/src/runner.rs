@@ -1,12 +1,7 @@
-use std::{
-    collections::{BTreeMap, HashSet},
-    future::Future,
-    pin::Pin,
-    time::Duration,
-};
+use std::{collections::HashSet, future::Future, pin::Pin, time::Duration};
 
 use anyhow::Context as _;
-use gdbstub_arch::wasm::addr::{WasmAddr, WasmAddrType};
+use gdbstub_arch::wasm::addr::WasmAddr;
 use wasmtime::{AsContextMut as _, ModulePC, Store};
 use wasmtime_internal_debugger::DebugRunResult;
 use webrogue_common::get_safe_range;
@@ -37,12 +32,14 @@ where
         let engine_weak = store.engine().weak();
         std::thread::Builder::new()
             .name("debug_waker".to_owned())
-            .spawn(move || loop {
-                let Some(engine) = engine_weak.upgrade() else {
-                    break;
-                };
-                engine.increment_epoch();
-                std::thread::sleep(Duration::from_millis(1));
+            .spawn(move || {
+                loop {
+                    let Some(engine) = engine_weak.upgrade() else {
+                        break;
+                    };
+                    engine.increment_epoch();
+                    std::thread::sleep(Duration::from_millis(1));
+                }
             })
             .unwrap();
     }

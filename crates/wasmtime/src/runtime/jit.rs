@@ -1,7 +1,7 @@
 #[cfg(feature = "cache")]
 use std::path::{Path, PathBuf};
 
-use crate::{runtime::run_component, Runtime};
+use crate::{Runtime, runtime::run_component};
 
 pub struct JitRuntime {
     base: Runtime,

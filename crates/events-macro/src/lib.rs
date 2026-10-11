@@ -82,7 +82,7 @@ fn type_ident(ty: webrogue_events::FieldType) -> proc_macro2::TokenStream {
             quote!(#ident)
         }
         webrogue_events::FieldType::Raw(raw_type) => raw_ident(raw_type),
-        webrogue_events::FieldType::Bytes(len) => quote!(Vec<u8>),
+        webrogue_events::FieldType::Bytes(_) => quote!(Vec<u8>),
     }
 }
 

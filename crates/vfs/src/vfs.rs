@@ -10,14 +10,14 @@ use std::{
 };
 
 use anyhow::Context as _;
-use webrogue_common::{split_path, RandomAccessReader};
+use webrogue_common::{RandomAccessReader, split_path};
 use webrogue_wrapp::is_path_a_wrapp;
 
 use crate::{
+    FD, VFSError, VFSResult,
     config::Config,
     fd::FDInner,
     vfs::{real::RealVFS, wrapp::WrappVFS},
-    VFSError, VFSResult, FD,
 };
 
 #[derive(Clone)]

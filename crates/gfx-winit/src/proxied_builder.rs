@@ -7,7 +7,7 @@ use winit::{
     window::{WindowAttributes, WindowId},
 };
 
-use crate::{mailbox::Mailbox, utils::lock_mutex, window_registry::WindowRegistry, WinitSystem};
+use crate::{WinitSystem, mailbox::Mailbox, utils::lock_mutex, window_registry::WindowRegistry};
 
 pub struct ProxiedWinitBuilder {
     proxy: WinitProxy,
