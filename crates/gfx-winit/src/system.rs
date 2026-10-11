@@ -5,7 +5,7 @@ use ash::Entry;
 use webrogue_gfx::{EventSink, VirGLContextContainer, VirGLRenderer};
 use winit::window::WindowAttributes;
 
-use crate::{mailbox::Mailbox, window::WinitWindowInternal, WinitWindow};
+use crate::{WinitWindow, mailbox::Mailbox, window::WinitWindowInternal};
 
 #[cfg(not(target_arch = "wasm32"))]
 use webrogue_gfx::load_vulkan_entry;

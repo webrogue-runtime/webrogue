@@ -4,8 +4,8 @@ pub mod wrapp;
 use std::{io::Read, sync::Arc};
 
 use crate::{
+    VFS, VFSError, VFSResult,
     fd::{real::RealFD, wrapp::WrappFD},
-    VFSError, VFSResult, VFS,
 };
 
 #[derive(Clone)]
@@ -34,7 +34,7 @@ impl FD {
         }
     }
 
-    pub fn reader(&self) -> impl Read {
+    pub fn reader(&self) -> impl Read + use<> {
         FDReader {
             fd: self.clone(),
             offset: 0,

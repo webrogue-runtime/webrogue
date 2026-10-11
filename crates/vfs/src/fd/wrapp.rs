@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use webrogue_wrapp::WRAPPReaderFile;
 
-use crate::{vfs::wrapp::WrappVFS, VFSResult};
+use crate::{VFSResult, vfs::wrapp::WrappVFS};
 
 pub struct WrappFD {
     pub vfs: Arc<WrappVFS>,

@@ -20,7 +20,7 @@ fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
     )?
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn webrogue_ios_rs_main_runner(
     wrapp_path: *const i8,
     persistent_path: *const i8,

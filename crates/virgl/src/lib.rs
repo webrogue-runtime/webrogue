@@ -1,5 +1,5 @@
 use std::{
-    ffi::{c_char, c_int, c_void, CStr},
+    ffi::{CStr, c_char, c_int, c_void},
     sync::{Arc, Mutex, OnceLock},
 };
 
@@ -8,7 +8,7 @@ mod bindings;
 pub mod shadow_blob;
 mod system_proxy;
 mod webrogue;
-use ash::{vk::PFN_vkGetInstanceProcAddr, Entry};
+use ash::{Entry, vk::PFN_vkGetInstanceProcAddr};
 pub use system_proxy::SystemProxy;
 
 use crate::bindings::{VIRGL_RENDERER_NO_VIRGL, VIRGL_RENDERER_VENUS};
@@ -40,7 +40,7 @@ impl Renderer {
             p_name: *const c_char,
         ) -> ash::vk::PFN_vkVoidFunction {
             let vk_lib = SHARED_RENDERER.get().unwrap().vk_lib.clone();
-            let name = CStr::from_ptr(p_name);
+            let name = unsafe { CStr::from_ptr(p_name) };
             match name.to_str().unwrap() {
                 "vkCreateSurfaceWEBROGUE" => {
                     #[repr(C)]
@@ -63,7 +63,7 @@ impl Renderer {
                             .system_proxy
                             .vk_create_surface_webrogue(
                                 instance,
-                                p_create_info.read().webrogue_window_id,
+                                unsafe { p_create_info.read().webrogue_window_id },
                                 p_allocator,
                                 p_surface,
                             )
@@ -76,7 +76,7 @@ impl Renderer {
                         p_allocator: *const ash::vk::AllocationCallbacks<'_>,
                         p_instance: *mut ash::vk::Instance,
                     ) -> ash::vk::Result {
-                        let mut new_create_info = p_create_info.read();
+                        let mut new_create_info = unsafe { p_create_info.read() };
                         let required_extensions = SHARED_RENDERER
                             .get()
                             .unwrap()
@@ -87,10 +87,12 @@ impl Renderer {
                                 Vec::new()
                             } else {
                                 // Venus doesn't seem to support passing instance extensions, but still...
-                                std::slice::from_raw_parts(
-                                    new_create_info.pp_enabled_extension_names,
-                                    new_create_info.enabled_extension_count as usize,
-                                )
+                                unsafe {
+                                    std::slice::from_raw_parts(
+                                        new_create_info.pp_enabled_extension_names,
+                                        new_create_info.enabled_extension_count as usize,
+                                    )
+                                }
                                 .to_vec()
                             };
                         for extension in &required_extensions {
@@ -102,15 +104,17 @@ impl Renderer {
                             extensions.as_ptr()
                         };
                         new_create_info.enabled_extension_count = extensions.len() as u32;
-                        let instance = SHARED_RENDERER
-                            .get()
-                            .unwrap()
-                            .vk_lib
-                            .create_instance(&new_create_info, p_allocator.as_ref());
+                        let instance = unsafe {
+                            SHARED_RENDERER
+                                .get()
+                                .unwrap()
+                                .vk_lib
+                                .create_instance(&new_create_info, p_allocator.as_ref())
+                        };
                         drop(required_extensions);
                         match instance {
                             Ok(instance) => {
-                                p_instance.write(instance.handle());
+                                unsafe { p_instance.write(instance.handle()) };
                                 ash::vk::Result::SUCCESS
                             }
                             Err(error) => error,
@@ -121,7 +125,7 @@ impl Renderer {
                 }
                 _ => {
                     let symbol = vk_lib.static_fn().get_instance_proc_addr;
-                    symbol(instance, p_name)
+                    unsafe { symbol(instance, p_name) }
                 }
             }
         }

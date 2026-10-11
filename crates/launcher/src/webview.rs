@@ -8,11 +8,11 @@ use tokio_stream::{self, StreamExt as _};
 use tower_service::Service;
 use webrogue_hub_client::api_base_path::{assets_url, http_api_url};
 use wry::{
-    http, raw_window_handle::HasWindowHandle, RequestAsyncResponder, WebView, WebViewBuilder,
-    WebViewId,
+    RequestAsyncResponder, WebView, WebViewBuilder, WebViewId, http,
+    raw_window_handle::HasWindowHandle,
 };
 
-use crate::{mailbox::Mailbox, server::make_router, LauncherConfig, MailboxInternal};
+use crate::{LauncherConfig, MailboxInternal, mailbox::Mailbox, server::make_router};
 
 type Task = Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send>;
 

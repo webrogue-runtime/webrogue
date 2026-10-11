@@ -88,7 +88,7 @@ unsafe fn android_setup(
     wry::android_setup(package, env, looper, activity)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[inline(never)]
 pub extern "C" fn start_app() {
     #[cfg(target_os = "android")]
@@ -141,7 +141,7 @@ lazy_static! {
 }
 
 #[cfg(target_os = "android")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn Java_dev_webrogue_launcher_DebugEventBroadcastReceiver_onData<'local>(
     mut env: jni::JNIEnv<'local>,
     class: jni::objects::JClass<'local>,

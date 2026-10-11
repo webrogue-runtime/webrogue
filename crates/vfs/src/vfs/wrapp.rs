@@ -4,7 +4,7 @@ use anyhow::Context as _;
 use webrogue_common::RandomAccessReader;
 use webrogue_wrapp::WRAPPReader;
 
-use crate::{config::Config, fd::wrapp::WrappFD, VFSError, VFSResult, CONFIG_VFS_PATH};
+use crate::{CONFIG_VFS_PATH, VFSError, VFSResult, config::Config, fd::wrapp::WrappFD};
 
 pub struct WrappVFS {
     pub reader: Arc<Mutex<WRAPPReader>>,

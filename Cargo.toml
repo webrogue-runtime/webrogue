@@ -35,7 +35,7 @@ clap = { workspace = true, features = ["derive"] }
 version = "0.2.0"
 authors = ["Artem Borovik"]
 license = "Apache-2.0 WITH LLVM-exception"
-edition = "2021"
+edition = "2024"
 
 [workspace]
 resolver = '2'

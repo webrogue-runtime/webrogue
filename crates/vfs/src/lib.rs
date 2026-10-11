@@ -7,7 +7,7 @@ mod vfs;
 mod wasmtime;
 
 #[cfg(feature = "archive")]
-pub use archive::{archive, archive_to_file, ArchiveOptions};
+pub use archive::{ArchiveOptions, archive, archive_to_file};
 pub use fd::FD;
 pub use vfs::VFS;
 

@@ -7,7 +7,7 @@ use wasmtime_wasi::p3::bindings::filesystem::types::{
     DescriptorStat, DescriptorType, ErrorCode, MetadataHashValue,
 };
 
-use crate::{fd::FDInner, vfs::VFSInner, VFSError, FD, VFS};
+use crate::{FD, VFS, VFSError, fd::FDInner, vfs::VFSInner};
 
 impl From<VFSError> for wasmtime_wasi::p3::bindings::filesystem::types::ErrorCode {
     fn from(value: VFSError) -> Self {

@@ -9,7 +9,7 @@ use std::{
 use anyhow::Context;
 use tokio::{
     io::AsyncRead,
-    sync::{mpsc::Sender, Mutex},
+    sync::{Mutex, mpsc::Sender},
 };
 use webrogue_common::split_path;
 use webrogue_hub_client::debug_messages::{
@@ -203,12 +203,13 @@ impl DebugRunnerState {
         match command {
             DebugCommand::SetFileChunk(command) => {
                 let mut currently_constructed_file = self.currently_constructed_file.lock().await;
-                anyhow::ensure!(self
-                    .file_paths_and_hashes
-                    .lock()
-                    .await
-                    .values()
-                    .any(|hash| *hash == command.hash));
+                anyhow::ensure!(
+                    self.file_paths_and_hashes
+                        .lock()
+                        .await
+                        .values()
+                        .any(|hash| *hash == command.hash)
+                );
                 let old_file: Option<anyhow::Result<File>> = currently_constructed_file
                     .take()
                     .and_then(|(old_hash, old_file)| {

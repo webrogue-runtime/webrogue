@@ -3,7 +3,7 @@ use crossterm::{
     terminal::ClearType,
 };
 use std::{
-    io::{stderr, stdin, stdout, IsTerminal, Write},
+    io::{IsTerminal, Write, stderr, stdin, stdout},
     sync::atomic::{AtomicBool, Ordering},
 };
 mod select;

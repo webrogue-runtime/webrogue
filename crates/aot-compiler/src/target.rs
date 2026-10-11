@@ -83,10 +83,10 @@ impl Target {
         object::Architecture,
         object::Endianness,
     ) {
+        use Target::*;
         use object::Architecture::*;
         use object::BinaryFormat::*;
         use object::Endianness::*;
-        use Target::*;
         match self {
             X86_64LinuxGNU => (Elf, X86_64, Little),
             X86_64LinuxMUSL => (Elf, X86_64, Little),
@@ -124,9 +124,9 @@ impl Target {
         &self,
         is_pic: bool,
     ) -> (i64, object::RelocationKind, object::RelocationEncoding, u8) {
+        use Target::*;
         use object::RelocationEncoding::*;
         use object::RelocationKind::*;
-        use Target::*;
         match (self, is_pic) {
             (
                 X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL

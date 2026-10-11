@@ -1,4 +1,4 @@
-extern "C" {
+unsafe extern "C" {
     fn webrogue_lld_adapter(
         argc: std::ffi::c_int,
         argv: *const *const std::ffi::c_char,

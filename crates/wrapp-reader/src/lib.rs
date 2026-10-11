@@ -1,8 +1,8 @@
 use std::io::Cursor;
 
-use base64::{engine::general_purpose::STANDARD, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use image::DynamicImage;
-use webrogue_icons::{background_image, insetted_foreground_image, IconsData};
+use webrogue_icons::{IconsData, background_image, insetted_foreground_image};
 use webrogue_vfs::VFS;
 
 use crate::vscode::example::types::Requirement;

@@ -1,19 +1,19 @@
 use std::sync::{
-    atomic::{AtomicBool, Ordering::SeqCst},
     Arc,
+    atomic::{AtomicBool, Ordering::SeqCst},
 };
 
 use gdbstub::{
     common::Signal,
     stub::SingleThreadStopReason,
     target::{
-        ext::{host_info::HostInfoResponse, process_info::ProcessInfoResponse},
         TargetError, TargetResult,
+        ext::{host_info::HostInfoResponse, process_info::ProcessInfoResponse},
     },
 };
 use gdbstub_arch::wasm::{
     addr::{WasmAddr, WasmAddrType},
-    reg::{id::WasmRegId, WasmRegisters},
+    reg::{WasmRegisters, id::WasmRegId},
 };
 use wasmtime::Engine;
 

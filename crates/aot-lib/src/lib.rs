@@ -1,15 +1,15 @@
 #[cfg(windows)]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn webrogue_aot_windows() {
     use std::io::{Read, Seek};
     use webrogue_common::RangeReader;
     use webrogue_gfx::AbstractBuilder as _;
     use windows::{
-        core::PCWSTR,
         Win32::{
             System::Console::GetConsoleWindow,
-            UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR},
+            UI::WindowsAndMessaging::{MB_ICONERROR, MessageBoxW},
         },
+        core::PCWSTR,
     };
 
     let result = (|| {
@@ -75,7 +75,7 @@ extern "C" fn webrogue_aot_windows() {
 }
 
 #[cfg(target_os = "linux")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn webrogue_aot_linux() {
     let result = || -> anyhow::Result<()> {
         use std::{io::Seek, os::unix::fs::FileExt};

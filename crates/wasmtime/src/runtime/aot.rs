@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::runtime::{run_component, Runtime};
+use crate::runtime::{Runtime, run_component};
 
 pub struct AotRuntime {
     base: Runtime,

@@ -10,8 +10,8 @@ use anyhow::Context as _;
 use webrogue_common::split_path;
 
 use crate::{
-    fd::real::RealFD, VFSError, VFSResult, CONFIG_VFS_PATH, MAIN_WASM_VFS_PATH,
-    RESOURCES_ROOT_VFS_PATH,
+    CONFIG_VFS_PATH, MAIN_WASM_VFS_PATH, RESOURCES_ROOT_VFS_PATH, VFSError, VFSResult,
+    fd::real::RealFD,
 };
 
 pub struct RealVFS {

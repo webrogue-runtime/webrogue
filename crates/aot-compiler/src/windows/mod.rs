@@ -1,7 +1,7 @@
 use std::io::{Seek as _, Write as _};
 
 use webrogue_cli_goodies::step;
-use webrogue_vfs::{archive, ArchiveOptions, VFS};
+use webrogue_vfs::{ArchiveOptions, VFS, archive};
 
 use crate::utils::TemporaryFile;
 

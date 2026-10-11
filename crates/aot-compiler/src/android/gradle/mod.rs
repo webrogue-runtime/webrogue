@@ -2,7 +2,7 @@ use anyhow::Context as _;
 use semver::Version;
 use std::{io::Write, path::absolute};
 use webrogue_cli_goodies::{note, step};
-use webrogue_vfs::{archive_to_file, config::Config, ArchiveOptions, VFS};
+use webrogue_vfs::{ArchiveOptions, VFS, archive_to_file, config::Config};
 
 mod icons;
 mod types;

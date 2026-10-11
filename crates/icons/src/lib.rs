@@ -1,8 +1,8 @@
 use anyhow::Context as _;
 use image::DynamicImage;
 use webrogue_vfs::{
-    config::icons::{ColoredIcon, IconBrightness},
     DARK_ICON_VFS_PATH, LIGHT_ICON_VFS_PATH, VFS,
+    config::icons::{ColoredIcon, IconBrightness},
 };
 
 use crate::utils::Color;

@@ -1,5 +1,5 @@
 #[cfg(target_os = "android")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn android_main(app: android_activity::AndroidApp) {
     use webrogue_gfx::AbstractBuilder as _;
     use winit_android::EventLoopBuilderExtAndroid as _;

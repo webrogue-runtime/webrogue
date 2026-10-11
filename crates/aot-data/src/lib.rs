@@ -1,4 +1,4 @@
-extern "C" {
+unsafe extern "C" {
     static WEBROGUE_AOT: u8;
 }
 

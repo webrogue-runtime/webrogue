@@ -8,7 +8,7 @@ use webrogue_hub_client::{
 mod webrtc_packet_sender;
 use webrtc::{
     api::{
-        interceptor_registry::register_default_interceptors, media_engine::MediaEngine, APIBuilder,
+        APIBuilder, interceptor_registry::register_default_interceptors, media_engine::MediaEngine,
     },
     ice_transport::ice_server::RTCIceServer,
     interceptor::registry::Registry,

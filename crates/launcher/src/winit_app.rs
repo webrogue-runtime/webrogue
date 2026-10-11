@@ -113,9 +113,9 @@ impl App {
             return;
         }
 
-        std::env::set_var("GDK_BACKEND", "x11");
-        std::env::set_var("NO_AT_BRIDGE", "1");
-        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1"); // Prevents a segfault somehow
+        unsafe { std::env::set_var("GDK_BACKEND", "x11") };
+        unsafe { std::env::set_var("NO_AT_BRIDGE", "1") };
+        unsafe { std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1") }; // Prevents a segfault somehow
 
         gtk::init().unwrap();
         self.is_gtk_initialized = true;

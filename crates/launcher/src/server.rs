@@ -11,7 +11,7 @@ use webrogue_launcher_server_openapi::{
     models,
 };
 
-use crate::{debug_connection::DebugConnection, stored_config::get_stored_config, LauncherConfig};
+use crate::{LauncherConfig, debug_connection::DebugConnection, stored_config::get_stored_config};
 
 struct Inner {
     pub connection: Option<DebugConnection>,

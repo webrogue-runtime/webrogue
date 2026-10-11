@@ -8,7 +8,7 @@ use winit::{
     window::WindowId,
 };
 
-use crate::{window_registry::WindowRegistry, ProxiedWinitBuilder, WinitProxy};
+use crate::{ProxiedWinitBuilder, WinitProxy, window_registry::WindowRegistry};
 
 type CreateSystemFn =
     Box<dyn FnOnce(EventLoopProxy) -> (ProxiedWinitBuilder, WinitProxy) + Send + 'static>;

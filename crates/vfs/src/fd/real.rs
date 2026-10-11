@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{vfs::real::RealVFS, VFSError, VFSResult};
+use crate::{VFSError, VFSResult, vfs::real::RealVFS};
 
 #[derive(Clone)]
 pub struct RealFD {

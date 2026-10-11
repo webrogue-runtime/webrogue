@@ -32,12 +32,14 @@ where
         let engine_weak = store.engine().weak();
         std::thread::Builder::new()
             .name("debug_waker".to_owned())
-            .spawn(move || loop {
-                let Some(engine) = engine_weak.upgrade() else {
-                    break;
-                };
-                engine.increment_epoch();
-                std::thread::sleep(Duration::from_millis(1));
+            .spawn(move || {
+                loop {
+                    let Some(engine) = engine_weak.upgrade() else {
+                        break;
+                    };
+                    engine.increment_epoch();
+                    std::thread::sleep(Duration::from_millis(1));
+                }
             })
             .unwrap();
     }

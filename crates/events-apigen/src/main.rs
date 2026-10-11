@@ -118,7 +118,9 @@ fn main() -> anyhow::Result<()> {
             });
             w!("}}");
         }
-        w!("static wr4c_event_t convert_webrogue_event(webrogue_gfx_windowing_window_event_t event) {{");
+        w!(
+            "static wr4c_event_t convert_webrogue_event(webrogue_gfx_windowing_window_event_t event) {{"
+        );
         indent.inc(|| {
             w!("wr4c_event_t result;");
             w!("switch (event.tag) {{");

@@ -13,7 +13,7 @@ pub use webrogue_virgl::SystemProxy as VirGLSystemProxy;
 pub use child_builder::ChildBuilder;
 pub use event_sink::{EventSink, EventStream};
 pub use interface::{
-    add_to_linker, AbstractBuilder, AbstractSystem, AbstractWindow, GFXCtxView, GFXView, System,
-    Window,
+    AbstractBuilder, AbstractSystem, AbstractWindow, GFXCtxView, GFXView, System, Window,
+    add_to_linker,
 };
 pub use vulkan_entry::load_vulkan_entry;

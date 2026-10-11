@@ -1,4 +1,4 @@
-use crate::{mailbox::Mailbox, MailboxInternal};
+use crate::{MailboxInternal, mailbox::Mailbox};
 use winit::event_loop::EventLoopProxy;
 use wry::WebView;
 

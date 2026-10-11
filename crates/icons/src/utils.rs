@@ -50,7 +50,10 @@ pub struct Color {
 
 impl Color {
     pub fn parse(data: &str) -> anyhow::Result<Self> {
-        anyhow::ensure!(data.len() == 7, "Color specification must consist of 7 characters: 1 hash (#) character and 6 hex RRGGBB characters");
+        anyhow::ensure!(
+            data.len() == 7,
+            "Color specification must consist of 7 characters: 1 hash (#) character and 6 hex RRGGBB characters"
+        );
         anyhow::ensure!(
             data.chars().next().unwrap() == '#',
             "Color specification must begin with hash (#) character"
