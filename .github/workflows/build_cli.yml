@@ -62,6 +62,7 @@ jobs:
   
     - name: Build
       run: |
+        export MACOSX_DEPLOYMENT_TARGET=12.0
         cargo build --no-default-features --profile=cli --target=aarch64-apple-darwin --features=full
 
     - uses: actions/upload-artifact@v7
@@ -88,6 +89,7 @@ jobs:
   
     - name: Build
       run: |
+        export MACOSX_DEPLOYMENT_TARGET=12.0
         cargo build --no-default-features --profile=cli --target=x86_64-apple-darwin --features=full
 
     - uses: actions/upload-artifact@v7
