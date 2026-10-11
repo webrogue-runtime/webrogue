@@ -68,6 +68,17 @@ pub fn build(
             .to_owned();
 
         let appdir_filename = "Output.app";
+        let full_product_name = build_settings_output
+            .stdout
+            .lines()
+            .map(|l| l.unwrap().trim_start().to_owned())
+            .find(|line| line.find("FULL_PRODUCT_NAME = ") == Some(0))
+            .ok_or_else(|| {
+                anyhow::anyhow!("FULL_PRODUCT_NAME value not found in xcodebuild output")
+            })?
+            .strip_prefix("FULL_PRODUCT_NAME = ")
+            .unwrap()
+            .to_owned();
 
         let product_dir_name = match destination {
             Destination::MacOS => configuration_name.to_owned(),
@@ -77,7 +88,7 @@ pub fn build(
 
         let built_appdir_path = std::path::PathBuf::from(build_settings_dir)
             .join(product_dir_name)
-            .join(&appdir_filename);
+            .join(full_product_name);
 
         let xcodebuild_output = xcbuild_command.output()?;
         anyhow::ensure!(

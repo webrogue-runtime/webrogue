@@ -1,9 +1,7 @@
 name: AOT integration tests
 
 on:
-  workflow_dispatch:
   workflow_call:
-  push:
 
 permissions:
   contents: read
