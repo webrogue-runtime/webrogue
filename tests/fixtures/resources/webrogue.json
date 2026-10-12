@@ -1,0 +1,18 @@
+{
+    "name": "Webrogue bundled resources test",
+    "id": "io.github.webrogue-runtime.tests.resources",
+    "version": "0.1.0",
+    "main": "main.wasm",
+    "graphics_api": {
+        "vulkan": "disabled",
+        "cpu_rendering": "disabled"
+    },
+    "filesystem": {
+        "resources": [
+            {
+                "real_path": "assets",
+                "mapped_path": "/bundle"
+            }
+        ]
+    }
+}

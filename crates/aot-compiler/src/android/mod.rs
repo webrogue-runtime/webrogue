@@ -2,10 +2,36 @@ mod gradle;
 mod link;
 pub use link::link;
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, clap::ValueEnum)]
+pub enum AndroidArch {
+    #[default]
+    #[value(name = "aarch64")]
+    Aarch64,
+    #[value(name = "x86_64")]
+    X86_64,
+}
+
+impl AndroidArch {
+    fn target(self) -> crate::Target {
+        match self {
+            Self::Aarch64 => crate::Target::ARM64LinuxAndroid,
+            Self::X86_64 => crate::Target::X86_64LinuxAndroid,
+        }
+    }
+
+    fn abi(self) -> &'static str {
+        match self {
+            Self::Aarch64 => "arm64-v8a",
+            Self::X86_64 => "x86_64",
+        }
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn build(
     wrapp_path: &std::path::PathBuf,
     build_dir: &std::path::PathBuf,
+    archs: &[AndroidArch],
     sdk: &Option<std::path::PathBuf>,
     java_home: &Option<std::path::PathBuf>,
     keystore_path: &Option<std::path::PathBuf>,
@@ -66,6 +92,7 @@ pub fn build(
         java_home_env,
         wrapp_path,
         build_dir,
+        archs,
         signing,
         output.clone(),
         cache,

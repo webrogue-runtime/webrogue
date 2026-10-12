@@ -12,8 +12,14 @@ jobs:
   build:
     uses: ./.github/workflows/build_cli.yml
 
+  aot_integration:
+    uses: ./.github/workflows/aot_integration.yml
+
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   release:
-    needs: build
+    needs: [ build, aot_integration, ci ]
     runs-on: ubuntu-slim
     permissions:
       contents: write
@@ -22,55 +28,14 @@ jobs:
     - uses: actions/checkout@v7
 
     - uses: actions/download-artifact@v8
-      with: 
-        name: Artifacts-Linux-GNU-x86_64
-        path: aot_artifacts
+      with:
+        name: AOT-Artifacts
+        path: .
 
     - uses: actions/download-artifact@v8
-      with: 
-        name: Artifacts-Linux-GNU-aarch64
-        path: aot_artifacts
-
-    - uses: actions/download-artifact@v8
-      with: 
-        name: Artifacts-Linux-MUSL-x86_64
-        path: aot_artifacts
-
-    - uses: actions/download-artifact@v8
-      with: 
-        name: Artifacts-Linux-MUSL-aarch64
-        path: aot_artifacts
-
-    - uses: actions/download-artifact@v8
-      with: 
-        name: Artifacts-Windows-x86_64
-        path: aot_artifacts
-
-    - uses: actions/download-artifact@v8
-      with: 
-        name: Artifacts-Windows-aarch64
-        path: aot_artifacts
-
-    - uses: actions/download-artifact@v8
-      with: 
-        name: Artifacts-Android
-        path: aot_artifacts
-
-    - uses: actions/download-artifact@v8
-      with: 
-        name: Artifacts-Apple
-        path: aot_artifacts
-
-    - name: Archive artifacts
-      run: |
-        cd aot_artifacts && zip -r ../aot_artifacts.zip \
-          android_gradle \
-          x86_64-linux-gnu aarch64-linux-gnu \
-          x86_64-linux-musl aarch64-linux-musl \
-          x86_64-windows-msvc \
-          && cd ..
-        cp aot_artifacts.zip aot_artifacts_macos.zip
-        cd aot_artifacts && zip -r ../aot_artifacts_macos.zip apple_xcode && cd ..
+      with:
+        name: AOT-Artifacts-macOS
+        path: .
 
     - uses: actions/download-artifact@v8
       with: 

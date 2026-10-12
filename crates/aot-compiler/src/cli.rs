@@ -23,6 +23,10 @@ pub enum Commands {
         wrapp_path: std::path::PathBuf,
         /// Path where resulting project will be placed
         build_dir: std::path::PathBuf,
+        /// CPU architecture to build for.
+        /// Defaults to aarch64.
+        #[arg(long, value_enum, value_delimiter = ',', default_value = "aarch64")]
+        arch: Vec<crate::android::AndroidArch>,
         /// Path to Android SDK.
         /// If not specified, ANDROID_SDK_ROOT or ANDROID_HOME environment variable will be used.
         #[arg(long, value_name = "PATH")]
@@ -153,6 +157,7 @@ impl Commands {
             Commands::Android {
                 wrapp_path,
                 build_dir,
+                arch,
                 sdk,
                 java_home,
                 keystore_path,
@@ -163,6 +168,7 @@ impl Commands {
             } => crate::android::build(
                 wrapp_path,
                 build_dir,
+                arch,
                 sdk,
                 java_home,
                 keystore_path,

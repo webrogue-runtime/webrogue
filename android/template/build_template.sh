@@ -25,8 +25,10 @@ for TARGET_FILE in $TARGET_FILES; do
 done
 
 rm -rf ./template/app/src
-mkdir -p ./template/app/src/main/jniLibs/arm64-v8a
-cp ./runtime/runner/src/main/jniLibs/arm64-v8a/libwebrogue_aot.so ./template/app/src/main/jniLibs/arm64-v8a/libwebrogue_aot.so
+for TARGET in arm64-v8a x86_64; do
+    mkdir -p ./template/app/src/main/jniLibs/$TARGET
+    cp ./runtime/runner/src/main/jniLibs/$TARGET/libwebrogue_aot.so ./template/app/src/main/jniLibs/$TARGET/libwebrogue_aot.so
+done
 mkdir -p ./template/app/src/main/res
 cp -r ./runtime/runner/src/main/res/drawable ./runtime/runner/src/main/res/mipmap-* ./template/app/src/main/res
 mkdir -p ./template/app/src/main/assets

@@ -7960,6 +7960,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
+ "tempfile",
  "webrogue-cli",
 ]
 
@@ -8024,6 +8025,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-environ",
  "webrogue-cli-goodies",
+ "webrogue-common",
  "webrogue-icons",
  "webrogue-lld",
  "webrogue-vfs",

@@ -24,6 +24,7 @@ pub fn build(
     java_home_env: Option<&std::path::PathBuf>,
     container_path: &std::path::PathBuf,
     build_dir: &std::path::PathBuf,
+    archs: &[crate::android::AndroidArch],
     signing: Signing,
     output: Option<std::path::PathBuf>,
     cache: Option<&std::path::PathBuf>,
@@ -49,8 +50,6 @@ pub fn build(
         })?;
     }
 
-    let object_file = crate::utils::TemporaryFile::for_tmp_object(build_dir.join("aarch64"))?;
-
     let assets_path = build_dir
         .join("app")
         .join("src")
@@ -74,31 +73,60 @@ pub fn build(
         old_stamp.as_ref().map(|stamp| &stamp.icons),
     )?;
 
-    step("Compiling AOT object".to_owned(), || {
-        crate::compile::compile_wrapp_to_object(
-            container_path,
-            object_file.path(),
-            crate::Target::ARM64LinuxAndroid,
-            cache,
-            true,
-            true,
-        )
-    })?;
+    anyhow::ensure!(
+        !archs.is_empty(),
+        "At least one Android architecture is required"
+    );
+    let mut selected_archs = Vec::new();
+    for arch in archs {
+        if !selected_archs.contains(arch) {
+            selected_archs.push(*arch);
+        }
+    }
 
-    step("Linking native library".to_owned(), || {
-        crate::android::link::link(
-            &object_file,
-            crate::Target::ARM64LinuxAndroid,
-            &build_dir
-                .join("app")
-                .join("src")
-                .join("main")
-                .join("jniLibs")
-                .join("arm64-v8a")
-                .join("libwebrogue_aot.so"),
-        )
-    })?;
-    drop(object_file);
+    for arch in &selected_archs {
+        let object_file = crate::utils::TemporaryFile::for_tmp_object(build_dir.join(arch.abi()))?;
+        step(format!("Compiling AOT object for {}", arch.abi()), || {
+            crate::compile::compile_wrapp_to_object(
+                container_path,
+                object_file.path(),
+                arch.target(),
+                cache,
+                true,
+                true,
+            )
+        })?;
+
+        step(format!("Linking native library for {}", arch.abi()), || {
+            crate::android::link::link(
+                &object_file,
+                arch.target(),
+                &build_dir
+                    .join("app")
+                    .join("src")
+                    .join("main")
+                    .join("jniLibs")
+                    .join(arch.abi())
+                    .join("libwebrogue_aot.so"),
+            )
+        })?;
+    }
+
+    let jni_libs_dir = build_dir
+        .join("app")
+        .join("src")
+        .join("main")
+        .join("jniLibs");
+    for entry in std::fs::read_dir(&jni_libs_dir)? {
+        let entry = entry?;
+        let abi = entry.file_name();
+        if !selected_archs
+            .iter()
+            .any(|arch| abi.to_str() == Some(arch.abi()))
+        {
+            std::fs::remove_dir_all(entry.path())?;
+        }
+    }
 
     let copied_apk_dir = step("Building Android project".to_owned(), || {
         gradle_build(

@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   merge_group:
     types: [ checks_requested ]
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -37,7 +38,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/wasmtime external/virglrenderer external/zstd-rs
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/virglrenderer external/zstd-rs webrogue-sdk
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - uses: taiki-e/install-action@v2.87.23
@@ -113,6 +114,59 @@ jobs:
 
     - name: Run unit tests
       run: cargo test --locked --package webrogue-common --package webrogue-icons
+
+  runtime-integration:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-24.04
+          arch: x86_64
+        - os: ubuntu-24.04-arm
+          arch: aarch64
+        - os: windows-2025
+          arch: x86_64
+        - os: windows-11-arm
+          arch: aarch64
+        - os: macos-26
+          arch: aarch64
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Submodules
+      run: |
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/virglrenderer external/zstd-rs
+        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: ${{ matrix.os }}-runtime-integration
+
+    - name: Install Windows Rust target
+      if: startsWith(matrix.os, 'windows')
+      run: rustup target add ${{ matrix.arch }}-pc-windows-msvc
+
+    - name: Set macOS deployment target
+      if: matrix.os == 'macos-26'
+      run: echo MACOSX_DEPLOYMENT_TARGET=12.0 >> "$GITHUB_ENV"
+
+    - name: Run runtime integration tests (Unix)
+      if: startsWith(matrix.os, 'windows') == false
+      run: cargo test --locked --no-default-features --features internal-run --test runtime
+
+    - name: Run runtime integration tests (Windows)
+      if: startsWith(matrix.os, 'windows')
+      shell: cmd
+      run: |
+        for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
+          call "%%i"
+        )
+        set CC=clang-cl
+        set CXX=clang-cl
+        cargo test --locked --no-default-features --features internal-run --target=${{ matrix.arch }}-pc-windows-msvc --test runtime || exit /b 1
 
   typos:
     runs-on: ubuntu-24.04-arm

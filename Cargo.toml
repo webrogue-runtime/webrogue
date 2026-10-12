@@ -13,9 +13,9 @@ path = "main.rs"
 doc = false
 
 [features]
-default = ["run", "compile", "hub", "llvm"]
+default = ["run", "compile", "hub", "llvm", "internal-run"]
 full = ["run", "compile", "hub", "llvm", "appended_artifacts"]
-
+internal-run = ["webrogue-cli/internal-run"]
 run = ["webrogue-cli/run"]
 compile = ["webrogue-cli/compile"]
 hub = ["webrogue-cli/hub"]
@@ -30,6 +30,9 @@ appended_artifacts = ["webrogue-cli/appended_artifacts"]
 webrogue-cli = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [workspace.package]
 version = "0.2.0"
