@@ -162,8 +162,8 @@ fn booted_or_available_iphone() -> String {
                 return None;
             }
             let (_, rest) = line.split_once('(')?;
-            let (udid, _) = rest.split_once(')')?;
-            Some((udid.to_owned(), line.contains("(Booted)")))
+            let (device_id, _) = rest.split_once(')')?;
+            Some((device_id.to_owned(), line.contains("(Booted)")))
         })
         .expect("no available iPhone simulator found");
 

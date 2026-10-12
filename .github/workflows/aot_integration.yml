@@ -125,7 +125,7 @@ jobs:
     - name: Run Android AOT stdio test in x86_64 emulator
       uses: reactivecircus/android-emulator-runner@v2
       with:
-        api-level: 35
+        api-level: 36
         target: google_apis
         arch: x86_64
         disable-animations: true
