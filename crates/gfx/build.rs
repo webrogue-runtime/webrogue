@@ -68,4 +68,27 @@ fn link_moltenvk() {
     println!("cargo:rustc-link-lib=framework=IOSurface");
     println!("cargo:rustc-link-lib=framework=Metal");
     println!("cargo:rustc-link-lib=framework=QuartzCore");
+
+    let output = std::process::Command::new("clang")
+        .args(&["-print-resource-dir"])
+        .output()
+        .expect("Failed to execute clang");
+
+    if output.status.success() {
+        let resource_dir_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let resource_dir = std::path::Path::new(&resource_dir_str);
+
+        // The runtime builtins library lives in <resource_dir>/lib/darwin/
+        let clang_rt_dir = resource_dir.join("lib").join("darwin");
+
+        if clang_rt_dir.exists() {
+            println!("cargo:rustc-link-search=native={}", clang_rt_dir.display());
+            println!("cargo:rustc-link-lib=static=clang_rt.osx");
+        } else {
+            panic!(
+                "clang runtime builtins directory not found: {}",
+                clang_rt_dir.display()
+            );
+        }
+    }
 }
