@@ -58,7 +58,6 @@ fn link_moltenvk() {
             .display()
     );
     println!("cargo:rustc-link-lib=static=MoltenVK");
-    println!("cargo:rustc-link-lib=clang_rt.osx");
     println!("cargo:rustc-link-lib=dylib=c++");
     println!("cargo:rustc-link-lib=dylib=objc");
     println!("cargo:rustc-link-lib=framework=AppKit");
