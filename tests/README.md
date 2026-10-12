@@ -5,14 +5,16 @@ Guest sources, manifests, and checked-in WebAssembly components live beside thei
 stdio test checks exact guest stdout/stderr; the persistence test runs the same guest twice against
 one temporary persistent-storage root; the CPU-rendering test compares a captured PPM frame with a
 checked-in golden image; and the resources tests read a bundled asset from both a `webrogue.json`
-configuration and a packed WRAPP. The AOT test packs the stdio fixture because `webrogue compile`
-consumes WRAPP files.
+configuration and a packed WRAPP. The desktop AOT tests pack the stdio fixture first; Android and
+iOS compile directly from the fixture's `webrogue.json`.
 
 The AOT stdio tests compile and launch native apps on Linux (x86-64 or AArch64; glibc or musl),
 Windows (x86-64 or AArch64), macOS (universal app built from the bundled Xcode project), and Android
-(both AArch64 and x86-64 ABIs, launched in an x86-64 emulator). Android output is captured from
-logcat. Linux uses `aot_artifacts.zip`; macOS uses `aot_artifacts_macos.zip`. Linux runs need an X
-server; in headless environments, use Xvfb. Prepare Linux artifacts for the current host with:
+(both AArch64 and x86-64 ABIs, launched in an x86-64 emulator) and iOS (launched in an iPhone
+Simulator using the bundled Xcode project). Android output is captured from logcat; iOS output is
+captured from the Simulator console. Linux uses `aot_artifacts.zip`; Apple tests use
+`aot_artifacts_macos.zip`. Linux runs need an X server; in headless environments, use Xvfb. Prepare
+Linux artifacts for the current host with:
 
 ```sh
 LIBCS=gnu COMPONENTS=template sh linux/build.sh
@@ -61,6 +63,13 @@ cargo test --locked --no-default-features --features compile,llvm --test aot_and
 `webrogue compile android` defaults to AArch64. Pass `--arch aarch64,x86_64` to produce an APK
 containing both architectures, or select either ABI individually.
 
-The cross-platform AOT artifact build and Linux, Windows, macOS, and Android test matrix can be
+The iOS AOT subprocess test requires Xcode and an available iPhone Simulator. The bundled Xcode
+project is built directly; the test job does not need XcodeGen:
+
+```sh
+cargo test --locked --no-default-features --features compile,llvm --test aot_ios
+```
+
+The cross-platform AOT artifact build and Linux, Windows, macOS, Android, and iOS test matrix can be
 started from GitHub Actions via the **AOT integration tests** `workflow_dispatch` workflow. It
 builds the shared artifact bundles through `build_aot_artifacts.yml`; normal CI does not build them.
