@@ -131,7 +131,7 @@ jobs:
         api-level: 36
         target: google_apis
         arch: x86_64
-        disable-animations: true
+        disable-animations: false
         script: cargo test --locked --no-default-features --features compile,llvm --test aot_android -- --nocapture
 
   aot_stdio_windows:
