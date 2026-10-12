@@ -122,6 +122,9 @@ jobs:
     - name: Install Linux runtime dependencies
       run: sudo apt-get update && sudo apt-get install -y libxkbcommon-x11-0
 
+    - name: Build Android AOT test binary
+      run: cargo test --locked --no-default-features --features compile,llvm --test aot_android --no-run
+
     - name: Run Android AOT stdio test in x86_64 emulator
       uses: reactivecircus/android-emulator-runner@v2
       with:

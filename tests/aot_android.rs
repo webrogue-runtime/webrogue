@@ -56,8 +56,7 @@ fn android_aot_app_forwards_guest_stdout_and_stderr_to_logcat() {
     assert_success(&compile_output, "compile dual-ABI Android AOT app");
     assert!(apk.is_file(), "Android compiler did not produce the APK");
 
-    let install_output = adb(&["install", "-r", apk.to_str().expect("APK path is UTF-8")]);
-    assert_success(&install_output, "install Android AOT app");
+    install_android_apk(apk.to_str().expect("APK path is UTF-8"));
 
     let clear_log_output = adb(&["logcat", "-c"]);
     assert_success(&clear_log_output, "clear Android logcat");
@@ -124,6 +123,27 @@ fn adb(args: &[&str]) -> Output {
         .args(args)
         .output()
         .unwrap_or_else(|error| panic!("run adb {:?}: {error}", args))
+}
+
+fn install_android_apk(apk: &str) {
+    let args = ["install", "-r", apk];
+    let first_output = adb(&args);
+    if first_output.status.success() {
+        return;
+    }
+
+    thread::sleep(Duration::from_secs(2));
+    let retry_output = adb(&args);
+    assert!(
+        retry_output.status.success(),
+        "install Android AOT app failed twice\nfirst attempt: {}\nstdout: {}\nstderr: {}\nretry: {}\nstdout: {}\nstderr: {}",
+        first_output.status,
+        String::from_utf8_lossy(&first_output.stdout),
+        String::from_utf8_lossy(&first_output.stderr),
+        retry_output.status,
+        String::from_utf8_lossy(&retry_output.stdout),
+        String::from_utf8_lossy(&retry_output.stderr),
+    );
 }
 
 fn assert_success(output: &Output, operation: &str) {
