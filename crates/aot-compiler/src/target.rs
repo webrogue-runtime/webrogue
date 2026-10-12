@@ -138,7 +138,7 @@ impl Target {
                 X86_64LinuxGNU | X86_64LinuxMUSL | Aarch64LinuxGNU | Aarch64LinuxMUSL
                 | x86_64AppleDarwin | X86_64AppleIOSSIM | ARM64AppleDarwin | ARM64AppleIOSSIM
                 | ARM64AppleIOS | x86_64WindowsGNU | x86_64WindowsMSVC | Aarch64WindowsMSVC
-                | ARM64LinuxAndroid,
+                | ARM64LinuxAndroid | X86_64LinuxAndroid,
                 true,
             ) => (-4, GotRelative, Generic, 32),
             _ => unimplemented!("target: {}, is_pic: {}", self.name(), is_pic),

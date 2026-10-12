@@ -8,10 +8,11 @@ checked-in golden image; and the resources tests read a bundled asset from both 
 configuration and a packed WRAPP. The AOT test packs the stdio fixture because `webrogue compile`
 consumes WRAPP files.
 
-The AOT stdio test compiles and launches a native app: Linux (x86-64 or AArch64; glibc or musl),
-Windows (x86-64 or AArch64), or macOS (universal app built from the bundled Xcode project). Linux
-uses `aot_artifacts.zip`; macOS uses `aot_artifacts_macos.zip`. Linux runs need an X server; in
-headless environments, use Xvfb. Prepare Linux artifacts for the current host with:
+The AOT stdio tests compile and launch native apps on Linux (x86-64 or AArch64; glibc or musl),
+Windows (x86-64 or AArch64), macOS (universal app built from the bundled Xcode project), and Android
+(both AArch64 and x86-64 ABIs, launched in an x86-64 emulator). Android output is captured from
+logcat. Linux uses `aot_artifacts.zip`; macOS uses `aot_artifacts_macos.zip`. Linux runs need an X
+server; in headless environments, use Xvfb. Prepare Linux artifacts for the current host with:
 
 ```sh
 LIBCS=gnu COMPONENTS=template sh linux/build.sh
@@ -19,6 +20,15 @@ sh scripts/pack_aot_artifacts.sh
 ```
 
 Use `LIBCS=musl` instead on a musl host.
+
+To prepare the Android AOT template and combined artifact archive, with the Android SDK configured,
+run from the repository root:
+
+```sh
+sh android/runtime/build_native_code.sh dev
+sh android/template/build_template.sh
+sh scripts/pack_aot_artifacts.sh
+```
 
 To regenerate the guest components, build the SDK in release mode and build the examples image,
 then run:
@@ -41,6 +51,16 @@ Run the AOT subprocess test (after preparing the artifacts above) with:
 xvfb-run -a cargo test --locked --no-default-features --features compile,llvm --test aot_stdio
 ```
 
-The cross-platform AOT artifact build and native Linux, Windows, and macOS test matrix can be
+The Android AOT subprocess test requires an x86-64 Android emulator to be running and builds a
+dual-ABI APK from the same artifact bundle:
+
+```sh
+cargo test --locked --no-default-features --features compile,llvm --test aot_android
+```
+
+`webrogue compile android` defaults to AArch64. Pass `--arch aarch64,x86_64` to produce an APK
+containing both architectures, or select either ABI individually.
+
+The cross-platform AOT artifact build and Linux, Windows, macOS, and Android test matrix can be
 started from GitHub Actions via the **AOT integration tests** `workflow_dispatch` workflow. It
 builds the shared artifact bundles through `build_aot_artifacts.yml`; normal CI does not build them.
