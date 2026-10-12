@@ -26,8 +26,7 @@ where
             Ok(MessageHandleResult::TextBreak(utf8_bytes.to_string()))
         }
         Message::Binary(_bytes) => {
-            tracing::debug!("Received binary message, not yet implemented");
-            todo!()
+            anyhow::bail!("Received unexpected binary WebSocket message")
         }
         Message::Ping(bytes) => {
             tracing::debug!("Received ping, sending pong");
@@ -55,8 +54,7 @@ where
             }
         }
         Message::Frame(_frame) => {
-            tracing::debug!("Received frame, not yet implemented");
-            todo!()
+            anyhow::bail!("Received unexpected raw WebSocket frame")
         }
     }
 }

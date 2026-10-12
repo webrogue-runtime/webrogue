@@ -16,14 +16,16 @@ use webrogue_hub_client::debug_messages::{
     DebugCommand, DebugRequestBody, DebugResponseBody, LaunchResponse, ListFilesResponse,
 };
 use webrogue_vfs::VFS;
-use webrtc::data_channel::RTCDataChannel;
+use webrtc::data_channel::DataChannel;
 
 use crate::webrtc_packet_sender::WebRTCPacketSender;
+
+type GdbDataSender = Sender<Result<VecDeque<u8>, std::io::Error>>;
 
 pub struct DebugRunnerConfig {
     pub storage: PathBuf,
     pub gfx_system: std::sync::Mutex<Option<webrogue_gfx::System>>,
-    pub data_channel: std::sync::Mutex<Option<std::sync::Weak<RTCDataChannel>>>,
+    pub data_channel: std::sync::Mutex<Option<std::sync::Weak<dyn DataChannel>>>,
     pub done_tx: futures::channel::mpsc::UnboundedSender<anyhow::Result<()>>,
 }
 
@@ -90,7 +92,7 @@ pub struct DebugRunnerState {
     config: Arc<DebugRunnerConfig>,
     file_paths_and_hashes: Mutex<HashMap<String, String>>,
     currently_constructed_file: Mutex<Option<(String, File)>>,
-    gdb_data_tx: Mutex<Option<Sender<Result<VecDeque<u8>, std::io::Error>>>>,
+    gdb_data_tx: Mutex<Option<GdbDataSender>>,
     abort_handle: Arc<std::sync::Mutex<Option<DropCallback>>>,
 }
 
@@ -151,10 +153,9 @@ impl DebugRunnerState {
                         split_path(guest_path, 0).map(|parts| parts.join("/"))
                             == Some(guest_path.clone())
                     );
-                    if self.is_file_missing(
-                        self.constructed_wrapp_dir()?.join(file_hash),
-                        &file_hash,
-                    )? {
+                    if self
+                        .is_file_missing(self.constructed_wrapp_dir()?.join(file_hash), file_hash)?
+                    {
                         missing_file_hashes.insert(file_hash.clone());
                     }
                 }
@@ -168,11 +169,11 @@ impl DebugRunnerState {
                 let file_paths_and_hashes = self.file_paths_and_hashes.lock().await;
 
                 // Delete files with wrong hashes
-                for (_, file_hash) in file_paths_and_hashes.iter() {
+                for file_hash in file_paths_and_hashes.values() {
                     anyhow::ensure!(file_hash.chars().all(|c| c.is_ascii_alphanumeric()));
                     anyhow::ensure!(file_hash.len() == 64);
                     let path = self.constructed_wrapp_dir()?.join(file_hash);
-                    if self.is_file_missing(path.clone(), &file_hash)? && path.exists() {
+                    if self.is_file_missing(path.clone(), file_hash)? && path.exists() {
                         std::fs::remove_file(&path)
                             .context(format!("Unable to delete {}", path.as_path().display()))?;
                     }

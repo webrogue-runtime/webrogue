@@ -1,14 +1,13 @@
 use crate::debug_messages::DebugMessage;
 
+#[derive(Default)]
 pub struct DebugMessageReceiver {
     fragment_buffer: Vec<u8>,
 }
 
 impl DebugMessageReceiver {
     pub fn new() -> Self {
-        Self {
-            fragment_buffer: Vec::new(),
-        }
+        Self::default()
     }
 
     pub fn receive(&mut self, data: &[u8]) -> anyhow::Result<Option<Vec<u8>>> {
@@ -18,9 +17,6 @@ impl DebugMessageReceiver {
         if !message.is_last_fragment {
             return Ok(None);
         }
-        Ok(Some(std::mem::replace(
-            &mut self.fragment_buffer,
-            Vec::new(),
-        )))
+        Ok(Some(std::mem::take(&mut self.fragment_buffer)))
     }
 }
