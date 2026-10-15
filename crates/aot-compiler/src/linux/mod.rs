@@ -52,7 +52,11 @@ pub fn build_linux(
 ) -> anyhow::Result<()> {
     let vfs = VFS::build_from_path(wrapp_file_path)?;
 
-    let object_file = crate::utils::TemporaryFile::for_tmp_object(output_file_path)?;
+    let object_file = crate::utils::TemporaryFile::new(
+        output_file_path
+            .parent()
+            .ok_or(anyhow::anyhow!("Path error"))?,
+    )?;
     let config = vfs.config();
     let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
     match libc {

@@ -29,7 +29,7 @@ pub async fn debug(
     let (done_tx, mut done_rx) = tokio::sync::mpsc::channel(1);
     let mut connection = OutgoingDebugConnection::new(done_tx).await?;
 
-    let result = async {
+    let session = async {
         let (mut ws_stream, _) =
             connect_async(format!("{}/api/v1/devices/debug?{}", ws_api_url(), api_key)).await?;
         let outgoing_message = serde_json::to_string(&DebugDeviceWsCommand {
@@ -91,12 +91,6 @@ pub async fn debug(
                     };
                     tcp_stream.write_all(&gdb_data).await?;
                 }
-                result = done_rx.recv() => {
-                    let Some(result) = result else {
-                        break 'tcp_loop;
-                    };
-                    return result;
-                }
                 packet = ws_stream.next() => {
                     let Some(packet) = packet else {
                         break 'tcp_loop;
@@ -121,8 +115,15 @@ pub async fn debug(
             }))
             .await?;
         anyhow::Ok(())
-    }
-    .await;
+    };
+
+    // Keep observing the WebRTC completion signal throughout the whole
+    // session, including while waiting for the Hub response or a GDB client.
+    // Dropping `session` on disconnect also cancels a pending TCP accept/read.
+    let result = tokio::select! {
+        result = session => result,
+        result = done_rx.recv() => result.unwrap_or(Ok(())),
+    };
 
     // println!("Press ctrl-c to stop");
     let _ = connection.close().await;

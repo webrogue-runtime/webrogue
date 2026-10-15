@@ -1,12 +1,19 @@
+import com.android.build.api.dsl.ApplicationExtension
+import org.gradle.kotlin.dsl.configure
+
 plugins {
     alias(libs.plugins.android.application)
 }
 
 val isSigning = project.hasProperty("webrogueKeystore") || project.hasProperty("webrogueStorePassword") || project.hasProperty("webrogueKeyPassword") || project.hasProperty("webrogueKeyAlias")
 
-android {
+configure<ApplicationExtension> {
     namespace = "dev.webrogue.runner"
     compileSdk = 36
+
+    buildFeatures {
+        resValues = true
+    }
 
     signingConfigs {
         if(isSigning) {

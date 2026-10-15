@@ -25,4 +25,5 @@ postcard = { workspace = true, default-features = false, features = ['alloc'] }
 serde = { workspace = true, features = ['derive'] }
 zip = { workspace = true, default-features = false, features = ['deflate'] }
 webrogue-cli-goodies = { workspace = true }
+tempfile = { workspace = true }
 semver = { workspace = true, default-features = false }

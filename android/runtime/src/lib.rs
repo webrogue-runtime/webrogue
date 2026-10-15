@@ -1,6 +1,12 @@
 #[cfg(target_os = "android")]
 #[unsafe(no_mangle)]
 fn android_main(app: android_activity::AndroidApp) {
+    android_logger::init_once(
+        android_logger::Config::default()
+            .with_max_level(log::LevelFilter::Info)
+            .with_tag("webrogue_launcher_logger"),
+    );
+
     use webrogue_gfx::AbstractBuilder as _;
     use winit_android::EventLoopBuilderExtAndroid as _;
 
@@ -13,10 +19,13 @@ fn android_main(app: android_activity::AndroidApp) {
     // Currently there are no means to recreate surfaces
     // destroyed on [onStop]: https://developer.android.com/reference/android/app/Activity#onStop()
     // so we simply exit and hope Android will restart this activity
-    gfx_builder = gfx_builder.with_on_hide(Box::new(|| {
-        use ndk_sys::quick_exit;
+    #[cfg(feature = "launcher")]
+    let app_1 = app.clone();
+    gfx_builder = gfx_builder.with_on_hide(Box::new(move || {
+        #[cfg(feature = "launcher")]
+        finish_and_remove_current_task(&app_1);
         unsafe {
-            quick_exit(42);
+            ndk_sys::quick_exit(42);
         }
     }));
 
@@ -41,19 +50,25 @@ fn android_main(app: android_activity::AndroidApp) {
 
         let data_dir = app.internal_data_path().unwrap();
 
-        gfx_builder
-            .run(
-                move |gfx_system| {
-                    webrogue_wasmtime::block_on_default_executor(
-                        webrogue_wasmtime::Runtime::new(gfx_system, vfs, &data_dir)
-                            .aot()
-                            .run(),
-                    )
-                    .unwrap();
-                },
-                config.vulkan_requirement().to_bool_option(),
-            )
-            .unwrap();
+        let result = gfx_builder.run(
+            move |gfx_system| {
+                webrogue_wasmtime::block_on_default_executor(
+                    webrogue_wasmtime::Runtime::new(gfx_system, vfs, &data_dir)
+                        .aot()
+                        .run(),
+                )
+                .unwrap();
+            },
+            config.vulkan_requirement().to_bool_option(),
+        );
+        match result {
+            Ok(_) => {}
+            Err(err) => panic!("Error running runtime: {:#}", err),
+        }
+
+        unsafe {
+            ndk_sys::quick_exit(0);
+        }
     };
 
     #[cfg(feature = "launcher")]
@@ -148,7 +163,38 @@ fn android_main(app: android_activity::AndroidApp) {
                 Some(true),
             )
             .unwrap();
+
+        finish_and_remove_current_task(&app);
+
+        unsafe {
+            ndk_sys::quick_exit(0);
+        }
     };
+}
+
+#[cfg(all(target_os = "android", feature = "launcher"))]
+fn finish_and_remove_current_task(app: &android_activity::AndroidApp) {
+    let vm = unsafe { jni::JavaVM::from_raw(app.vm_as_ptr() as *mut jni::sys::JavaVM) };
+    let mut scope = jni::ScopeToken::default();
+    let mut env = unsafe {
+        vm.attach_current_thread_guard(|| jni::vm::AttachConfig::new(), &mut scope)
+            .unwrap()
+    };
+    let activity = unsafe {
+        jni::objects::JObject::from_raw(
+            env.borrow_env_mut(),
+            app.activity_as_ptr() as jni::sys::jobject,
+        )
+    };
+
+    env.borrow_env_mut()
+        .call_method(
+            &activity,
+            jni::jni_str!("finishAndRemoveTask"),
+            jni::jni_sig!(()),
+            &[],
+        )
+        .unwrap();
 }
 
 #[cfg(all(target_os = "android", feature = "launcher"))]

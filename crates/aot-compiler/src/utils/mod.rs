@@ -19,38 +19,29 @@ pub(crate) use lld;
 
 pub struct TemporaryFile {
     path: std::path::PathBuf,
+    _temp_path: tempfile::TempPath,
 }
 
 impl TemporaryFile {
-    pub fn for_tmp_object<P: AsRef<std::path::Path>>(base_path: P) -> anyhow::Result<Self> {
-        Ok(Self {
-            path: base_path
-                .as_ref()
-                .parent()
-                .ok_or(anyhow::anyhow!("Path error"))?
-                .join(format!(
-                    "{}.aot.o",
-                    base_path
-                        .as_ref()
-                        .file_name()
-                        .ok_or(anyhow::anyhow!("Path error"))?
-                        .to_str()
-                        .ok_or(anyhow::anyhow!("Path error"))?,
-                )),
-        })
+    pub fn new(dir_path: &std::path::Path) -> anyhow::Result<Self> {
+        Self::in_dir(dir_path, ".tmp-", "")
     }
 
-    pub fn for_tmp(dir_path: &std::path::Path, name: String) -> anyhow::Result<Self> {
+    fn in_dir(dir_path: &std::path::Path, prefix: &str, suffix: &str) -> anyhow::Result<Self> {
+        let temp_file = tempfile::Builder::new()
+            .prefix(prefix)
+            .suffix(suffix)
+            .tempfile_in(dir_path)?;
+        let path = temp_file.path().to_path_buf();
+
         Ok(Self {
-            path: dir_path.join(format!("{}.tmp", name,)),
+            path,
+            _temp_path: temp_file.into_temp_path(),
         })
     }
 
     pub fn create_file(&self) -> anyhow::Result<File> {
-        if self.path().exists() {
-            std::fs::remove_file(self.path())?;
-        }
-        Ok(File::create_new(self.path())?)
+        Ok(File::create(self.path())?)
     }
 
     pub fn path(&self) -> &std::path::PathBuf {
@@ -69,12 +60,6 @@ impl Display for TemporaryFile {
             "{}",
             self.path().clone().as_os_str().to_str().unwrap().to_owned()
         )
-    }
-}
-
-impl Drop for TemporaryFile {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.path);
     }
 }
 

@@ -1,8 +1,10 @@
 use anyhow::Context as _;
 use semver::Version;
-use std::{io::Write, path::absolute};
+use std::{collections::HashSet, io::Write, path::absolute};
 use webrogue_cli_goodies::{note, step};
 use webrogue_vfs::{ArchiveOptions, VFS, archive_to_file, config::Config};
+
+use crate::android::AndroidArch;
 
 mod icons;
 mod types;
@@ -77,15 +79,57 @@ pub fn build(
         !archs.is_empty(),
         "At least one Android architecture is required"
     );
-    let mut selected_archs = Vec::new();
+    let mut skipped_archs = HashSet::new();
+    let mut selected_archs = HashSet::new();
+    skipped_archs.extend(AndroidArch::all().iter().cloned());
     for arch in archs {
-        if !selected_archs.contains(arch) {
-            selected_archs.push(*arch);
+        skipped_archs.remove(arch);
+        selected_archs.insert(*arch);
+    }
+
+    for arch in &skipped_archs {
+        let jni_libs_abi_dir = build_dir
+            .join("app")
+            .join("src")
+            .join("main")
+            .join("jniLibs")
+            .join(arch.abi());
+
+        if jni_libs_abi_dir.exists() {
+            std::fs::remove_dir_all(&jni_libs_abi_dir)?;
         }
     }
 
     for arch in &selected_archs {
-        let object_file = crate::utils::TemporaryFile::for_tmp_object(build_dir.join(arch.abi()))?;
+        let object_file = crate::utils::TemporaryFile::new(build_dir)?;
+
+        let jni_libs_abi_dir = build_dir
+            .join("app")
+            .join("src")
+            .join("main")
+            .join("jniLibs")
+            .join(arch.abi());
+
+        std::fs::create_dir_all(&jni_libs_abi_dir)?;
+
+        let runtime_lib_path = jni_libs_abi_dir.join("libwebrogue.so");
+
+        if !runtime_lib_path.exists() {
+            step(
+                format!("Extracting runtime library for {}", arch.abi()),
+                || {
+                    artifacts.extract(
+                        &runtime_lib_path,
+                        &format!(
+                            "android_gradle/template/app/src/main/jniLibs/{}/libwebrogue.so",
+                            arch.abi()
+                        ),
+                    )?;
+                    anyhow::Ok(())
+                },
+            )?;
+        }
+
         step(format!("Compiling AOT object for {}", arch.abi()), || {
             crate::compile::compile_wrapp_to_object(
                 container_path,
@@ -100,14 +144,8 @@ pub fn build(
         step(format!("Linking native library for {}", arch.abi()), || {
             crate::android::link::link(
                 &object_file,
-                arch.target(),
-                &build_dir
-                    .join("app")
-                    .join("src")
-                    .join("main")
-                    .join("jniLibs")
-                    .join(arch.abi())
-                    .join("libwebrogue_aot.so"),
+                arch.clone(),
+                &jni_libs_abi_dir.join("libwebrogue_aot.so"),
             )
         })?;
     }
@@ -184,7 +222,7 @@ fn gradle_build(
     set_gradle_property(
         &mut properties_file,
         "webrogueApplicationId",
-        config.id.to_ascii_lowercase(),
+        config.id.to_ascii_lowercase().replace('-', "_"),
     )?;
     set_gradle_property(
         &mut properties_file,
