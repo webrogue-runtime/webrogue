@@ -23,9 +23,10 @@ tokio = { workspace = true }
 webrogue-hub-client = { workspace = true }
 webrogue-hub-client-openapi = { workspace = true, default-features = false, features = ["rustls"] }
 async-trait = { workspace = true }
+rustls = { workspace = true, features = ["aws-lc-rs"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android-activity = { workspace = true, features = ["native-activity"] }
 android_logger = { workspace = true }
-jni = "0.22"
+jni = "0.21"
 ndk = "0.9"

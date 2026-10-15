@@ -149,7 +149,7 @@ cfg_aliases = { version = "0.2.1" }
 windows-sys = { version = "0.61.2", default-features = false }
 windows = { version = "0.62.2", default-features = false }
 wry = { version = "0.57", default-features = false }
-tao = { version = "0.35.3", default-features = false }
+tao = { version = "0.37.1", default-features = false }
 winit = { version = "0.31.0-beta.3", default-features = false }
 winit-android = { version = "0.31.0-beta.3", default-features = false }
 winit-x11 = { version = "0.31.0-beta.3", default-features = false }
@@ -166,7 +166,7 @@ ndk-sys = { version = "0.6.0", default-features = false }
 ndk = { version = "0.9.0", default-features = false }
 json-escape = { version = "0.3.0" }
 wit-bindgen = { version = "0.56" }
-webrtc = { version = "0.17.1" }
+webrtc = { version = "0.21.1" }
 base64 = { version = "0.22.1" }
 tokio-tungstenite = { version = "*" }
 futures-util = { version = "0.3" }

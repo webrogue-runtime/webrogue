@@ -1,5 +1,3 @@
-/* THIS FILE IS AUTO-GENERATED. DO NOT MODIFY!! */
-
 // Copyright 2020-2023 Tauri Programme within The Commons Conservancy
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-License-Identifier: MIT
@@ -7,19 +5,74 @@
 package dev.webrogue.launcher
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.webkit.WebView
-import android.view.KeyEvent
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
+
+private const val ACTIVITY_ID_KEY = "__wryActivityId"
+
+private fun Bundle?.activityId(): Int? =
+    this?.takeIf { it.containsKey(ACTIVITY_ID_KEY) }?.getInt(ACTIVITY_ID_KEY)
+
+object WryLifecycleObserver : DefaultLifecycleObserver {
+    // This only runs once: https://developer.android.com/reference/androidx/lifecycle/ProcessLifecycleOwner
+    override fun onCreate(owner: LifecycleOwner) {
+        super.onCreate(owner)
+        Rust.onFirstActivityCreate()
+        Rust.onFirstActivityCreateWry()
+    }
+}
 
 abstract class WryActivity : AppCompatActivity() {
     private lateinit var mWebView: RustWebView
+    private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
+    private lateinit var activityLauncher: ActivityResultLauncher<Intent>
+    private var permissionListener: ((Boolean?) -> Unit)? = null
+    private var activityListener: ((ActivityResult?) -> Unit)? = null
+    var id: Int = 0
+    open val handleBackNavigation: Boolean = true
 
     open fun onWebViewCreate(webView: WebView) { }
 
+    fun requestPermissions(permissions: Array<String>, listener: (Boolean?) -> Unit) {
+        permissionListener = listener
+        permissionLauncher.launch(permissions)
+    }
+
+    fun launchActivityForResult(intent: Intent, listener: (ActivityResult?) -> Unit) {
+        activityListener = listener
+        activityLauncher.launch(intent)
+    }
+
     fun setWebView(webView: RustWebView) {
         mWebView = webView
+
+        if (handleBackNavigation) {
+            val callback = object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (this@WryActivity::mWebView.isInitialized) {
+                        if (this@WryActivity.mWebView.canGoBack()) {
+                            this@WryActivity.mWebView.goBack()
+                        } else {
+                            this.isEnabled = false
+                            this@WryActivity.onBackPressed()
+                            this.isEnabled = true
+                        }
+                    }
+                }
+            }
+            onBackPressedDispatcher.addCallback(this, callback)
+        }
+
         onWebViewCreate(webView)
     }
 
@@ -39,7 +92,7 @@ abstract class WryActivity : AppCompatActivity() {
             try {
                 @Suppress("DEPRECATION")
                 val info = packageManager.getPackageInfo(webViewPackage, 0)
-                return info.versionName ?: ""
+                return info.versionName.toString()
             } catch (ex: Exception) {
                 Logger.warn("Unable to get package info for '$webViewPackage'$ex")
             }
@@ -47,7 +100,7 @@ abstract class WryActivity : AppCompatActivity() {
             try {
                 @Suppress("DEPRECATION")
                 val info = packageManager.getPackageInfo("com.android.webview", 0)
-                return info.versionName ?: ""
+                return info.versionName.toString()
             } catch (ex: Exception) {
                 Logger.warn("Unable to get package info for 'com.android.webview'$ex")
             }
@@ -58,74 +111,90 @@ abstract class WryActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        create(this)
+        id = savedInstanceState.activityId() ?: intent.extras.activityId() ?: hashCode()
+
+        permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+        ) { isGranted ->
+            permissionListener?.let { listener ->
+                val allGranted = isGranted.values.all { it }
+                listener(allGranted)
+            }
+        }
+        activityLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            activityListener?.invoke(result)
+        }
+
+        Rust.onCreate(this)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(WryLifecycleObserver)
     }
 
     override fun onStart() {
         super.onStart()
-        start()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        resume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        pause()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        stop()
+        Rust.onStart(this)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        focus(hasFocus)
+        Rust.onWindowFocusChanged(this, hasFocus)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        save()
+        outState.putInt(ACTIVITY_ID_KEY, id)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Rust.onPause(this)
+        if (::mWebView.isInitialized) {
+            mWebView.onPause()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Rust.onResume(this)
+        if (::mWebView.isInitialized) {
+            mWebView.onResume()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Rust.onStop(this)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        destroy()
+        Rust.onDestroy(this)
+        Rust.onWebviewDestroy(this, if (::mWebView.isInitialized) { mWebView.id } else { "" })
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
-        memory()
+        Rust.onLowMemory()
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK && mWebView.canGoBack()) {
-            mWebView.goBack()
-            return true
-        }
-        return super.onKeyDown(keyCode, event)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        Rust.onNewIntent(intent)
     }
 
     fun getAppClass(name: String): Class<*> {
         return Class.forName(name)
     }
 
-    companion object {
-        init {
-            System.loadLibrary("launcher")
-        }
+    // Called by tao through JNI
+    fun startActivity(cls: Class<*>): Int {
+        val intent = Intent(this, cls)
+        val id = kotlin.random.Random.nextInt()
+        intent.putExtra(ACTIVITY_ID_KEY, id)
+        startActivity(intent)
+        return id
     }
 
-    private external fun create(activity: WryActivity)
-    private external fun start()
-    private external fun resume()
-    private external fun pause()
-    private external fun stop()
-    private external fun save()
-    private external fun destroy()
-    private external fun memory()
-    private external fun focus(focus: Boolean)
+    
 }

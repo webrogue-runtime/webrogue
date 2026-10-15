@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 pub enum Target {
@@ -168,5 +170,11 @@ impl Target {
             encoding: reloc.2,
             size: reloc.3,
         }
+    }
+}
+
+impl Display for Target {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
     }
 }

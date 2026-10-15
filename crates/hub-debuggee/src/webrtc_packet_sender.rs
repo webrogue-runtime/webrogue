@@ -3,10 +3,10 @@ use webrogue_hub_client::{
     debug_message_sender::send_debug_message,
     debug_messages::{DebugEvent, DebugIncomingMessageBody, GDBDataDebugEvent},
 };
-use webrtc::data_channel::RTCDataChannel;
+use webrtc::data_channel::DataChannel;
 
 pub struct WebRTCPacketSender {
-    pub data_channel: std::sync::Weak<RTCDataChannel>,
+    pub data_channel: std::sync::Weak<dyn DataChannel>,
 }
 
 #[async_trait::async_trait]
@@ -18,7 +18,7 @@ impl PacketSender for WebRTCPacketSender {
         let message = DebugIncomingMessageBody::Event(DebugEvent::GDBData(GDBDataDebugEvent {
             data: data.to_vec(),
         }));
-        send_debug_message(&data_channel, &message.to_bytes()?).await?;
+        send_debug_message(data_channel.as_ref(), &message.to_bytes()?).await?;
         Ok(())
     }
 }

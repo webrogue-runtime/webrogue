@@ -1,77 +1,55 @@
-use crate::utils::path_to_arg;
+use crate::{android::AndroidArch, utils::path_to_arg};
 
 pub fn link(
     object_file: &crate::utils::TemporaryFile,
-    target: crate::Target,
+    arch: AndroidArch,
     output_path: &std::path::PathBuf,
 ) -> anyhow::Result<()> {
-    match target {
-        crate::Target::ARM64LinuxAndroid => {
-            crate::utils::lld!(
-                "ld.lld",
-                "-EL",
-                "--fix-cortex-a53-843419",
-                "-z",
-                "now",
-                "-z",
-                "relro",
-                // "--hash-style=gnu",
-                "--hash-style=both",
-                "--eh-frame-hdr",
-                "-m",
-                "aarch64linux",
-                "-shared",
-                "-o",
-                path_to_arg(output_path)?,
-                // crtbegin_tmp.as_arg()?,
-                "-z",
-                "max-page-size=16384",
-                "--build-id=sha1",
-                "--no-rosegment",
-                "--no-undefined-version",
-                "--fatal-warnings",
-                "--no-undefined",
-                // "--strip-debug",
-                // "--gc-sections",
-                "-soname",
-                "libwebrogue_aot.so",
-                object_file,
-                // crtend_tmp.as_arg()?,
-            )
+    let mut args = vec!["ld.lld".to_string()];
+    match arch {
+        AndroidArch::Aarch64 => {
+            args.push("-EL".to_string());
+            args.push("--fix-cortex-a53-843419".to_string());
         }
-        crate::Target::X86_64LinuxAndroid => {
-            crate::utils::lld!(
-                "ld.lld",
-                "-z",
-                "now",
-                "-z",
-                "relro",
-                "--hash-style=both",
-                "--eh-frame-hdr",
-                "-m",
-                "elf_x86_64",
-                "-shared",
-                "-o",
-                path_to_arg(output_path)?,
-                "-z",
-                "max-page-size=16384",
-                object_file,
-                // "--version-script=/tmp/rustcgp8ujz/list",
-                // "--no-undefined-version",
-                // crtbegin_tmp.as_arg()?,
-                "--eh-frame-hdr",
-                "-z",
-                "noexecstack",
-                // "--gc-sections",
-                "-z",
-                "relro",
-                "-z",
-                "now",
-                "--no-allow-shlib-undefined",
-                "--no-undefined",
-                // crtend_tmp.as_arg()?,
-            )
-        }
-        _ => unimplemented!(),
+        AndroidArch::X86_64 => {}
     }
+
+    args.push("-z".to_string());
+    args.push("now".to_string());
+    args.push("-z".to_string());
+    args.push("relro".to_string());
+    args.push("--hash-style=both".to_string());
+    args.push("--eh-frame-hdr".to_string());
+
+    args.push("-m".to_string());
+    match arch {
+        AndroidArch::Aarch64 => {
+            args.push("aarch64linux".to_string());
+        }
+        AndroidArch::X86_64 => {
+            args.push("elf_x86_64".to_string());
+        }
+    }
+
+    args.push("-shared".to_string());
+    args.push("-o".to_string());
+    args.push(path_to_arg(output_path)?);
+    args.push("-z".to_string());
+    args.push("max-page-size=16384".to_string());
+    args.push("--build-id=sha1".to_string());
+
+    args.push("--no-rosegment".to_string());
+    args.push("--no-undefined-version".to_string());
+    args.push("--fatal-warnings".to_string());
+    args.push("--no-undefined".to_string());
+
+    args.push("-soname".to_string());
+    args.push("libwebrogue_aot.so".to_string());
+
+    args.push("-z".to_string());
+    args.push("noexecstack".to_string());
+
+    args.push(object_file.as_arg()?);
+
+    crate::utils::run_lld(args)
 }

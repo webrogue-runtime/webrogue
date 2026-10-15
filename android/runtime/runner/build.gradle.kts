@@ -1,11 +1,18 @@
+import com.android.build.api.dsl.ApplicationExtension
+import org.gradle.kotlin.dsl.configure
+
 plugins {
     alias(libs.plugins.android.application)
 }
 
-android {
+configure<ApplicationExtension> {
     namespace = "dev.webrogue.runner"
     compileSdk = 36
-    
+
+    buildFeatures {
+        resValues = true
+    }
+
     signingConfigs {
         create("dummy") {
             // keyAlias keystoreProperties['keyAlias']

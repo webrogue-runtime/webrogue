@@ -7,6 +7,7 @@ edition.workspace = true
 
 [dependencies]
 webrogue-hub-client-openapi = { workspace = true, default-features = false, features = ["rustls"] }
+async-trait = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 webrtc = { workspace = true }

@@ -18,7 +18,7 @@ fn init_logging() {
     #[cfg(target_os = "android")]
     android_logger::init_once(
         android_logger::Config::default()
-            .with_min_level(log::Level::Info)
+            .with_max_level(log::LevelFilter::Info)
             .with_tag("webrogue_launcher_logger"),
     );
 }
@@ -93,20 +93,14 @@ unsafe fn android_setup(
 pub extern "C" fn start_app() {
     #[cfg(target_os = "android")]
     {
-        tao::android_binding!(
-            dev_webrogue,
-            launcher,
-            // LauncherActivity,
-            WryActivity,
-            android_setup,
-            _start_app
-        );
+        tao::android_binding!(dev_webrogue, launcher, Rust, android_setup, _start_app);
         wry::android_binding!(dev_webrogue, launcher);
     }
 }
 
 pub fn main() {
     init_logging();
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
     let event_loop = EventLoop::new();
     let event_loop_proxy = event_loop.create_proxy();
 
@@ -148,7 +142,7 @@ unsafe extern "C" fn Java_dev_webrogue_launcher_DebugEventBroadcastReceiver_onDa
     data: jni::objects::JString,
 ) {
     let data = env.get_string(&data).unwrap().to_str().unwrap().to_owned();
-    SDP_ANSWER_SENDER
+    let _ = SDP_ANSWER_SENDER
         .lock()
         .unwrap()
         .as_ref()

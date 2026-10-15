@@ -60,7 +60,7 @@ impl DebugConnection {
                             ws_api_url(),
                             auth_token
                         );
-                        tracing::info!("Connecting to WebSocket: {}", url);
+                        tracing::info!("Connecting to WebSocket");
                         let (ws_stream, _) = connect_async(url).await?;
                         tracing::info!("WebSocket connected, splitting streams");
                         let (mut write, mut read) = ws_stream.split();
@@ -79,27 +79,33 @@ impl DebugConnection {
                         let event: ConnectDeviceWsEvent = serde_json::from_str(event_str.as_str())?;
                         tracing::info!("Parsed ConnectDeviceWsEvent");
 
+                        let (event_tx, mut event_rx) =
+                            tokio::sync::mpsc::unbounded_channel::<ConnectDeviceWsEvent>();
+                        event_tx
+                            .send(event)
+                            .map_err(|_| anyhow::anyhow!("Launch event receiver stopped"))?;
+
                         let write = Arc::new(tokio::sync::Mutex::new(write));
-                        let write2 = write.clone();
+                        let launch_write = write.clone();
                         tracing::info!("Creating launch task");
                         let run_task = async move {
                             tracing::info!("Launch task started");
-                            let write3 = write2.clone();
-                            let result = config
-                                .launch(
-                                    event.sdp_offer,
-                                    Box::new(move |sdp_answer| {
-                                        tracing::info!("SDP answer callback triggered");
-                                        let write_clone = write2.clone();
-                                        tokio::spawn(async move {
-                                            send_sdp_answer(&write_clone, sdp_answer).await;
-                                        });
-                                    }),
-                                )
-                                .await;
-                            let _ = write3.lock().await.close().await;
-                            tracing::info!("Launch task completed");
-                            result
+                            while let Some(event) = event_rx.recv().await {
+                                let write = launch_write.clone();
+                                config
+                                    .launch(
+                                        event.sdp_offer,
+                                        Box::new(move |sdp_answer| {
+                                            tracing::info!("SDP answer callback triggered");
+                                            tokio::spawn(async move {
+                                                send_sdp_answer(&write, sdp_answer).await;
+                                            });
+                                        }),
+                                    )
+                                    .await?;
+                                tracing::info!("Launch task completed");
+                            }
+                            anyhow::Ok(())
                         };
                         let write2 = write.clone();
                         tracing::info!("Creating ping task");
@@ -118,14 +124,17 @@ impl DebugConnection {
                                                 tracing::info!("Stream ended, ping task exiting");
                                                 return Ok(());
                                             };
-                                            let mut locked_write = write2.lock().await;
-                                            match handle_websocket_message(message?, &mut *locked_write).await? {
-                                                MessageHandleResult::TextBreak(_) => {
-                                                    tracing::info!("Received text in ping task, not yet implemented");
-                                                    todo!()
-                                                }
-                                                MessageHandleResult::Continue => {}
-                                            }
+                                             let mut locked_write = write2.lock().await;
+                                             match handle_websocket_message(message?, &mut *locked_write).await? {
+                                                 MessageHandleResult::TextBreak(event_str) => {
+                                                     let event = serde_json::from_str::<ConnectDeviceWsEvent>(&event_str)
+                                                         .map_err(|error| anyhow::anyhow!("Failed to parse ConnectDeviceWsEvent: {error}"))?;
+                                                     event_tx
+                                                         .send(event)
+                                                         .map_err(|_| anyhow::anyhow!("Launch event receiver stopped"))?;
+                                                 }
+                                                 MessageHandleResult::Continue => {}
+                                             }
                                         }
                                     }
                                 }

@@ -57,7 +57,11 @@ pub fn build(
 
     let config = vfs.config();
     let icons_config = webrogue_icons::IconsData::from_vfs(&vfs)?;
-    let object_file = crate::utils::TemporaryFile::for_tmp_object(output_file_path)?;
+    let object_file = crate::utils::TemporaryFile::new(
+        output_file_path
+            .parent()
+            .ok_or(anyhow::anyhow!("Path error"))?,
+    )?;
     let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
     let arch_str = match arch {
         WindowsArch::X86_64 => "x86_64",
@@ -85,7 +89,7 @@ pub fn build(
         .to_path_buf();
 
     let res_tmp = step("Generating icon".to_owned(), || {
-        let res_tmp = TemporaryFile::for_tmp(&build_dir, "resources.res".to_string())?;
+        let res_tmp = TemporaryFile::new(&build_dir)?;
         webrogue_icons::windows::generate_res(icons_config.clone(), &mut res_tmp.create_file()?)?;
         anyhow::Ok(res_tmp)
     })?;

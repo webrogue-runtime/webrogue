@@ -129,7 +129,9 @@ impl Commands {
                 target,
             } => {
                 let target = crate::Target::from_name(target)?;
-                let object_file = crate::utils::TemporaryFile::for_tmp_object(out_path)?;
+                let object_file = crate::utils::TemporaryFile::new(
+                    out_path.parent().ok_or(anyhow::anyhow!("Path error"))?,
+                )?;
                 crate::compile::compile_wrapp_to_object(
                     wrapp_path,
                     object_file.path(),
@@ -138,7 +140,15 @@ impl Commands {
                     true,
                     true,
                 )?;
-                crate::android::link(&object_file, target, out_path)?;
+                crate::android::link(
+                    &object_file,
+                    match target {
+                        crate::Target::ARM64LinuxAndroid => crate::android::AndroidArch::Aarch64,
+                        crate::Target::X86_64LinuxAndroid => crate::android::AndroidArch::X86_64,
+                        _ => anyhow::bail!("Unsupported target for Android: {}", target),
+                    },
+                    out_path,
+                )?;
             }
             Commands::Linux {
                 wrapp_path,

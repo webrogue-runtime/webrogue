@@ -2,7 +2,7 @@ mod gradle;
 mod link;
 pub use link::link;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, clap::ValueEnum)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, clap::ValueEnum, Eq, Hash)]
 pub enum AndroidArch {
     #[default]
     #[value(name = "aarch64")]
@@ -24,6 +24,10 @@ impl AndroidArch {
             Self::Aarch64 => "arm64-v8a",
             Self::X86_64 => "x86_64",
         }
+    }
+
+    fn all() -> &'static [Self] {
+        &[Self::Aarch64, Self::X86_64]
     }
 }
 
