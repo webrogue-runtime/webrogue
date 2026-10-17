@@ -41,7 +41,7 @@ jobs:
         git submodule update --init --single-branch --depth=1 external/wasmtime external/virglrenderer external/zstd-rs webrogue-sdk
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
-    - uses: taiki-e/install-action@v2.87.23
+    - uses: taiki-e/install-action@v2.87.27
       if: contains(matrix.components, 'android')
       with:
         tool: cargo-ndk
@@ -175,7 +175,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - uses: taiki-e/install-action@v2.87.23
+    - uses: taiki-e/install-action@v2.87.27
       with:
         tool: typos@1.51.1
 
