@@ -85,7 +85,7 @@ unsafe fn android_setup(
         }
     };
 
-    wry::android_setup(package, env, looper, activity)
+    unsafe { wry::android_setup(package, env, looper, activity) }
 }
 
 #[unsafe(no_mangle)]
@@ -138,7 +138,7 @@ lazy_static! {
 #[unsafe(no_mangle)]
 unsafe extern "C" fn Java_dev_webrogue_launcher_DebugEventBroadcastReceiver_onData<'local>(
     mut env: jni::JNIEnv<'local>,
-    class: jni::objects::JClass<'local>,
+    _class: jni::objects::JClass<'local>,
     data: jni::objects::JString,
 ) {
     let data = env.get_string(&data).unwrap().to_str().unwrap().to_owned();

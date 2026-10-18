@@ -27,43 +27,47 @@ pub async fn debug(
     gdb_port: u16,
 ) -> Result<(), anyhow::Error> {
     let (done_tx, mut done_rx) = tokio::sync::mpsc::channel(1);
-    let mut connection = OutgoingDebugConnection::new(done_tx).await?;
+    let (mut connection, mut ws_stream) =
+        webrogue_cli_goodies::step_async("Establishing connection".to_string(), async {
+            let mut connection = OutgoingDebugConnection::new(done_tx).await?;
+            let (mut ws_stream, _) =
+                connect_async(format!("{}/api/v1/devices/debug?{}", ws_api_url(), api_key)).await?;
+            let outgoing_message = serde_json::to_string(&DebugDeviceWsCommand {
+                sdp_offer: connection.sdp_offer.clone(),
+                device_name: device_name.to_owned(),
+            })?;
+            ws_stream
+                .send(Message::Text(outgoing_message.into()))
+                .await?;
+            let response = loop {
+                match ws_stream.next().await.unwrap()? {
+                    Message::Text(utf8_bytes) => {
+                        eprintln!("{}", utf8_bytes.as_str());
+                        break utf8_bytes;
+                    }
+                    Message::Binary(_bytes) => todo!(),
+                    Message::Ping(bytes) => {
+                        ws_stream.send(Message::Pong(bytes)).await?;
+                    }
+                    Message::Pong(_bytes) => {}
+                    Message::Close(close_frame) => {
+                        if let Some(close_frame) = close_frame {
+                            anyhow::bail!("Webrogue Hub returned an error: {}", close_frame.reason);
+                        } else {
+                            anyhow::bail!("Webrogue Hub returned an unknown error");
+                        }
+                    }
+                    Message::Frame(_frame) => todo!(),
+                };
+            };
+            let response = serde_json::from_str::<DebugDeviceWsEvent>(response.as_str())?;
+            let sdp_answer = response.sdp_answer;
+            connection.set_answer(&sdp_answer).await?;
+            anyhow::Ok((connection, ws_stream))
+        })
+        .await?;
 
     let session = async {
-        let (mut ws_stream, _) =
-            connect_async(format!("{}/api/v1/devices/debug?{}", ws_api_url(), api_key)).await?;
-        let outgoing_message = serde_json::to_string(&DebugDeviceWsCommand {
-            sdp_offer: connection.sdp_offer.clone(),
-            device_name: device_name.to_owned(),
-        })?;
-        ws_stream
-            .send(Message::Text(outgoing_message.into()))
-            .await?;
-        let response = loop {
-            match ws_stream.next().await.unwrap()? {
-                Message::Text(utf8_bytes) => {
-                    eprintln!("{}", utf8_bytes.as_str());
-                    break utf8_bytes;
-                }
-                Message::Binary(_bytes) => todo!(),
-                Message::Ping(bytes) => {
-                    ws_stream.send(Message::Pong(bytes)).await?;
-                }
-                Message::Pong(_bytes) => {}
-                Message::Close(close_frame) => {
-                    if let Some(close_frame) = close_frame {
-                        anyhow::bail!("Webrogue Hub returned an error: {}", close_frame.reason);
-                    } else {
-                        anyhow::bail!("Webrogue Hub returned an unknown error");
-                    }
-                }
-                Message::Frame(_frame) => todo!(),
-            };
-        };
-        let response = serde_json::from_str::<DebugDeviceWsEvent>(response.as_str())?;
-        let sdp_answer = response.sdp_answer;
-        connection.set_answer(&sdp_answer).await?;
-
         let vfs = webrogue_vfs::VFS::build_from_path(wrapp_path)?;
         launch_wrapp(vfs, &mut connection).await?;
 
@@ -133,28 +137,41 @@ pub async fn debug(
 async fn launch_wrapp(vfs: VFS, connection: &mut OutgoingDebugConnection) -> anyhow::Result<()> {
     let file_paths = vfs.list_all_files();
     let mut file_paths_and_hashes = HashMap::new();
-    for path in &file_paths {
-        let hash = blake3::Hasher::new()
-            .update_reader(
-                vfs.open(&path)
-                    .map_err(|_| anyhow::anyhow!("Unable to open VFS path {}", path))?
-                    .reader(),
-            )?
-            .finalize()
-            .to_hex()
-            .as_str()
-            .to_owned();
-        file_paths_and_hashes.insert(path.clone(), hash);
-    }
+    let (file_paths, file_paths_and_hashes, vfs) =
+        webrogue_cli_goodies::step_async("Hashing files".to_string(), async move {
+            tokio::task::spawn_blocking(move || {
+                for path in &file_paths {
+                    let hash = blake3::Hasher::new()
+                        .update_reader(
+                            vfs.open(&path)
+                                .map_err(|_| anyhow::anyhow!("Unable to open VFS path {}", path))?
+                                .reader(),
+                        )?
+                        .finalize()
+                        .to_hex()
+                        .as_str()
+                        .to_owned();
+                    file_paths_and_hashes.insert(path.clone(), hash);
+                }
+                anyhow::Ok((file_paths, file_paths_and_hashes, vfs))
+            })
+            .await
+        })
+        .await??;
 
-    let DebugResponseBody::ListFiles(response) = connection
-        .request(DebugRequestBody::ListFiles(ListFilesRequest {
-            file_paths_and_hashes: file_paths_and_hashes.clone(),
-        }))
-        .await?
-    else {
-        anyhow::bail!("ListFiles request returned response of wrong type")
-    };
+    let response =
+        webrogue_cli_goodies::step_async("Fetching missing file list".to_string(), async {
+            let DebugResponseBody::ListFiles(response) = connection
+                .request(DebugRequestBody::ListFiles(ListFilesRequest {
+                    file_paths_and_hashes: file_paths_and_hashes.clone(),
+                }))
+                .await?
+            else {
+                anyhow::bail!("ListFiles request returned response of wrong type")
+            };
+            Ok(response)
+        })
+        .await?;
 
     for path in &file_paths {
         let hash = file_paths_and_hashes.get(path).unwrap().clone();
@@ -184,12 +201,16 @@ async fn launch_wrapp(vfs: VFS, connection: &mut OutgoingDebugConnection) -> any
         }
     }
 
-    let DebugResponseBody::Launch(_response) = connection
-        .request(DebugRequestBody::Launch(LaunchRequest {}))
-        .await?
-    else {
-        anyhow::bail!("Launch request returned response of wrong type")
-    };
+    webrogue_cli_goodies::step_async("Sending launch request".to_string(), async {
+        let DebugResponseBody::Launch(_response) = connection
+            .request(DebugRequestBody::Launch(LaunchRequest {}))
+            .await?
+        else {
+            anyhow::bail!("Launch request returned response of wrong type")
+        };
+        Ok(())
+    })
+    .await?;
 
     Ok(())
 }

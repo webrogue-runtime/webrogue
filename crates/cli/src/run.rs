@@ -1,17 +1,21 @@
 use anyhow::Context;
 use clap::Args;
-use std::path::PathBuf;
+use std::{path::PathBuf, thread, time::Duration};
 use webrogue_vfs::VFS;
 
 #[derive(Args, Debug, Clone)]
 pub struct RunCommand {
-    // Path to WRAPP file or webrogue.json config
+    /// Path to WRAPP file or webrogue.json config
     path: PathBuf,
-    // Path to cache config. See https://docs.wasmtime.dev/cli-cache.html
-    #[arg(long)]
+    /// Path to cache config. See https://docs.wasmtime.dev/cli-cache.html
+    #[arg(long, value_name = "PATH")]
     cache: Option<PathBuf>,
-    #[arg(long)]
+    /// GDB port. Specifying this option enables guest debugging
+    #[arg(long, value_name = "PORT")]
     gdb_port: Option<u16>,
+    /// Enable the simulated surface lifecycle, using this interval in seconds.
+    #[arg(long, value_name = "SECONDS")]
+    surface_lifecycle_simulator: Option<u64>,
 }
 
 impl RunCommand {
@@ -30,7 +34,38 @@ impl RunCommand {
         let config = vfs.config();
         let vulkan_requirement = config.vulkan_requirement().to_bool_option();
 
-        let gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
+        if self.surface_lifecycle_simulator == Some(0) {
+            anyhow::bail!("surface lifecycle simulator interval must be at least one second");
+        }
+
+        let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
+        if let Some(interval_secs) = self.surface_lifecycle_simulator {
+            let interval = Duration::from_secs(interval_secs);
+            gfx_builder = gfx_builder.with_proxy_callback(move |proxy| {
+                let weak_proxy = proxy.downgrade();
+                drop(proxy);
+                thread::Builder::new()
+                    .name("surface-lifecycle-simulator".to_owned())
+                    .spawn(move || {
+                        loop {
+                            thread::sleep(interval);
+                            let Some(proxy) = weak_proxy.upgrade() else {
+                                break;
+                            };
+                            proxy.simulate_destroy_surfaces();
+                            drop(proxy);
+
+                            thread::sleep(interval);
+                            let Some(proxy) = weak_proxy.upgrade() else {
+                                break;
+                            };
+                            proxy.simulate_can_create_surfaces();
+                            drop(proxy);
+                        }
+                    })
+                    .expect("failed to spawn surface lifecycle simulator");
+            });
+        }
         let gdb_port = self.gdb_port.clone();
 
         gfx_builder.run(

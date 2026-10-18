@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     ffi::{CStr, c_char, c_int, c_void},
     sync::{Arc, Mutex, OnceLock},
 };
@@ -21,6 +22,7 @@ pub struct Renderer {
     session: Mutex<()>,
     vk_lib: Arc<Entry>,
     system_proxy: Arc<dyn SystemProxy>,
+    surface_windows: Mutex<HashMap<(ash::vk::Instance, ash::vk::SurfaceKHR), u32>>,
 }
 
 impl Renderer {
@@ -57,18 +59,54 @@ impl Renderer {
                         p_allocator: *const ash::vk::AllocationCallbacks<'_>,
                         p_surface: *mut ash::vk::SurfaceKHR,
                     ) -> ash::vk::Result {
-                        SHARED_RENDERER
-                            .get()
-                            .unwrap()
-                            .system_proxy
-                            .vk_create_surface_webrogue(
-                                instance,
-                                unsafe { p_create_info.read().webrogue_window_id },
-                                p_allocator,
-                                p_surface,
-                            )
+                        let renderer = SHARED_RENDERER.get().unwrap();
+                        let webrogue_window_id = unsafe { p_create_info.read().webrogue_window_id };
+                        let result = renderer.system_proxy.vk_create_surface_webrogue(
+                            instance,
+                            webrogue_window_id,
+                            p_allocator,
+                            p_surface,
+                        );
+                        if result == ash::vk::Result::SUCCESS && !p_surface.is_null() {
+                            let surface = unsafe { p_surface.read() };
+                            renderer
+                                .surface_windows
+                                .lock()
+                                .unwrap()
+                                .insert((instance, surface), webrogue_window_id);
+                        }
+                        result
                     }
                     Some(unsafe { std::mem::transmute(vk_create_surface_webrogue as *const ()) })
+                }
+                "vkDestroySurfaceKHR" => {
+                    unsafe extern "system" fn vk_destroy_surface_khr(
+                        instance: ash::vk::Instance,
+                        surface: ash::vk::SurfaceKHR,
+                        p_allocator: *const ash::vk::AllocationCallbacks<'_>,
+                    ) {
+                        let renderer = SHARED_RENDERER.get().unwrap();
+                        let instance_handle = instance;
+                        let instance =
+                            unsafe { ash::Instance::load(renderer.vk_lib.static_fn(), instance) };
+                        let surface_api =
+                            ash::khr::surface::Instance::new(&renderer.vk_lib, &instance);
+                        unsafe { surface_api.destroy_surface(surface, p_allocator.as_ref()) };
+
+                        let webrogue_window_id = renderer
+                            .surface_windows
+                            .lock()
+                            .unwrap()
+                            .remove(&(instance_handle, surface));
+                        if let Some(webrogue_window_id) = webrogue_window_id {
+                            renderer
+                                .system_proxy
+                                .vk_surface_destroyed(webrogue_window_id);
+                        }
+                    }
+                    let vk_destroy_surface_khr: ash::vk::PFN_vkDestroySurfaceKHR =
+                        vk_destroy_surface_khr;
+                    Some(unsafe { std::mem::transmute(vk_destroy_surface_khr as *const ()) })
                 }
                 "vkCreateInstance" => {
                     unsafe extern "system" fn vk_create_instance(
@@ -140,6 +178,7 @@ impl Renderer {
             session: Mutex::new(()),
             vk_lib,
             system_proxy,
+            surface_windows: Mutex::new(HashMap::new()),
         })
     }
 

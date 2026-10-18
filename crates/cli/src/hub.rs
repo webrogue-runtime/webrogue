@@ -117,9 +117,8 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
             let response = if let Some(response) = maybe_response.as_mut() {
                 response
             } else {
-                let response = webrogue_cli_goodies::step_async(
-                    "Fetching device list".to_string(),
-                    async || {
+                let response =
+                    webrogue_cli_goodies::step_async("Fetching device list".to_string(), async {
                         let mut configuration =
                             webrogue_hub_client::openapi::apis::configuration::Configuration::new();
                         configuration.bearer_access_token = Some(api_key.clone());
@@ -128,10 +127,9 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
                             &configuration,
                         )
                         .await
-                    },
-                )
-                .await
-                .context("Unable to fetch list of devices")?;
+                    })
+                    .await
+                    .context("Unable to fetch list of devices")?;
 
                 maybe_response.insert(response)
             };

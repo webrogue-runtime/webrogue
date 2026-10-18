@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-
 use wasmtime::component::{HasData, Linker, ResourceTable, WasmList};
 use wasmtime::{AsContext as _, AsContextMut as _};
 
@@ -81,8 +80,8 @@ impl System {
 }
 
 pub trait AbstractWindow: Send + Sync {
-    fn get_size(&self) -> (u32, u32);
-    fn get_gl_size(&self) -> (u32, u32);
+    fn get_logical_size(&self) -> (u32, u32);
+    fn get_physical_size(&self) -> (u32, u32);
     fn get_vk_id(&self) -> Option<u32>;
     fn present_pixels(&self, pixels: &[u32]) -> anyhow::Result<bool>;
     fn get_event_stream(&self) -> EventStream;
@@ -161,6 +160,11 @@ pub trait AbstractBuilder {
 }
 
 impl<'a> generated::webrogue::gfx::windowing::Host for GFXCtxView<'a> {
+    fn make_window(&mut self) -> wasmtime::Result<wasmtime::component::Resource<Window>> {
+        let window = self.ctx.0.make_window();
+        Ok(self.table.push(window)?)
+    }
+
     fn close_window(
         &mut self,
         _window: wasmtime::component::Resource<Window>,
@@ -190,24 +194,19 @@ impl<'a> generated::webrogue::gfx::windowing::HostWindow for GFXCtxView<'a> {
         &mut self,
         self_: wasmtime::component::Resource<Window>,
     ) -> wasmtime::Result<(u32, u32)> {
-        Ok(self.table.get(&self_)?.0.get_size())
+        Ok(self.table.get(&self_)?.0.get_logical_size())
     }
 
     fn get_physical_size(
         &mut self,
         self_: wasmtime::component::Resource<Window>,
     ) -> wasmtime::Result<(u32, u32)> {
-        Ok(self.table.get(&self_)?.0.get_gl_size())
+        Ok(self.table.get(&self_)?.0.get_physical_size())
     }
 
     fn drop(&mut self, rep: wasmtime::component::Resource<Window>) -> wasmtime::Result<()> {
         self.table.delete(rep)?;
         Ok(())
-    }
-
-    fn new(&mut self) -> wasmtime::Result<wasmtime::component::Resource<Window>> {
-        let window = self.ctx.0.make_window();
-        Ok(self.table.push(window)?)
     }
 
     fn get_vulkan_id(

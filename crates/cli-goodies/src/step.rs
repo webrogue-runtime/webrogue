@@ -23,12 +23,12 @@ pub fn step<T, E>(message: String, func: impl FnOnce() -> Result<T, E>) -> Resul
     result
 }
 
-pub async fn step_async<T, E, Fut: Future<Output = Result<T, E>>>(
+pub async fn step_async<T, E>(
     message: String,
-    func: impl FnOnce() -> Fut,
+    future: impl Future<Output = Result<T, E>>,
 ) -> Result<T, E> {
     let state = step_start(message);
-    let result = func().await;
+    let result = future.await;
     step_stop(state, result.is_ok());
     result
 }

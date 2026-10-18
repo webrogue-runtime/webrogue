@@ -16,17 +16,10 @@ fn android_main(app: android_activity::AndroidApp) {
     let event_loop = event_loop_builder.build().unwrap();
 
     let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_event_loop(event_loop);
-    // Currently there are no means to recreate surfaces
-    // destroyed on [onStop]: https://developer.android.com/reference/android/app/Activity#onStop()
-    // so we simply exit and hope Android will restart this activity
-    #[cfg(feature = "launcher")]
-    let app_1 = app.clone();
-    gfx_builder = gfx_builder.with_on_hide(Box::new(move || {
+    gfx_builder = gfx_builder.with_on_hide(Box::new(move || unsafe {
         #[cfg(feature = "launcher")]
         finish_and_remove_current_task(&app_1);
-        unsafe {
-            ndk_sys::quick_exit(42);
-        }
+        ndk_sys::quick_exit(42);
     }));
 
     #[cfg(feature = "runner")]
@@ -144,8 +137,6 @@ fn android_main(app: android_activity::AndroidApp) {
             .run(
                 move |gfx_system| {
                     webrogue_wasmtime::block_on_default_executor(async {
-                        use std::sync::{Arc, Mutex};
-
                         webrogue_hub_debuggee::HubDebuggee::new(
                             std::path::PathBuf::from_str(&launch_intent_data.storage_path).unwrap(),
                             gfx_system,
