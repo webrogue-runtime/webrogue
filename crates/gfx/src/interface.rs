@@ -149,16 +149,6 @@ where
     Ok(())
 }
 
-pub trait AbstractBuilder {
-    fn run<Output>(
-        self,
-        body_fn: impl FnOnce(System) -> Output + Send + 'static,
-        vulkan_requirement: Option<bool>,
-    ) -> anyhow::Result<Output>
-    where
-        Output: Send + 'static;
-}
-
 impl<'a> generated::webrogue::gfx::windowing::Host for GFXCtxView<'a> {
     fn make_window(&mut self) -> wasmtime::Result<wasmtime::component::Resource<Window>> {
         let window = self.ctx.0.make_window();

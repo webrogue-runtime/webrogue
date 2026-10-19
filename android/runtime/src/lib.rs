@@ -7,7 +7,6 @@ fn android_main(app: android_activity::AndroidApp) {
             .with_tag("webrogue_launcher_logger"),
     );
 
-    use webrogue_gfx::AbstractBuilder as _;
     use winit_android::EventLoopBuilderExtAndroid as _;
 
     let mut event_loop_builder = winit::event_loop::EventLoopBuilder::default();

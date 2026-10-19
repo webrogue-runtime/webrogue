@@ -16,12 +16,13 @@ pub struct RunCommand {
     /// Enable the simulated surface lifecycle, using this interval in seconds.
     #[arg(long, value_name = "SECONDS")]
     surface_lifecycle_simulator: Option<u64>,
+    /// Replace mouse events with touch events
+    #[arg(long)]
+    simulate_touch: bool,
 }
 
 impl RunCommand {
     pub fn run(&self) -> anyhow::Result<()> {
-        use webrogue_gfx::AbstractBuilder;
-
         let cache = self.cache.clone();
 
         let vfs = VFS::build_from_path(&self.path).with_context(|| {
@@ -38,7 +39,9 @@ impl RunCommand {
             anyhow::bail!("surface lifecycle simulator interval must be at least one second");
         }
 
-        let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
+        let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?
+            .with_simulate_touch(self.simulate_touch);
+
         if let Some(interval_secs) = self.surface_lifecycle_simulator {
             let interval = Duration::from_secs(interval_secs);
             gfx_builder = gfx_builder.with_proxy_callback(move |proxy| {

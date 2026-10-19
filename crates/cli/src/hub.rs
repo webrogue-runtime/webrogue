@@ -41,8 +41,6 @@ impl HubCommand {
         match self {
             #[cfg(feature = "run")]
             HubCommand::HostRunner { storage, api_key } => {
-                use webrogue_gfx::AbstractBuilder as _;
-
                 let gfx_builder =
                     webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
                 let storage = storage.clone();

@@ -42,7 +42,7 @@ impl ProxiedWinitBuilder {
                 surface_lifecycle,
                 surface_callbacks: SurfaceCallbackState::default(),
                 finger_id_map: BTreeMap::new(),
-                simulate_touch: Arc::new(AtomicBool::new(true)),
+                simulate_touch: false,
             })),
         };
         (
@@ -71,6 +71,11 @@ impl ProxiedWinitBuilder {
         self
     }
 
+    pub fn with_simulate_touch(self, simulate_touch: bool) -> Self {
+        self.proxy.internal.lock().unwrap().simulate_touch = simulate_touch;
+        self
+    }
+
     pub fn to_system(self, vulkan_requirement: Option<bool>) -> anyhow::Result<System> {
         let (mailbox, vk_windows, surface_lifecycle) = {
             let proxy = self.proxy.internal.lock().unwrap();
@@ -90,6 +95,19 @@ impl ProxiedWinitBuilder {
         let system = System::new(Arc::new(system));
         Ok(system)
     }
+
+    pub fn run<Output>(
+        self,
+        body_fn: impl FnOnce(System) -> Output + Send + 'static,
+        vulkan_requirement: Option<bool>,
+    ) -> anyhow::Result<Output>
+    where
+        Output: Send + 'static,
+    {
+        let system = self.to_system(vulkan_requirement)?;
+
+        Ok(body_fn(system))
+    }
 }
 struct WinitProxyInternal {
     mailbox: Mailbox,
@@ -98,7 +116,7 @@ struct WinitProxyInternal {
     surface_lifecycle: Arc<SurfaceLifecycle>,
     surface_callbacks: SurfaceCallbackState,
     finger_id_map: BTreeMap<FingerId, u32>,
-    simulate_touch: Arc<AtomicBool>,
+    simulate_touch: bool,
 }
 
 #[derive(Default)]
@@ -289,13 +307,9 @@ impl WinitProxy {
         event: WindowEvent,
     ) {
         let mut internal = self.internal.lock().unwrap();
-        let simulate_touch = internal.simulate_touch.clone();
+        let simulate_touch = internal.simulate_touch;
         if let Some(window) = window_registry.get_window_by_winit_id(window_id) {
-            window.on_event(
-                event,
-                &mut internal.finger_id_map,
-                simulate_touch.load(std::sync::atomic::Ordering::Acquire),
-            );
+            window.on_event(event, &mut internal.finger_id_map, simulate_touch);
         }
     }
 
@@ -314,21 +328,6 @@ impl WeakWinitProxy {
         self.internal
             .upgrade()
             .map(|internal| WinitProxy { internal })
-    }
-}
-
-impl webrogue_gfx::AbstractBuilder for ProxiedWinitBuilder {
-    fn run<Output>(
-        self,
-        body_fn: impl FnOnce(System) -> Output + Send + 'static,
-        vulkan_requirement: Option<bool>,
-    ) -> anyhow::Result<Output>
-    where
-        Output: Send + 'static,
-    {
-        let system = self.to_system(vulkan_requirement)?;
-
-        Ok(body_fn(system))
     }
 }
 

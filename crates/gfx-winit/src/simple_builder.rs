@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use webrogue_gfx::{AbstractBuilder as _, System};
+use webrogue_gfx::System;
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
@@ -111,6 +111,7 @@ pub struct SimpleWinitBuilder {
     event_loop: EventLoop,
     on_hide: Option<Box<dyn Fn() + Send + Sync + 'static>>,
     proxy_callback: Option<ProxyCallback>,
+    simulate_touch: bool,
 }
 
 impl SimpleWinitBuilder {
@@ -119,6 +120,7 @@ impl SimpleWinitBuilder {
             event_loop,
             on_hide: None,
             proxy_callback: None,
+            simulate_touch: false,
         }
     }
 
@@ -127,11 +129,17 @@ impl SimpleWinitBuilder {
             event_loop: EventLoop::new()?,
             on_hide: Default::default(),
             proxy_callback: None,
+            simulate_touch: false,
         })
     }
 
     pub fn with_on_hide(mut self, on_hide: Box<dyn Fn() + Send + Sync + 'static>) -> Self {
         self.on_hide = Some(on_hide);
+        self
+    }
+
+    pub fn with_simulate_touch(mut self, simulate_touch: bool) -> Self {
+        self.simulate_touch = simulate_touch;
         self
     }
 
@@ -143,10 +151,8 @@ impl SimpleWinitBuilder {
         self.proxy_callback = Some(Box::new(callback));
         self
     }
-}
 
-impl webrogue_gfx::AbstractBuilder for SimpleWinitBuilder {
-    fn run<Output>(
+    pub fn run<Output>(
         self,
         body_fn: impl FnOnce(System) -> Output + Send + 'static,
         vulkan_requirement: Option<bool>,
@@ -165,13 +171,15 @@ impl webrogue_gfx::AbstractBuilder for SimpleWinitBuilder {
             let _ = cloned_output2.lock().unwrap().insert(Some(Err(error)));
         };
         let on_hide = self.on_hide;
+        let simulate_touch = self.simulate_touch;
         let app = App {
             body_fn: Some(Box::new(wrapped_body_fn)),
             set_error_fn: Some(Box::new(set_error_fn)),
             proxy_callback: self.proxy_callback,
             vulkan_requirement,
-            create_system_fn: Some(Box::new(|event_loop_proxy| {
+            create_system_fn: Some(Box::new(move |event_loop_proxy| {
                 let (mut builder, mailbox) = ProxiedWinitBuilder::new(event_loop_proxy);
+                builder = builder.with_simulate_touch(simulate_touch);
                 if let Some(on_hide) = on_hide {
                     builder = builder.with_on_hide(on_hide);
                 }
