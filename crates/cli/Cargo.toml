@@ -35,7 +35,10 @@ hub = [
     "dep:webrogue-cli-goodies",
     "__rustls",
 ]
-llvm = ["webrogue-aot-compiler/llvm"]
+llvm = [
+    "webrogue-aot-compiler?/llvm",
+    "dep:webrogue-lld",
+]
 appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
 __rustls = ["dep:rustls"]
 internal = []
@@ -58,6 +61,7 @@ webrogue-gfx-winit = { workspace = true, optional = true }
 webrogue-gfx = { workspace = true, optional = true }
 webrogue-virgl = { workspace = true, optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }
+webrogue-lld = { workspace = true, optional = true }
 webrogue-hub-client = { workspace = true, optional = true }
 webrogue-hub-debuggee = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"], optional = true }
