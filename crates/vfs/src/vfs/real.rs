@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::config::Config;
+use crate::{DARK_ICON_VFS_PATH, LIGHT_ICON_VFS_PATH, config::Config};
 use anyhow::Context as _;
 use webrogue_common::split_path;
 
@@ -104,6 +104,31 @@ impl RealVFS {
             main_path.push(part);
         }
         paths.insert(MAIN_WASM_VFS_PATH.to_string(), main_path);
+
+        for (vfs_path, icon_config) in [
+            (
+                LIGHT_ICON_VFS_PATH,
+                config.clone().icons.and_then(|icons| icons.light),
+            ),
+            (
+                DARK_ICON_VFS_PATH,
+                config.clone().icons.and_then(|icons| icons.dark),
+            ),
+        ] {
+            let Some(icon_config) = icon_config else {
+                continue;
+            };
+            let Some(config_path) = icon_config.path else {
+                continue;
+            };
+            let mut icon_path = root_dir.as_ref().to_path_buf();
+            for part in split_path(&config_path, 0)
+                .ok_or_else(|| anyhow::anyhow!("Error parsing \"{}\" as path", config_path))?
+            {
+                icon_path.push(part);
+            }
+            paths.insert(vfs_path.to_string(), icon_path);
+        }
 
         for (_, path) in &paths {
             anyhow::ensure!(

@@ -550,12 +550,13 @@ fn build() -> EventsBuilder {
         .field("down", Bool)
         .field("x", U32)
         .field("y", U32)
-        .field("is touch", Bool);
+        .field("touch id", U32);
 
     builder
         .add_event("mouse motion", 2)
         .field("x", U32)
-        .field("y", U32);
+        .field("y", U32)
+        .field("touch id", U32);
 
     builder
         .add_event("key", 3)
@@ -566,12 +567,14 @@ fn build() -> EventsBuilder {
 
     builder.add_event("quit", 4);
 
-    builder.add_event("window resized", 5);
-    builder.add_event("gl resized", 6);
+    builder.add_event("surface lost", 7);
+    builder.add_event("surface attached", 8);
+    builder.add_event("redraw requested", 9);
+    builder.add_event("resized", 10);
 
     // This value must be incremented when an event is added or changed,
     // then event's id must be changed to this new value:
-    // 6
+    // 10
 
     builder
 }
@@ -582,4 +585,29 @@ pub fn events() -> Vec<Event> {
 
 pub fn enums() -> Vec<Enum> {
     build().enums()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::events;
+
+    #[test]
+    fn surface_lifecycle_is_distinct_from_quit() {
+        let events = events();
+        let event = |name| events.iter().find(|event| event.name == name).unwrap();
+
+        let quit = event("quit");
+        assert_eq!(quit.id, 4);
+        assert!(quit.fields.is_empty());
+
+        assert_eq!(event("resized").id, 10);
+        assert!(
+            events
+                .iter()
+                .all(|event| event.name != "window resized" && event.name != "gl resized")
+        );
+        assert_eq!(event("surface lost").id, 7);
+        assert_eq!(event("surface attached").id, 8);
+        assert_eq!(event("redraw requested").id, 9);
+    }
 }

@@ -535,19 +535,21 @@ interface windowing {
     }
     
     variant window-event {
-        /// button, down, x, y, is-touch
-        mouse-button(tuple<mouse-button, bool, u32, u32, bool>),
-        /// x, y
-        mouse-motion(tuple<u32, u32>),
+        /// button, down, x, y, touch-id
+        mouse-button(tuple<mouse-button, bool, u32, u32, u32>),
+        /// x, y, touch-id
+        mouse-motion(tuple<u32, u32, u32>),
         /// down, named-key, physical-key, text
         key(tuple<bool, named-key, physical-key, list<u8>>),
         quit,
-        window-resized,
-        gl-resized,
+        surface-lost,
+        surface-attached,
+        redraw-requested,
+        resized,
     }
     // END GENERATED CODE
+    make-window: func() -> window;
     resource window {
-        constructor();
         get-logical-size: func() -> tuple<u32, u32>;
         get-physical-size: func() -> tuple<u32, u32>;
         get-vulkan-id: func() -> u32;

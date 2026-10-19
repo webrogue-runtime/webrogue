@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use webrogue_gfx::AbstractBuilder;
-
 fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
     let vfs = webrogue_vfs::VFS::build_from_path(&wrapp_path)?;
     let vulkan_requirement = vfs.config().vulkan_requirement().to_bool_option();

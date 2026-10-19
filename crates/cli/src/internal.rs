@@ -1,9 +1,8 @@
+use clap::Subcommand;
 #[cfg(feature = "internal-run")]
 use std::path::PathBuf;
 #[cfg(feature = "internal-run")]
 use std::sync::{Arc, Mutex};
-
-use clap::Subcommand;
 #[cfg(feature = "internal-run")]
 use webrogue_gfx::{AbstractSystem, AbstractWindow, EventSink, System, Window};
 
@@ -107,11 +106,11 @@ struct HeadlessWindow {
 
 #[cfg(feature = "internal-run")]
 impl AbstractWindow for HeadlessWindow {
-    fn get_size(&self) -> (u32, u32) {
+    fn get_logical_size(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 
-    fn get_gl_size(&self) -> (u32, u32) {
+    fn get_physical_size(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 

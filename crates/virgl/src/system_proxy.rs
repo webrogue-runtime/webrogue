@@ -6,5 +6,8 @@ pub trait SystemProxy: Send + Sync {
         p_allocator: *const ash::vk::AllocationCallbacks<'_>,
         p_surface: *mut ash::vk::SurfaceKHR,
     ) -> ash::vk::Result;
+
+    fn vk_surface_destroyed(&self, _webrogue_window_id: u32) {}
+
     fn get_required_extensions(&self) -> Vec<Vec<std::ffi::c_char>>;
 }
