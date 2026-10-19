@@ -62,6 +62,19 @@ enum Cli {
         #[command(flatten)]
         command: crate::schema_dump::SchemaDumpCommand,
     },
+    /// An internal command that runs the bundled LLD.
+    /// The first argument selects the LLD driver (for example, ld.lld or lld-link).
+    #[cfg(feature = "llvm")]
+    #[command(hide = true, disable_help_flag = true)]
+    Lld {
+        #[arg(
+            value_name = "ARG",
+            trailing_var_arg = true,
+            allow_hyphen_values = true,
+            required = true
+        )]
+        args: Vec<String>,
+    },
     // Some sort of bug in Clap prevents using command(flatten) here
     /// Generate keystore file usable for signing android applications.
     /// Note that you can do the same using "keytool" and "openssl" utilities
@@ -126,6 +139,11 @@ pub fn main() -> anyhow::Result<()> {
         }
         Cli::SchemaDump { command } => {
             command.run()?;
+            Ok(())
+        }
+        #[cfg(feature = "llvm")]
+        Cli::Lld { args } => {
+            webrogue_lld::run_lld(args)?;
             Ok(())
         }
         #[cfg(feature = "compile")]

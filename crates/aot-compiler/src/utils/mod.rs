@@ -4,7 +4,40 @@ use std::{fmt::Display, fs::File};
 
 pub(crate) fn run_lld(_args: Vec<String>) -> anyhow::Result<()> {
     #[cfg(feature = "llvm")]
-    return webrogue_lld::run_lld(_args);
+    {
+        use anyhow::Context as _;
+
+        anyhow::ensure!(
+            !_args.is_empty(),
+            "LLD arguments must include a driver name (for example, ld.lld)"
+        );
+
+        let mut command = if let Some(lld) = std::env::var_os("WEBROGUE_LLD") {
+            let mut command = std::process::Command::new(lld);
+            #[cfg(target_family = "unix")]
+            std::os::unix::process::CommandExt::arg0(&mut command, &_args[0]);
+            command.args(&_args[1..]);
+            command
+        } else {
+            // LLD can terminate the process instead of returning an error, so run
+            // the bundled LLD in a separate process.
+            let mut command = std::process::Command::new(std::env::current_exe()?);
+            command.arg("lld").args(&_args);
+            command
+        };
+
+        let status = command
+            .status()
+            .with_context(|| format!("failed to execute {command:?}"))?;
+        if !status.success() {
+            match status.code() {
+                Some(exit_code) => anyhow::bail!("lld failed with exit code {}", exit_code),
+                None => anyhow::bail!("lld failed: {}", status),
+            }
+        }
+
+        anyhow::Ok(())
+    }
     #[cfg(not(feature = "llvm"))]
     anyhow::bail!("LLVM feature is disabled at build time")
 }
