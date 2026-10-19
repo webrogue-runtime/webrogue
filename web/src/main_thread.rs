@@ -137,7 +137,7 @@ impl ApplicationHandler for App {
 
     fn destroy_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         if let Some(proxy) = self.proxy.as_ref() {
-            proxy.destroy_surfaces(event_loop);
+            proxy.destroy_surfaces(event_loop, &mut self.window_registry);
         }
     }
 

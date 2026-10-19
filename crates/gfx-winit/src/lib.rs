@@ -1,4 +1,5 @@
 mod events;
+mod lifecycle_state;
 mod mailbox;
 mod proxied_builder;
 mod simple_builder;

@@ -15,7 +15,9 @@ fn android_main(app: android_activity::AndroidApp) {
     let event_loop = event_loop_builder.build().unwrap();
 
     let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_event_loop(event_loop);
-    gfx_builder = gfx_builder.with_on_hide(Box::new(move || unsafe {
+    #[cfg(feature = "launcher")]
+    let app_1 = app.clone();
+    gfx_builder = gfx_builder.with_on_surface_teardown_timeout(Box::new(move || unsafe {
         #[cfg(feature = "launcher")]
         finish_and_remove_current_task(&app_1);
         ndk_sys::quick_exit(42);

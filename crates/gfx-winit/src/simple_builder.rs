@@ -109,7 +109,7 @@ impl App {
 
 pub struct SimpleWinitBuilder {
     event_loop: EventLoop,
-    on_hide: Option<Box<dyn Fn() + Send + Sync + 'static>>,
+    on_surface_teardown_timeout: Option<Box<dyn Fn() + Send + Sync + 'static>>,
     proxy_callback: Option<ProxyCallback>,
     simulate_touch: bool,
 }
@@ -118,7 +118,7 @@ impl SimpleWinitBuilder {
     pub fn with_event_loop(event_loop: EventLoop) -> Self {
         Self {
             event_loop,
-            on_hide: None,
+            on_surface_teardown_timeout: None,
             proxy_callback: None,
             simulate_touch: false,
         }
@@ -127,14 +127,18 @@ impl SimpleWinitBuilder {
     pub fn with_default_event_loop() -> anyhow::Result<Self> {
         Ok(Self {
             event_loop: EventLoop::new()?,
-            on_hide: Default::default(),
+            on_surface_teardown_timeout: Default::default(),
             proxy_callback: None,
             simulate_touch: false,
         })
     }
 
-    pub fn with_on_hide(mut self, on_hide: Box<dyn Fn() + Send + Sync + 'static>) -> Self {
-        self.on_hide = Some(on_hide);
+    /// Set the callback invoked when surface teardown times out.
+    pub fn with_on_surface_teardown_timeout(
+        mut self,
+        on_surface_teardown_timeout: Box<dyn Fn() + Send + Sync + 'static>,
+    ) -> Self {
+        self.on_surface_teardown_timeout = Some(on_surface_teardown_timeout);
         self
     }
 
@@ -170,7 +174,7 @@ impl SimpleWinitBuilder {
         let set_error_fn = move |error| {
             let _ = cloned_output2.lock().unwrap().insert(Some(Err(error)));
         };
-        let on_hide = self.on_hide;
+        let on_surface_teardown_timeout = self.on_surface_teardown_timeout;
         let simulate_touch = self.simulate_touch;
         let app = App {
             body_fn: Some(Box::new(wrapped_body_fn)),
@@ -180,8 +184,8 @@ impl SimpleWinitBuilder {
             create_system_fn: Some(Box::new(move |event_loop_proxy| {
                 let (mut builder, mailbox) = ProxiedWinitBuilder::new(event_loop_proxy);
                 builder = builder.with_simulate_touch(simulate_touch);
-                if let Some(on_hide) = on_hide {
-                    builder = builder.with_on_hide(on_hide);
+                if let Some(on_surface_teardown_timeout) = on_surface_teardown_timeout {
+                    builder = builder.with_on_surface_teardown_timeout(on_surface_teardown_timeout);
                 }
                 (builder, mailbox)
             })),

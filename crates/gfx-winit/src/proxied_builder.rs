@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex, Weak, atomic::AtomicBool},
 };
 
-use webrogue_gfx::System;
+use webrogue_gfx::{System, events::Event};
 use winit::{
     event::{FingerId, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoopProxy},
@@ -12,6 +12,7 @@ use winit::{
 
 use crate::{
     WinitSystem, WinitWindow,
+    lifecycle_state::{LifecycleState, SurfaceAvailability, SurfaceTeardown},
     mailbox::{Mailbox, RequestQueue},
     surface_lifecycle::{SURFACE_DESTROY_TIMEOUT, SurfaceLifecycle},
     utils::lock_mutex,
@@ -25,25 +26,8 @@ pub struct ProxiedWinitBuilder {
 
 impl ProxiedWinitBuilder {
     pub fn new(event_loop_proxy: EventLoopProxy) -> (Self, WinitProxy) {
-        let mailbox = Mailbox {
-            event_loop_proxy,
-            requests: Arc::new(Mutex::new(Default::default())),
-            surface_requests: Arc::new(Mutex::new(Default::default())),
-            deferred_requests: Arc::new(Mutex::new(Default::default())),
-            surfaces_available: Arc::new(AtomicBool::new(false)),
-        };
-        let vk_windows = Arc::new(Mutex::new(Vec::new()));
-        let surface_lifecycle = Arc::new(SurfaceLifecycle::default());
         let proxy = WinitProxy {
-            internal: Arc::new(Mutex::new(WinitProxyInternal {
-                mailbox,
-                on_hide: None,
-                vk_windows,
-                surface_lifecycle,
-                surface_callbacks: SurfaceCallbackState::default(),
-                finger_id_map: BTreeMap::new(),
-                simulate_touch: false,
-            })),
+            state: Arc::new(Mutex::new(WinitProxyState::new(event_loop_proxy))),
         };
         (
             Self {
@@ -54,12 +38,17 @@ impl ProxiedWinitBuilder {
         )
     }
 
-    /// Set the fallback called if the guest does not destroy all Vulkan
-    /// surfaces before the lifecycle timeout. The callback must terminate the
-    /// process; returning still aborts to avoid returning to Android with a
-    /// live surface.
-    pub fn with_on_hide(self, on_hide: Box<dyn Fn() + Send + Sync + 'static>) -> Self {
-        self.proxy.internal.lock().unwrap().on_hide = Some(Arc::from(on_hide));
+    /// Set the callback invoked when surface teardown times out, i.e. when the
+    /// guest does not destroy all Vulkan surfaces before the lifecycle timeout.
+    /// The callback must terminate the process; returning still aborts to avoid
+    /// returning to Android with a live surface.
+    pub fn with_on_surface_teardown_timeout(
+        self,
+        on_surface_teardown_timeout: Box<dyn Fn() + Send + Sync + 'static>,
+    ) -> Self {
+        self.proxy.with_state(|state| {
+            state.on_surface_teardown_timeout = Some(Arc::from(on_surface_teardown_timeout));
+        });
         self
     }
 
@@ -72,19 +61,19 @@ impl ProxiedWinitBuilder {
     }
 
     pub fn with_simulate_touch(self, simulate_touch: bool) -> Self {
-        self.proxy.internal.lock().unwrap().simulate_touch = simulate_touch;
+        self.proxy
+            .with_state(|state| state.simulate_touch = simulate_touch);
         self
     }
 
     pub fn to_system(self, vulkan_requirement: Option<bool>) -> anyhow::Result<System> {
-        let (mailbox, vk_windows, surface_lifecycle) = {
-            let proxy = self.proxy.internal.lock().unwrap();
+        let (mailbox, vk_windows, surface_lifecycle) = self.proxy.with_state(|state| {
             (
-                proxy.mailbox.clone(),
-                proxy.vk_windows.clone(),
-                proxy.surface_lifecycle.clone(),
+                state.mailbox.clone(),
+                state.vk_windows.clone(),
+                state.surface_lifecycle.clone(),
             )
-        };
+        });
         let system = WinitSystem::new(
             mailbox,
             vulkan_requirement,
@@ -109,54 +98,57 @@ impl ProxiedWinitBuilder {
         Ok(body_fn(system))
     }
 }
-struct WinitProxyInternal {
+
+struct WinitProxyState {
     mailbox: Mailbox,
-    on_hide: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
+    on_surface_teardown_timeout: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
     vk_windows: Arc<Mutex<Vec<Weak<WinitWindow>>>>,
     surface_lifecycle: Arc<SurfaceLifecycle>,
-    surface_callbacks: SurfaceCallbackState,
+    lifecycle_state: LifecycleState,
     finger_id_map: BTreeMap<FingerId, u32>,
     simulate_touch: bool,
 }
 
-#[derive(Default)]
-struct SurfaceCallbackState {
-    can_create_surfaces_received: bool,
-    surfaces_were_destroyed: bool,
+impl WinitProxyState {
+    fn new(event_loop_proxy: EventLoopProxy) -> Self {
+        Self {
+            mailbox: Mailbox {
+                event_loop_proxy,
+                requests: Arc::new(Mutex::new(Default::default())),
+                surface_requests: Arc::new(Mutex::new(Default::default())),
+                deferred_requests: Arc::new(Mutex::new(Default::default())),
+                surfaces_available: Arc::new(AtomicBool::new(false)),
+            },
+            on_surface_teardown_timeout: None,
+            vk_windows: Arc::new(Mutex::new(Vec::new())),
+            surface_lifecycle: Arc::new(SurfaceLifecycle::default()),
+            lifecycle_state: LifecycleState::default(),
+            finger_id_map: BTreeMap::new(),
+            simulate_touch: false,
+        }
+    }
 }
 
-impl SurfaceCallbackState {
-    fn on_can_create_surfaces(&mut self) -> bool {
-        self.can_create_surfaces_received = true;
-        std::mem::replace(&mut self.surfaces_were_destroyed, false)
-    }
-
-    fn on_destroy_surfaces(&mut self) -> bool {
-        if self.surfaces_were_destroyed {
-            return false;
-        }
-        self.surfaces_were_destroyed = true;
-        true
-    }
-
-    fn can_simulate_destroy_surfaces(&self) -> bool {
-        self.can_create_surfaces_received && !self.surfaces_were_destroyed
-    }
-
-    fn can_simulate_can_create_surfaces(&self) -> bool {
-        self.can_create_surfaces_received && self.surfaces_were_destroyed
-    }
+#[derive(Clone, Copy)]
+enum LifecycleAction {
+    Availability(SurfaceAvailability),
+    Teardown(SurfaceTeardown),
 }
 
 #[derive(Clone)]
 pub struct WinitProxy {
-    internal: Arc<Mutex<WinitProxyInternal>>,
+    state: Arc<Mutex<WinitProxyState>>,
 }
 
 impl WinitProxy {
+    fn with_state<R>(&self, f: impl FnOnce(&mut WinitProxyState) -> R) -> R {
+        let mut state = lock_mutex(&self.state);
+        f(&mut state)
+    }
+
     pub fn downgrade(&self) -> WeakWinitProxy {
         WeakWinitProxy {
-            internal: Arc::downgrade(&self.internal),
+            state: Arc::downgrade(&self.state),
         }
     }
 
@@ -165,7 +157,7 @@ impl WinitProxy {
         event_loop: &dyn ActiveEventLoop,
         window_registry: &mut WindowRegistry,
     ) {
-        let mailbox = lock_mutex(&self.internal).mailbox.clone();
+        let mailbox = self.get_mailbox();
         Self::run_requests(&mailbox.requests, event_loop, window_registry);
         if mailbox.surfaces_available() {
             Self::run_requests(&mailbox.deferred_requests, event_loop, window_registry);
@@ -178,111 +170,195 @@ impl WinitProxy {
         event_loop: &dyn ActiveEventLoop,
         window_registry: &mut WindowRegistry,
     ) {
-        let (mailbox, vk_windows, surfaces_were_destroyed) = {
-            let mut internal = lock_mutex(&self.internal);
-            let surfaces_were_destroyed = internal.surface_callbacks.on_can_create_surfaces();
-            (
-                internal.mailbox.clone(),
-                internal.vk_windows.clone(),
-                surfaces_were_destroyed,
-            )
-        };
-        let attached_windows = if surfaces_were_destroyed {
-            let windows = vk_windows
-                .lock()
-                .unwrap()
-                .iter()
-                .filter_map(Weak::upgrade)
-                .filter(|window| window.had_native_window())
-                .collect::<Vec<_>>();
-            for window in &windows {
-                window.create_native_window(event_loop, window_registry);
-            }
-            windows
-        } else {
-            Vec::new()
-        };
-
-        mailbox.resume_surfaces();
-        self.proxy_wake_up(event_loop, window_registry);
-        for window in attached_windows {
-            window
-                .event_sink
-                .push_critical_event(webrogue_gfx::events::Event::SurfaceAttached);
-            window
-                .event_sink
-                .push_event(webrogue_gfx::events::Event::RedrawRequested);
-        }
+        self.handle_platform_lifecycle_event(event_loop, window_registry, |state| {
+            LifecycleAction::Availability(state.platform_available())
+        });
     }
 
     pub fn destroy_surfaces(
         &self,
-        _event_loop: &dyn ActiveEventLoop,
+        event_loop: &dyn ActiveEventLoop,
         window_registry: &mut WindowRegistry,
     ) {
-        let (on_hide, surface_lifecycle, vk_windows) = {
-            let mut internal = lock_mutex(&self.internal);
-            if !internal.surface_callbacks.on_destroy_surfaces() {
-                return;
-            }
-            internal.mailbox.suspend_surfaces();
-            (
-                internal.on_hide.clone(),
-                internal.surface_lifecycle.clone(),
-                internal.vk_windows.clone(),
-            )
-        };
+        self.handle_platform_lifecycle_event(event_loop, window_registry, |state| {
+            LifecycleAction::Teardown(state.platform_lost())
+        });
+    }
 
-        // Complete operations queued just before suspension with their
-        // unavailable/no-op result; do not leave the guest blocked while it
-        // needs to process SurfaceLost.
-        let mailbox = lock_mutex(&self.internal).mailbox.clone();
-        Self::run_requests(&mailbox.surface_requests, _event_loop, window_registry);
+    fn handle_platform_lifecycle_event(
+        &self,
+        event_loop: &dyn ActiveEventLoop,
+        window_registry: &mut WindowRegistry,
+        update: impl FnOnce(&mut LifecycleState) -> LifecycleAction,
+    ) {
+        let action = self.update_lifecycle_state(update);
+        self.apply_lifecycle_action(event_loop, window_registry, action);
+    }
 
-        let affected_window_ids = window_registry.notify_surface_lost();
-        if !surface_lifecycle.wait_until_destroyed(&affected_window_ids, SURFACE_DESTROY_TIMEOUT) {
-            if let Some(on_hide) = on_hide {
-                on_hide();
+    fn update_lifecycle_state(
+        &self,
+        update: impl FnOnce(&mut LifecycleState) -> LifecycleAction,
+    ) -> LifecycleAction {
+        self.with_state(|state| update(&mut state.lifecycle_state))
+    }
+
+    fn apply_lifecycle_action(
+        &self,
+        event_loop: &dyn ActiveEventLoop,
+        window_registry: &mut WindowRegistry,
+        action: LifecycleAction,
+    ) {
+        match action {
+            LifecycleAction::Availability(availability) => {
+                self.apply_availability(event_loop, window_registry, availability);
             }
-            // Returning to Android with a live VkSurfaceKHR would let the OS
-            // invalidate its native window while Vulkan still owns it.
-            std::process::abort();
+            LifecycleAction::Teardown(teardown) => {
+                self.apply_teardown(event_loop, window_registry, teardown);
+            }
         }
+    }
+
+    fn apply_availability(
+        &self,
+        event_loop: &dyn ActiveEventLoop,
+        window_registry: &mut WindowRegistry,
+        availability: SurfaceAvailability,
+    ) {
+        match availability {
+            SurfaceAvailability::Ignored => {}
+            SurfaceAvailability::ResumeOnly => {
+                self.resume_surfaces(event_loop, window_registry);
+            }
+            SurfaceAvailability::RecreateAndResume => {
+                let windows = self.recreate_native_windows(event_loop, window_registry);
+                self.resume_surfaces(event_loop, window_registry);
+                Self::notify_surfaces_attached(windows);
+            }
+        }
+    }
+
+    fn recreate_native_windows(
+        &self,
+        event_loop: &dyn ActiveEventLoop,
+        window_registry: &mut WindowRegistry,
+    ) -> Vec<Arc<WinitWindow>> {
+        let vk_windows = self.with_state(|state| state.vk_windows.clone());
+        let windows = vk_windows
+            .lock()
+            .unwrap()
+            .iter()
+            .filter_map(Weak::upgrade)
+            .filter(|window| window.had_native_window())
+            .collect::<Vec<_>>();
+        for window in &windows {
+            window.create_native_window(event_loop, window_registry);
+        }
+        windows
+    }
+
+    fn apply_teardown(
+        &self,
+        event_loop: &dyn ActiveEventLoop,
+        window_registry: &mut WindowRegistry,
+        teardown: SurfaceTeardown,
+    ) {
+        match teardown {
+            SurfaceTeardown::Ignored => {}
+            SurfaceTeardown::SuspendAndDestroyWindows => {
+                self.suspend_surfaces(event_loop, window_registry);
+                self.wait_for_surface_teardown(window_registry);
+                self.detach_native_windows(window_registry);
+            }
+        }
+    }
+
+    fn wait_for_surface_teardown(&self, window_registry: &WindowRegistry) {
+        let (on_surface_teardown_timeout, surface_lifecycle) = self.with_state(|state| {
+            (
+                state.on_surface_teardown_timeout.clone(),
+                state.surface_lifecycle.clone(),
+            )
+        });
+
+        // Surfaces must be gone before their native windows are detached.
+        let affected_window_ids = window_registry.surface_window_ids();
+        if surface_lifecycle.wait_until_destroyed(&affected_window_ids, SURFACE_DESTROY_TIMEOUT) {
+            return;
+        }
+
+        if let Some(on_surface_teardown_timeout) = on_surface_teardown_timeout {
+            on_surface_teardown_timeout();
+        }
+        // Returning to Android with a live VkSurfaceKHR would let the OS
+        // invalidate its native window while Vulkan still owns it.
+        std::process::abort();
+    }
+
+    fn detach_native_windows(&self, window_registry: &mut WindowRegistry) {
+        let vk_windows = self.with_state(|state| state.vk_windows.clone());
         for window in vk_windows.lock().unwrap().iter().filter_map(Weak::upgrade) {
             window.detach_native_window();
         }
         window_registry.clean();
     }
 
+    fn resume_surfaces(
+        &self,
+        event_loop: &dyn ActiveEventLoop,
+        window_registry: &mut WindowRegistry,
+    ) {
+        self.get_mailbox().resume_surfaces();
+        self.proxy_wake_up(event_loop, window_registry);
+    }
+
+    fn suspend_surfaces(
+        &self,
+        event_loop: &dyn ActiveEventLoop,
+        window_registry: &mut WindowRegistry,
+    ) {
+        let mailbox = self.get_mailbox();
+        mailbox.suspend_surfaces();
+
+        // Complete operations queued just before suspension with their
+        // unavailable/no-op result; do not leave the guest blocked while it
+        // needs to process SurfaceLost.
+        Self::run_requests(&mailbox.surface_requests, event_loop, window_registry);
+        window_registry.notify_surface_lost();
+    }
+
+    fn notify_surfaces_attached(windows: impl IntoIterator<Item = Arc<WinitWindow>>) {
+        for window in windows {
+            window
+                .event_sink
+                .push_critical_event(Event::SurfaceAttached);
+            window.event_sink.push_event(Event::RedrawRequested);
+        }
+    }
+
     pub fn simulate_destroy_surfaces(&self) {
-        let weak_proxy = self.downgrade();
-        self.get_mailbox()
-            .execute(move |event_loop, window_registry| {
-                let Some(proxy) = weak_proxy.upgrade() else {
-                    return;
-                };
-                let should_simulate = lock_mutex(&proxy.internal)
-                    .surface_callbacks
-                    .can_simulate_destroy_surfaces();
-                if should_simulate {
-                    proxy.destroy_surfaces(event_loop, window_registry);
-                }
-            });
+        self.schedule_simulated_lifecycle_event(|state| {
+            LifecycleAction::Teardown(state.simulated_lost())
+        });
     }
 
     pub fn simulate_can_create_surfaces(&self) {
+        self.schedule_simulated_lifecycle_event(|state| {
+            LifecycleAction::Availability(state.simulated_available())
+        });
+    }
+
+    fn schedule_simulated_lifecycle_event(
+        &self,
+        update: impl FnOnce(&mut LifecycleState) -> LifecycleAction + Send + 'static,
+    ) {
         let weak_proxy = self.downgrade();
         self.get_mailbox()
             .execute(move |event_loop, window_registry| {
                 let Some(proxy) = weak_proxy.upgrade() else {
                     return;
                 };
-                let should_simulate = lock_mutex(&proxy.internal)
-                    .surface_callbacks
-                    .can_simulate_can_create_surfaces();
-                if should_simulate {
-                    proxy.can_create_surfaces(event_loop, window_registry);
-                }
+                let action = proxy.update_lifecycle_state(update);
+                proxy.apply_lifecycle_action(event_loop, window_registry, action);
             });
     }
 
@@ -306,67 +382,26 @@ impl WinitProxy {
         window_id: WindowId,
         event: WindowEvent,
     ) {
-        let mut internal = self.internal.lock().unwrap();
-        let simulate_touch = internal.simulate_touch;
-        if let Some(window) = window_registry.get_window_by_winit_id(window_id) {
-            window.on_event(event, &mut internal.finger_id_map, simulate_touch);
-        }
+        self.with_state(|state| {
+            let simulate_touch = state.simulate_touch;
+            if let Some(window) = window_registry.get_window_by_winit_id(window_id) {
+                window.on_event(event, &mut state.finger_id_map, simulate_touch);
+            }
+        });
     }
 
     pub(crate) fn get_mailbox(&self) -> Mailbox {
-        self.internal.lock().unwrap().mailbox.clone()
+        self.with_state(|state| state.mailbox.clone())
     }
 }
 
 #[derive(Clone)]
 pub struct WeakWinitProxy {
-    internal: Weak<Mutex<WinitProxyInternal>>,
+    state: Weak<Mutex<WinitProxyState>>,
 }
 
 impl WeakWinitProxy {
     pub fn upgrade(&self) -> Option<WinitProxy> {
-        self.internal
-            .upgrade()
-            .map(|internal| WinitProxy { internal })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::SurfaceCallbackState;
-
-    #[test]
-    fn simulated_attach_waits_for_the_first_real_availability_callback() {
-        let mut state = SurfaceCallbackState::default();
-
-        assert!(!state.can_simulate_can_create_surfaces());
-        assert!(!state.can_simulate_destroy_surfaces());
-
-        assert!(!state.on_can_create_surfaces());
-        assert!(state.can_simulate_destroy_surfaces());
-    }
-
-    #[test]
-    fn duplicate_destroy_is_ignored_and_attach_resets_the_state() {
-        let mut state = SurfaceCallbackState::default();
-        state.on_can_create_surfaces();
-
-        assert!(state.on_destroy_surfaces());
-        assert!(!state.on_destroy_surfaces());
-        assert!(state.can_simulate_can_create_surfaces());
-
-        assert!(state.on_can_create_surfaces());
-        assert!(!state.can_simulate_can_create_surfaces());
-        assert!(state.on_destroy_surfaces());
-    }
-
-    #[test]
-    fn simulated_attach_does_not_run_for_a_destroy_before_initial_availability() {
-        let mut state = SurfaceCallbackState::default();
-
-        assert!(state.on_destroy_surfaces());
-        assert!(!state.can_simulate_can_create_surfaces());
-        assert!(state.on_can_create_surfaces());
-        assert!(!state.can_simulate_can_create_surfaces());
+        self.state.upgrade().map(|state| WinitProxy { state })
     }
 }
