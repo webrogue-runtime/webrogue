@@ -1,7 +1,3 @@
-#[cfg(not(feature = "link-llvm"))]
-fn main() {}
-
-#[cfg(feature = "link-llvm")]
 fn main() {
     use std::env;
     use std::path::PathBuf;
