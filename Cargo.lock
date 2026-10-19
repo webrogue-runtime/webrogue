@@ -7942,6 +7942,7 @@ dependencies = [
  "anyhow",
  "ash",
  "ash-window",
+ "image",
  "parking_lot",
  "softbuffer",
  "tokio",
@@ -8142,6 +8143,7 @@ name = "webrogue-vfs"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "image",
  "schemars",
  "semver",
  "serde",

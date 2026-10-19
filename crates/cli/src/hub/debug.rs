@@ -145,7 +145,10 @@ async fn launch_wrapp(vfs: VFS, connection: &mut OutgoingDebugConnection) -> any
                         .update_reader(
                             vfs.open(&path)
                                 .map_err(|_| anyhow::anyhow!("Unable to open VFS path {}", path))?
-                                .reader(),
+                                .reader()
+                                .map_err(|_| {
+                                    anyhow::anyhow!("Unable to read at VFS path {}", path)
+                                })?,
                         )?
                         .finalize()
                         .to_hex()
@@ -181,7 +184,8 @@ async fn launch_wrapp(vfs: VFS, connection: &mut OutgoingDebugConnection) -> any
         let mut reader = vfs
             .open(&path)
             .map_err(|_| anyhow::anyhow!("Unable to open VFS path {}", path))?
-            .reader();
+            .reader()
+            .map_err(|_| anyhow::anyhow!("Unable to read at VFS path {}", path))?;
         println!("Sending \"{}\" with hash \"{}\"", path, hash);
         let mut pos: u64 = 0;
         let mut buf = [0u8; 16 * 1024];

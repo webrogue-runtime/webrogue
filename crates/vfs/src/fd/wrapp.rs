@@ -31,7 +31,6 @@ impl WrappFD {
             .read_at(buf, offset, &self.file))
     }
 
-    #[cfg(feature = "wasmtime")]
     pub fn size(&self) -> VFSResult<u64> {
         Ok(self.file.size())
     }

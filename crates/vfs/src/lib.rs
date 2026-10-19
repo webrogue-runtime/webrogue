@@ -14,8 +14,12 @@ pub use vfs::VFS;
 pub const RESOURCES_ROOT_VFS_PATH: &str = "res";
 pub const CONFIG_VFS_PATH: &str = "config.json";
 pub const MAIN_WASM_VFS_PATH: &str = "main.wasm";
+
 pub const LIGHT_ICON_VFS_PATH: &str = "icons/light";
 pub const DARK_ICON_VFS_PATH: &str = "icons/dark";
+
+pub const LIGHT_WINDOW_ICON_VFS_PATH: &str = "icons/window_light";
+pub const DARK_WINDOW_ICON_VFS_PATH: &str = "icons/window_dark";
 
 #[derive(Debug, PartialEq)]
 pub enum VFSError {

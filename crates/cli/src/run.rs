@@ -40,7 +40,11 @@ impl RunCommand {
         }
 
         let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?
-            .with_simulate_touch(self.simulate_touch);
+            .with_simulate_touch(self.simulate_touch)
+            .with_window_icons(webrogue_gfx_winit::WindowIcons {
+                light: vfs.get_window_icon(false),
+                dark: vfs.get_window_icon(true),
+            });
 
         if let Some(interval_secs) = self.surface_lifecycle_simulator {
             let interval = Duration::from_secs(interval_secs);

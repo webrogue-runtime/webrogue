@@ -127,6 +127,7 @@ impl JitRuntime {
             .open(MAIN_WASM_VFS_PATH)
             .map_err(|_| anyhow::anyhow!("Unable to open WASM binary in VFS"))?
             .reader()
+            .map_err(|_| anyhow::anyhow!("Unable to read WASM binary in VFS"))?
             .read_to_end(&mut wasm_binary)?;
 
         let component = wasmtime::component::Component::from_binary(&engine, &wasm_binary)?;

@@ -1,7 +1,10 @@
 pub mod real;
 pub mod wrapp;
 
-use std::{io::Read, sync::Arc};
+use std::{
+    io::{Read, Seek},
+    sync::Arc,
+};
 
 use crate::{
     VFS, VFSError, VFSResult,
@@ -34,10 +37,19 @@ impl FD {
         }
     }
 
-    pub fn reader(&self) -> impl Read + use<> {
-        FDReader {
+    pub fn reader(&self) -> VFSResult<impl webrogue_common::RandomAccessReader + use<>> {
+        Ok(FDReader {
             fd: self.clone(),
             offset: 0,
+            size: self.size()?,
+        })
+    }
+
+    pub fn size(&self) -> VFSResult<u64> {
+        match &*self.0 {
+            FDInner::Real(fd) => fd.size(),
+            FDInner::Wrapp(fd) => fd.size(),
+            FDInner::Dir(_) => Err(VFSError::Unsupported),
         }
     }
 }
@@ -45,6 +57,7 @@ impl FD {
 struct FDReader {
     fd: FD,
     offset: u64,
+    size: u64,
 }
 
 impl Read for FDReader {
@@ -56,5 +69,26 @@ impl Read for FDReader {
 
         self.offset += result as u64;
         Ok(result)
+    }
+}
+
+impl Seek for FDReader {
+    fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
+        self.offset = match pos {
+            std::io::SeekFrom::Start(offset) => offset,
+            std::io::SeekFrom::End(offset) => self
+                .size
+                .checked_add_signed(offset)
+                .ok_or(std::io::Error::new(std::io::ErrorKind::Other, "error"))?
+                .try_into()
+                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?,
+            std::io::SeekFrom::Current(offset) => self
+                .offset
+                .checked_add_signed(offset)
+                .ok_or(std::io::Error::new(std::io::ErrorKind::Other, "error"))?
+                .try_into()
+                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?,
+        };
+        Ok(self.offset)
     }
 }

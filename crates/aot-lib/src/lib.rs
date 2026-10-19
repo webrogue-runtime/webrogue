@@ -32,16 +32,21 @@ extern "C" fn webrogue_aot_windows() {
             .join(config.id.clone().replace('.', "-"))
             .join("persistent");
 
-        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?.run(
-            move |gfx_system| {
-                webrogue_wasmtime::block_on_default_executor(
-                    webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path)
-                        .aot()
-                        .run(),
-                )
-            },
-            config.vulkan_requirement().to_bool_option(),
-        )??;
+        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?
+            .with_window_icons(webrogue_gfx_winit::WindowIcons {
+                light: vfs.get_window_icon(false),
+                dark: vfs.get_window_icon(true),
+            })
+            .run(
+                move |gfx_system| {
+                    webrogue_wasmtime::block_on_default_executor(
+                        webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path)
+                            .aot()
+                            .run(),
+                    )
+                },
+                config.vulkan_requirement().to_bool_option(),
+            )??;
         anyhow::Ok(())
     })();
 
@@ -54,7 +59,6 @@ extern "C" fn webrogue_aot_windows() {
                 .trim()
                 .encode_utf16()
                 .collect::<Vec<_>>();
-            // 3. If you have unsupported hardware or run inside of a VM, try installing OpenCL™, OpenGL®, and Vulkan® Compatibility Pack from Microsoft Store.
 
             message.push(0);
 
@@ -100,16 +104,21 @@ extern "C" fn webrogue_aot_linux() {
             .join(&config.id)
             .join("persistent");
 
-        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?.run(
-            move |gfx_system| {
-                webrogue_wasmtime::block_on_default_executor(
-                    webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path)
-                        .aot()
-                        .run(),
-                )
-            },
-            config.vulkan_requirement().to_bool_option(),
-        )??;
+        webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?
+            .with_window_icons(webrogue_gfx_winit::WindowIcons {
+                light: vfs.get_window_icon(false),
+                dark: vfs.get_window_icon(true),
+            })
+            .run(
+                move |gfx_system| {
+                    webrogue_wasmtime::block_on_default_executor(
+                        webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path)
+                            .aot()
+                            .run(),
+                    )
+                },
+                config.vulkan_requirement().to_bool_option(),
+            )??;
 
         Ok(())
     }();
