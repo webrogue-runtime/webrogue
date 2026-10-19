@@ -16,6 +16,7 @@ use crate::{
     mailbox::{Mailbox, RequestQueue},
     surface_lifecycle::{SURFACE_DESTROY_TIMEOUT, SurfaceLifecycle},
     utils::lock_mutex,
+    window_icons::{WindowIcons, set_window_icon},
     window_registry::WindowRegistry,
 };
 
@@ -66,12 +67,19 @@ impl ProxiedWinitBuilder {
         self
     }
 
+    pub fn with_window_icons(self, icons: WindowIcons) -> Self {
+        self.proxy
+            .with_state(|state| *state.icons.lock().unwrap() = icons);
+        self
+    }
+
     pub fn to_system(self, vulkan_requirement: Option<bool>) -> anyhow::Result<System> {
-        let (mailbox, vk_windows, surface_lifecycle) = self.proxy.with_state(|state| {
+        let (mailbox, vk_windows, surface_lifecycle, icons) = self.proxy.with_state(|state| {
             (
                 state.mailbox.clone(),
                 state.vk_windows.clone(),
                 state.surface_lifecycle.clone(),
+                state.icons.clone(),
             )
         });
         let system = WinitSystem::new(
@@ -80,6 +88,7 @@ impl ProxiedWinitBuilder {
             self.window_attributes_fn.clone(),
             vk_windows,
             surface_lifecycle,
+            icons,
         )?;
         let system = System::new(Arc::new(system));
         Ok(system)
@@ -107,6 +116,7 @@ struct WinitProxyState {
     lifecycle_state: LifecycleState,
     finger_id_map: BTreeMap<FingerId, u32>,
     simulate_touch: bool,
+    icons: Arc<Mutex<WindowIcons>>,
 }
 
 impl WinitProxyState {
@@ -125,6 +135,10 @@ impl WinitProxyState {
             lifecycle_state: LifecycleState::default(),
             finger_id_map: BTreeMap::new(),
             simulate_touch: false,
+            icons: Arc::new(Mutex::new(WindowIcons {
+                light: None,
+                dark: None,
+            })),
         }
     }
 }
@@ -242,7 +256,8 @@ impl WinitProxy {
         event_loop: &dyn ActiveEventLoop,
         window_registry: &mut WindowRegistry,
     ) -> Vec<Arc<WinitWindow>> {
-        let vk_windows = self.with_state(|state| state.vk_windows.clone());
+        let (vk_windows, icons) =
+            self.with_state(|state| (state.vk_windows.clone(), state.icons.clone()));
         let windows = vk_windows
             .lock()
             .unwrap()
@@ -251,7 +266,7 @@ impl WinitProxy {
             .filter(|window| window.had_native_window())
             .collect::<Vec<_>>();
         for window in &windows {
-            window.create_native_window(event_loop, window_registry);
+            window.create_native_window(event_loop, window_registry, &icons.lock().unwrap());
         }
         windows
     }
@@ -385,6 +400,17 @@ impl WinitProxy {
         self.with_state(|state| {
             let simulate_touch = state.simulate_touch;
             if let Some(window) = window_registry.get_window_by_winit_id(window_id) {
+                match &event {
+                    WindowEvent::ThemeChanged(theme) => {
+                        set_window_icon(
+                            window.window.as_ref().as_ref(),
+                            *theme,
+                            &state.icons.lock().unwrap(),
+                        );
+                    }
+                    _ => {}
+                }
+
                 window.on_event(event, &mut state.finger_id_map, simulate_touch);
             }
         });

@@ -16,7 +16,11 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-use crate::{mailbox::Mailbox, window_registry::WindowRegistry};
+use crate::{
+    mailbox::Mailbox,
+    window_icons::{WindowIcons, set_window_icon},
+    window_registry::WindowRegistry,
+};
 
 pub struct CPUSurfaceData {
     // pub(crate) window: Arc<Box<dyn Window>>,
@@ -63,6 +67,7 @@ impl WinitWindow {
         &self,
         event_loop: &dyn ActiveEventLoop,
         window_registry: &mut WindowRegistry,
+        icons: &WindowIcons,
     ) {
         if self.window_id.lock().unwrap().is_some() {
             return;
@@ -75,6 +80,13 @@ impl WinitWindow {
         let native_window = Arc::new(event_loop.create_window(window_attributes).unwrap());
         native_window.set_title("Webrogue");
         native_window.set_resizable(true);
+        set_window_icon(
+            native_window.as_ref().as_ref(),
+            native_window.theme().unwrap_or(winit::window::Theme::Light),
+            icons,
+        );
+        // image::buffer::native_window
+        //     .set_window_icon(winit::icon::RgbaIcon::new(rgba, width, height));
         let window_id = native_window.id();
         window_registry.add_window(
             window_id,

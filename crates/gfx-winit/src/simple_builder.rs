@@ -8,7 +8,9 @@ use winit::{
     window::WindowId,
 };
 
-use crate::{ProxiedWinitBuilder, WinitProxy, window_registry::WindowRegistry};
+use crate::{
+    ProxiedWinitBuilder, WinitProxy, window_icons::WindowIcons, window_registry::WindowRegistry,
+};
 
 type CreateSystemFn =
     Box<dyn FnOnce(EventLoopProxy) -> (ProxiedWinitBuilder, WinitProxy) + Send + 'static>;
@@ -112,6 +114,7 @@ pub struct SimpleWinitBuilder {
     on_surface_teardown_timeout: Option<Box<dyn Fn() + Send + Sync + 'static>>,
     proxy_callback: Option<ProxyCallback>,
     simulate_touch: bool,
+    icons: WindowIcons,
 }
 
 impl SimpleWinitBuilder {
@@ -121,6 +124,10 @@ impl SimpleWinitBuilder {
             on_surface_teardown_timeout: None,
             proxy_callback: None,
             simulate_touch: false,
+            icons: WindowIcons {
+                light: None,
+                dark: None,
+            },
         }
     }
 
@@ -130,6 +137,10 @@ impl SimpleWinitBuilder {
             on_surface_teardown_timeout: Default::default(),
             proxy_callback: None,
             simulate_touch: false,
+            icons: WindowIcons {
+                light: None,
+                dark: None,
+            },
         })
     }
 
@@ -156,6 +167,11 @@ impl SimpleWinitBuilder {
         self
     }
 
+    pub fn with_window_icons(mut self, icons: WindowIcons) -> Self {
+        self.icons = icons;
+        self
+    }
+
     pub fn run<Output>(
         self,
         body_fn: impl FnOnce(System) -> Output + Send + 'static,
@@ -176,6 +192,7 @@ impl SimpleWinitBuilder {
         };
         let on_surface_teardown_timeout = self.on_surface_teardown_timeout;
         let simulate_touch = self.simulate_touch;
+        let icons = self.icons;
         let app = App {
             body_fn: Some(Box::new(wrapped_body_fn)),
             set_error_fn: Some(Box::new(set_error_fn)),
@@ -183,7 +200,9 @@ impl SimpleWinitBuilder {
             vulkan_requirement,
             create_system_fn: Some(Box::new(move |event_loop_proxy| {
                 let (mut builder, mailbox) = ProxiedWinitBuilder::new(event_loop_proxy);
-                builder = builder.with_simulate_touch(simulate_touch);
+                builder = builder
+                    .with_simulate_touch(simulate_touch)
+                    .with_window_icons(icons);
                 if let Some(on_surface_teardown_timeout) = on_surface_teardown_timeout {
                     builder = builder.with_on_surface_teardown_timeout(on_surface_teardown_timeout);
                 }

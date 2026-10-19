@@ -6,6 +6,7 @@ use webrogue_gfx::{EventSink, VirGLContextContainer, VirGLRenderer};
 use winit::window::WindowAttributes;
 
 use crate::surface_lifecycle::SurfaceLifecycle;
+use crate::window_icons::WindowIcons;
 use crate::{WinitWindow, mailbox::Mailbox};
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -17,6 +18,7 @@ pub struct WinitSystem {
     pub(crate) window_attributes_fn:
         Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
     pub(crate) vk_windows: Arc<Mutex<Vec<Weak<WinitWindow>>>>,
+    pub(crate) icons: Arc<Mutex<WindowIcons>>,
 }
 
 impl Drop for WinitSystem {
@@ -35,6 +37,7 @@ impl WinitSystem {
         >,
         vk_windows: Arc<Mutex<Vec<Weak<WinitWindow>>>>,
         surface_lifecycle: Arc<SurfaceLifecycle>,
+        icons: Arc<Mutex<WindowIcons>>,
     ) -> anyhow::Result<Self> {
         #[cfg(not(target_arch = "wasm32"))]
         let vulkan_entry =
@@ -69,6 +72,7 @@ impl WinitSystem {
             virgl_context,
             window_attributes_fn,
             vk_windows,
+            icons,
         })
     }
 }
@@ -91,11 +95,12 @@ impl webrogue_gfx::AbstractSystem for WinitSystem {
 
         let mailbox = self.mailbox.clone();
         let (window_ready_tx, window_ready_rx) = mpsc::channel();
+        let icons = self.icons.clone();
         mailbox.schedule_with_surfaces(move |event_loop, window_registry| {
             let Some(window_state) = weak_window.upgrade() else {
                 return;
             };
-            window_state.create_native_window(event_loop, window_registry);
+            window_state.create_native_window(event_loop, window_registry, &icons.lock().unwrap());
             let _ = window_ready_tx.send(());
         });
         window_ready_rx
