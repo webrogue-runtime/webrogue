@@ -24,26 +24,26 @@ impl clap::ValueEnum for WindowsArch {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum VulkanFallback {
-    SwiftShaderSubzero,
-    Lavapipe,
-}
+// #[derive(Clone, Debug)]
+// pub enum VulkanFallback {
+//     SwiftShaderSubzero,
+//     Lavapipe,
+// }
 
-impl clap::ValueEnum for VulkanFallback {
-    fn value_variants<'a>() -> &'a [Self] {
-        &[Self::SwiftShaderSubzero, Self::Lavapipe]
-    }
+// impl clap::ValueEnum for VulkanFallback {
+//     fn value_variants<'a>() -> &'a [Self] {
+//         &[Self::SwiftShaderSubzero, Self::Lavapipe]
+//     }
 
-    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
-        match self {
-            Self::SwiftShaderSubzero => {
-                Some(clap::builder::PossibleValue::new("swiftshader-subzero"))
-            }
-            Self::Lavapipe => Some(clap::builder::PossibleValue::new("lavapipe")),
-        }
-    }
-}
+//     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
+//         match self {
+//             Self::SwiftShaderSubzero => {
+//                 Some(clap::builder::PossibleValue::new("swiftshader-subzero"))
+//             }
+//             Self::Lavapipe => Some(clap::builder::PossibleValue::new("lavapipe")),
+//         }
+//     }
+// }
 
 pub fn build(
     wrapp_file_path: &std::path::PathBuf,
@@ -51,7 +51,7 @@ pub fn build(
     arch: WindowsArch,
     is_console: bool,
     cache: Option<&std::path::PathBuf>,
-    vulkan_fallback: Option<crate::windows::VulkanFallback>,
+    // vulkan_fallback: Option<crate::windows::VulkanFallback>,
 ) -> anyhow::Result<()> {
     let vfs = VFS::build_from_path(wrapp_file_path)?;
 
@@ -122,32 +122,32 @@ pub fn build(
 
         let wrapp_size = new_size - original_size;
         output_file.write_all(&wrapp_size.to_le_bytes())?;
-        if let Some(fallback) = vulkan_fallback {
-            match fallback {
-                crate::windows::VulkanFallback::Lavapipe => {
-                    artifacts.extract(
-                        std::path::absolute(output_file_path)?
-                            .parent()
-                            .ok_or_else(|| anyhow::anyhow!("Path error"))?
-                            .join("vk_lavapipe.dll"),
-                        &format!("{}-windows-msvc/vulkan_lvp.dll", arch_str),
-                    )?;
-                }
-                crate::windows::VulkanFallback::SwiftShaderSubzero => {
-                    anyhow::ensure!(
-                        matches!(arch, crate::windows::WindowsArch::X86_64),
-                        "SwiftShader is only available for x86_64 architecture"
-                    );
-                    artifacts.extract(
-                        std::path::absolute(output_file_path)?
-                            .parent()
-                            .ok_or_else(|| anyhow::anyhow!("Path error"))?
-                            .join("vk_swiftshader.dll"),
-                        "x86_64-windows-msvc/vk_swiftshader.dll",
-                    )?;
-                }
-            }
-        }
+        // if let Some(fallback) = vulkan_fallback {
+        //     match fallback {
+        //         crate::windows::VulkanFallback::Lavapipe => {
+        //             artifacts.extract(
+        //                 std::path::absolute(output_file_path)?
+        //                     .parent()
+        //                     .ok_or_else(|| anyhow::anyhow!("Path error"))?
+        //                     .join("vk_lavapipe.dll"),
+        //                 &format!("{}-windows-msvc/vulkan_lvp.dll", arch_str),
+        //             )?;
+        //         }
+        //         crate::windows::VulkanFallback::SwiftShaderSubzero => {
+        //             anyhow::ensure!(
+        //                 matches!(arch, crate::windows::WindowsArch::X86_64),
+        //                 "SwiftShader is only available for x86_64 architecture"
+        //             );
+        //             artifacts.extract(
+        //                 std::path::absolute(output_file_path)?
+        //                     .parent()
+        //                     .ok_or_else(|| anyhow::anyhow!("Path error"))?
+        //                     .join("vk_swiftshader.dll"),
+        //                 "x86_64-windows-msvc/vk_swiftshader.dll",
+        //             )?;
+        //         }
+        //     }
+        // }
 
         anyhow::Ok(())
     })?;

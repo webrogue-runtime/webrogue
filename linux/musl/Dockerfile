@@ -11,7 +11,8 @@ RUN mkdir -p /fakehome/.cargo/registry/cache \
     /fakehome/.cargo/registry/index \
     /fakehome/.cargo/registry/src \
     /fakehome/.cargo/git/db
-RUN chmod -R a+rwx /fakehome/.cargo/
+RUN rustup toolchain install nightly --profile minimal --component rust-src
+RUN chmod -R a+rwx /fakehome/rustup
 
 # SDL deps
 RUN apk add pipewire-dev alsa-lib-dev pulseaudio-dev libx11-dev libx11-static \

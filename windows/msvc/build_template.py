@@ -19,6 +19,14 @@ vc_tools_install_dir = os.environ["VCToolsInstallDir"]
 # virgl doesn't seem to support MSVC
 os.environ["CC"] = "clang-cl"
 os.environ["CXX"] = "clang-cl"
+os.environ["RUSTUP_TOOLCHAIN"] = "nightly"
+
+cargo_flags = [
+    f"--target={rust_arch}-pc-windows-msvc",
+    "--profile=aot",
+    "-Z",
+    "build-std",
+]
 
 out_dir = os.path.join(repo_dir, "aot_artifacts", f"{rust_arch}-windows-msvc")
 if not os.path.exists(out_dir):
@@ -48,9 +56,7 @@ subprocess.run(
         "build",
         "--manifest-path=../../crates/aot-lib/Cargo.toml",
         "--target-dir=./target",
-        f"--target={rust_arch}-pc-windows-msvc",
-        "--profile=aot",
-    ],
+    ] + cargo_flags,
     cwd=str(template_dir),
 ).check_returncode()
 
@@ -62,11 +68,15 @@ for virgl_type in ["impl", "stub"]:
             "--manifest-path=../../crates/virgl-lib/Cargo.toml",
             "--target-dir=./target",
             f"--features={virgl_type}",
-            f"--target={rust_arch}-pc-windows-msvc",
-            "--profile=aot",
-        ],
+        ] + cargo_flags,
         cwd=str(template_dir),
     ).check_returncode()
+    lib_out_path = os.path.join(
+        out_dir,
+        f"webrogue_virgl_lib_{virgl_type}.a",
+    )
+    if os.path.exists(lib_out_path):
+        os.remove(lib_out_path)
     os.rename(
         os.path.join(
             template_dir,
@@ -75,10 +85,7 @@ for virgl_type in ["impl", "stub"]:
             "aot",
             "libwebrogue_virgl_lib.rlib",
         ),
-        os.path.join(
-            out_dir,
-            f"webrogue_virgl_lib_{virgl_type}.a",
-        ),
+        lib_out_path,
     )
 
 virgl_lib_impl = os.path.join(out_dir, "webrogue_virgl_lib_impl.a")
@@ -264,32 +271,31 @@ os.rename(
     webrogue_aot_lib_out_path,
 )
 
-mesa_version = "26.1.4"
-if not os.path.exists(os.path.join(template_dir, "lavapipe")):
-    os.makedirs(os.path.join(template_dir, "lavapipe"))
-lavapipe_archive_path = os.path.join(template_dir, "lavapipe", f"{win_arch}.7z")
-if not os.path.exists(os.path.join(template_dir, "lavapipe", f"{win_arch}.zip")):
-    response = requests.get(f"https://github.com/mmozeiko/build-mesa/releases/download/{mesa_version}/mesa-lavapipe-{win_arch}-{mesa_version}.7z")
-    with open(lavapipe_archive_path, "bw") as destination:
-        destination.write(response.content)
-subprocess.run(
-    [
-        "C:\\Program Files\\7-Zip\\7z.exe",
-        "e",
-        str(lavapipe_archive_path),
-        "-o" + str(out_dir),
-        "vulkan_lvp.dll"
-    ],
-    cwd=str(template_dir),
-).check_returncode()
-
-if rust_arch == "x86_64":
-    if not os.path.exists(os.path.join(template_dir, "swiftshader")):
-        os.makedirs(os.path.join(template_dir, "swiftshader"))
-    if not os.path.exists(os.path.join(template_dir, "swiftshader", "x64.zip")):
-        response = requests.get("https://github.com/webrogue-runtime/swiftshader-builder/releases/download/latest_build/windows_x64.zip")
-        with open(os.path.join(template_dir, "swiftshader", "x64.zip"), "bw") as destination:
-            destination.write(response.content)
-    with zipfile.ZipFile(os.path.join(template_dir, "swiftshader", "x64.zip"), "r") as zip_ref:
-        with open(os.path.join(out_dir, "vk_swiftshader.dll"), "wb") as destination:
-            destination.write(zip_ref.read("x64/vk_swiftshader.dll"))
+# mesa_version = "26.1.4"
+# if not os.path.exists(os.path.join(template_dir, "lavapipe")):
+#     os.makedirs(os.path.join(template_dir, "lavapipe"))
+# lavapipe_archive_path = os.path.join(template_dir, "lavapipe", f"{win_arch}.7z")
+# if not os.path.exists(os.path.join(template_dir, "lavapipe", f"{win_arch}.zip")):
+#     response = requests.get(f"https://github.com/mmozeiko/build-mesa/releases/download/{mesa_version}/mesa-lavapipe-{win_arch}-{mesa_version}.7z")
+#     with open(lavapipe_archive_path, "bw") as destination:
+#         destination.write(response.content)
+# subprocess.run(
+#     [
+#         "C:\\Program Files\\7-Zip\\7z.exe",
+#         "e",
+#         str(lavapipe_archive_path),
+#         "-o" + str(out_dir),
+#         "vulkan_lvp.dll"
+#     ],
+#     cwd=str(template_dir),
+# ).check_returncode()
+# if rust_arch == "x86_64":
+#     if not os.path.exists(os.path.join(template_dir, "swiftshader")):
+#         os.makedirs(os.path.join(template_dir, "swiftshader"))
+#     if not os.path.exists(os.path.join(template_dir, "swiftshader", "x64.zip")):
+#         response = requests.get("https://github.com/webrogue-runtime/swiftshader-builder/releases/download/latest_build/windows_x64.zip")
+#         with open(os.path.join(template_dir, "swiftshader", "x64.zip"), "bw") as destination:
+#             destination.write(response.content)
+#     with zipfile.ZipFile(os.path.join(template_dir, "swiftshader", "x64.zip"), "r") as zip_ref:
+#         with open(os.path.join(out_dir, "vk_swiftshader.dll"), "wb") as destination:
+#             destination.write(zip_ref.read("x64/vk_swiftshader.dll"))

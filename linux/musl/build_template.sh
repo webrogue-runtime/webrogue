@@ -6,8 +6,10 @@ rm -rf "$OUT_DIR"
 
 export NUM_JOBS=$(nproc)
 
+export RUSTUP_TOOLCHAIN=nightly
+
 TARGET_DIR=./musl/$ARCH/target
-CARGO_FLAGS="--target-dir=$TARGET_DIR --target=$ARCH-unknown-linux-musl --profile aot"
+CARGO_FLAGS="--target-dir=$TARGET_DIR --target=$ARCH-unknown-linux-musl --profile aot -Z build-std"
 mkdir -p "$OUT_DIR"
 # rustup target add $ARCH-unknown-linux-musl
 

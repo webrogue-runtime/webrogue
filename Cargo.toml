@@ -219,7 +219,7 @@ inherits = "release"
 lto = true
 panic = "abort"
 codegen-units = 1
-opt-level = 3
+opt-level = "z"
 strip = true
 
 # Profile for release builds of CLI utility

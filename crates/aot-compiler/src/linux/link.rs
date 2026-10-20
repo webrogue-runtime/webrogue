@@ -70,6 +70,7 @@ pub fn link_musl(
         .to_string(),
         "--strip-all".to_string(),
         "--gc-sections".to_string(),
+        "--icf=all".to_string(),
         "-o".to_string(),
         crate::utils::path_to_arg(output_file_path)?.to_string(),
         "--no-as-needed".to_string(),
@@ -171,6 +172,7 @@ pub fn link_glibc(
         .to_string(),
         "--strip-all".to_string(),
         "--gc-sections".to_string(),
+        "--icf=all".to_string(),
     ];
     match &arch {
         LinuxArch::X86_64 => {}

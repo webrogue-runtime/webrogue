@@ -24,10 +24,6 @@ docker --version | grep podman >/dev/null || {
     DOCKER_USER_FLAGS="-u $(id -u ${USER}):$(id -g ${USER})"
 }
 
-mkdir -p "$REPO_ROOT/linux/mounts/cargo_cache"
-mkdir -p "$REPO_ROOT/linux/mounts/cargo_index"
-mkdir -p "$REPO_ROOT/linux/mounts/cargo_git_db"
-mkdir -p "$REPO_ROOT/linux/mounts/cargo_git_checkouts"
 
 for LIBC in $LIBCS
 do
@@ -42,15 +38,24 @@ do
                 --platform linux/$ARCH \
                 --tag $IMAGE_NAME \
                 .
+            
+            MOUNT_ROOT="$REPO_ROOT/linux/mounts"
+        
+            mkdir -p "$MOUNT_ROOT/cargo_cache"
+            mkdir -p "$MOUNT_ROOT/cargo_index"
+            mkdir -p "$MOUNT_ROOT/cargo_src"
+            mkdir -p "$MOUNT_ROOT/cargo_git_db"
+            mkdir -p "$MOUNT_ROOT/cargo_git_checkouts"
 
             docker run \
                 --rm \
                 $DOCKER_USER_FLAGS \
                 -v "$REPO_ROOT":/usr/src/myapp \
-                -v "$REPO_ROOT/linux/mounts/cargo_cache":/fakehome/.cargo/registry/cache \
-                -v "$REPO_ROOT/linux/mounts/cargo_index":/fakehome/.cargo/registry/index \
-                -v "$REPO_ROOT/linux/mounts/cargo_git_db":/fakehome/.cargo/git/db \
-                -v "$REPO_ROOT/linux/mounts/cargo_git_checkouts":/fakehome/.cargo/git/checkouts \
+                -v "$MOUNT_ROOT/cargo_cache":/fakehome/.cargo/registry/cache \
+                -v "$MOUNT_ROOT/cargo_index":/fakehome/.cargo/registry/index \
+                -v "$MOUNT_ROOT/cargo_src":/fakehome/.cargo/registry/src \
+                -v "$MOUNT_ROOT/cargo_git_db":/fakehome/.cargo/git/db \
+                -v "$MOUNT_ROOT/cargo_git_checkouts":/fakehome/.cargo/git/checkouts \
                 -w /usr/src/myapp \
                 $IMAGE_NAME \
                 sh linux/$LIBC/build_$COMPONENT.sh
