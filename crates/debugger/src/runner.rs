@@ -75,7 +75,7 @@ where
             DebugRunResult::HostcallError => (None, false),
             DebugRunResult::EpochYield => (Some(PauseReason::Interrupted), true),
             DebugRunResult::Exception(_owned_rooted) => (None, true),
-            DebugRunResult::Trap(_trap) => (None, false),
+            DebugRunResult::Trap(_trap) => (Some(PauseReason::Interrupted), false),
             DebugRunResult::Breakpoint => (Some(PauseReason::Breakpoint), true),
         };
         if let Some(pause_reason) = pause_reason {

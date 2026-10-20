@@ -8,7 +8,7 @@ int main(void) {
 
   int width = 0;
   int height = 0;
-  wr4c_gl_size(window, &width, &height);
+  wr4c_physical_size(window, &width, &height);
   if (width < 2 || height < 2)
     return 1;
 

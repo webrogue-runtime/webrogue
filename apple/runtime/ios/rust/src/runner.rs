@@ -1,7 +1,5 @@
 use std::{path::PathBuf, str::FromStr};
 
-use webrogue_gfx::AbstractBuilder;
-
 fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
     let vfs = webrogue_vfs::VFS::build_from_path(&PathBuf::from_str(&wrapp_path)?)?;
     let persistent_dir = PathBuf::from_str(&persistent_path)?;

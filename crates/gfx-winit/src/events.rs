@@ -1,8 +1,15 @@
+use std::collections::BTreeMap;
+
 use crate::window::WinitWindowInternal;
 use webrogue_gfx::events;
-use winit::event::WindowEvent;
+use winit::event::{FingerId, WindowEvent};
 
-pub fn encode_event(window: &WinitWindowInternal, event: WindowEvent) {
+pub fn encode_event(
+    window: &WinitWindowInternal,
+    event: WindowEvent,
+    finger_id_map: &mut BTreeMap<FingerId, u32>,
+    simulate_touch: bool,
+) {
     let sink = &window.event_sink;
     match event {
         // WindowEvent::ActivationTokenDone { serial, token } => todo!(),
@@ -11,12 +18,12 @@ pub fn encode_event(window: &WinitWindowInternal, event: WindowEvent) {
             surface_size_writer: _,
         }
         | WindowEvent::SurfaceResized(_) => {
-            sink.push_event(events::Event::GlResized);
-            sink.push_event(events::Event::WindowResized);
+            sink.push_event(events::Event::Resized);
+            sink.push_event(events::Event::RedrawRequested);
         }
         // WindowEvent::Moved(physical_position) => todo!(),
         WindowEvent::CloseRequested => sink.push_event(events::Event::Quit),
-        WindowEvent::Destroyed => sink.push_event(events::Event::Quit),
+        WindowEvent::Destroyed => {}
         // WindowEvent::DragEntered { paths, position } => todo!(),
         // WindowEvent::DragMoved { position } => todo!(),
         // WindowEvent::DragDropped { paths, position } => todo!(),
@@ -81,13 +88,33 @@ pub fn encode_event(window: &WinitWindowInternal, event: WindowEvent) {
             device_id: _,
             position,
             primary: _,
-            source: _,
+            source,
         } => {
             let logical_position = position.to_logical(window.window.scale_factor());
-            sink.push_event(events::Event::MouseMotion(
-                logical_position.x,
-                logical_position.y,
-            ));
+            match source {
+                winit::event::PointerSource::Mouse => {
+                    if !simulate_touch || !finger_id_map.is_empty() {
+                        sink.push_event(events::Event::MouseMotion(
+                            logical_position.x,
+                            logical_position.y,
+                            if simulate_touch { 1 } else { 0 },
+                        ));
+                    }
+                }
+                winit::event::PointerSource::Touch {
+                    finger_id,
+                    force: _,
+                } => {
+                    if let Some(gfx_finger_id) = finger_id_map.get(&finger_id) {
+                        sink.push_event(events::Event::MouseMotion(
+                            logical_position.x,
+                            logical_position.y,
+                            *gfx_finger_id,
+                        ));
+                    }
+                }
+                _ => {}
+            }
         }
         // WindowEvent::PointerEntered { device_id, position, primary, kind } => todo!(),
         // WindowEvent::PointerLeft { device_id, position, primary, kind } => todo!(),
@@ -100,18 +127,42 @@ pub fn encode_event(window: &WinitWindowInternal, event: WindowEvent) {
             button,
             is_macos_activation_click: _,
         } => {
+            let logical_position = position.to_logical(window.window.scale_factor());
             let button = match button {
                 winit::event::ButtonSource::Mouse(mouse_button) => match mouse_button {
                     winit::event::MouseButton::Left => events::MouseButton::Left,
                     winit::event::MouseButton::Right => events::MouseButton::Right,
-                    winit::event::MouseButton::Middle => events::MouseButton::Left,
-                    winit::event::MouseButton::Back => events::MouseButton::Left,
-                    _ => events::MouseButton::Left,
+                    winit::event::MouseButton::Middle => events::MouseButton::Middle,
+                    _ => events::MouseButton::Unknown,
                 },
                 winit::event::ButtonSource::Touch {
-                    finger_id: _,
+                    finger_id,
                     force: _,
-                } => events::MouseButton::Left,
+                } => {
+                    let gfx_finger_id = {
+                        if let Some(id) = finger_id_map.get(&finger_id) {
+                            *id
+                        } else {
+                            let mut id = 1;
+                            while finger_id_map.values().any(|stored_id| *stored_id == id) {
+                                id += 1;
+                            }
+                            finger_id_map.insert(finger_id, id);
+                            id
+                        }
+                    };
+                    sink.push_event(events::Event::MouseButton(
+                        events::MouseButton::Unknown,
+                        state.is_pressed(),
+                        logical_position.x,
+                        logical_position.y,
+                        gfx_finger_id,
+                    ));
+                    if !state.is_pressed() {
+                        finger_id_map.remove(&finger_id);
+                    }
+                    return;
+                }
                 winit::event::ButtonSource::TabletTool {
                     kind: _,
                     button: _,
@@ -120,13 +171,24 @@ pub fn encode_event(window: &WinitWindowInternal, event: WindowEvent) {
                 winit::event::ButtonSource::Unknown(_) => events::MouseButton::Unknown,
                 _ => events::MouseButton::Unknown,
             };
-            let logical_position = position.to_logical(window.window.scale_factor());
+
+            if simulate_touch {
+                if state.is_pressed() {
+                    finger_id_map.insert(FingerId::from_raw(1), 1);
+                } else {
+                    finger_id_map.clear();
+                }
+            }
             sink.push_event(events::Event::MouseButton(
-                button,
+                if simulate_touch {
+                    events::MouseButton::Unknown
+                } else {
+                    button
+                },
                 state.is_pressed(),
                 logical_position.x,
                 logical_position.y,
-                false,
+                if simulate_touch { 1 } else { 0 },
             ));
         }
         // WindowEvent::PinchGesture { device_id, delta, phase } => todo!(),
@@ -136,7 +198,7 @@ pub fn encode_event(window: &WinitWindowInternal, event: WindowEvent) {
         // WindowEvent::TouchpadPressure { device_id, pressure, stage } => todo!(),
         // WindowEvent::ThemeChanged(theme) => todo!(),
         // WindowEvent::Occluded(_) => todo!(),
-        // WindowEvent::RedrawRequested => todo!(),
+        WindowEvent::RedrawRequested => sink.push_event(events::Event::RedrawRequested),
         _ => {}
     };
 }

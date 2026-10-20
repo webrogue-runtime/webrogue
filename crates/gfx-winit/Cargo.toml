@@ -11,6 +11,7 @@ webrogue-gfx = { workspace = true }
 winit = { workspace = true, default-features = true }
 softbuffer = { workspace = true, default-features = true }
 parking_lot = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ash = { workspace = true, features = ["std", "loaded"], default-features = false }

@@ -132,6 +132,9 @@ impl ApplicationHandler for App {
         let (builder, proxy) = ProxiedWinitBuilder::new(event_loop_proxy.clone());
         self.proxies.lock().unwrap().push(proxy);
         let gfx_system = builder.to_system(Some(true)).unwrap();
+        if let Some(proxy) = self.proxies.lock().unwrap().last() {
+            proxy.can_create_surfaces(event_loop, &mut self.window_registry);
+        }
 
         let window = event_loop
             .create_window(WindowAttributes::default().with_title("Webrogue"))
@@ -175,7 +178,7 @@ impl ApplicationHandler for App {
 
     fn destroy_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         for proxy in self.proxies.lock().unwrap().iter() {
-            proxy.destroy_surfaces(event_loop);
+            proxy.destroy_surfaces(event_loop, &mut self.window_registry);
         }
     }
 
@@ -202,7 +205,7 @@ impl ApplicationHandler for App {
                     self.should_quit.store(true, Ordering::Relaxed);
                     event_loop.exit();
                 }
-                // WindowEvent::Destroyed => todo!(),
+                WindowEvent::Destroyed => {}
                 // WindowEvent::DragEntered { paths, position } => todo!(),
                 // WindowEvent::DragMoved { position } => todo!(),
                 // WindowEvent::DragDropped { paths, position } => todo!(),

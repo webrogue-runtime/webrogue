@@ -3,7 +3,6 @@
 extern "C" fn webrogue_aot_windows() {
     use std::io::{Read, Seek};
     use webrogue_common::RangeReader;
-    use webrogue_gfx::AbstractBuilder as _;
     use windows::{
         Win32::{
             System::Console::GetConsoleWindow,
@@ -81,7 +80,6 @@ extern "C" fn webrogue_aot_linux() {
         use std::{io::Seek, os::unix::fs::FileExt};
 
         use webrogue_common::RangeReader;
-        use webrogue_gfx::AbstractBuilder;
 
         let mut current_file = std::fs::File::open(std::env::current_exe()?)?;
         let file_size = current_file.seek(std::io::SeekFrom::End(0))?;

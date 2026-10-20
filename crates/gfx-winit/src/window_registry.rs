@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, sync::Arc};
 
+use webrogue_gfx::events::Event;
 use winit::window::WindowId;
 
 use crate::window::WinitWindowInternal;
@@ -30,6 +31,19 @@ impl WindowRegistry {
         self.windows_by_winit_id
             .get(&id)
             .map(|window| window.as_ref())
+    }
+
+    pub(crate) fn surface_window_ids(&self) -> Vec<u32> {
+        self.windows_by_winit_id
+            .values()
+            .map(|window| window.vk_window_id)
+            .collect()
+    }
+
+    pub(crate) fn notify_surface_lost(&self) {
+        for window in self.windows_by_winit_id.values() {
+            window.event_sink.push_critical_event(Event::SurfaceLost);
+        }
     }
 
     pub fn clean(&mut self) {
