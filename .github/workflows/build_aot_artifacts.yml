@@ -101,7 +101,9 @@ jobs:
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - name: Setup Rust
-      run: rustup target add aarch64-linux-android
+      run: |
+        rustup toolchain install nightly --profile minimal --component rust-src
+        rustup target add aarch64-linux-android
 
     - name: Build AOT artifacts
       run: |
