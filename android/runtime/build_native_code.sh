@@ -43,27 +43,28 @@ for TARGET in arm64-v8a x86_64; do
         $RUST_TARGET-linux-android
 
     rustup target add $RUST_TARGET-linux-android
+    CARGO_FLAGS="--profile $1 -Z build-std"
 
-    $STRACE_COMMAND cargo ndk \
+    $STRACE_COMMAND cargo +nightly ndk \
         -t $TARGET \
         -o runner/src/main/jniLibs/ \
         build \
         --features runner \
-        --profile $1
+        $CARGO_FLAGS
 
     if [ "$BUILD_WEBROGUE_ANDROID_LAUNCHER" = "1" ]; then
-        $STRACE_COMMAND cargo ndk \
+        $STRACE_COMMAND cargo +nightly ndk \
             -t $TARGET \
             -o launcher/src/main/jniLibs/ \
             build \
             --features launcher \
-            --profile $1
+            $CARGO_FLAGS
 
-        $STRACE_COMMAND cargo ndk \
+        $STRACE_COMMAND cargo +nightly ndk \
             -t $TARGET \
             --manifest-path launcher/Cargo.toml \
             -o launcher/src/main/jniLibs/ \
             build \
-            --profile $1
+            $CARGO_FLAGS
     fi
 done
