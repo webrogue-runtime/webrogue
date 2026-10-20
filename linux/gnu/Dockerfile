@@ -20,6 +20,8 @@ ENV PATH="/fakehome/.cargo/bin:$PATH"
 ENV RUSTUP_HOME=/fakehome/rustup
 ENV CARGO_HOME=/fakehome/.cargo
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | HOME=/fakehome sh -s -- -y --no-modify-path
+RUN rustup toolchain install nightly --profile minimal --component rust-src
+RUN chmod -R a+rwx /fakehome/rustup
 RUN mkdir -p /fakehome/.cargo/registry/cache \
     /fakehome/.cargo/registry/index \
     /fakehome/.cargo/registry/src \

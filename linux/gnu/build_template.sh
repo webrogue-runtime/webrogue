@@ -6,8 +6,10 @@ rm -rf "$OUT_DIR"
 
 export NUM_JOBS=$(nproc)
 
+export RUSTUP_TOOLCHAIN=nightly
+
 TARGET_DIR=./gnu/$ARCH/target
-CARGO_FLAGS="--target-dir=$TARGET_DIR --target=$ARCH-unknown-linux-gnu --profile aot"
+CARGO_FLAGS="--target-dir=$TARGET_DIR --target=$ARCH-unknown-linux-gnu --profile aot -Z build-std"
 mkdir -p "$OUT_DIR"
 # rustup target add $ARCH-unknown-linux-gnu
 
@@ -81,6 +83,11 @@ cp \
     "$OUT_DIR"
 
 strip --strip-debug $OUT_DIR/libwebrogue_aot_lib.a
+
+for LIB in libwebrogue_aot_lib.a libwebrogue_virgl_lib_stub.a libwebrogue_virgl_lib_impl.a
+do
+    objcopy --remove-section=.eh_frame --remove-section=.eh_frame_hdr "$OUT_DIR/$LIB"
+done
 
 # ld.lld \
 #     -pie \
