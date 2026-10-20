@@ -244,7 +244,7 @@ fn load_dynamic(path: &std::path::PathBuf) -> anyhow::Result<Entry> {
     check_entry(unsafe { Entry::load_from(path) }?)
 }
 
-#[cfg(any(windows, target_os = "macos"))]
+#[cfg(any())]
 fn load_dynamic_icd(path: &std::path::PathBuf) -> anyhow::Result<Entry> {
     use std::sync::Arc;
     let lib = Arc::new(unsafe { libloading::Library::new(path) }?);

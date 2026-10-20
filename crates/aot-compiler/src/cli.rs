@@ -69,15 +69,15 @@ pub enum Commands {
         /// It also makes cmd pop up on launch, so this option is not recommended.
         #[arg(long)]
         console: bool,
-        /// Specify the Vulkan fallback renderer to use.
-        /// Some Windows machines may lack support of Vulkan due to missing or outdated drivers or unsupported hardware.
-        /// Webrogue provides two software Vulkan implementations as a fallback: SwiftShader and Lavapipe.
-        /// Lavapipe has higher performance, but it's size is approximately 50 MB.
-        /// Wberogue's build of SwiftShader uses "Subzero reactor" as code generator, which has slightly lower performance and is only available on x64, but it's size is only 5 MB.
-        /// Webrogue places the selected Vulkan fallback renderer as .dll file in the same directory as the resulting executable.
-        /// If no Vulkan fallback renderer is specified, the resulting executable will fail to start if hardware-accelerated rendering is required but unavailable.
-        #[arg(long, value_name = "RENDERER")]
-        vulkan_fallback: Option<crate::windows::VulkanFallback>,
+        // /// Specify the Vulkan fallback renderer to use.
+        // /// Some Windows machines may lack support of Vulkan due to missing or outdated drivers or unsupported hardware.
+        // /// Webrogue provides two software Vulkan implementations as a fallback: SwiftShader and Lavapipe.
+        // /// Lavapipe has higher performance, but it's size is approximately 50 MB.
+        // /// Wberogue's build of SwiftShader uses "Subzero reactor" as code generator, which has slightly lower performance and is only available on x64, but it's size is only 5 MB.
+        // /// Webrogue places the selected Vulkan fallback renderer as .dll file in the same directory as the resulting executable.
+        // /// If no Vulkan fallback renderer is specified, the resulting executable will fail to start if hardware-accelerated rendering is required but unavailable.
+        // #[arg(long, value_name = "RENDERER")]
+        // vulkan_fallback: Option<crate::windows::VulkanFallback>,
     },
     /// Xcode-related commands
     Xcode {
@@ -193,7 +193,7 @@ impl Commands {
                 out_path,
                 arch,
                 console,
-                vulkan_fallback,
+                // vulkan_fallback,
             } => crate::windows::build(
                 wrapp_path,
                 out_path,
@@ -202,7 +202,7 @@ impl Commands {
                     .clone(),
                 *console,
                 cache,
-                vulkan_fallback.clone(),
+                // vulkan_fallback.clone(),
             )?,
             Commands::Xcode {
                 wrapp_path,

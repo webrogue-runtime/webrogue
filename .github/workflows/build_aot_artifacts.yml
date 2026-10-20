@@ -70,7 +70,9 @@ jobs:
       run: python3 -m pip install requests
 
     - name: Install Rust target
-      run: rustup target add ${{ matrix.rust_arch }}-pc-windows-msvc
+      run: |
+        rustup toolchain install nightly --profile minimal --component rust-src
+        rustup target add ${{ matrix.rust_arch }}-pc-windows-msvc
 
     - name: Build AOT artifacts
       shell: cmd
