@@ -10,14 +10,13 @@ impl AotRuntime {
         Self { base }
     }
 
-    pub async fn run(mut self) -> anyhow::Result<()> {
-        self.base
-            .wasmtime_config
-            .with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
-        self.base.wasmtime_config.epoch_interruption(false);
-        self.base.wasmtime_config.signals_based_traps(true);
+    pub async fn run(self) -> anyhow::Result<()> {
+        let mut config = webrogue_wasmtime_common::aot_config();
+
+        config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
+
         webrogue_virgl::shadow_blob::external_signal_handler_installed();
-        let engine = wasmtime::Engine::new(&self.base.wasmtime_config)?;
+        let engine = wasmtime::Engine::new(&config)?;
         let component = unsafe {
             wasmtime::component::Component::deserialize_raw(
                 &engine,

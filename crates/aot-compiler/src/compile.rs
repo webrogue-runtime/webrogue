@@ -2,6 +2,7 @@ use std::io::Write;
 
 use wasmtime::Cache;
 use webrogue_vfs::{MAIN_WASM_VFS_PATH, VFS};
+use webrogue_wasmtime_common::compile::process_component;
 
 pub fn compile_wrapp_to_object(
     wrapp_file_path: &std::path::Path,
@@ -11,18 +12,16 @@ pub fn compile_wrapp_to_object(
     is_pic: bool,
     export_dynamic: bool,
 ) -> anyhow::Result<()> {
+    // let dir = object_file_path
+    //     .parent()
+    //     .ok_or(anyhow::anyhow!("Path error"))?;
+
     let vfs = VFS::build_from_path(wrapp_file_path)?;
 
-    let mut config = wasmtime::Config::new();
+    let mut config = webrogue_wasmtime_common::aot_config();
     config.target(target.name())?;
     config.cranelift_opt_level(wasmtime::OptLevel::SpeedAndSize);
     config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking);
-    config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Disable);
-    config.generate_address_map(false);
-    config.epoch_interruption(false);
-    config.memory_may_move(false);
-    config.wasm_exceptions(true);
-    config.wasm_component_model_threading(true);
     if let Some(cache) = cache {
         config.cache(Some(Cache::from_file(Some(cache))?));
     }
@@ -33,11 +32,31 @@ pub fn compile_wrapp_to_object(
     }
     let engine = wasmtime::Engine::new(&config)?;
 
-    let wasm_binary = vfs
+    let component = vfs
         .read_as_vec(MAIN_WASM_VFS_PATH)
         .map_err(|_| anyhow::anyhow!("Unable to read WebAssembly code"))?;
+    let component = process_component(component)?;
 
-    let cwasm = engine.precompile_component(&wasm_binary)?;
+    // let component = {
+    //     let tmp_infile = TemporaryFile::new(dir)?;
+    //     let mut infile = tmp_infile.create_file()?;
+    //     infile.write_all(&component)?;
+    //     drop(infile);
+
+    //     let outfile = TemporaryFile::new(dir)?;
+    //     wasm_opt::OptimizationOptions::new_opt_level_4()
+    //         .all_features()
+    //         .run(tmp_infile.path(), outfile.path())?;
+
+    //     let mut component = Vec::new();
+
+    //     File::open(outfile.path())?.read_to_end(&mut component)?;
+
+    //     drop(tmp_infile);
+    //     drop(outfile);
+    //     component
+    // };
+    let cwasm = engine.precompile_component(&component)?;
 
     let cwasm_info = crate::cwasm_analyzer::analyze_cwasm(&cwasm)?;
 

@@ -68,6 +68,7 @@ members = [
   "crates/lld",
   "crates/vfs",
   "crates/wasmtime",
+  "crates/wasmtime-common",
   "crates/wrapp",
   "crates/wrapp-reader",
 
@@ -80,7 +81,7 @@ members = [
   # "web",
 ]
 exclude = [
-  "external/wasmtime",
+  "vfs-adapter",
 ]
 
 [workspace.dependencies]
@@ -92,6 +93,7 @@ webrogue-cli-goodies = { path = "crates/cli-goodies" }
 webrogue-events = { path = "crates/events" }
 webrogue-events-macro = { path = "crates/events-macro" }
 webrogue-wasmtime = { path = "crates/wasmtime" }
+webrogue-wasmtime-common = { path = "crates/wasmtime-common" }
 webrogue-hub-client = { path = "crates/hub-client" }
 webrogue-hub-client-openapi = { path = "crates/hub-client/openapi", default-features=false }
 webrogue-hub-debuggee = { path = "crates/hub-debuggee" }
@@ -110,13 +112,11 @@ webrogue-common = { path = "crates/common" }
 webrogue-debugger = { path = "crates/debugger" }
 
 # Wasmtime crates
-wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
-wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
-wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
-wiggle-generate = { path = "external/wasmtime/crates/wiggle/generate", default-features = false }
-wasmtime-internal-core = { path = "external/wasmtime/crates/core" }
-wasmtime-wasi = { path = "external/wasmtime/crates/wasi", default-features = false }
-wasmtime-internal-debugger = { path = "external/wasmtime/crates/debugger", default-features = false }
+wasmtime = { version = "50", default-features = false }
+wasmtime-environ = { version = "50", default-features = false }
+wasmtime-internal-core = { version = "50" }
+wasmtime-wasi = { version = "50", default-features = false }
+wasmtime-internal-debugger = { version = "50", default-features = false }
 
 # other crates
 image = { version = "0.25", default-features = false }
@@ -205,6 +205,8 @@ p12 = "0.6.3"
 xxhash-rust = "0.8.16"
 bindgen = { version = "0.72.1", default-features = false }
 tokio-hrtime = "0.1.7"
+wac-graph = "0.12.0"
+# wasm-opt = { version = "0.116.1", default-features = false }
 
 # To remove
 thiserror = "2.0.17"

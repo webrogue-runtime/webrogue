@@ -1,0 +1,29 @@
+cargo-features = ["panic-immediate-abort"]
+
+[package]
+name = "webrogue-vfs-adapter"
+publish = false
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = { version = "0.63.0", default-features = false, features = [
+    "macros",
+    "async",
+    "realloc",
+] }
+# TODO try other allocators
+dlmalloc = { version = "0.2", features = ["global"] }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "immediate-abort"
+strip = true

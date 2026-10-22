@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-wasmtime = ["dep:wasmtime", "dep:wasmtime-wasi", "dep:tokio"]
+wasmtime = ["dep:wasmtime", "dep:tokio"]
 archive = ["webrogue-wrapp/write", "image-codecs"]
 image-codecs = ["image/png"]
 
@@ -20,6 +20,5 @@ serde_json = { workspace = true }
 semver = { workspace = true, default-features = false, features = ["serde"] }
 image = { workspace = true, default-features = false, features = ["bmp"] }
 
-wasmtime = { workspace = true, optional = true, default-features = false }
-wasmtime-wasi = { workspace = true, optional = true, default-features = false, features = ["p3"] }
-tokio = { workspace = true, optional = true }
+wasmtime = { workspace = true, optional = true, default-features = false, features = ["component-model-async"] }
+tokio = { workspace = true, optional = true, features = ["sync"] }

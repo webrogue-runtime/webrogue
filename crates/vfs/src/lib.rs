@@ -10,6 +10,8 @@ mod wasmtime;
 pub use archive::{ArchiveOptions, archive, archive_to_file};
 pub use fd::FD;
 pub use vfs::VFS;
+#[cfg(feature = "wasmtime")]
+pub use wasmtime::{VFSCtxView, VFSView, add_to_linker};
 
 pub const RESOURCES_ROOT_VFS_PATH: &str = "res";
 pub const CONFIG_VFS_PATH: &str = "config.json";

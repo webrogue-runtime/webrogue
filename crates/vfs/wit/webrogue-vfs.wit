@@ -1,0 +1,31 @@
+package webrogue:vfs;
+
+interface vfs {
+    use wasi:filesystem/types@0.3.0.{descriptor-stat, directory-entry, error-code};
+
+    resource descriptor {
+        open: func(
+            path: string,
+        ) -> result<descriptor, error-code>;
+
+        read-at: func(
+            offset: u64,
+        ) -> tuple<stream<u8>, future<result<_, error-code>>>;
+
+        /// The virtual filesystem is read-only, writing to it always fails with
+        /// a `read-only` error.
+        write-at: func() -> future<result<_, error-code>>;
+
+        stat: func() -> result<descriptor-stat, error-code>;
+
+        is-dir: func() -> bool;
+
+        dir-children: func() -> tuple<stream<directory-entry>, future<result<_, error-code>>>;
+    }
+    root-descriptor: func() -> descriptor;
+}
+
+world vfs-world {
+    import vfs;
+    import wasi:filesystem/types@0.3.0;
+}
