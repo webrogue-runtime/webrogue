@@ -81,7 +81,6 @@ members = [
   # "web",
 ]
 exclude = [
-  "external/wasmtime",
   "vfs-adapter",
 ]
 
@@ -113,13 +112,11 @@ webrogue-common = { path = "crates/common" }
 webrogue-debugger = { path = "crates/debugger" }
 
 # Wasmtime crates
-wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
-wiggle = { path = "external/wasmtime/crates/wiggle", default-features = false }
-wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
-wiggle-generate = { path = "external/wasmtime/crates/wiggle/generate", default-features = false }
-wasmtime-internal-core = { path = "external/wasmtime/crates/core" }
-wasmtime-wasi = { path = "external/wasmtime/crates/wasi", default-features = false }
-wasmtime-internal-debugger = { path = "external/wasmtime/crates/debugger", default-features = false }
+wasmtime = { version = "50", default-features = false }
+wasmtime-environ = { version = "50", default-features = false }
+wasmtime-internal-core = { version = "50" }
+wasmtime-wasi = { version = "50", default-features = false }
+wasmtime-internal-debugger = { version = "50", default-features = false }
 
 # other crates
 image = { version = "0.25", default-features = false }

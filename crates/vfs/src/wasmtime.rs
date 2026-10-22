@@ -291,7 +291,7 @@ impl<D> StreamProducer<D> for ReadStreamProducer {
         }
 
         let mut dst = dst.as_direct(store, READ_CHUNK_SIZE);
-        let buf = dst.remaining()?;
+        let buf = dst.remaining();
         if buf.is_empty() {
             return Poll::Ready(Ok(StreamResult::Completed));
         }
