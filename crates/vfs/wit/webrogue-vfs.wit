@@ -8,8 +8,6 @@ interface vfs {
             path: string,
         ) -> result<descriptor, error-code>;
 
-        /// The contents of the file, the data is delivered through the stream
-        /// and the future reports the result of the operation.
         read-at: func(
             offset: u64,
         ) -> tuple<stream<u8>, future<result<_, error-code>>>;
@@ -22,8 +20,6 @@ interface vfs {
 
         is-dir: func() -> bool;
 
-        /// The children of the directory, they are delivered through the stream
-        /// and the future reports the result of the operation.
         dir-children: func() -> tuple<stream<directory-entry>, future<result<_, error-code>>>;
     }
     root-descriptor: func() -> descriptor;
