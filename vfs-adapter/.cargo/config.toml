@@ -1,0 +1,3 @@
+[unstable]
+target-applies-to-host = false
+build-std = ["core", "alloc", "panic_abort"]

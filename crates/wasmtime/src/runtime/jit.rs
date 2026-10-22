@@ -1,6 +1,8 @@
 #[cfg(feature = "cache")]
 use std::path::{Path, PathBuf};
 
+use webrogue_wasmtime_common::compile::process_component;
+
 use crate::{Runtime, runtime::run_component};
 
 pub struct JitRuntime {
@@ -47,14 +49,14 @@ impl JitRuntime {
         self
     }
 
-    pub async fn run(mut self) -> anyhow::Result<()> {
+    pub async fn run(self) -> anyhow::Result<()> {
         use std::io::Read as _;
 
         use wasmtime::Inlining;
         use webrogue_vfs::MAIN_WASM_VFS_PATH;
 
-        self.base
-            .wasmtime_config
+        let mut config = webrogue_wasmtime_common::base_config();
+        config
             .wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable)
             .debug_info(false);
 
@@ -68,9 +70,7 @@ impl JitRuntime {
             std::fs::create_dir_all(&cache_config)?;
             let mut cache = wasmtime::CacheConfig::new();
             cache.with_directory(&cache_config);
-            self.base
-                .wasmtime_config
-                .cache(Some(wasmtime::Cache::new(cache)?));
+            config.cache(Some(wasmtime::Cache::new(cache)?));
             // TODO config.enable_incremental_compilation(cache_store)
         }
         #[cfg(feature = "debug")]
@@ -80,8 +80,7 @@ impl JitRuntime {
         match &self.jit_profile {
             #[cfg(feature = "debug")]
             JitProfile::Debug => {
-                self.base
-                    .wasmtime_config
+                config
                     .cranelift_opt_level(wasmtime::OptLevel::None)
                     .guest_debug(true)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
@@ -90,8 +89,7 @@ impl JitRuntime {
                     .async_stack_size(4 * 1024 * 1024);
             }
             JitProfile::FastExecution => {
-                self.base
-                    .wasmtime_config
+                config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
                     .compiler_inlining(Inlining::Intrinsics)
@@ -99,8 +97,7 @@ impl JitRuntime {
                 webrogue_virgl::shadow_blob::external_signal_handler_installed();
             }
             JitProfile::FastCompilation => {
-                self.base
-                    .wasmtime_config
+                config
                     .cranelift_opt_level(wasmtime::OptLevel::Speed)
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
                     .compiler_inlining(Inlining::Intrinsics)
@@ -117,20 +114,18 @@ impl JitRuntime {
             #[cfg(not(feature = "debug"))]
             false
         };
-        self.base
-            .wasmtime_config
-            .epoch_interruption(enable_epoch_interruption);
-        let engine = wasmtime::Engine::new(&self.base.wasmtime_config)?;
-        let mut wasm_binary = Vec::new();
+        config.epoch_interruption(enable_epoch_interruption);
+        let engine = wasmtime::Engine::new(&config)?;
+        let mut component = Vec::new();
         self.base
             .vfs
             .open(MAIN_WASM_VFS_PATH)
             .map_err(|_| anyhow::anyhow!("Unable to open WASM binary in VFS"))?
             .reader()
             .map_err(|_| anyhow::anyhow!("Unable to read WASM binary in VFS"))?
-            .read_to_end(&mut wasm_binary)?;
-
-        let component = wasmtime::component::Component::from_binary(&engine, &wasm_binary)?;
+            .read_to_end(&mut component)?;
+        let component = process_component(component)?;
+        let component = wasmtime::component::Component::from_binary(&engine, &component)?;
         run_component(self.base, engine, component).await
     }
 }

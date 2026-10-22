@@ -1,5 +1,4 @@
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 #[cfg(feature = "aot")]
 mod aot;
 #[cfg(feature = "aot")]
@@ -12,7 +11,7 @@ pub use jit::*;
 use wasmtime::component::Component;
 use wasmtime::error::Context;
 use wasmtime_wasi::p3::bindings::Command;
-use webrogue_vfs::{RESOURCES_ROOT_VFS_PATH, VFS};
+use webrogue_vfs::VFS;
 
 use crate::state::State;
 
@@ -20,25 +19,16 @@ pub struct Runtime {
     gfx_system: webrogue_gfx::System,
     vfs: VFS,
     persistent_dir: PathBuf,
-    wasmtime_config: wasmtime::Config,
     #[cfg(feature = "debug")]
     debug_connection_factory: Option<webrogue_debugger::connection::ConnectionFactory>,
 }
 
 impl Runtime {
     pub fn new(gfx_system: webrogue_gfx::System, vfs: VFS, persistent_dir: &Path) -> Self {
-        let mut wasmtime_config = wasmtime::Config::new();
-        wasmtime_config.shared_memory(true);
-        wasmtime_config.wasm_exceptions(true);
-        wasmtime_config.memory_may_move(false);
-        wasmtime_config.macos_use_mach_ports(false);
-        wasmtime_config.wasm_component_model_threading(true);
-
         Runtime {
             gfx_system,
             vfs,
             persistent_dir: persistent_dir.to_path_buf(),
-            wasmtime_config,
             #[cfg(feature = "debug")]
             debug_connection_factory: None,
         }
@@ -78,6 +68,7 @@ pub(self) async fn run_component(
     let mut linker = wasmtime::component::Linker::new(&engine);
     wasmtime_wasi::p3::add_to_linker(&mut linker)?;
     webrogue_gfx::add_to_linker(&mut linker)?;
+    webrogue_vfs::add_to_linker(&mut linker)?;
     let mut wasi_ctx_builder = wasmtime_wasi::WasiCtx::builder();
 
     wasi_ctx_builder
@@ -117,15 +108,15 @@ pub(self) async fn run_component(
             })?;
     }
 
-    wasi_ctx_builder.virt_preopened_dir(
-        Arc::new(
-            runtime
-                .vfs
-                .open(RESOURCES_ROOT_VFS_PATH)
-                .map_err(|_| anyhow::anyhow!("An error occurred while opening VFS root"))?,
-        ),
-        "/",
-    )?;
+    // wasi_ctx_builder.virt_preopened_dir(
+    //     Arc::new(
+    //         runtime
+    //             .vfs
+    //             .open(RESOURCES_ROOT_VFS_PATH)
+    //             .map_err(|_| anyhow::anyhow!("An error occurred while opening VFS root"))?,
+    //     ),
+    //     "/",
+    // )?;
 
     if let Some(env) = &wrapp_config.env {
         for env in env {
@@ -143,6 +134,7 @@ pub(self) async fn run_component(
         gfx: runtime.gfx_system,
         wasi_ctx: wasi_ctx_builder.build(),
         resource_table: wasmtime_wasi::ResourceTable::new(),
+        vfs: runtime.vfs.clone(),
     };
     let mut store = wasmtime::Store::new(&engine, state);
     #[cfg(not(target_os = "windows"))]

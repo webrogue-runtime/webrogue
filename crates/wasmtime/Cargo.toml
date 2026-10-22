@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-jit = ["wasmtime/cranelift", "wasmtime/parallel-compilation", "wasmtime/addr2line"]
+jit = ["wasmtime/cranelift", "wasmtime/parallel-compilation", "wasmtime/addr2line", "webrogue-wasmtime-common/compile"]
 aot = ["dep:webrogue-aot-data"]
 cache = ["wasmtime/cache"] # TODO "wasmtime/incremental-cache"
 debug = ["jit", "wasmtime/debug"] # , "wasmtime/debug-builtins"
@@ -17,7 +17,8 @@ webrogue-gfx = { workspace = true }
 webrogue-virgl = { workspace = true }
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
-wasmtime = { workspace = true, default-features = false, features = ["runtime", "threads", "gc", "gc-drc", "anyhow", "component-model-async", "debug"] }
+wasmtime = { workspace = true, default-features = false, features = ["runtime", "gc-drc", "anyhow", "debug"] }
+webrogue-wasmtime-common = { workspace = true }
 wasmtime-wasi = { workspace = true, default-features = false, features = ["p3"] }
 webrogue-vfs = { workspace = true, features = ["wasmtime"] }
 webrogue-debugger = { workspace = true }

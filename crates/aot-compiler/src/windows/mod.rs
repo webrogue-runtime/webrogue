@@ -63,10 +63,10 @@ pub fn build(
             .ok_or(anyhow::anyhow!("Path error"))?,
     )?;
     let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
-    let arch_str = match arch {
-        WindowsArch::X86_64 => "x86_64",
-        WindowsArch::AArch64 => "aarch64",
-    };
+    // let arch_str = match arch {
+    //     WindowsArch::X86_64 => "x86_64",
+    //     WindowsArch::AArch64 => "aarch64",
+    // };
 
     step("Compiling AOT object".to_owned(), || {
         crate::compile::compile_wrapp_to_object(
