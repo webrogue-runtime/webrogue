@@ -1,5 +1,5 @@
 use crossterm::{
-    style::{Color, Stylize as _},
+    style::{ContentStyle, Stylize as _},
     terminal::ClearType,
 };
 use std::{
@@ -16,47 +16,45 @@ pub use step::{step, step_async};
 pub fn write_error(err: &str) {
     if is_tty() {
         let _ = crossterm::execute!(
-            stderr(),
+            stderr().lock(),
             crossterm::style::PrintStyledContent(crossterm::style::StyledContent::new(
                 crossterm::style::ContentStyle::new().red(),
-                err
-            ))
+                err,
+            )),
+            crossterm::cursor::MoveToNextLine(1)
         );
-        let _ = crossterm::execute!(stderr(), crossterm::cursor::MoveToNextLine(1));
     } else {
         eprintln!("{}", err);
     }
 }
-
+pub fn error(message: &str) {
+    print_message("error", message, ContentStyle::new().red().bold());
+}
 pub fn warning(message: &str) {
-    print_message("warning", message, Color::Red);
+    print_message("warning", message, ContentStyle::new().yellow().bold());
 }
 pub fn note(message: &str) {
-    print_message("note", message, Color::Cyan);
+    print_message("note", message, ContentStyle::new().cyan());
 }
 
-fn print_message(label: &str, message: &str, color: Color) {
+fn print_message(label: &str, message: &str, label_style: ContentStyle) {
+    let mut stderr = stderr().lock();
     if is_tty() {
-        let mut style = crossterm::style::ContentStyle::new();
-        style.foreground_color = Some(color);
-        let _ = crossterm::queue!(stderr(), crossterm::terminal::Clear(ClearType::CurrentLine));
-        let _ = crossterm::queue!(stderr(), crossterm::cursor::MoveToColumn(0));
-        let _ = crossterm::queue!(
-            stderr(),
+        let _ = crossterm::execute!(
+            stderr,
+            crossterm::terminal::Clear(ClearType::CurrentLine),
+            crossterm::cursor::MoveToColumn(0),
             crossterm::style::PrintStyledContent(crossterm::style::StyledContent::new(
-                style, label
-            ))
-        );
-        let _ = crossterm::queue!(
-            stderr(),
+                label_style,
+                label
+            )),
             crossterm::style::Print(format!(": {}\n", message))
         );
-        let _ = stderr().flush();
     } else {
         if step::is_step() && !step::is_dirty() {
-            eprintln!("");
+            let _ = writeln!(stderr, "");
         }
-        eprintln!("{}: {}", label, message);
+        let _ = writeln!(stderr, "{}: {}", label, message);
     }
     step::set_dirty();
 }

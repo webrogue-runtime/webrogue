@@ -100,6 +100,10 @@ pub fn build(
         }
     }
 
+    let wasm = step("Processing WASM code".to_owned(), || {
+        crate::compile::process_wasm(container_path, build_dir)
+    })?;
+
     for arch in &selected_archs {
         let object_file = crate::utils::TemporaryFile::new(build_dir)?;
 
@@ -132,7 +136,7 @@ pub fn build(
 
         step(format!("Compiling AOT object for {}", arch.abi()), || {
             crate::compile::compile_wrapp_to_object(
-                container_path,
+                &wasm,
                 object_file.path(),
                 arch.target(),
                 cache,

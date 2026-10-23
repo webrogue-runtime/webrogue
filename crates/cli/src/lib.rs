@@ -87,6 +87,17 @@ enum Cli {
         #[arg(long)]
         password: String,
     },
+    #[cfg(feature = "wasm-opt")]
+    #[command(hide = true, disable_help_flag = true)]
+    WasmOpt {
+        #[arg(
+            value_name = "ARG",
+            trailing_var_arg = true,
+            allow_hyphen_values = true,
+            required = true
+        )]
+        args: Vec<String>,
+    },
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -158,6 +169,13 @@ pub fn main() -> anyhow::Result<()> {
                 password,
             }
             .run()?;
+            Ok(())
+        }
+        #[cfg(feature = "wasm-opt")]
+        Cli::WasmOpt { args } => {
+            let mut command = wasm_opt::integration::Command::new("whatever");
+            command.args(args);
+            wasm_opt::integration::run_from_command_args(command)?;
             Ok(())
         }
     }

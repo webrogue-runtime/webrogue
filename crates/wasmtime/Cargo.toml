@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-jit = ["wasmtime/cranelift", "wasmtime/parallel-compilation", "wasmtime/addr2line", "webrogue-wasmtime-common/compile"]
+jit = ["wasmtime/cranelift", "wasmtime/parallel-compilation", "wasmtime/addr2line"]
 aot = ["dep:webrogue-aot-data"]
 cache = ["wasmtime/cache"] # TODO "wasmtime/incremental-cache"
 debug = ["jit", "wasmtime/debug"] # , "wasmtime/debug-builtins"
@@ -17,8 +17,9 @@ webrogue-gfx = { workspace = true }
 webrogue-virgl = { workspace = true }
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
-wasmtime = { workspace = true, default-features = false, features = ["runtime", "gc-drc", "anyhow", "debug"] }
+wasmtime = { workspace = true, default-features = false, features = ["runtime", "anyhow", "debug"] }
 webrogue-wasmtime-common = { workspace = true }
+webrogue-wasm-processing = { workspace = true }
 wasmtime-wasi = { workspace = true, default-features = false, features = ["p3"] }
 webrogue-vfs = { workspace = true, features = ["wasmtime"] }
 webrogue-debugger = { workspace = true }
@@ -26,6 +27,7 @@ tokio = { workspace = true, features = ["net", "time", "rt-multi-thread"] }
 webrogue-aot-data = { workspace = true, optional = true }
 gdbstub_arch = { workspace = true }
 futures = { workspace = true }
+webrogue-common = { workspace = true, optional = true }
 
 [target.'cfg(target = "android")'.dependencies]
 # seccomp messes with raw syscalls, so lets use libc

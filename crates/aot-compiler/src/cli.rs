@@ -114,8 +114,9 @@ impl Commands {
                 target,
                 pic,
             } => {
+                let wasm = crate::compile::process_wasm(wrapp_path, out_path)?;
                 crate::compile::compile_wrapp_to_object(
-                    wrapp_path,
+                    &wasm,
                     out_path,
                     crate::Target::from_name(target)?,
                     cache,
@@ -132,8 +133,9 @@ impl Commands {
                 let object_file = crate::utils::TemporaryFile::new(
                     out_path.parent().ok_or(anyhow::anyhow!("Path error"))?,
                 )?;
+                let wasm = crate::compile::process_wasm(wrapp_path, out_path)?;
                 crate::compile::compile_wrapp_to_object(
-                    wrapp_path,
+                    &wasm,
                     object_file.path(),
                     target,
                     cache,

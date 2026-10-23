@@ -8,15 +8,16 @@ edition.workspace = true
 [features]
 default = []
 llvm = []
-appended_artifacts = ["dep:webrogue-common"]
+appended_artifacts = []
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
-webrogue-common = { workspace = true, optional = true }
+webrogue-common = { workspace = true }
+webrogue-wasm-processing = { workspace = true }
 webrogue-icons = { workspace = true, features = ['rayon'] }
 wasmtime = { workspace = true, default-features = false, features = ["cranelift", "all-arch", "parallel-compilation", "cache", "anyhow"] }
-webrogue-wasmtime-common = { workspace = true, features = ["compile"] }
+webrogue-wasmtime-common = { workspace = true }
 webrogue-vfs = { workspace = true, features = ["archive"] }
 webrogue-wrapp = { workspace = true }
 object = { workspace = true, default-features = false, features = ['read_core', 'write_core', 'elf', 'macho', 'coff'] }
@@ -27,4 +28,3 @@ zip = { workspace = true, default-features = false, features = ['deflate'] }
 webrogue-cli-goodies = { workspace = true }
 tempfile = { workspace = true }
 semver = { workspace = true, default-features = false }
-# wasm-opt = { workspace = true, default-features = false }

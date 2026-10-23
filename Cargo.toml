@@ -13,13 +13,14 @@ path = "main.rs"
 doc = false
 
 [features]
-default = ["run", "compile", "hub", "llvm", "internal-run"]
-full = ["run", "compile", "hub", "llvm", "appended_artifacts"]
+default = ["run", "compile", "hub", "llvm", "wasm-opt", "internal-run"]
+full = ["run", "compile", "hub", "llvm", "wasm-opt", "appended_artifacts"]
 internal-run = ["webrogue-cli/internal-run"]
 run = ["webrogue-cli/run"]
 compile = ["webrogue-cli/compile"]
 hub = ["webrogue-cli/hub"]
 llvm = ["webrogue-cli/llvm"]
+wasm-opt = ["webrogue-cli/wasm-opt"]
 
 # to use this feature, you need to process resulting binary 
 # using append_artifacts.py script, so it is disabled by default
@@ -28,6 +29,7 @@ appended_artifacts = ["webrogue-cli/appended_artifacts"]
 
 [dependencies]
 webrogue-cli = { workspace = true }
+webrogue-cli-goodies = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 
@@ -67,6 +69,7 @@ members = [
   "crates/licenses",
   "crates/lld",
   "crates/vfs",
+  "crates/wasm-processing",
   "crates/wasmtime",
   "crates/wasmtime-common",
   "crates/wrapp",
@@ -110,6 +113,7 @@ webrogue-licenses = { path = "crates/licenses" }
 webrogue-vfs = { path = "crates/vfs" }
 webrogue-common = { path = "crates/common" }
 webrogue-debugger = { path = "crates/debugger" }
+webrogue-wasm-processing = { path = "crates/wasm-processing" }
 
 # Wasmtime crates
 wasmtime = { version = "50", default-features = false }
@@ -124,7 +128,8 @@ imageproc = { version = "0.27", default-features = false }
 object = { version = "0.40", default-features = false }
 clap = { version = "4" }
 futures =  { version = "0.3" }
-wasmparser = { version = ">=0.215" }
+wasmparser = { version = "0.258" }
+wasm-encoder = { version = "0.258", default-features = false, features = ["std", "component-model", "wasmparser"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 anyhow = { version = "1" }
@@ -206,7 +211,8 @@ xxhash-rust = "0.8.16"
 bindgen = { version = "0.72.1", default-features = false }
 tokio-hrtime = "0.1.7"
 wac-graph = "0.12.0"
-# wasm-opt = { version = "0.116.1", default-features = false }
+wasm-opt = { git = "https://github.com/webrogue-runtime/wasm-opt-rs.git", rev = "1f5851d94e3ce47fcbfdacd345cb6b9844d16a14" }
+
 
 # To remove
 thiserror = "2.0.17"

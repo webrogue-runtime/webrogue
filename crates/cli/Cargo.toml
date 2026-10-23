@@ -49,6 +49,11 @@ internal-run = [
     "dep:webrogue-virgl",
     "webrogue-virgl/lib-stub",
 ]
+wasm-opt = [
+    "dep:wasm-opt",
+    "dep:webrogue-wasm-processing",
+    "webrogue-wasm-processing/wasm-opt",
+]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -80,6 +85,8 @@ schemars = { workspace = true }
 rcgen = { workspace = true, optional = true }
 p12 = { workspace = true, optional = true }
 webrogue-vfs = { workspace = true, features = ["archive"] }
+wasm-opt = { workspace = true, default-features = false, optional = true }
+webrogue-wasm-processing = { workspace = true, default-features = false, optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 webrogue-gfx = { workspace = true, features = ["static-moltenvk"], optional = true }

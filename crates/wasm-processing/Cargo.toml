@@ -1,0 +1,19 @@
+[package]
+name = "webrogue-wasm-processing"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[features]
+wasm-opt = ["dep:wasm-encoder", "dep:wasmparser"]
+
+[dependencies]
+anyhow = { workspace = true }
+wac-graph = { workspace = true}
+
+wasm-encoder = { workspace = true, optional = true }
+wasmparser = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
