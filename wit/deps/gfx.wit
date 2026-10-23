@@ -614,10 +614,3 @@ interface cpu-rendering {
 interface device-info {
     get-os-family: func() -> u8;
 }
-
-world gfx {
-    import windowing;
-    import vulkan;
-    import cpu-rendering;
-    import device-info;
-}

@@ -6,8 +6,8 @@ use crate::event_sink::EventStream;
 
 pub(crate) mod generated {
     wasmtime::component::bindgen!({
-        path: "wit/webrogue-gfx.wit",
-        world: "gfx",
+        path: "../../wit",
+        world: "webrogue-gfx-world",
         with: {
             "webrogue:gfx/windowing.window": super::Window,
             "webrogue:gfx/vulkan.renderer": super::VulkanRenderer,

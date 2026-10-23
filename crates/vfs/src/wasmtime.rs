@@ -33,8 +33,8 @@ impl FD {
 
 pub mod generated {
     wasmtime::component::bindgen!({
-        path: "wit",
-        world: "vfs-world",
+        path: "../../wit",
+        world: "webrogue-vfs-world",
         with: {
             "webrogue:vfs/vfs.descriptor": super::WasiFD,
         },

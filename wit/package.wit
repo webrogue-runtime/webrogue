@@ -1,0 +1,25 @@
+package local:webrogue;
+
+world webrogue-wasi-clocks-world {
+    import wasi:clocks/monotonic-clock@0.3.0;
+}
+
+world webrogue-gfx-world {
+    import webrogue:gfx/windowing;
+    import webrogue:gfx/vulkan;
+    import webrogue:gfx/cpu-rendering;
+    import webrogue:gfx/device-info;
+}
+
+world webrogue-vfs-world {
+    import webrogue:vfs/vfs;
+    import wasi:filesystem/types@0.3.0;
+}
+
+world webrogue-virtual-adapter {
+    import wasi:filesystem/preopens@0.3.0;
+    export wasi:filesystem/preopens@0.3.0;
+    import wasi:filesystem/types@0.3.0;
+    export wasi:filesystem/types@0.3.0;
+    import webrogue:vfs/vfs;
+}
