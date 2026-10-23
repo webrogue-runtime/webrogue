@@ -4,6 +4,7 @@ mod runtime;
 pub use runtime::*;
 #[cfg(feature = "debug")]
 pub use webrogue_debugger as debugger;
+mod wasi_clocks;
 
 // #[cfg(not(any(feature = "aot", feature = "jit")))]
 // compile_error!("Either AOT or Cranelift features must be enabled");

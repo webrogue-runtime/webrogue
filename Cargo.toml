@@ -45,35 +45,7 @@ edition = "2024"
 [workspace]
 resolver = '2'
 members = [
-  "crates/aot-compiler",
-  "crates/aot-data",
-  "crates/aot-lib",
-  "crates/cli",
-  "crates/cli-goodies",
-  "crates/common",
-  "crates/debugger",
-  "crates/events",
-  "crates/events-apigen",
-  "crates/events-macro",
-  "crates/gfx",
-  "crates/gfx-winit",
-  "crates/virgl",
-  "crates/virgl-lib",
-  "crates/hub-client",
-  "crates/hub-client/openapi",
-  "crates/hub-debuggee",
-  "crates/icons",
-  "crates/launcher",
-  "crates/launcher/server-openapi",
-  "crates/launcher-dev",
-  "crates/licenses",
-  "crates/lld",
-  "crates/vfs",
-  "crates/wasm-processing",
-  "crates/wasmtime",
-  "crates/wasmtime-common",
-  "crates/wrapp",
-  "crates/wrapp-reader",
+  "crates/*",
 
   "android/runtime",
   "android/runtime/launcher",
@@ -118,7 +90,6 @@ webrogue-wasm-processing = { path = "crates/wasm-processing" }
 # Wasmtime crates
 wasmtime = { version = "50", default-features = false }
 wasmtime-environ = { version = "50", default-features = false }
-wasmtime-internal-core = { version = "50" }
 wasmtime-wasi = { version = "50", default-features = false }
 wasmtime-internal-debugger = { version = "50", default-features = false }
 
@@ -137,14 +108,10 @@ zstd-safe = { version = "^7.2.4", default-features = false }
 zstd = { version = "^0.13.2", default-features = false }
 cc = { version = "1" }
 tokio = { version = "1" }
-cmake = { version = "0.1" }
-target-lexicon = { version = "^0.13", default-features = false }
 semver = { version = "1", default-features = false }
 postcard = { version = "1", default-features = false }
 quote = { version = "1.0", default-features = false }
-syn = { version = "3.0.5", default-features = false }
 proc-macro2 = { version = "1.0", default-features = false }
-witx = { version = "0.9.1", default-features = false }
 dirs = { version = "6.0.0" }
 zip = { version = "8.6", default-features = false }
 libc = { version = "0.2.186", default-features = false }
@@ -175,11 +142,9 @@ webrtc = { version = "0.21.1" }
 base64 = { version = "0.22.1" }
 tokio-tungstenite = { version = "*" }
 futures-util = { version = "0.3" }
-uuid = { version = "^1.23", default-features = false }
 blake3 = { version = "1.8.2" }
 async-trait = { version = "0.1.89" }
 rand = { version = "0.10", default-features = false }
-rand_core = { version = "0.10", default-features = false }
 softbuffer = "0.4.8"
 ico = "0.5.0"
 tar = "0.4"
@@ -189,9 +154,7 @@ wasm-bindgen = "0.2.114"
 wasm-bindgen-futures = "0.4"
 web-sys = "0.3.91"
 parking_lot = "0.12.5"
-getrandom = { version = "0.4.2", default-features = false }
 reqwest = { version = "0.13" }
-zip-extract = { version = "0.4.1" }
 wasm_thread = { git = "https://github.com/webrogue-runtime/wasm_thread.git", rev = "daa98f6", default-features = false }
 tokio-stream = "0.1"
 tokio-util = { version = "0.7.18" }
@@ -203,7 +166,6 @@ spinners = "4.2.0"
 headers = "0.4"
 axum-extra = { version = "0.12" }
 rustls = { version = "0.23", default-features = false }
-bitflags = "2.11.1"
 schemars = "1.2.1"
 rcgen = "0.14.8"
 p12 = "0.6.3"
@@ -212,10 +174,6 @@ bindgen = { version = "0.72.1", default-features = false }
 tokio-hrtime = "0.1.7"
 wac-graph = "0.12.0"
 wasm-opt = { git = "https://github.com/webrogue-runtime/wasm-opt-rs.git", rev = "1f5851d94e3ce47fcbfdacd345cb6b9844d16a14" }
-
-
-# To remove
-thiserror = "2.0.17"
 tempfile = "3.27.0"
 
 [profile.dev]

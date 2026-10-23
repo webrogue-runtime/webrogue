@@ -14,6 +14,7 @@ use wasmtime_wasi::p3::bindings::Command;
 use webrogue_vfs::VFS;
 
 use crate::state::State;
+use crate::wasi_clocks::{self, WasiClocks};
 
 pub struct Runtime {
     gfx_system: webrogue_gfx::System,
@@ -67,6 +68,7 @@ pub(self) async fn run_component(
 
     let mut linker = wasmtime::component::Linker::new(&engine);
     wasmtime_wasi::p3::add_to_linker(&mut linker)?;
+    wasi_clocks::add_to_linker(&mut linker)?;
     webrogue_gfx::add_to_linker(&mut linker)?;
     webrogue_vfs::add_to_linker(&mut linker)?;
     let mut wasi_ctx_builder = wasmtime_wasi::WasiCtx::builder();
@@ -135,6 +137,7 @@ pub(self) async fn run_component(
         wasi_ctx: wasi_ctx_builder.build(),
         resource_table: wasmtime_wasi::ResourceTable::new(),
         vfs: runtime.vfs.clone(),
+        wasi_clocks: WasiClocks::new(),
     };
     let mut store = wasmtime::Store::new(&engine, state);
     #[cfg(not(target_os = "windows"))]
