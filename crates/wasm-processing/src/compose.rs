@@ -1,7 +1,7 @@
 use anyhow::Context as _;
 use wac_graph::{CompositionGraph, EncodeOptions, PackageId, plug, types::Package};
 
-pub fn process_component(component_bytes: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+pub fn compose(component_bytes: Vec<u8>) -> anyhow::Result<Vec<u8>> {
     let mut graph = CompositionGraph::new();
 
     let virt_pkg = Package::from_bytes(

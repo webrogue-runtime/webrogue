@@ -1,8 +1,6 @@
 #[cfg(feature = "cache")]
 use std::path::{Path, PathBuf};
 
-use webrogue_wasmtime_common::compile::process_component;
-
 use crate::{Runtime, runtime::run_component};
 
 pub struct JitRuntime {
@@ -124,7 +122,7 @@ impl JitRuntime {
             .reader()
             .map_err(|_| anyhow::anyhow!("Unable to read WASM binary in VFS"))?
             .read_to_end(&mut component)?;
-        let component = process_component(component)?;
+        let component = webrogue_wasm_processing::compose(component)?;
         let component = wasmtime::component::Component::from_binary(&engine, &component)?;
         run_component(self.base, engine, component).await
     }

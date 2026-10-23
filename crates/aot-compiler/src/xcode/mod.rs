@@ -123,14 +123,12 @@ WEBROGUE_APPLICATION_VERSION = {}
         anyhow::Ok(())
     })?;
 
+    let wasm = step("Processing WASM code".to_owned(), || {
+        crate::compile::process_wasm(args.wrapp_path, args.build_dir)
+    })?;
     match command {
         XcodeCommands::Macos { config } => {
-            object::compile(
-                types::Destination::MacOS,
-                args.wrapp_path,
-                args.build_dir,
-                args.cache,
-            )?;
+            object::compile(types::Destination::MacOS, &wasm, args.build_dir, args.cache)?;
             build::build(
                 args.build_dir,
                 config.unwrap_or(types::Configuration::Debug),
@@ -146,7 +144,7 @@ WEBROGUE_APPLICATION_VERSION = {}
             } else {
                 types::Destination::Ios
             };
-            object::compile(destination, args.wrapp_path, args.build_dir, args.cache)?;
+            object::compile(destination, &wasm, args.build_dir, args.cache)?;
             build::build(
                 args.build_dir,
                 config.unwrap_or(types::Configuration::ReleaseLocal),
@@ -154,22 +152,12 @@ WEBROGUE_APPLICATION_VERSION = {}
             )?;
         }
         XcodeCommands::Project {} => {
-            object::compile(
-                types::Destination::MacOS,
-                args.wrapp_path,
-                args.build_dir,
-                args.cache,
-            )?;
-            object::compile(
-                types::Destination::Ios,
-                args.wrapp_path,
-                args.build_dir,
-                args.cache,
-            )?;
+            object::compile(types::Destination::MacOS, &wasm, args.build_dir, args.cache)?;
+            object::compile(types::Destination::Ios, &wasm, args.build_dir, args.cache)?;
             if is_simulator_supported {
                 object::compile(
                     types::Destination::IOSSim,
-                    args.wrapp_path,
+                    &wasm,
                     args.build_dir,
                     args.cache,
                 )?;

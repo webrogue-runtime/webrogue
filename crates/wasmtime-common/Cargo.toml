@@ -6,9 +6,6 @@ license.workspace = true
 edition.workspace = true
 
 [features]
-compile = ["dep:wac-graph", "dep:anyhow"]
 
 [dependencies]
-wasmtime = { workspace = true, default-features = false, features = ["gc", "component-model-async"] }
-wac-graph = { workspace = true, optional = true }
-anyhow = { workspace = true, optional = true }
+wasmtime = { workspace = true, default-features = false, features = ["gc", "gc-drc", "component-model-async"] }

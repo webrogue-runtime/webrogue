@@ -59,11 +59,14 @@ pub fn build_linux(
     )?;
     let config = vfs.config();
     let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
+    let wasm = step("Processing WASM code".to_owned(), || {
+        crate::compile::process_wasm(wrapp_file_path, output_file_path)
+    })?;
     match libc {
         LibC::GLibC => {
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
-                    wrapp_file_path,
+                    &wasm,
                     object_file.path(),
                     match &arch {
                         LinuxArch::X86_64 => crate::Target::X86_64LinuxGNU,
@@ -81,7 +84,7 @@ pub fn build_linux(
         LibC::Musl => {
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
-                    wrapp_file_path,
+                    &wasm,
                     object_file.path(),
                     match &arch {
                         LinuxArch::X86_64 => crate::Target::X86_64LinuxMUSL,

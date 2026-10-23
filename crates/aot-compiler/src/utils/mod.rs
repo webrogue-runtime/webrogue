@@ -57,7 +57,7 @@ pub struct TemporaryFile {
 
 impl TemporaryFile {
     pub fn new(dir_path: &std::path::Path) -> anyhow::Result<Self> {
-        Self::in_dir(dir_path, ".tmp-", "")
+        Self::in_dir(dir_path, "tmp", ".tmp")
     }
 
     fn in_dir(dir_path: &std::path::Path, prefix: &str, suffix: &str) -> anyhow::Result<Self> {
@@ -93,6 +93,13 @@ impl Display for TemporaryFile {
             "{}",
             self.path().clone().as_os_str().to_str().unwrap().to_owned()
         )
+    }
+}
+
+// Should be handled by tempfile, but, just to ensure...
+impl Drop for TemporaryFile {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(self.path());
     }
 }
 

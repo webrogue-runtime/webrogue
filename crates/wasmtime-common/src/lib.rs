@@ -1,6 +1,3 @@
-#[cfg(feature = "compile")]
-pub mod compile;
-
 pub fn base_config() -> wasmtime::Config {
     let mut config = wasmtime::Config::new();
     config

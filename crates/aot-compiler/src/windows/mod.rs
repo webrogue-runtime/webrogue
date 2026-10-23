@@ -68,9 +68,12 @@ pub fn build(
     //     WindowsArch::AArch64 => "aarch64",
     // };
 
+    let wasm = step("Processing WASM code".to_owned(), || {
+        crate::compile::process_wasm(wrapp_file_path, output_file_path)
+    })?;
     step("Compiling AOT object".to_owned(), || {
         crate::compile::compile_wrapp_to_object(
-            wrapp_file_path,
+            &wasm,
             object_file.path(),
             match arch {
                 WindowsArch::X86_64 => crate::Target::x86_64WindowsMSVC,

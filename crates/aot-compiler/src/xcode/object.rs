@@ -4,7 +4,7 @@ use super::types::Destination;
 
 pub fn compile(
     destination: Destination,
-    wrapp_path: &std::path::Path,
+    wasm: &[u8],
     build_dir: &std::path::Path,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
@@ -13,7 +13,7 @@ pub fn compile(
         Destination::MacOS => {
             step("Compiling AOT object for x86_64 macOS".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
-                    wrapp_path,
+                    wasm,
                     &aot_dir.join("aot.x86_64.macosx.o"),
                     crate::Target::x86_64AppleDarwin,
                     cache,
@@ -23,7 +23,7 @@ pub fn compile(
             })?;
             step("Compiling AOT object for AArch64 macOS".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
-                    wrapp_path,
+                    wasm,
                     &aot_dir.join("aot.arm64.macosx.o"),
                     crate::Target::ARM64AppleDarwin,
                     cache,
@@ -35,7 +35,7 @@ pub fn compile(
         Destination::Ios => {
             step("Compiling AOT object for AArch64 iOS".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
-                    wrapp_path,
+                    wasm,
                     &aot_dir.join("aot.arm64.iphoneos.o"),
                     crate::Target::ARM64AppleIOS,
                     cache,
@@ -49,7 +49,7 @@ pub fn compile(
                 "Compiling AOT object for AArch64 iOS simulator".to_owned(),
                 || {
                     crate::compile::compile_wrapp_to_object(
-                        wrapp_path,
+                        wasm,
                         &aot_dir.join("aot.arm64.iphonesimulator.o"),
                         crate::Target::ARM64AppleIOSSIM,
                         cache,
@@ -62,7 +62,7 @@ pub fn compile(
                 "Compiling AOT object for x86_64 iOS simulator".to_owned(),
                 || {
                     crate::compile::compile_wrapp_to_object(
-                        wrapp_path,
+                        wasm,
                         &aot_dir.join("aot.x86_64.iphonesimulator.o"),
                         crate::Target::X86_64AppleIOSSIM,
                         cache,

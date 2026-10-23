@@ -1,23 +1,48 @@
-use std::io::Write;
+use std::io::Write as _;
 
 use wasmtime::Cache;
 use webrogue_vfs::{MAIN_WASM_VFS_PATH, VFS};
-use webrogue_wasmtime_common::compile::process_component;
+
+use crate::utils::TemporaryFile;
+
+pub fn process_wasm(
+    wrapp_file_path: &std::path::Path,
+    tmp: &std::path::Path,
+) -> anyhow::Result<Vec<u8>> {
+    let tmp_dir = if tmp.is_dir() {
+        tmp
+    } else {
+        tmp.parent().ok_or(anyhow::anyhow!("Path error"))?
+    };
+
+    let vfs = VFS::build_from_path(wrapp_file_path)?;
+
+    let component = vfs
+        .read_as_vec(MAIN_WASM_VFS_PATH)
+        .map_err(|_| anyhow::anyhow!("Unable to read WebAssembly code"))?;
+    let component = webrogue_wasm_processing::compose(component)?;
+
+    let tmp_file_1 = TemporaryFile::new(tmp_dir)?;
+    let tmp_file_2 = TemporaryFile::new(tmp_dir)?;
+    let optimized_component =
+        webrogue_wasm_processing::optimize(&component, tmp_file_1.path(), tmp_file_2.path())?;
+    let component = optimized_component.unwrap_or_else(|| {
+        webrogue_cli_goodies::warning(
+            "optimization is skipped because `wasm-opt` feature is disabled at compile time",
+        );
+        component
+    });
+    Ok(component)
+}
 
 pub fn compile_wrapp_to_object(
-    wrapp_file_path: &std::path::Path,
+    wasm: &[u8],
     object_file_path: &std::path::Path,
     target: crate::Target,
     cache: Option<&std::path::PathBuf>,
     is_pic: bool,
     export_dynamic: bool,
 ) -> anyhow::Result<()> {
-    // let dir = object_file_path
-    //     .parent()
-    //     .ok_or(anyhow::anyhow!("Path error"))?;
-
-    let vfs = VFS::build_from_path(wrapp_file_path)?;
-
     let mut config = webrogue_wasmtime_common::aot_config();
     config.target(target.name())?;
     config.cranelift_opt_level(wasmtime::OptLevel::SpeedAndSize);
@@ -32,31 +57,7 @@ pub fn compile_wrapp_to_object(
     }
     let engine = wasmtime::Engine::new(&config)?;
 
-    let component = vfs
-        .read_as_vec(MAIN_WASM_VFS_PATH)
-        .map_err(|_| anyhow::anyhow!("Unable to read WebAssembly code"))?;
-    let component = process_component(component)?;
-
-    // let component = {
-    //     let tmp_infile = TemporaryFile::new(dir)?;
-    //     let mut infile = tmp_infile.create_file()?;
-    //     infile.write_all(&component)?;
-    //     drop(infile);
-
-    //     let outfile = TemporaryFile::new(dir)?;
-    //     wasm_opt::OptimizationOptions::new_opt_level_4()
-    //         .all_features()
-    //         .run(tmp_infile.path(), outfile.path())?;
-
-    //     let mut component = Vec::new();
-
-    //     File::open(outfile.path())?.read_to_end(&mut component)?;
-
-    //     drop(tmp_infile);
-    //     drop(outfile);
-    //     component
-    // };
-    let cwasm = engine.precompile_component(&component)?;
+    let cwasm = engine.precompile_component(&wasm)?;
 
     let cwasm_info = crate::cwasm_analyzer::analyze_cwasm(&cwasm)?;
 
