@@ -4,8 +4,8 @@ use crate::wasi_clocks::generated::wasi::clocks::monotonic_clock::{Duration, Mar
 
 mod generated {
     wasmtime::component::bindgen!({
-        path: "wit",
-        world: "local:webrogue-wasmtime/webrogue-wasmtime-world",
+        path: "../../wit",
+        world: "local:webrogue/webrogue-wasi-clocks-world",
         imports: {
             default: trappable,
         },

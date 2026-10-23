@@ -27,7 +27,7 @@ pub(crate) struct VirtAdapter;
 
 pub(crate) mod bindings {
     wit_bindgen::generate!({
-        path: "wit",
+        path: "../wit",
         world: "webrogue-virtual-adapter",
         generate_all,
         merge_structurally_equal_types: true,

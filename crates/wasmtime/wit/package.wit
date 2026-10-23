@@ -1,5 +1,0 @@
-package local:webrogue-wasmtime;
-
-world webrogue-wasmtime-world {
-    import wasi:clocks/monotonic-clock@0.3.0;
-}
