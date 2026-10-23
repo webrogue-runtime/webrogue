@@ -6609,6 +6609,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-hrtime"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "273106413e54975bca56554a50572434bac0bcb8e8f2420f8bdd6d9a9349e406"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "pin-project-lite",
+ "tokio",
+ "windows",
+]
+
+[[package]]
 name = "tokio-macros"
 version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8415,6 +8428,7 @@ dependencies = [
  "gdbstub_arch",
  "rustix 1.1.5",
  "tokio",
+ "tokio-hrtime",
  "wasmtime",
  "wasmtime-wasi",
  "webrogue-aot-data",

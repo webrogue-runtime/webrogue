@@ -28,6 +28,7 @@ webrogue-aot-data = { workspace = true, optional = true }
 gdbstub_arch = { workspace = true }
 futures = { workspace = true }
 webrogue-common = { workspace = true, optional = true }
+tokio-hrtime = { workspace = true }
 
 [target.'cfg(target = "android")'.dependencies]
 # seccomp messes with raw syscalls, so lets use libc
