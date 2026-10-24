@@ -184,32 +184,7 @@ jobs:
         set CXX=clang-cl
         cargo test --locked --no-default-features --features compile,llvm --target=${{ matrix.arch }}-pc-windows-msvc --test aot_stdio || exit /b 1
 
-  aot_stdio_macos:
-    needs: aot_artifacts
-    runs-on: macos-26
-    timeout-minutes: 60
-
-    steps:
-    - uses: actions/checkout@v7
-
-    - name: Submodules
-      run: |
-        git submodule update --init --single-branch --depth=1 external/zstd-rs
-        git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
-
-    - uses: actions/download-artifact@v8
-      with:
-        name: AOT-Artifacts-macOS
-        path: .
-
-    - uses: Swatinem/rust-cache@v2
-      with:
-        shared-key: macos-26-aot-test
-
-    - name: Run native macOS AOT test
-      run: cargo test --locked --no-default-features --features compile,llvm --test aot_stdio
-
-  aot_stdio_ios:
+  aot_stdio_macos_ios:
     needs: aot_artifacts
     runs-on: macos-26
     timeout-minutes: 90
@@ -229,7 +204,12 @@ jobs:
 
     - uses: Swatinem/rust-cache@v2
       with:
-        shared-key: macos-26-ios-aot-test
+        shared-key: macos-26-aot-test
+
+    - name: Run native macOS AOT test
+      run: |
+        cargo test --locked --no-default-features --features compile,llvm --test aot_stdio
 
     - name: Run iOS Simulator AOT stdio test
-      run: cargo test --locked --no-default-features --features compile,llvm --test aot_ios -- --nocapture
+      run: |
+        cargo test --locked --no-default-features --features compile,llvm --test aot_ios -- --nocapture

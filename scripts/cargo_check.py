@@ -91,7 +91,15 @@ if is_component_selected("macos"):
         check(package="webrogue-macos", features=features)
 
 for pending_check in tqdm_func(pending_checks):
-    subprocess.run(pending_check, cwd=repo_dir, check=True)
+    subprocess.run(
+        pending_check,
+        cwd=repo_dir,
+        env={
+            **os.environ,
+            "CARGO_BUILD_WARNINGS": "deny"
+        },
+        check=True,
+    )
 
 if components != checked_components:
     raise Exception(f"Some specified components were not checked. Specified components :{components}")
