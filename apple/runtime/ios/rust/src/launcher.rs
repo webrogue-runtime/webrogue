@@ -5,7 +5,7 @@ use winit::event_loop::EventLoop;
 pub unsafe extern "C" fn webrogue_ios_rs_main_launcher(persistent_path: *const i8) {
     let event_loop = EventLoop::new().unwrap();
 
-    let persistent_path = std::ffi::CStr::from_ptr(persistent_path as *const _)
+    let persistent_path = unsafe { std::ffi::CStr::from_ptr(persistent_path as *const _) }
         .to_str()
         .unwrap()
         .to_owned();

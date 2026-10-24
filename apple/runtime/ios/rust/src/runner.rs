@@ -23,12 +23,12 @@ pub unsafe extern "C" fn webrogue_ios_rs_main_runner(
     wrapp_path: *const i8,
     persistent_path: *const i8,
 ) -> *const std::ffi::c_char {
-    let wrapp_path = std::ffi::CStr::from_ptr(wrapp_path as *const _)
+    let wrapp_path = unsafe { std::ffi::CStr::from_ptr(wrapp_path as *const _) }
         .to_str()
         .unwrap()
         .to_owned();
 
-    let persistent_path = std::ffi::CStr::from_ptr(persistent_path as *const _)
+    let persistent_path = unsafe { std::ffi::CStr::from_ptr(persistent_path as *const _) }
         .to_str()
         .unwrap()
         .to_owned();
