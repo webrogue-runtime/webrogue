@@ -4,6 +4,7 @@ version.workspace = true
 authors.workspace = true
 license.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 
 [features]
 run = [
@@ -86,7 +87,7 @@ rcgen = { workspace = true, optional = true }
 p12 = { workspace = true, optional = true }
 webrogue-vfs = { workspace = true, features = ["archive"] }
 wasm-opt = { workspace = true, default-features = false, optional = true }
-webrogue-wasm-processing = { workspace = true, default-features = false, optional = true }
+webrogue-wasm-processing = { workspace = true, optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 webrogue-gfx = { workspace = true, features = ["static-moltenvk"], optional = true }

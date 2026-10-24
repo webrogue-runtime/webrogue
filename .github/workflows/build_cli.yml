@@ -132,6 +132,7 @@ jobs:
         REM gfxstream doesn't seem to support MSVC
         set CC=clang-cl
         set CXX=clang-cl
+        set CXXFLAGS=/EHsc
         cargo build --no-default-features --target=${{ matrix.arch }}-pc-windows-msvc --features=full --profile cli  || exit /b 1
 
     - uses: actions/upload-artifact@v7

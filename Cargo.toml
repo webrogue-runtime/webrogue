@@ -4,8 +4,8 @@ version.workspace = true
 authors.workspace = true
 license.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 default-run = "webrogue"
-rust-version = "1.90"
 
 [[bin]]
 name = "webrogue"
@@ -41,6 +41,7 @@ version = "0.2.0"
 authors = ["Artem Borovik"]
 license = "Apache-2.0 WITH LLVM-exception"
 edition = "2024"
+rust-version = "1.99"
 
 [workspace]
 resolver = '2'
