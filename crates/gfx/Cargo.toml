@@ -17,6 +17,9 @@ tokio = { workspace = true, features = ["sync"] }
 webrogue-events-macro = { workspace = true }
 wasmtime = { workspace = true, default-features = false, features = ["anyhow", "component-model", "component-model-async", "runtime", "std"] }
 lazy_static = { workspace = true }
+wasi-webgpu-wasmtime = { workspace = true }
+wgpu-core = { workspace = true }
+wgpu-types = { workspace = true }
 
 [build-dependencies]
 reqwest = { workspace = true, features = ["blocking"], optional = true }

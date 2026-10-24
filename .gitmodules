@@ -7,3 +7,6 @@
 [submodule "external/virglrenderer"]
 	path = external/virglrenderer
 	url = https://github.com/webrogue-runtime/virglrenderer.git
+[submodule "external/wasi-gfx-runtime"]
+	path = external/wasi-gfx-runtime
+	url = https://github.com/wasi-gfx/wasi-gfx-runtime.git

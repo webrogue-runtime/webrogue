@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 #[cfg(any(feature = "jit", feature = "aot"))]
 mod runtime;
 #[cfg(any(feature = "jit", feature = "aot"))]

@@ -58,6 +58,7 @@ members = [
 ]
 exclude = [
   "vfs-adapter",
+  "external",
 ]
 
 [workspace.dependencies]
@@ -93,6 +94,11 @@ wasmtime = { version = "50", default-features = false }
 wasmtime-environ = { version = "50", default-features = false }
 wasmtime-wasi = { version = "50", default-features = false }
 wasmtime-internal-debugger = { version = "50", default-features = false }
+
+# wasi-gfx-related crates
+wasi-webgpu-wasmtime = { path = "external/wasi-gfx-runtime/crates/wasi-webgpu-wasmtime" }
+wgpu-core = "29"
+wgpu-types = "29"
 
 # other crates
 image = { version = "0.25", default-features = false }

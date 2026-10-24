@@ -14,3 +14,7 @@ pub use interface::{
     AbstractSystem, AbstractWindow, GFXCtxView, GFXView, System, Window, add_to_linker,
 };
 pub use vulkan_entry::load_vulkan_entry;
+
+pub use wasi_webgpu_wasmtime::{WasiWebGpuCtx, WasiWebGpuCtxView, WasiWebGpuOptions};
+pub use wgpu_core::global::Global as WGPUGlobal;
+pub use wgpu_types::InstanceDescriptor as WGPUInstanceDescriptor;

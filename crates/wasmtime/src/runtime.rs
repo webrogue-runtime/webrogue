@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 #[cfg(feature = "aot")]
 mod aot;
 #[cfg(feature = "aot")]
@@ -11,6 +12,7 @@ pub use jit::*;
 use wasmtime::component::Component;
 use wasmtime::error::Context;
 use wasmtime_wasi::p3::bindings::Command;
+use webrogue_gfx::{WGPUGlobal, WGPUInstanceDescriptor, WasiWebGpuOptions};
 use webrogue_vfs::VFS;
 
 use crate::state::State;
@@ -138,6 +140,12 @@ pub(self) async fn run_component(
         resource_table: wasmtime_wasi::ResourceTable::new(),
         vfs: runtime.vfs.clone(),
         wasi_clocks: WasiClocks::new(),
+        webgpu_instance: Arc::new(WGPUGlobal::new(
+            "webrogue",
+            WGPUInstanceDescriptor::new_without_display_handle_from_env(),
+            None,
+        )),
+        webgpu_options: WasiWebGpuOptions::default(),
     };
     let mut store = wasmtime::Store::new(&engine, state);
     #[cfg(not(target_os = "windows"))]

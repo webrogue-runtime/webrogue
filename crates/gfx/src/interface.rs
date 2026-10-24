@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use wasi_webgpu_wasmtime::WasiWebGpuCtxView;
 use wasmtime::component::{HasData, Linker, ResourceTable, WasmList};
 use wasmtime::{AsContext as _, AsContextMut as _};
 
@@ -20,7 +21,7 @@ pub(crate) mod generated {
     });
 }
 
-pub trait GFXView: Send {
+pub trait GFXView: WasiWebGpuCtxView + Send {
     fn gfx_ctx(&mut self) -> GFXCtxView<'_>;
 }
 
@@ -60,6 +61,8 @@ where
     })();
     linker.allow_shadowing(false);
     result?;
+
+    wasi_webgpu_wasmtime::add_to_linker(linker)?;
 
     Ok(())
 }
