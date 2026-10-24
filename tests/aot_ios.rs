@@ -66,7 +66,14 @@ fn ios_simulator_aot_app_forwards_guest_stdout_and_stderr() {
     assert_success(&install_output, "install iOS AOT app in Simulator");
 
     let mut launch = Command::new("xcrun")
-        .args(["simctl", "launch", "--console", &device, BUNDLE_ID])
+        .args([
+            "simctl",
+            "launch",
+            "--console-pty",
+            "--terminate-running-process",
+            &device,
+            BUNDLE_ID,
+        ])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()

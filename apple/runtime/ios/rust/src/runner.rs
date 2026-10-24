@@ -38,7 +38,10 @@ pub unsafe extern "C" fn webrogue_ios_rs_main_runner(
             "Webrogue application finished it's execution. It must not happen on ios.",
         )
         .unwrap(),
-        Err(e) => std::ffi::CString::from_str(&format!("{}", e)).unwrap(),
+        Err(e) => {
+            eprintln!("webrogue iOS runner failed: {e:#}");
+            std::ffi::CString::from_str(&format!("{}", e)).unwrap()
+        }
     };
     let error = Box::new(error);
 
