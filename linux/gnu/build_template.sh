@@ -18,8 +18,13 @@ cp $TARGET_DIR/$ARCH-unknown-linux-gnu/aot/libwebrogue_aot_lib.a "$OUT_DIR"
 
 for VIRGL_LIB_TYPE in stub impl
 do
-    cargo build --manifest-path=../crates/virgl-lib/Cargo.toml --features=$VIRGL_LIB_TYPE $CARGO_FLAGS
-    cp $TARGET_DIR/$ARCH-unknown-linux-gnu/aot/libwebrogue_virgl_lib.rlib  "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a"
+    RLIB_PATH=$(cargo build \
+        --manifest-path=../crates/virgl-lib/Cargo.toml \
+        --features=$VIRGL_LIB_TYPE $CARGO_FLAGS \
+        --message-format=json \
+        | grep '"name":"webrogue_virgl_lib"' \
+        | jq -r 'select(.reason == "compiler-artifact") | .filenames[] | select(endswith(".rlib"))')
+    cp $RLIB_PATH "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a"
 done
 
 clang --gcc-install-dir=/opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION main.c -nostdlib -c -o main.o
@@ -67,20 +72,44 @@ llvm-ar q \
     "$OUT_DIR/libwebrogue_aot_lib.a" \
     "main.o"
 
+copy_stripped_so() {
+    cp "$1/$2" "$OUT_DIR/$2.u"
+
+    IN_FILE="$1/$2"
+    OUT_FILE="$OUT_DIR/$2"
+    SECTIONS_TO_SHRINK=(".text" ".rodata" ".data" ".init" ".fini" ".plt" ".plt.sec")
+    OBJCOPY_ARGS=()
+    for sec in "${SECTIONS_TO_SHRINK[@]}"; do
+        if objdump -h "$IN_FILE" 2>/dev/null | grep -E " $sec " | grep -q "CONTENTS"; then
+            OBJCOPY_ARGS+=("--update-section" "$sec=/dev/null")
+        fi
+    done
+
+    if [ ${#OBJCOPY_ARGS[@]} -gt 0 ]; then
+        objcopy "${OBJCOPY_ARGS[@]}" "$IN_FILE" "$OUT_FILE"
+    else
+        cp "$IN_FILE" "$OUT_FILE"
+    fi
+
+    strip --strip-unneeded "$OUT_FILE"
+    rm "$OUT_DIR/$2.u"
+}
+
 cp \
     /lib/../lib64/crt1.o \
     /lib/../lib64/crti.o \
     /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/crtbegin.o \
-    /lib64/libm.so.6 \
-    /lib/../lib64/libpthread.so \
-    /lib/../lib64/libdl.so \
-    /lib64/libgcc_s.so.1 \
     /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/libgcc.a \
-    /lib64/libc.so.6 \
     /usr/lib64/libc_nonshared.a \
     /opt/rh/gcc-toolset-$GCC_VERSION/root/usr/lib/gcc/$ARCH-redhat-linux/$GCC_VERSION/crtend.o \
     /lib/../lib64/crtn.o \
     "$OUT_DIR"
+
+copy_stripped_so /lib64 libm.so.6
+copy_stripped_so /lib64 libpthread.so
+copy_stripped_so /lib64 libdl.so
+copy_stripped_so /lib64 libgcc_s.so.1
+copy_stripped_so /lib64 libc.so.6
 
 strip --strip-debug $OUT_DIR/libwebrogue_aot_lib.a
 
@@ -89,66 +118,44 @@ do
     objcopy --remove-section=.eh_frame --remove-section=.eh_frame_hdr "$OUT_DIR/$LIB"
 done
 
-# ld.lld \
-#     -pie \
-#     --no-dependent-libraries \
-#     --hash-style=gnu \
-#     --build-id \
-#     --eh-frame-hdr \
-#     -m \
-#     elf_$ARCH \
-#     --strip-all \
-#     --gc-sections \
-#     -dynamic-linker \
-#     /lib64/ld-linux-$ARCH.so.2 \
-#     -z \
-#     relro \
-#     -o \
-#     aot \
-#     --no-as-needed \
-#     "$OUT_DIR/Scrt1.o" \
-#     --no-as-needed \
-#     "$OUT_DIR/crti.o" \
-#     --no-as-needed \
-#     "$OUT_DIR/crtbeginS.o" \
-#     "$OUT_DIR/libwebrogue_aot_lib.a" \
-#     empty.gnu.o \
-#     "$OUT_DIR/libm.so.6" \
-#     --as-needed \
-#     "$OUT_DIR/libc.so.6" \
-#     "$OUT_DIR/libgcc_s.so.1" \
-#     "$OUT_DIR/libdl.so.2" \
-#     "$OUT_DIR/libpthread.so.0" \
-#     --no-as-needed \
-#     "$OUT_DIR/crtendS.o" \
-#     --no-as-needed \
-#     "$OUT_DIR/crtn.o"
-
-for VIRGL_LIB_TYPE in stub impl
-do
-    ld.lld \
+# $1 = archive, $2 = output, $3 = virgl type.
+link_command() {
+    echo "ld.lld \
         --hash-style=gnu \
         --build-id \
         --eh-frame-hdr \
         -dynamic-linker $INTERPRETER_PATH \
-        -o aot \
+        -o $2 \
         $LLD_ARCH_ARGS \
-        "$OUT_DIR/crt1.o" \
-        "$OUT_DIR/crti.o" \
-        "$OUT_DIR/crtbegin.o" \
-        "$OUT_DIR/libwebrogue_aot_lib.a" \
-        "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a" \
-        "empty.gnu.$ARCH.o" \
-        "$OUT_DIR/libm.so.6" \
-        "$OUT_DIR/libpthread.so" \
-        "$OUT_DIR/libdl.so" \
-        "$OUT_DIR/libgcc_s.so.1" \
-        "$OUT_DIR/libgcc.a" \
-        "$OUT_DIR/libc.so.6" \
-        "$OUT_DIR/libc_nonshared.a" \
-        "$OUT_DIR/crtend.o" \
-        "$OUT_DIR/crtn.o"
+        $OUT_DIR/crt1.o \
+        $OUT_DIR/crti.o \
+        $OUT_DIR/crtbegin.o \
+        $1 \
+        $OUT_DIR/libwebrogue_virgl_lib_$3.a \
+        empty.gnu.$ARCH.o \
+        $OUT_DIR/libm.so.6 \
+        $OUT_DIR/libpthread.so \
+        $OUT_DIR/libdl.so \
+        $OUT_DIR/libgcc_s.so.1 \
+        $OUT_DIR/libgcc.a \
+        $OUT_DIR/libc.so.6 \
+        $OUT_DIR/libc_nonshared.a \
+        $OUT_DIR/crtend.o \
+        $OUT_DIR/crtn.o"
+}
 
+# Stage 2: use the final link command as an oracle to remove objects that the
+# linker does not need.
+python3 ../scripts/tree_shake.py \
+    "$OUT_DIR/libwebrogue_aot_lib.a" \
+    --output "$OUT_DIR/libwebrogue_aot_lib.a" \
+    --machine "$ARCH" \
+    --probe-command "$(link_command '{archive}' '{output}' impl)" \
+    --probe-command "$(link_command '{archive}' '{output}' stub)"
+
+for VIRGL_LIB_TYPE in stub impl
+do
+    eval "$(link_command "$OUT_DIR/libwebrogue_aot_lib.a" aot "$VIRGL_LIB_TYPE")"
     rm aot
 done
 

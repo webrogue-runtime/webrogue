@@ -18,8 +18,14 @@ cp $TARGET_DIR/$ARCH-unknown-linux-musl/aot/libwebrogue_aot_lib.a "$OUT_DIR"
 
 for VIRGL_LIB_TYPE in stub impl
 do
-    cargo build --manifest-path=../crates/virgl-lib/Cargo.toml --features=$VIRGL_LIB_TYPE $CARGO_FLAGS
-    cp $TARGET_DIR/$ARCH-unknown-linux-musl/aot/libwebrogue_virgl_lib.rlib  "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a"
+
+    RLIB_PATH=$(cargo build \
+        --manifest-path=../crates/virgl-lib/Cargo.toml \
+        --features=$VIRGL_LIB_TYPE $CARGO_FLAGS \
+        --message-format=json \
+        | grep '"name":"webrogue_virgl_lib"' \
+        | jq -r 'select(.reason == "compiler-artifact") | .filenames[] | select(endswith(".rlib"))')
+    cp $RLIB_PATH "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a"
 done
 
 clang main.c -nostdlib -c -o main.o
@@ -76,28 +82,39 @@ strip --strip-debug $OUT_DIR/*
 
 rm main.o
 
-for VIRGL_LIB_TYPE in stub impl
-do
-    ld.lld \
+# $1 = archive, $2 = output, $3 = virgl type.
+link_command() {
+    echo "ld.lld \
         -z now \
         -z relro \
         --hash-style=gnu \
         --build-id \
         --eh-frame-hdr \
         -dynamic-linker $INTERPRETER_PATH \
-        -o aot \
+        -o $2 \
         --no-as-needed \
         $LLD_ARCH_ARGS \
-        "$OUT_DIR/crt1.o" \
-        "$OUT_DIR/crti.o" \
-        "$OUT_DIR/crtbeginT.o" \
-        "$OUT_DIR/libwebrogue_aot_lib.a" \
-        "$OUT_DIR/libwebrogue_virgl_lib_$VIRGL_LIB_TYPE.a" \
+        $OUT_DIR/crt1.o \
+        $OUT_DIR/crti.o \
+        $OUT_DIR/crtbeginT.o \
+        $1 \
+        $OUT_DIR/libwebrogue_virgl_lib_$3.a \
         empty.musl.$ARCH.o \
-        "$OUT_DIR/libgcc_s.so.1" \
-        "$OUT_DIR/libc.so" \
-        "$OUT_DIR/crtend.o" \
-        "$OUT_DIR/crtn.o"
+        $OUT_DIR/libgcc_s.so.1 \
+        $OUT_DIR/libc.so \
+        $OUT_DIR/crtend.o \
+        $OUT_DIR/crtn.o"
+}
 
+python3 ../scripts/tree_shake.py \
+    "$OUT_DIR/libwebrogue_aot_lib.a" \
+    --output "$OUT_DIR/libwebrogue_aot_lib.a" \
+    --machine "$ARCH" \
+    --probe-command "$(link_command '{archive}' '{output}' impl)" \
+    --probe-command "$(link_command '{archive}' '{output}' stub)"
+
+for VIRGL_LIB_TYPE in stub impl
+do
+    eval "$(link_command "$OUT_DIR/libwebrogue_aot_lib.a" aot "$VIRGL_LIB_TYPE")"
     rm aot
 done

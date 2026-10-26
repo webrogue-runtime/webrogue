@@ -1,6 +1,7 @@
 # It might be needed to set LongPathsEnabled registry key to let MSVC function properly with CMake. Try this PowerShell command:
 # New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
+import json
 import os
 import sys
 import subprocess
@@ -9,6 +10,10 @@ import zipfile
 
 template_dir = os.path.dirname(os.path.realpath(__file__))
 repo_dir = os.path.dirname(os.path.dirname(template_dir))
+sys.path.insert(0, os.path.join(repo_dir, "scripts"))
+
+import tree_shake
+
 rust_arch = sys.argv[1]
 win_arch = sys.argv[2]
 
@@ -61,32 +66,38 @@ subprocess.run(
 ).check_returncode()
 
 for virgl_type in ["impl", "stub"]:
-    subprocess.run(
+    build_result = subprocess.run(
         [
             "cargo",
             "build",
             "--manifest-path=../../crates/virgl-lib/Cargo.toml",
             "--target-dir=./target",
             f"--features={virgl_type}",
+            "--message-format=json",
         ] + cargo_flags,
         cwd=str(template_dir),
-    ).check_returncode()
+        stdout=subprocess.PIPE,
+    )
+    if build_result.returncode:
+        print(build_result.stdout.decode())
+        quit()
+    rlib_path = None
+    for line in build_result.stdout.decode().splitlines():
+        message = json.loads(line)
+        if message.get("reason") != "compiler-artifact":
+            continue
+        if message["target"]["name"] != "webrogue_virgl_lib":
+            continue
+        for filename in message["filenames"]:
+            if filename.endswith(".rlib"):
+                rlib_path = filename
     lib_out_path = os.path.join(
         out_dir,
         f"webrogue_virgl_lib_{virgl_type}.a",
     )
     if os.path.exists(lib_out_path):
         os.remove(lib_out_path)
-    os.rename(
-        os.path.join(
-            template_dir,
-            "target",
-            f"{rust_arch}-pc-windows-msvc",
-            "aot",
-            "libwebrogue_virgl_lib.rlib",
-        ),
-        lib_out_path,
-    )
+    os.rename(rlib_path, lib_out_path)
 
 virgl_lib_impl = os.path.join(out_dir, "webrogue_virgl_lib_impl.a")
 
@@ -196,11 +207,12 @@ lib_content = lib_content_result.stdout.decode()
 
 lld_outputs: list[str] = []
 
+# Stage 1: use lld-link's verbose output to find objects that are never
+# referenced. This is fast but conservative, especially on AArch64.
 for virgl_type in ["impl", "stub"]:
     for win_type in ["gui", "console"]:
         obj_out_path = os.path.join(out_dir, f"{win_type}.obj")
         exe_path = os.path.join(template_dir, "aot.exe")
-        # Collect verbose information to preform tree-shaking of resulting static archives
         lld_content_result = subprocess.run(
             [
                 "lld-link",
@@ -262,14 +274,24 @@ for object_batch_to_remove in batched(objects_to_remove, 128):
         cwd=str(template_dir),
     ).check_returncode()
 
-
+# Stage 2: use the linker as an oracle to remove the objects that stage 1 kept
+# conservatively. This is slower, but it finds many more dead objects.
 webrogue_aot_lib_out_path = os.path.join(out_dir, "webrogue_aot_lib.lib")
-if os.path.exists(webrogue_aot_lib_out_path):
-    os.remove(webrogue_aot_lib_out_path)
-os.rename(
-    webrogue_aot_lib_path,
-    webrogue_aot_lib_out_path,
+tree_shake.tree_shake(
+    archive=webrogue_aot_lib_path,
+    objects=[
+        os.path.join(out_dir, "gui.obj"),
+        os.path.join(out_dir, "console.obj"),
+    ],
+    output=webrogue_aot_lib_out_path,
+    machine=win_arch,
+    app_obj=os.path.join(template_dir, f"empty-{rust_arch}.obj"),
+    virgl_libs=[
+        os.path.join(out_dir, "webrogue_virgl_lib_impl.a"),
+        os.path.join(out_dir, "webrogue_virgl_lib_stub.a"),
+    ],
 )
+os.remove(webrogue_aot_lib_path)
 
 # mesa_version = "26.1.4"
 # if not os.path.exists(os.path.join(template_dir, "lavapipe")):
