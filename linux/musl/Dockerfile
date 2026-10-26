@@ -21,13 +21,9 @@ RUN apk add pipewire-dev alsa-lib-dev pulseaudio-dev libx11-dev libx11-static \
     libxkbcommon-dev wayland-dev libdrm-dev libusb-dev \
     liburing-dev pipewire-jack-dev libdecor-dev bzip2-static xz-dev xz-static \
     clang-libclang pkgconfig openssl-dev musl-dev cmake make openssl-libs-static \
-    clang llvm lld gcc g++ strace bzip2-dev
+    clang llvm lld gcc g++ strace bzip2-dev python3
 
-RUN apk add llvm20-dev clang20-static
-RUN apk add llvm20-libs
-RUN apk add ncurses-dev ncurses-static 
-RUN apk add zlib-static zlib-dev
-RUN apk add llvm20-libs
+RUN apk add llvm20-dev clang20-static llvm20-libs ncurses-dev ncurses-static zlib-static zlib-dev llvm20-libs jq
 # RUN rm /usr/lib/libX11.so  
 
 ENV ARCH=${ARCH}

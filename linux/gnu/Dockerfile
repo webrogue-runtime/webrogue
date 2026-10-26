@@ -14,7 +14,7 @@ RUN dnf -y install gcc git-core make cmake \
     liburing-devel
 
 
-RUN dnf -y install llvm strace clang lld openssl-devel
+RUN dnf -y install llvm strace clang lld openssl-devel jq
 
 ENV PATH="/fakehome/.cargo/bin:$PATH"
 ENV RUSTUP_HOME=/fakehome/rustup
