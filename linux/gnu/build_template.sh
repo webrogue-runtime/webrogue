@@ -4,7 +4,7 @@ set -ex
 OUT_DIR="../aot_artifacts/$ARCH-linux-gnu"
 rm -rf "$OUT_DIR"
 
-export NUM_JOBS=$(nproc)
+export NUM_JOBS=$(($(nproc) + 2))
 
 export RUSTUP_TOOLCHAIN=nightly
 

@@ -74,8 +74,8 @@ if is_component_selected("cli"):
 if is_component_selected("aot-lib"):
     for target in native_targets:
         check(package="webrogue-aot-lib", target=target)
-        for gfxstream_type in ["impl", "stub"]:
-            check(package="webrogue-virgl-lib", target=target, features=[gfxstream_type])
+        for virgl_type in ["impl", "stub"]:
+            check(package="webrogue-virgl-lib", target=target, features=[virgl_type])
 
 if is_component_selected("android"):
     for ndk_target in ["arm64-v8a", "x86_64"]:

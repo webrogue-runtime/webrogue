@@ -21,9 +21,28 @@ oracle:
 
 The result is a 1-minimal archive: no remaining object can be removed on its
 own without breaking one of the probe links.  Import-library members (``.dll``)
-are never touched.  Objects are tested one at a time: batching them made the
-search slower on real archives because a failed batch still has to be split
-down to individual members.
+are never touched.
+
+Objects are tested one at a time: batching several deletions into a single
+trial made the search slower on real archives, because a failed batch still has
+to be split down to individual members.  Independent single-member trials are
+parallelized instead: a round tests up to ``jobs`` candidates concurrently
+against the same archive, then commits the survivors and re-links the probes
+once to verify the combination.  Removal is not monotone (dropping two members
+can break a link that either removal alone leaves intact), so a round that
+fails verification is rolled back and replayed one member at a time.
+
+To keep a trial cheap, the archive is temporarily split while it is minimized:
+the unchanged import members are copied once into their own archive, and the
+object members are cut into contiguous slices that are linked in the original
+member order.  A trial then copies and rewrites only the slice that holds its
+candidate.  The final archive is rebuilt from the original by deleting the
+removed members, so member order and duplicate names are preserved exactly.  If
+the split archives do not link like the original, the run falls back to the
+unsplit archive.
+
+``jobs`` is the logical CPU count plus two, as Ninja does, or 6 when the count
+cannot be determined.
 
 The module is importable.  ``windows/msvc/build_template.py`` does::
 
@@ -73,6 +92,7 @@ import subprocess
 import sys
 import tempfile
 from collections import Counter, deque
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -89,6 +109,20 @@ ARCH_NAMES = {"x64": "x86_64", "arm64": "aarch64"}
 # Windows limits a command line to 32767 characters.  Keep some headroom for
 # the executable name and quoting.
 MAX_AR_COMMAND_CHARS = 24000
+
+# While minimizing, the archive is cut into this many slices so that a trial
+# only has to copy and rewrite the slice holding the member under test.  The
+# slices are recombined into a single archive at the end.
+SPLIT_PARTS = 16
+
+
+def default_jobs() -> int:
+    """Number of trials to run at once: logical CPUs + 2, as Ninja does."""
+    try:
+        count = len(os.sched_getaffinity(0))
+    except (AttributeError, OSError):
+        count = os.cpu_count()
+    return count + 2 if count else 6
 
 
 class TreeShakeError(RuntimeError):
@@ -118,15 +152,31 @@ class _Probe:
     workdir: Path
     command: tuple[str, ...] | None = None
 
-    def link(self, archive: Path, *, verbose: bool = False):
-        output = self.workdir / f"probe-{self.name}.exe"
+    def link(
+        self,
+        archives: Sequence[Path],
+        *,
+        verbose: bool = False,
+        tag: str | None = None,
+    ):
+        suffix = f"-{tag}" if tag else ""
+        output = self.workdir / f"probe-{self.name}{suffix}.exe"
         if self.command is not None:
-            cmd = [
-                part.replace("{archive}", str(archive)).replace(
-                    "{output}", str(output)
+            cmd: list[str] = []
+            for part in self.command:
+                if part == "{archive}":
+                    cmd.extend(str(archive) for archive in archives)
+                    continue
+                if "{archive}" in part and len(archives) > 1:
+                    raise TreeShakeError(
+                        "{archive} must be a standalone argument when the "
+                        "archive is split into several link inputs"
+                    )
+                cmd.append(
+                    part.replace("{archive}", str(archives[0])).replace(
+                        "{output}", str(output)
+                    )
                 )
-                for part in self.command
-            ]
             return _run(cmd, capture=True, check=False, verbose=verbose)
         cmd = [
             "lld-link",
@@ -134,7 +184,7 @@ class _Probe:
             "-nologo",
             f"-machine:{self.machine}",
             *self.objects,
-            archive,
+            *archives,
             *self.libraries,
             "/nodefaultlib",
         ]
@@ -177,12 +227,141 @@ class _Reporter:
         self.removed += 1
         if self.verbose:
             print(f"  removed: {member}", file=sys.stderr)
-        elif self.removed == 1 or self.removed % 10 == 0:
-            print(f"  removed {self.removed} member(s)", file=sys.stderr)
+
+
+@dataclass(frozen=True)
+class _Split:
+    """Link inputs that stand in for the archive while it is minimized.
+
+    Import-library members never change, so they go into one trailing archive.
+    The object members are cut into contiguous slices that are linked in the
+    original member order.  A trial then only copies and rewrites the slice
+    holding the member under test.  ``tree_shake`` recombines the result by
+    deleting the removed members from the original archive, which preserves
+    member order and duplicate names exactly.
+    """
+
+    archives: tuple[Path, ...]
+    chunk_of: dict[str, int]
+
+
+def _splittable(probes: Sequence[_Probe]) -> bool:
+    """Whether every probe takes several archives in place of ``{archive}``."""
+    for probe in probes:
+        for part in probe.command or ():
+            if "{archive}" in part and part != "{archive}":
+                return False
+    return True
+
+
+def _split_archive(
+    archive: Path,
+    members: Sequence[str],
+    directory: Path,
+    parts: int,
+) -> _Split | None:
+    """Cut ``archive`` into link inputs that a trial can rewrite cheaply.
+
+    The import-library members never change, so they are copied once into a
+    trailing archive.  The object members are cut into ``parts`` contiguous
+    slices, which are linked in the original member order.  Returns ``None``
+    when splitting would not pay off.
+
+    Separate archives are equivalent to the single one here: each slice is a
+    real archive, and both lld drivers resolve archive members lazily from a
+    global symbol table, so a member in one slice can pull one from another.
+    Keeping the slices contiguous preserves the first-definition choice for
+    duplicate symbols.  A linker that scans archives in order instead (GNU ld)
+    would need ``--start-group``; the baseline link catches that and the caller
+    falls back to the unsplit archive.
+    """
+    names = list(dict.fromkeys(members))
+    objects = [name for name in names if not is_import_member(name)]
+    imports = [name for name in names if is_import_member(name)]
+    if not imports or len(objects) < 2 * parts:
+        return None
+
+    directory.mkdir(parents=True, exist_ok=True)
+    counts = Counter(members)
+
+    fixed = directory / "fixed.lib"
+    shutil.copyfile(archive, fixed)
+    delete_members(
+        fixed, objects, counts=counts, verbose=False, max_items=2048
+    )
+
+    # Slices are produced by halving, so each archive is rewritten a handful
+    # of times while it shrinks instead of once per slice at full size.
+    root = directory / "root.lib"
+    shutil.copyfile(archive, root)
+    delete_members(
+        root, imports, counts=counts, verbose=False, max_items=2048
+    )
+
+    chunk_of: dict[str, int] = {}
+    archives = _halve(root, objects, counts, directory, parts, [0], chunk_of)
+    archives.append(fixed)
+    return _Split(archives=tuple(archives), chunk_of=chunk_of)
+
+
+def _halve(
+    source: Path,
+    names: Sequence[str],
+    counts: Counter[str],
+    directory: Path,
+    parts: int,
+    counter: list[int],
+    chunk_of: dict[str, int],
+) -> list[Path]:
+    """Split ``source`` (holding ``names``) into ``parts`` slices."""
+    if parts <= 1 or len(names) < 2:
+        index = counter[0]
+        counter[0] = index + 1
+        path = directory / f"chunk-{index}.lib"
+        os.replace(source, path)
+        for name in names:
+            chunk_of[name] = index
+        return [path]
+
+    middle = len(names) // 2
+    halves = [list(names[:middle]), list(names[middle:])]
+    paths = [
+        source.with_name(f"{source.name}-{suffix}") for suffix in ("a", "b")
+    ]
+    for path in paths:
+        shutil.copyfile(source, path)
+    source.unlink()
+    # Duplicate names live in one slice: llvm-ar deletes every copy at once.
+    for index, path in enumerate(paths):
+        delete_members(
+            path,
+            halves[1 - index],
+            counts=counts,
+            verbose=False,
+            max_items=2048,
+        )
+
+    return _halve(
+        paths[0], halves[0], counts, directory, parts // 2, counter, chunk_of
+    ) + _halve(
+        paths[1],
+        halves[1],
+        counts,
+        directory,
+        parts - parts // 2,
+        counter,
+        chunk_of,
+    )
 
 
 class _Minimizer:
-    """Greedy delta-debugging of an archive using the probe links as oracle."""
+    """Greedy delta-debugging of an archive using the probe links as oracle.
+
+    Trials are independent as long as they start from the same archive, so a
+    round tests up to ``jobs`` candidates concurrently against a frozen copy of
+    the working archive.  Commits happen afterwards, in candidate order, which
+    keeps the result reproducible.
+    """
 
     def __init__(
         self,
@@ -190,42 +369,88 @@ class _Minimizer:
         probes: Sequence[_Probe],
         reporter: _Reporter,
         verbose: bool,
+        jobs: int,
+        multiplicity: Counter[str],
+        split: _Split | None = None,
     ):
         self.working = working
         self.probes = probes
         self.reporter = reporter
         self.verbose = verbose
-        self.trial = working.with_name(working.name + ".trial")
-        self.multiplicity = Counter(list_members(working))
-        self.member_count = sum(self.multiplicity.values())
+        self.jobs = jobs
+        # Each concurrent trial needs its own archive copy and probe output.
+        self.trials = [
+            working.with_name(f"{working.name}.trial-{slot}")
+            for slot in range(jobs)
+        ]
+        self.archives = list(split.archives) if split else [working]
+        self.chunk_of = (
+            dict(split.chunk_of)
+            if split
+            else {member: 0 for member in multiplicity}
+        )
+        self.chunk_counts = [len(list_members(path)) for path in self.archives]
+        self.multiplicity = multiplicity
         self.removed: list[str] = []
 
     def run(self, candidates: Sequence[str]) -> None:
         queue = deque(candidates)
         kept: list[str] = []
-        while queue:
-            member = queue.popleft()
-            if self._try_remove(member):
-                self._commit(member)
+        with ThreadPoolExecutor(max_workers=self.jobs) as pool:
+            while queue:
+                batch = [
+                    queue.popleft() for _ in range(min(self.jobs, len(queue)))
+                ]
+                futures = self._submit(pool, batch)
+                successes: list[str] = []
+                for member, future in zip(batch, futures):
+                    if future.result():
+                        successes.append(member)
+                    else:
+                        self.reporter.kept_member(member)
+                        kept.append(member)
+                if not successes:
+                    continue
+                applied, rejected = self._commit(pool, successes)
+                for member in applied:
+                    self.reporter.committed(member)
+                for member in rejected:
+                    self.reporter.kept_member(member)
+                    kept.append(member)
                 # A removal can make previously kept members redundant.
                 queue.extend(kept)
                 kept.clear()
-            else:
-                self.reporter.kept_member(member)
-                kept.append(member)
 
-    def _try_remove(self, member: str) -> bool:
-        self.reporter.begin()
-        shutil.copyfile(self.working, self.trial)
+    def _submit(
+        self, pool: ThreadPoolExecutor, batch: Sequence[str]
+    ) -> list[Future[bool]]:
+        futures = []
+        for slot, member in enumerate(batch):
+            self.reporter.begin()
+            futures.append(
+                pool.submit(self._try_remove, member, slot, f"t{slot}")
+            )
+        return futures
+
+    def _try_remove(self, member: str, slot: int, tag: str) -> bool:
+        # ``chunk_counts`` is only updated by the coordinating thread between
+        # rounds, so every trial in a round sees the same baseline.
+        chunk = self.chunk_of[member]
+        trial = self.trials[slot]
+        shutil.copyfile(self.archives[chunk], trial)
         delete_members(
-            self.trial,
+            trial,
             [member],
             counts=self.multiplicity,
             verbose=self.verbose,
         )
+        archives = [
+            trial if index == chunk else path
+            for index, path in enumerate(self.archives)
+        ]
 
         for probe in self.probes:
-            result = probe.link(self.trial, verbose=self.verbose)
+            result = probe.link(archives, verbose=self.verbose, tag=tag)
             if result.returncode:
                 self.reporter.failed(member, probe)
                 if self.verbose:
@@ -234,25 +459,106 @@ class _Minimizer:
 
         # llvm-ar silently ignores names that do not match a member.  Make sure
         # a successful link is not just a link of the unmodified archive.
-        actual = len(list_members(self.trial))
-        expected = self.member_count - self.multiplicity[member]
+        actual = len(list_members(trial))
+        expected = self.chunk_counts[chunk] - self.multiplicity[member]
         if actual != expected:
             raise TreeShakeError(
-                f"llvm-ar removed {self.member_count - actual} members but "
-                f"{self.multiplicity[member]} were requested for {member}; "
-                "refusing to commit an incomplete deletion"
+                f"llvm-ar removed {self.chunk_counts[chunk] - actual} members "
+                f"but {self.multiplicity[member]} were requested for "
+                f"{member}; refusing to commit an incomplete deletion"
             )
         return True
 
-    def _commit(self, member: str) -> None:
-        os.replace(self.trial, self.working)
-        self.member_count -= self.multiplicity[member]
-        self.removed.append(member)
-        self.reporter.committed(member)
+    def _commit(
+        self, pool: ThreadPoolExecutor, members: Sequence[str]
+    ) -> tuple[list[str], list[str]]:
+        """Apply individually verified removals and re-check the combination.
+
+        Returns the members that ended up removed and the ones that had to be
+        kept because they were only safe on their own.
+        """
+        if len(members) == 1:
+            self._apply(members)
+            return list(members), []
+
+        touched = {self.chunk_of[member] for member in members}
+        backups = {}
+        for chunk in touched:
+            path = self.archives[chunk]
+            backup = path.with_name(path.name + ".backup")
+            shutil.copyfile(path, backup)
+            backups[chunk] = (backup, self.chunk_counts[chunk])
+        base_removed = len(self.removed)
+        self._apply(members)
+        if self._verify(pool):
+            for backup, _ in backups.values():
+                backup.unlink()
+            return list(members), []
+
+        # Link success is not monotone: two individually safe removals can
+        # break the link together.  Restore the round's starting point and
+        # re-apply them one at a time, which is always sound.
+        print(
+            f"  warning: {len(members)} combined removals failed "
+            "verification; re-applying them one at a time",
+            file=sys.stderr,
+        )
+        for chunk, (backup, count) in backups.items():
+            os.replace(backup, self.archives[chunk])
+            self.chunk_counts[chunk] = count
+        del self.removed[base_removed:]
+        applied: list[str] = []
+        rejected: list[str] = []
+        for member in members:
+            self.reporter.begin()
+            if self._try_remove(member, 0, "serial"):
+                self._apply([member])
+                applied.append(member)
+            else:
+                rejected.append(member)
+        return applied, rejected
+
+    def _apply(self, members: Sequence[str]) -> None:
+        by_chunk: dict[int, list[str]] = {}
+        for member in members:
+            by_chunk.setdefault(self.chunk_of[member], []).append(member)
+        for chunk, names in by_chunk.items():
+            delete_members(
+                self.archives[chunk],
+                names,
+                counts=self.multiplicity,
+                verbose=self.verbose,
+            )
+            removed = sum(self.multiplicity[name] for name in names)
+            expected = self.chunk_counts[chunk] - removed
+            actual = len(list_members(self.archives[chunk]))
+            if actual != expected:
+                raise TreeShakeError(
+                    f"llvm-ar removed {self.chunk_counts[chunk] - actual} "
+                    f"members but {removed} were requested; "
+                    "refusing to commit an incomplete deletion"
+                )
+            self.chunk_counts[chunk] = actual
+        self.removed.extend(members)
+
+    def _verify(self, pool: ThreadPoolExecutor) -> bool:
+        futures = [
+            pool.submit(
+                probe.link, self.archives, verbose=self.verbose, tag="verify"
+            )
+            for probe in self.probes
+        ]
+        results = [future.result() for future in futures]
+        return all(not result.returncode for result in results)
 
     def cleanup(self) -> None:
-        if self.trial.exists():
-            self.trial.unlink()
+        leftovers = [
+            *self.trials,
+            *(path.with_name(path.name + ".backup") for path in self.archives),
+        ]
+        for path in leftovers:
+            if path.exists():
+                path.unlink()
 
 
 def _format_cmd(cmd: Sequence[object]) -> str:
@@ -268,6 +574,7 @@ def _run(
     capture: bool = False,
     check: bool = True,
     verbose: bool = False,
+    cwd: Path | None = None,
 ):
     parts = [str(part) for part in cmd]
     if verbose:
@@ -276,6 +583,7 @@ def _run(
         result = subprocess.run(
             parts,
             check=False,
+            cwd=cwd,
             stdout=subprocess.PIPE if capture else None,
             stderr=subprocess.PIPE if capture else None,
             text=True,
@@ -328,6 +636,7 @@ def delete_members(
     *,
     counts: Counter[str] | None = None,
     verbose: bool,
+    max_items: int = 128,
 ) -> None:
     # llvm-ar deletes one copy per occurrence of a member name.  Archives can
     # contain duplicate names, so repeat the name for every copy we intend to
@@ -335,7 +644,7 @@ def delete_members(
     expanded: list[str] = []
     for member in members:
         expanded.extend([member] * (counts[member] if counts else 1))
-    for chunk in command_line_chunks(expanded, 128):
+    for chunk in command_line_chunks(expanded, max_items):
         _run(["llvm-ar", "d", archive, *chunk], verbose=verbose)
 
 
@@ -625,11 +934,13 @@ def tree_shake(
     )
 
     input_size = archive.stat().st_size
+    jobs = default_jobs()
     print(
         f"archive: {archive} ({human_size(input_size)}, {len(members)} "
         f"members, {len(object_members)} objects)"
     )
     print(f"machine: {machine}")
+    print(f"jobs: {jobs}")
 
     work_path = output.parent / f".{output.name}.tree-shake-{os.getpid()}.tmp"
     minimizer: _Minimizer | None = None
@@ -653,27 +964,71 @@ def tree_shake(
             )
         print("probes: " + ", ".join(probe.name for probe in probes))
 
-        for probe in probes:
-            result = probe.link(archive, verbose=verbose)
-            if result.returncode:
-                hint = (
-                    "\nIf a symbol is missing, pass --app-obj and/or "
-                    "--virgl-lib."
-                    if probe_commands is None
-                    else ""
+        def baseline_failure(archives: Sequence[Path]):
+            for probe in probes:
+                result = probe.link(archives, verbose=verbose)
+                if result.returncode:
+                    return probe, result
+            return None
+
+        split: _Split | None = None
+        if _splittable(probes):
+            try:
+                split = _split_archive(
+                    archive, members, probe_dir / "split", SPLIT_PARTS
                 )
-                raise TreeShakeError(
-                    "baseline link failed; the input archive does not link "
-                    "with the selected probes.\n"
-                    + _link_failure(probe, result)
-                    + hint
+            except TreeShakeError as exc:
+                print(
+                    f"warning: cannot split the archive ({exc}); "
+                    "minimizing it in one piece",
+                    file=sys.stderr,
                 )
+        baseline_archives = list(split.archives) if split else [archive]
+        failure = baseline_failure(baseline_archives)
+        if failure is not None and split is not None:
+            print(
+                "warning: the split archive does not link like the original; "
+                "falling back to the unsplit archive",
+                file=sys.stderr,
+            )
+            split = None
+            baseline_archives = [archive]
+            failure = baseline_failure(baseline_archives)
+        if failure is not None:
+            probe, result = failure
+            hint = (
+                "\nIf a symbol is missing, pass --app-obj and/or "
+                "--virgl-lib."
+                if probe_commands is None
+                else ""
+            )
+            raise TreeShakeError(
+                "baseline link failed; the input archive does not link "
+                "with the selected probes.\n"
+                + _link_failure(probe, result)
+                + hint
+            )
         print(f"baseline: all {len(probes)} probe link(s) succeeded")
+        if split is not None:
+            print(
+                f"split: {len(split.archives) - 1} object slice(s) plus the "
+                "unchanged import members"
+            )
 
         try:
-            shutil.copyfile(archive, work_path)
+            if split is None:
+                # Without slices the minimizer rewrites the working copy.
+                shutil.copyfile(archive, work_path)
             reporter = _Reporter(len(candidates), verbose)
-            minimizer = _Minimizer(work_path, probes, reporter, verbose)
+            minimizer = _Minimizer(
+                work_path,
+                probes,
+                reporter,
+                verbose,
+                jobs,
+                multiplicity,
+                split,
+            )
 
             print(
                 f"testing {len(candidates)} object member(s)",
@@ -681,8 +1036,18 @@ def tree_shake(
             )
             minimizer.run(candidates)
 
+            # Recombine: rebuild the output from the original archive so the
+            # slices used during minimization never leak into the result.
+            shutil.copyfile(archive, work_path)
+            delete_members(
+                work_path,
+                minimizer.removed,
+                counts=multiplicity,
+                verbose=verbose,
+            )
+
             for probe in probes:
-                result = probe.link(work_path, verbose=verbose)
+                result = probe.link([work_path], verbose=verbose)
                 if result.returncode:
                     raise TreeShakeError(
                         "internal error: the minimized archive failed "
