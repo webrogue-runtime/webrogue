@@ -1,5 +1,5 @@
 mod gradle;
-mod link;
+pub(crate) mod link;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, clap::ValueEnum, Eq, Hash)]
 pub enum AndroidArch {

@@ -54,7 +54,7 @@ impl InternalCommands {
                     true,
                     true,
                 )?;
-                crate::android::link(
+                crate::android::link::link(
                     &object_file,
                     match target {
                         crate::Target::ARM64LinuxAndroid => crate::android::AndroidArch::Aarch64,
