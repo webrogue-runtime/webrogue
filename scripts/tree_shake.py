@@ -645,7 +645,7 @@ def delete_members(
     for member in members:
         expanded.extend([member] * (counts[member] if counts else 1))
     for chunk in command_line_chunks(expanded, max_items):
-        _run(["llvm-ar", "d", archive, *chunk], verbose=verbose)
+        _run(["llvm-ar", "dP", archive, *chunk], verbose=verbose)
 
 
 def is_import_member(member: str) -> bool:

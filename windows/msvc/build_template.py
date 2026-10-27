@@ -43,9 +43,11 @@ if os.path.exists(empty_wrapp):
         [
             "cargo",
             "run",
-            "--features=compile",
+            "--no-default-features",
+            "--features=internal-compile",
             "--release",
             "--",
+            "internal",
             "compile",
             "object",
             str(empty_wrapp),

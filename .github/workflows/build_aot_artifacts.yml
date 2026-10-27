@@ -81,16 +81,6 @@ jobs:
         for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
           call "%%i"
         )
-        set "LLVM_BIN=C:\Program Files\LLVM\bin"
-        if not exist "%LLVM_BIN%\lld-link.exe" (
-          echo Expected standalone LLVM at %LLVM_BIN% & exit /b 1
-        )
-        set "PATH=%LLVM_BIN%;%PATH%"
-        where lld-link
-        lld-link --version
-        lld-link --version | findstr /C:"LLD 17" >nul && (
-          echo ERROR: lld-link is Visual Studio LLVM 17; expected LLVM 22 & exit /b 1
-        )
         python3 windows/msvc/build_template.py ${{ matrix.rust_arch }} ${{ matrix.win_arch }} || exit /b 1
 
     - uses: actions/upload-artifact@v7
