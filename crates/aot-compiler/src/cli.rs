@@ -88,70 +88,11 @@ pub enum Commands {
         #[command(subcommand)]
         commands: crate::xcode::XcodeCommands,
     },
-    /// An internal command.
-    /// You probably need `android` command instead
-    AndroidSo {
-        wrapp_path: std::path::PathBuf,
-        out_path: std::path::PathBuf,
-        target: String,
-    },
-    /// An internal command
-    Object {
-        wrapp_path: std::path::PathBuf,
-        out_path: std::path::PathBuf,
-        target: String,
-        #[arg(short, long)]
-        pic: bool,
-    },
 }
 
 impl Commands {
     pub fn run(&self, cache: Option<&std::path::PathBuf>) -> anyhow::Result<()> {
         match self {
-            Commands::Object {
-                wrapp_path,
-                out_path,
-                target,
-                pic,
-            } => {
-                let wasm = crate::compile::process_wasm(wrapp_path, out_path)?;
-                crate::compile::compile_wrapp_to_object(
-                    &wasm,
-                    out_path,
-                    crate::Target::from_name(target)?,
-                    cache,
-                    *pic,
-                    false,
-                )?;
-            }
-            Commands::AndroidSo {
-                wrapp_path,
-                out_path,
-                target,
-            } => {
-                let target = crate::Target::from_name(target)?;
-                let object_file = crate::utils::TemporaryFile::new(
-                    out_path.parent().ok_or(anyhow::anyhow!("Path error"))?,
-                )?;
-                let wasm = crate::compile::process_wasm(wrapp_path, out_path)?;
-                crate::compile::compile_wrapp_to_object(
-                    &wasm,
-                    object_file.path(),
-                    target,
-                    cache,
-                    true,
-                    true,
-                )?;
-                crate::android::link(
-                    &object_file,
-                    match target {
-                        crate::Target::ARM64LinuxAndroid => crate::android::AndroidArch::Aarch64,
-                        crate::Target::X86_64LinuxAndroid => crate::android::AndroidArch::X86_64,
-                        _ => anyhow::bail!("Unsupported target for Android: {}", target),
-                    },
-                    out_path,
-                )?;
-            }
             Commands::Linux {
                 wrapp_path,
                 out_path,

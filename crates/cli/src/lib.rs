@@ -47,8 +47,8 @@ enum Cli {
         #[command(subcommand)]
         command: crate::hub::HubCommand,
     },
+    /// Some commands that shouldn't be in release build
     #[cfg(feature = "internal")]
-    #[command(hide = true)]
     Internal {
         #[command(subcommand)]
         command: crate::internal::InternalCommand,

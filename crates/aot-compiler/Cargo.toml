@@ -10,6 +10,7 @@ rust-version.workspace = true
 default = []
 llvm = []
 appended_artifacts = []
+internal-commands = []
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
