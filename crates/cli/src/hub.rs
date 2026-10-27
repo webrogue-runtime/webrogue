@@ -1,4 +1,4 @@
-use std::{fmt::Display, path::PathBuf};
+use std::{env::VarError, fmt::Display, path::PathBuf};
 
 use anyhow::Context;
 use clap::Subcommand;
@@ -6,6 +6,8 @@ use webrogue_hub_client::{api_base_path::http_api_url, openapi::models::device_i
 mod debug;
 #[cfg(feature = "run")]
 mod runner;
+
+static WRH_API_KEY_NAME: &str = "WRH_API_KEY";
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum HubCommand {
@@ -17,17 +19,11 @@ pub enum HubCommand {
         /// Path to a directory that Webrogue will use for it's needs,
         /// such as providing persistent storage to WRAPPs or storing device UUID.
         storage: PathBuf,
-        /// Webrogue Hub API key
-        #[arg(long)]
-        api_key: String,
     },
     /// Debug remotely
     Debug {
         /// Path to WRAPP to be debugged
         wrapp_path: PathBuf,
-        /// Webrogue Hub API key
-        #[arg(long)]
-        api_key: String,
         /// ID of device to run on
         #[arg(long)]
         device: Option<String>,
@@ -40,15 +36,14 @@ impl HubCommand {
     pub fn run(&self) -> anyhow::Result<()> {
         match self {
             #[cfg(feature = "run")]
-            HubCommand::HostRunner { storage, api_key } => {
+            HubCommand::HostRunner { storage } => {
                 let gfx_builder =
                     webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
                 let storage = storage.clone();
-                let api_key = api_key.clone();
                 gfx_builder.run(
                     move |system| {
                         webrogue_wasmtime::block_on_default_executor(async {
-                            crate::hub::runner::host(&storage, &api_key, system).await?;
+                            crate::hub::runner::host(&storage, &get_api_key()?, system).await?;
                             anyhow::Ok(())
                         })
                     },
@@ -58,10 +53,10 @@ impl HubCommand {
             }
             HubCommand::Debug {
                 wrapp_path,
-                api_key,
                 device,
                 gdb_port,
             } => {
+                let api_key = get_api_key()?;
                 let gdb_port = *gdb_port;
                 tokio::runtime::Builder::new_current_thread()
                     .enable_all()
@@ -74,15 +69,26 @@ impl HubCommand {
                                 webrogue_cli_goodies::is_tty(),
                                 "No device has been specified. Use --device option or run in a terminal to select device interactively"
                             );
-                            select_device(api_key).await.context("An error occurred while trying to select device interactively. Note that this step can be bypassed by specifying --device option")?
+                            select_device(&api_key).await.context("An error occurred while trying to select device interactively. Note that this step can be bypassed by specifying --device option")?
                         };
 
-                        crate::hub::debug::debug(wrapp_path, &device, api_key, gdb_port).await?;
+                        crate::hub::debug::debug(wrapp_path, &device, &api_key, gdb_port).await?;
                         anyhow::Ok(())
                     })?;
                 Ok(())
             }
         }
+    }
+}
+
+fn get_api_key() -> anyhow::Result<String> {
+    match std::env::var(WRH_API_KEY_NAME) {
+        Ok(var) => Ok(var),
+        Err(VarError::NotPresent) => {
+            anyhow::bail!("{} environment variable is not set", WRH_API_KEY_NAME)
+        }
+        Err(err) => Err(anyhow::anyhow!(err))
+            .with_context(|| format!("Unable to get {} environment variable", WRH_API_KEY_NAME)),
     }
 }
 

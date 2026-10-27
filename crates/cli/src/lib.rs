@@ -41,6 +41,7 @@ enum Cli {
         output: PathBuf,
     },
     /// Commands related to Webrogue-Hub
+    /// API key is passed using `WRH_API_KEY` environment variable
     #[cfg(feature = "hub")]
     Hub {
         #[command(subcommand)]
