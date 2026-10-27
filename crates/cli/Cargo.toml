@@ -50,11 +50,17 @@ internal-run = [
     "dep:webrogue-virgl",
     "webrogue-virgl/lib-stub",
 ]
+internal-compile = [
+    "internal",
+    "dep:webrogue-aot-compiler",
+    "webrogue-aot-compiler/internal-commands",
+]
 wasm-opt = [
     "dep:wasm-opt",
     "dep:webrogue-wasm-processing",
     "webrogue-wasm-processing/wasm-opt",
 ]
+no-internal = []
 
 [dependencies]
 anyhow = { workspace = true }

@@ -97,7 +97,7 @@ fi
 mv "$OUT_DIR/webrogue_aot_lib.lib" webrogue_aot_lib.lib 
 
 llvm-ar t webrogue_aot_lib.lib > lib_content.txt
-test -f ../../examples/empty/empty.wrapp && cargo run --no-default-features --features=compile --target-dir=../../target --release compile object ../../examples/empty/empty.wrapp empty.obj x86_64-windows-msvc
+test -f ../../examples/empty/empty.wrapp && cargo run --no-default-features --features=internal-compile --target-dir=../../target --release internal compile object ../../examples/empty/empty.wrapp empty.obj x86_64-windows-msvc
 
 for win_type in gui console; do
   # Collect verbose information to preform tree-shaking of resulting static archives
