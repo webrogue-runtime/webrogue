@@ -15,7 +15,7 @@ then
     do
         for ARCH in x86_64 aarch64
         do
-            cargo run --release --features=compile --no-default-features compile object $WRAPP_PATH linux/empty.$LIBC.$ARCH.o $ARCH-linux-$LIBC
+            cargo run --release --features=internal-compile --no-default-features internal compile object $WRAPP_PATH linux/empty.$LIBC.$ARCH.o $ARCH-linux-$LIBC
         done
     done
 fi

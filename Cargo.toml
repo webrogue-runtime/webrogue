@@ -13,9 +13,22 @@ path = "main.rs"
 doc = false
 
 [features]
-default = ["run", "compile", "hub", "llvm", "wasm-opt", "internal-run"]
-full = ["run", "compile", "hub", "llvm", "wasm-opt", "appended_artifacts"]
-internal-run = ["webrogue-cli/internal-run"]
+default = [
+  "run",
+  "compile",
+  "hub",
+  "llvm",
+  "wasm-opt",
+]
+full = [
+  "run",
+  "compile",
+  "hub",
+  "llvm",
+  "wasm-opt",
+  "appended_artifacts",
+  "webrogue-cli/no-internal",
+]
 run = ["webrogue-cli/run"]
 compile = ["webrogue-cli/compile"]
 hub = ["webrogue-cli/hub"]
@@ -26,6 +39,9 @@ wasm-opt = ["webrogue-cli/wasm-opt"]
 # using append_artifacts.py script, so it is disabled by default
 appended_artifacts = ["webrogue-cli/appended_artifacts"]
 
+# Some internal features
+internal-run = ["webrogue-cli/internal-run"]
+internal-compile = ["webrogue-cli/internal-compile"]
 
 [dependencies]
 webrogue-cli = { workspace = true }

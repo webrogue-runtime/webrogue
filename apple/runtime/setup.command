@@ -10,7 +10,7 @@ then
     cp $WRAPP_PATH macos/runner/aot.swrapp
     cp $WRAPP_PATH ios/runner/aot.swrapp
 
-    COMPILE_COMMAND="cargo run --release --no-default-features --features=compile compile object"
+    COMPILE_COMMAND="cargo run --release --no-default-features --features=internal-compile internal compile object"
     $COMPILE_COMMAND $WRAPP_PATH macos/runner/aot.x86_64.macosx.o x86_64-apple-darwin --pic
     $COMPILE_COMMAND $WRAPP_PATH macos/runner/aot.arm64.macosx.o arm64-apple-darwin --pic
     $COMPILE_COMMAND $WRAPP_PATH ios/runner/aot.x86_64.iphonesimulator.o x86_64-apple-ios --pic
