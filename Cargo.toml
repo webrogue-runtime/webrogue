@@ -58,6 +58,7 @@ members = [
 ]
 exclude = [
   "vfs-adapter",
+  "external",
 ]
 
 [workspace.dependencies]
@@ -89,10 +90,10 @@ webrogue-debugger = { path = "crates/debugger" }
 webrogue-wasm-processing = { path = "crates/wasm-processing" }
 
 # Wasmtime crates
-wasmtime = { version = "50", default-features = false }
-wasmtime-environ = { version = "50", default-features = false }
-wasmtime-wasi = { version = "50", default-features = false }
-wasmtime-internal-debugger = { version = "50", default-features = false }
+wasmtime = { path = "external/wasmtime/crates/wasmtime", default-features = false }
+wasmtime-environ = { path = "external/wasmtime/crates/environ", default-features = false }
+wasmtime-wasi = { path = "external/wasmtime/crates/wasi", default-features = false }
+wasmtime-internal-debugger = { path = "external/wasmtime/crates/debugger", default-features = false }
 
 # other crates
 image = { version = "0.25", default-features = false }
