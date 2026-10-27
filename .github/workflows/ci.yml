@@ -46,6 +46,10 @@ jobs:
       with:
         tool: cargo-ndk
 
+    - name: Install Rust toolchains (common)
+      run: |
+        rustup target add wasm32-wasip2
+
     - name: Install Rust toolchains (macOS)
       if: startsWith(matrix.os, 'macos') == true && contains(matrix.components, 'cli') == true
       run: |
@@ -145,9 +149,11 @@ jobs:
       with:
         shared-key: ${{ matrix.os }}-runtime-integration
 
-    - name: Install Windows Rust target
+    - name: Install Rust toolchains
       if: startsWith(matrix.os, 'windows')
-      run: rustup target add ${{ matrix.arch }}-pc-windows-msvc
+      run: |
+        rustup target add ${{ matrix.arch }}-pc-windows-msvc
+        rustup target add wasm32-wasip2
 
     - name: Set macOS deployment target
       if: matrix.os == 'macos-26'

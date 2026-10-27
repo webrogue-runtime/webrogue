@@ -49,6 +49,10 @@ jobs:
       with:
         shared-key: ${{ matrix.runner }}-aot-test
 
+    - name: Install Rust toolchains
+      run: |
+        rustup target add wasm32-wasip2
+
     - name: Install Xvfb
       run: sudo apt-get update && sudo apt-get install -y libxkbcommon-x11-0 xvfb
 
@@ -114,6 +118,10 @@ jobs:
       with:
         packages: platform-tools emulator
 
+    - name: Install Rust toolchains
+      run: |
+        rustup target add wasm32-wasip2
+
     - name: Install Android SDK platform
       run: |
         sdkmanager "platforms;android-36"
@@ -171,8 +179,10 @@ jobs:
       with:
         shared-key: ${{ matrix.runner }}-aot-test
 
-    - name: Install Rust target
-      run: rustup target add ${{ matrix.arch }}-pc-windows-msvc
+    - name: Install Rust toolchains
+      run: |
+        rustup target add wasm32-wasip2
+        rustup target add ${{ matrix.arch }}-pc-windows-msvc
 
     - name: Run native Windows AOT test
       shell: cmd
@@ -205,6 +215,10 @@ jobs:
     - uses: Swatinem/rust-cache@v2
       with:
         shared-key: macos-26-aot-test
+
+    - name: Install Rust toolchains
+      run: |
+        rustup target add wasm32-wasip2
 
     - name: Run native macOS AOT test
       run: |

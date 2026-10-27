@@ -12,6 +12,7 @@ RUN mkdir -p /fakehome/.cargo/registry/cache \
     /fakehome/.cargo/registry/src \
     /fakehome/.cargo/git/db
 RUN rustup toolchain install nightly --profile minimal --component rust-src
+RUN rustup target add wasm32-wasip2
 RUN chmod -R a+rwx /fakehome/rustup
 
 # SDL deps
