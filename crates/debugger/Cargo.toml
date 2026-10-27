@@ -8,11 +8,13 @@ rust-version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+bytes = { workspace = true }
 wasmtime-internal-debugger = { workspace = true }
-webrogue-common = { workspace = true }
-wasmtime = { workspace = true, default-features = false }
-gdbstub = { workspace = true }
-gdbstub_arch = { workspace = true }
+wasmtime-internal-gdbstub-component-artifact = { workspace = true }
+wasmtime = { workspace = true, default-features = false, features = ["anyhow", "cranelift", "component-model"] }
 wasmtime-wasi = { workspace = true, default-features = false, features = ["p2"] } # wasmtime-internal-debugger needs p2, but is too shy to ask
-tokio = { workspace = true, features = ["macros", "net", "rt", "sync"] }
+tokio = { workspace = true, features = ["io-util", "macros", "net", "rt", "sync", "time"] }
 async-trait = { workspace = true }
+
+[dev-dependencies]
+wasmtime = { workspace = true, default-features = false, features = ["wat"] }

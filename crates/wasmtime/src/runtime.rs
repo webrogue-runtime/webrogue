@@ -21,7 +21,7 @@ pub struct Runtime {
     vfs: VFS,
     persistent_dir: PathBuf,
     #[cfg(feature = "debug")]
-    debug_connection_factory: Option<webrogue_debugger::connection::ConnectionFactory>,
+    debug_connection_factory: Option<webrogue_debugger::connection::BoxedConnectionFactory>,
 }
 
 impl Runtime {
@@ -62,7 +62,7 @@ impl Runtime {
 pub(self) async fn run_component(
     runtime: Runtime,
     engine: wasmtime::Engine,
-    component: wasmtime::component::Component,
+    component: Component,
 ) -> anyhow::Result<()> {
     let wrapp_config = runtime.vfs.config();
 
@@ -162,15 +162,10 @@ pub(self) async fn run_component(
             webrogue_virgl::shadow_blob::handle_segfault(addr)
         });
     }
-    async fn run(
+    async fn run_with_command(
         store: &mut wasmtime::Store<State>,
-        component: Component,
-        linker: wasmtime::component::Linker<State>,
+        command: Command,
     ) -> anyhow::Result<()> {
-        let command = Command::instantiate_async(&mut *store, &component, &linker)
-            .await
-            .context("Unable to instantiate command")?;
-
         #[cfg(feature = "debug")]
         if let Some(mut breakpoints) = store.edit_breakpoints() {
             breakpoints.single_step(true)?;
@@ -185,14 +180,27 @@ pub(self) async fn run_component(
 
     #[cfg(feature = "debug")]
     if let Some(debug_connection_factory) = runtime.debug_connection_factory {
-        webrogue_debugger::debug(store, debug_connection_factory, |store| {
-            Box::pin(run(store, component, linker))
+        store.set_epoch_deadline(1);
+        let command = Command::instantiate_async(&mut store, &component, &linker)
+            .await
+            .context("Unable to instantiate command")?;
+        store.set_epoch_deadline(1);
+        webrogue_debugger::debug(store, debug_connection_factory, move |store| {
+            Box::pin(run_with_command(store, command))
         })
         .await?;
     } else {
-        run(&mut store, component, linker).await?;
+        let command = Command::instantiate_async(&mut store, &component, &linker)
+            .await
+            .context("Unable to instantiate command")?;
+        run_with_command(&mut store, command).await?;
     };
     #[cfg(not(feature = "debug"))]
-    run(&mut store, component, linker).await?;
+    {
+        let command = Command::instantiate_async(&mut store, &component, &linker)
+            .await
+            .context("Unable to instantiate command")?;
+        run_with_command(&mut store, command).await?;
+    }
     Ok(())
 }

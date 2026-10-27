@@ -1,0 +1,6 @@
+package webrogue:wasi;
+
+world sockets {
+  import wasi:sockets/tcp@0.2.12;
+  import wasi:sockets/tcp-create-socket@0.2.12;
+}

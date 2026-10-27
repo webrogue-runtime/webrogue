@@ -10,7 +10,6 @@ rust-version.workspace = true
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 webrogue-gfx = { workspace = true }
-webrogue-debugger = { workspace = true }
 webrogue-common = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
 webrogue-hub-client = { workspace = true }
