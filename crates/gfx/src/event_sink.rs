@@ -85,11 +85,7 @@ impl<T> wasmtime::component::StreamProducer<T> for EventStream {
             return Poll::Ready(Ok(wasmtime::component::StreamResult::Cancelled));
         }
 
-        // let remaining = match destination.remaining(store) {
-        //     Ok(remaining) => remaining,
-        //     Err(err) => return Poll::Ready(Err(err)),
-        // };
-        let remaining = destination.remaining(store);
+        let remaining = destination.remaining(store)?;
 
         if remaining == Some(0) {
             return Poll::Ready(Ok(wasmtime::component::StreamResult::Completed));

@@ -10,7 +10,7 @@ rust-version.workspace = true
 jit = ["wasmtime/cranelift", "wasmtime/parallel-compilation", "wasmtime/addr2line"]
 aot = ["dep:webrogue-aot-data"]
 cache = ["wasmtime/cache"] # TODO "wasmtime/incremental-cache"
-debug = ["jit", "wasmtime/debug"] # , "wasmtime/debug-builtins"
+debug = ["jit", "wasmtime/debug", "dep:webrogue-debugger"] # , "wasmtime/debug-builtins"
 pulley = ["wasmtime/pulley"]
 
 [dependencies]
@@ -23,10 +23,9 @@ webrogue-wasmtime-common = { workspace = true }
 webrogue-wasm-processing = { workspace = true }
 wasmtime-wasi = { workspace = true, default-features = false, features = ["p3"] }
 webrogue-vfs = { workspace = true, features = ["wasmtime"] }
-webrogue-debugger = { workspace = true }
+webrogue-debugger = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["net", "time", "rt-multi-thread"] }
 webrogue-aot-data = { workspace = true, optional = true }
-gdbstub_arch = { workspace = true }
 futures = { workspace = true }
 webrogue-common = { workspace = true, optional = true }
 tokio-hrtime = { workspace = true }

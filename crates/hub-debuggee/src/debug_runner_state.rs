@@ -52,11 +52,13 @@ impl DebugRunnerConfig {
             let runtime = webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path);
             let mut runtime = runtime.jit();
             runtime.jit_profile(webrogue_wasmtime::JitProfile::Debug);
-            runtime.debug_connection_factory(webrogue_debugger::connection::premade_connection(
-                Box::new(WebRTCPacketSender { data_channel }),
-                Box::into_pin(receiver),
-                move || launched_tx.send(()).unwrap(),
-            ));
+            runtime.debug_connection_factory(
+                webrogue_wasmtime::debugger::connection::premade_connection(
+                    Box::new(WebRTCPacketSender { data_channel }),
+                    Box::into_pin(receiver),
+                    move || launched_tx.send(()).unwrap(),
+                ),
+            );
 
             tokio_util::task::LocalPoolHandle::new(1)
                 .spawn_pinned(async move || {

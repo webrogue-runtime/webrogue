@@ -38,13 +38,17 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/virglrenderer external/zstd-rs webrogue-sdk
+        git submodule update --init --single-branch --depth=1 external/virglrenderer external/wasmtime external/zstd-rs webrogue-sdk
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - uses: taiki-e/install-action@v2.87.29
       if: contains(matrix.components, 'android')
       with:
         tool: cargo-ndk
+
+    - name: Install Rust toolchains (common)
+      run: |
+        rustup target add wasm32-wasip2
 
     - name: Install Rust toolchains (macOS)
       if: startsWith(matrix.os, 'macos') == true && contains(matrix.components, 'cli') == true
@@ -102,7 +106,7 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/zstd-rs
+        git submodule update --init --single-branch --depth=1 external/wasmtime external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - uses: Swatinem/rust-cache@v2
@@ -138,16 +142,21 @@ jobs:
 
     - name: Submodules
       run: |
-        git submodule update --init --single-branch --depth=1 external/virglrenderer external/zstd-rs
+        git submodule update --init --single-branch --depth=1 external/virglrenderer external/wasmtime external/zstd-rs
         git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
 
     - uses: Swatinem/rust-cache@v2
       with:
         shared-key: ${{ matrix.os }}-runtime-integration
 
-    - name: Install Windows Rust target
+    - name: Install Rust toolchains (common)
+      run: |
+        rustup target add wasm32-wasip2
+
+    - name: Install Rust toolchains (Windows)
       if: startsWith(matrix.os, 'windows')
-      run: rustup target add ${{ matrix.arch }}-pc-windows-msvc
+      run: |
+        rustup target add ${{ matrix.arch }}-pc-windows-msvc
 
     - name: Set macOS deployment target
       if: matrix.os == 'macos-26'

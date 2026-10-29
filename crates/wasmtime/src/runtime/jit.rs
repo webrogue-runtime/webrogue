@@ -41,7 +41,7 @@ impl JitRuntime {
     #[cfg(feature = "debug")]
     pub fn debug_connection_factory(
         &mut self,
-        value: webrogue_debugger::connection::ConnectionFactory,
+        value: webrogue_debugger::connection::BoxedConnectionFactory,
     ) -> &mut Self {
         self.base.debug_connection_factory = Some(value);
         self
