@@ -112,8 +112,6 @@ impl webrogue_gfx::AbstractSystem for WinitSystem {
     fn get_virgl_context(&self) -> Option<Arc<Mutex<VirGLContextContainer>>> {
         self.virgl_context.clone()
     }
-
-    fn pump(&self) {}
 }
 
 #[derive(Clone)]

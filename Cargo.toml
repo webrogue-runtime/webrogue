@@ -93,6 +93,7 @@ webrogue-hub-debuggee = { path = "crates/hub-debuggee" }
 webrogue-icons = { path = "crates/icons" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-winit = { path = "crates/gfx-winit" }
+webrogue-gfx-sdl = { path = "crates/gfx-sdl" }
 webrogue-virgl = { path = "crates/virgl" }
 webrogue-virgl-lib  = { path = "crates/virgl-lib" }
 webrogue-lld = { path = "crates/lld" }
@@ -193,6 +194,7 @@ tokio-hrtime = "0.1.7"
 wac-graph = "0.12.0"
 wasm-opt = { git = "https://github.com/webrogue-runtime/wasm-opt-rs.git", rev = "1f5851d94e3ce47fcbfdacd345cb6b9844d16a14" }
 tempfile = "3.27.0"
+sdl3 = "0.20.0"
 
 [profile.dev]
 panic = "abort"

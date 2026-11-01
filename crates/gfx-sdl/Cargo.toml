@@ -1,0 +1,17 @@
+[package]
+name = "webrogue-gfx-sdl"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+webrogue-gfx = { workspace = true }
+sdl3 = { workspace = true, features = ["build-from-source-static", "raw-window-handle"] }
+webrogue-virgl = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+ash = { workspace = true, features = ["std", "loaded"], default-features = false }
+ash-window = { workspace = true }

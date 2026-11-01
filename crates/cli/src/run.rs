@@ -39,40 +39,41 @@ impl RunCommand {
             anyhow::bail!("surface lifecycle simulator interval must be at least one second");
         }
 
-        let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?
-            .with_simulate_touch(self.simulate_touch)
-            .with_window_icons(webrogue_gfx_winit::WindowIcons {
-                light: vfs.get_window_icon(false),
-                dark: vfs.get_window_icon(true),
-            });
+        // let mut gfx_builder = webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?
+        //     .with_simulate_touch(self.simulate_touch)
+        //     .with_window_icons(webrogue_gfx_winit::WindowIcons {
+        //         light: vfs.get_window_icon(false),
+        //         dark: vfs.get_window_icon(true),
+        //     });
+        let mut gfx_builder = webrogue_gfx_sdl::SDLBuilder::new()?;
 
-        if let Some(interval_secs) = self.surface_lifecycle_simulator {
-            let interval = Duration::from_secs(interval_secs);
-            gfx_builder = gfx_builder.with_proxy_callback(move |proxy| {
-                let weak_proxy = proxy.downgrade();
-                drop(proxy);
-                thread::Builder::new()
-                    .name("surface-lifecycle-simulator".to_owned())
-                    .spawn(move || {
-                        loop {
-                            thread::sleep(interval);
-                            let Some(proxy) = weak_proxy.upgrade() else {
-                                break;
-                            };
-                            proxy.simulate_destroy_surfaces();
-                            drop(proxy);
+        // if let Some(interval_secs) = self.surface_lifecycle_simulator {
+        //     let interval = Duration::from_secs(interval_secs);
+        //     gfx_builder = gfx_builder.with_proxy_callback(move |proxy| {
+        //         let weak_proxy = proxy.downgrade();
+        //         drop(proxy);
+        //         thread::Builder::new()
+        //             .name("surface-lifecycle-simulator".to_owned())
+        //             .spawn(move || {
+        //                 loop {
+        //                     thread::sleep(interval);
+        //                     let Some(proxy) = weak_proxy.upgrade() else {
+        //                         break;
+        //                     };
+        //                     proxy.simulate_destroy_surfaces();
+        //                     drop(proxy);
 
-                            thread::sleep(interval);
-                            let Some(proxy) = weak_proxy.upgrade() else {
-                                break;
-                            };
-                            proxy.simulate_can_create_surfaces();
-                            drop(proxy);
-                        }
-                    })
-                    .expect("failed to spawn surface lifecycle simulator");
-            });
-        }
+        //                     thread::sleep(interval);
+        //                     let Some(proxy) = weak_proxy.upgrade() else {
+        //                         break;
+        //                     };
+        //                     proxy.simulate_can_create_surfaces();
+        //                     drop(proxy);
+        //                 }
+        //             })
+        //             .expect("failed to spawn surface lifecycle simulator");
+        //     });
+        // }
         let gdb_port = self.gdb_port.clone();
 
         gfx_builder.run(

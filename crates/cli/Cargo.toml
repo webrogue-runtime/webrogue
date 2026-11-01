@@ -10,6 +10,7 @@ rust-version.workspace = true
 run = [
     "dep:webrogue-wasmtime",
     "dep:webrogue-gfx-winit",
+    "dep:webrogue-gfx-sdl",
     "dep:webrogue-gfx",
     "dep:webrogue-virgl",
     "webrogue-virgl/lib-impl",
@@ -70,6 +71,7 @@ tracing = { workspace = true }
 
 webrogue-wasmtime = { workspace = true, features = ["jit", "cache", "debug"], optional = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
+webrogue-gfx-sdl = { workspace = true, optional = true }
 webrogue-gfx = { workspace = true, optional = true }
 webrogue-virgl = { workspace = true, optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }

@@ -66,7 +66,6 @@ where
 
 pub trait AbstractSystem: Send + Sync {
     fn make_window(&self) -> Window;
-    fn pump(&self);
     fn get_virgl_context(&self) -> Option<Arc<Mutex<webrogue_virgl::ContextContainer>>>;
 }
 
