@@ -149,21 +149,26 @@ fn main() -> anyhow::Result<()> {
                                     event.c_union_name(),
                                     wit_tuple_field,
                                 ),
-                                webrogue_events::FieldType::Bytes(len) => {
+                                webrogue_events::FieldType::Bytes(_) => {
+                                    let union_name = event.c_union_name();
                                     w!(
-                                        "memcpy(&result.inner.{}.{}, event.val.{}.{}.ptr, {});",
-                                        event.c_union_name(),
-                                        field_c_name,
-                                        event.c_union_name(),
-                                        wit_tuple_field,
-                                        len,
+                                        "size_t {field_c_name}_copy_len = event.val.{union_name}.{wit_tuple_field}.len;",
                                     );
                                     w!(
-                                        "result.inner.{}.{}_len = event.val.{}.{}.len;",
-                                        event.c_union_name(),
-                                        field_c_name,
-                                        event.c_union_name(),
-                                        wit_tuple_field,
+                                        "if ({field_c_name}_copy_len > sizeof(result.inner.{union_name}.{field_c_name}) - 1) {{ {field_c_name}_copy_len = sizeof(result.inner.{union_name}.{field_c_name}) - 1; }}",
+                                    );
+                                    w!(
+                                        "memset(result.inner.{union_name}.{field_c_name}, 0, sizeof(result.inner.{union_name}.{field_c_name}));",
+                                    );
+                                    w!("if ({field_c_name}_copy_len != 0) {{");
+                                    indent.inc(|| {
+                                        w!(
+                                            "memcpy(result.inner.{union_name}.{field_c_name}, event.val.{union_name}.{wit_tuple_field}.ptr, {field_c_name}_copy_len);",
+                                        );
+                                    });
+                                    w!("}}");
+                                    w!(
+                                        "result.inner.{union_name}.{field_c_name}_len = {field_c_name}_copy_len;",
                                     );
                                 }
                             };

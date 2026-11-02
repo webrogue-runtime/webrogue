@@ -7,6 +7,8 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
+wasmtime = ["dep:ash", "dep:wasmtime", "dep:webrogue-virgl"]
+web = ["dep:js-sys", "dep:wasm-bindgen"]
 static-vk = []
 static-vk-icd = []
 static-moltenvk = ["static-vk", "dep:reqwest", "dep:tar"]
@@ -15,16 +17,16 @@ static-moltenvk = ["static-vk", "dep:reqwest", "dep:tar"]
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 webrogue-events-macro = { workspace = true }
-wasmtime = { workspace = true, default-features = false, features = ["anyhow", "component-model", "component-model-async", "runtime", "std"] }
 lazy_static = { workspace = true }
+js-sys = { version = "0.3", optional = true }
+wasm-bindgen = { workspace = true, optional = true }
+ash = { workspace = true, features = ["std", "loaded"], default-features = false, optional = true }
+wasmtime = { workspace = true, default-features = false, features = ["anyhow", "component-model", "component-model-async", "runtime", "std"], optional = true }
+webrogue-virgl = { workspace = true, optional = true }
 
 [build-dependencies]
 reqwest = { workspace = true, features = ["blocking"], optional = true }
 tar = { workspace = true, optional = true }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-ash = { workspace = true, features = ["std", "loaded"], default-features = false }
-webrogue-virgl = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }

@@ -19,9 +19,6 @@ pub(crate) struct SurfaceLifecycle {
 }
 
 impl SurfaceLifecycle {
-    /// Reserve the window's single Vulkan surface slot before scheduling
-    /// native surface creation. This also closes the race between concurrent
-    /// duplicate create requests.
     pub(crate) fn try_reserve_surface(&self, window_id: u32) -> bool {
         let mut surfaces = self.surfaces_by_window.lock().unwrap();
         if surfaces.contains_key(&window_id) {

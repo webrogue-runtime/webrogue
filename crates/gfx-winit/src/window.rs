@@ -10,7 +10,6 @@ use std::{
 use softbuffer::SoftBufferError;
 use webrogue_gfx::{EventSink, EventStream};
 use winit::{
-    dpi::PhysicalSize,
     event::{FingerId, WindowEvent},
     event_loop::ActiveEventLoop,
     window::{Window, WindowAttributes, WindowId},
@@ -123,11 +122,7 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
                 let Some(window) = window_registry.get_window_by_winit_id(window_id) else {
                     return (0, 0);
                 };
-                let size = window
-                    .window
-                    .surface_size()
-                    .to_logical(window.window.scale_factor());
-                (size.width, size.height)
+                get_logical_size(window.window.as_ref().as_ref()).unwrap_or((0, 0))
             })
     }
 
@@ -143,8 +138,7 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
                 let Some(window) = window_registry.get_window_by_winit_id(window_id) else {
                     return (0, 0);
                 };
-                let size = window.window.surface_size();
-                actual_physical_size(size, window.window.scale_factor())
+                get_physical_size(window.window.as_ref().as_ref()).unwrap_or((0, 0))
             })
     }
 
@@ -187,10 +181,7 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
 
                 let mut surface = cpu_surface_data.surface.lock().unwrap();
 
-                let win_size = actual_physical_size(
-                    window.window.surface_size(),
-                    window.window.scale_factor(),
-                );
+                let win_size = get_physical_size(window.window.as_ref().as_ref()).unwrap_or((0, 0));
                 let Some(win_size) = NonZero::new(win_size.0).zip(NonZero::new(win_size.1)) else {
                     anyhow::bail!("Window (id = {}) has zero size", window_id.into_raw());
                 };
@@ -235,10 +226,38 @@ impl WinitWindowInternal {
     }
 }
 
-fn actual_physical_size(size: PhysicalSize<u32>, _scale_factor: f64) -> (u32, u32) {
-    // A workaround of Softbuffer's resize bug. Disables HiDPI for web
-    #[cfg(target_arch = "wasm32")]
-    let size = size.to_logical(_scale_factor);
+#[cfg(target_arch = "wasm32")]
+fn get_logical_size(window: &dyn Window) -> Option<(u32, u32)> {
+    use winit_web::WindowExtWeb;
 
-    return (size.width, size.height);
+    let canvas = window.canvas()?;
+    let width = canvas.client_width().max(0) as u32;
+    let height = canvas.client_height().max(0) as u32;
+    (width != 0 && height != 0).then_some((width, height))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn get_logical_size(window: &dyn Window) -> Option<(u32, u32)> {
+    let size = window.surface_size().to_logical(window.scale_factor());
+    Some((size.width, size.height))
+}
+
+#[cfg(target_arch = "wasm32")]
+fn get_physical_size(window: &dyn Window) -> Option<(u32, u32)> {
+    let (width, height) = get_logical_size(window)?;
+    let scale = window.scale_factor();
+    if scale > 0.0 {
+        Some((
+            (width as f64 * scale).round() as u32,
+            (height as f64 * scale).round() as u32,
+        ))
+    } else {
+        Some((width, height))
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn get_physical_size(window: &dyn Window) -> Option<(u32, u32)> {
+    let size = window.surface_size();
+    Some((size.width, size.height))
 }

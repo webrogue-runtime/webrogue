@@ -9,8 +9,8 @@ rust-version.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 webrogue-events = { workspace = true }
-quote = { workspace = true }
-proc-macro2 = { workspace = true }
+quote = { workspace = true, features = ["proc-macro"] }
+proc-macro2 = { workspace = true, features = ["proc-macro"] }
 
 [lib]
 proc-macro = true
