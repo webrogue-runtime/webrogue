@@ -7255,7 +7255,7 @@ dependencies = [
 [[package]]
 name = "wasm-opt"
 version = "0.133.0"
-source = "git+https://github.com/webrogue-runtime/wasm-opt-rs.git?rev=1f5851d94e3ce47fcbfdacd345cb6b9844d16a14#1f5851d94e3ce47fcbfdacd345cb6b9844d16a14"
+source = "git+https://github.com/brson/wasm-opt-rs.git?rev=a48e39ac6d948c30bd8d5cf1dc493cbd95845705#a48e39ac6d948c30bd8d5cf1dc493cbd95845705"
 dependencies = [
  "anyhow",
  "libc",
@@ -7270,7 +7270,7 @@ dependencies = [
 [[package]]
 name = "wasm-opt-cxx-sys"
 version = "0.133.0"
-source = "git+https://github.com/webrogue-runtime/wasm-opt-rs.git?rev=1f5851d94e3ce47fcbfdacd345cb6b9844d16a14#1f5851d94e3ce47fcbfdacd345cb6b9844d16a14"
+source = "git+https://github.com/brson/wasm-opt-rs.git?rev=a48e39ac6d948c30bd8d5cf1dc493cbd95845705#a48e39ac6d948c30bd8d5cf1dc493cbd95845705"
 dependencies = [
  "anyhow",
  "cxx",
@@ -7281,7 +7281,7 @@ dependencies = [
 [[package]]
 name = "wasm-opt-sys"
 version = "0.133.0"
-source = "git+https://github.com/webrogue-runtime/wasm-opt-rs.git?rev=1f5851d94e3ce47fcbfdacd345cb6b9844d16a14#1f5851d94e3ce47fcbfdacd345cb6b9844d16a14"
+source = "git+https://github.com/brson/wasm-opt-rs.git?rev=a48e39ac6d948c30bd8d5cf1dc493cbd95845705#a48e39ac6d948c30bd8d5cf1dc493cbd95845705"
 dependencies = [
  "anyhow",
  "cc",

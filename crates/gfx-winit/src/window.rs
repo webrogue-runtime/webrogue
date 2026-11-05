@@ -244,16 +244,7 @@ fn get_logical_size(window: &dyn Window) -> Option<(u32, u32)> {
 
 #[cfg(target_arch = "wasm32")]
 fn get_physical_size(window: &dyn Window) -> Option<(u32, u32)> {
-    let (width, height) = get_logical_size(window)?;
-    let scale = window.scale_factor();
-    if scale > 0.0 {
-        Some((
-            (width as f64 * scale).round() as u32,
-            (height as f64 * scale).round() as u32,
-        ))
-    } else {
-        Some((width, height))
-    }
+    get_logical_size(window)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
