@@ -9,6 +9,7 @@ use std::{
 use crate::{
     VFS, VFSError, VFSResult,
     fd::{real::RealFD, wrapp::WrappFD},
+    vfs::VFSInner,
 };
 
 #[derive(Clone)]
@@ -50,6 +51,14 @@ impl FD {
             FDInner::Real(fd) => fd.size(),
             FDInner::Wrapp(fd) => fd.size(),
             FDInner::Dir(_) => Err(VFSError::Unsupported),
+        }
+    }
+
+    pub fn get_vfs_and_path(&self) -> (VFS, &String) {
+        match &*self.0 {
+            FDInner::Real(fd) => (VFS(VFSInner::Real(fd.vfs.clone())), &fd.vfs_path),
+            FDInner::Wrapp(fd) => (VFS(VFSInner::Wrapp(fd.vfs.clone())), &fd.vfs_path),
+            FDInner::Dir((vfs, vfs_path, _)) => (vfs.clone(), vfs_path),
         }
     }
 }

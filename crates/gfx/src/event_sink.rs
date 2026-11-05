@@ -1,6 +1,6 @@
-use crate::{
-    events::Event, interface::generated::webrogue::gfx::windowing::WindowEvent as ComponentEvent,
-};
+use crate::events::Event;
+#[cfg(feature = "wasmtime")]
+use crate::wasmtime::generated::webrogue::gfx::windowing::WindowEvent as ComponentEvent;
 use std::{sync::Mutex, task::Poll};
 
 #[derive(Default)]
@@ -37,9 +37,6 @@ impl EventSink {
     pub fn push_critical_event(&self, event: Event) {
         let mut critical = self.critical_subscribers.lock().unwrap();
         if critical.senders.is_empty() {
-            // These events describe the current surface state. Keep only the
-            // latest transition for a guest that subscribes after a cycle.
-            critical.pending.clear();
             critical.pending.push(event);
             return;
         }
@@ -69,6 +66,26 @@ pub struct EventStream {
     critical_rx: tokio::sync::mpsc::UnboundedReceiver<Event>,
 }
 
+impl EventStream {
+    pub fn try_recv(&mut self) -> Option<Event> {
+        if let Ok(event) = self.critical_rx.try_recv() {
+            return Some(event);
+        }
+        self.rx.try_recv().ok()
+    }
+
+    pub async fn recv(&mut self) -> Option<Event> {
+        std::future::poll_fn(|cx| {
+            if let Poll::Ready(Some(event)) = self.critical_rx.poll_recv(cx) {
+                return Poll::Ready(Some(event));
+            }
+            self.rx.poll_recv(cx)
+        })
+        .await
+    }
+}
+
+#[cfg(feature = "wasmtime")]
 impl<T> wasmtime::component::StreamProducer<T> for EventStream {
     type Item = ComponentEvent;
 

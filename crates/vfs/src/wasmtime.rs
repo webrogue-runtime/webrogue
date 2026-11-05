@@ -12,24 +12,12 @@ use wasmtime::component::{
 use crate::{
     FD, RESOURCES_ROOT_VFS_PATH, VFS, VFSError,
     fd::FDInner,
-    vfs::VFSInner,
     wasmtime::generated::wasi::filesystem::types::{
         DescriptorStat, DescriptorType, DirectoryEntry, ErrorCode,
     },
 };
 
 const READ_CHUNK_SIZE: usize = 64 * 1024;
-
-impl FD {
-    fn get_vfs_and_path(&self) -> (VFS, &String) {
-        let (vfs, vfs_path) = match &*self.0 {
-            FDInner::Real(fd) => (VFS(VFSInner::Real(fd.vfs.clone())), &fd.vfs_path),
-            FDInner::Wrapp(fd) => (VFS(VFSInner::Wrapp(fd.vfs.clone())), &fd.vfs_path),
-            FDInner::Dir((vfs, vfs_path, _)) => (vfs.clone(), vfs_path),
-        };
-        (vfs, vfs_path)
-    }
-}
 
 pub mod generated {
     wasmtime::component::bindgen!({

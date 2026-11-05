@@ -2,7 +2,9 @@ use std::sync::{Arc, Mutex, Weak, mpsc};
 
 #[cfg(not(target_arch = "wasm32"))]
 use ash::Entry;
-use webrogue_gfx::{EventSink, VirGLContextContainer, VirGLRenderer};
+use webrogue_gfx::EventSink;
+#[cfg(not(target_arch = "wasm32"))]
+use webrogue_gfx::{VirGLContextContainer, VirGLRenderer};
 use winit::window::WindowAttributes;
 
 use crate::surface_lifecycle::SurfaceLifecycle;
@@ -14,6 +16,7 @@ use webrogue_gfx::load_vulkan_entry;
 
 pub struct WinitSystem {
     pub(crate) mailbox: Mailbox,
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) virgl_context: Option<Arc<Mutex<webrogue_gfx::VirGLContextContainer>>>,
     pub(crate) window_attributes_fn:
         Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
@@ -23,8 +26,11 @@ pub struct WinitSystem {
 
 impl Drop for WinitSystem {
     fn drop(&mut self) {
-        // virgl must be deinitialized before vulkan library is unloaded
-        self.virgl_context.take();
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            // virgl must be deinitialized before vulkan library is unloaded
+            self.virgl_context.take();
+        }
     }
 }
 
@@ -56,6 +62,8 @@ impl WinitSystem {
         if vulkan_requirement == Some(true) {
             anyhow::bail!("Vulkan is unsupported in web runtime")
         }
+        let _ = &surface_lifecycle;
+        #[cfg(not(target_arch = "wasm32"))]
         let virgl_context = vulkan_entry.as_ref().map(|entry| {
             Arc::new(Mutex::new(VirGLContextContainer::new(VirGLRenderer::get(
                 Arc::new(entry.clone()),
@@ -69,6 +77,7 @@ impl WinitSystem {
         });
         Ok(Self {
             mailbox,
+            #[cfg(not(target_arch = "wasm32"))]
             virgl_context,
             window_attributes_fn,
             vk_windows,
@@ -109,6 +118,7 @@ impl webrogue_gfx::AbstractSystem for WinitSystem {
         webrogue_gfx::Window::new(window)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn get_virgl_context(&self) -> Option<Arc<Mutex<VirGLContextContainer>>> {
         self.virgl_context.clone()
     }
@@ -116,6 +126,7 @@ impl webrogue_gfx::AbstractSystem for WinitSystem {
     fn pump(&self) {}
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Clone)]
 struct VirGLSystemProxy {
     mailbox: Mailbox,
@@ -124,6 +135,7 @@ struct VirGLSystemProxy {
     vulkan_entry: Arc<Entry>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl webrogue_gfx::VirGLSystemProxy for VirGLSystemProxy {
     fn vk_create_surface_webrogue(
         &self,

@@ -1,0 +1,21 @@
+{
+  "name": "webrogue-web-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && npm run build:guest-runner",
+    "build:runtime": "cd ../.. && cargo +nightly build -p webrogue-web-runtime --target wasm32-unknown-unknown --release && wasm-bindgen --target web --out-dir web/frontend/generated/runtime --out-name webrogue_web_runtime target/wasm32-unknown-unknown/release/webrogue_web_runtime.wasm",
+    "build:guest-runner": "esbuild src/guest-runner.ts --bundle --format=esm --target=es2022 --platform=browser --external:node:fs/promises --outfile=dist/guest-runner.js && cp node_modules/@bytecodealliance/jco-transpile/vendor/*.wasm dist/",
+    "build:runtime-dist": "npm run build:runtime && rm -rf runtime_dist && esbuild src/runtime-worker.ts --bundle --format=esm --target=es2022 --platform=browser --external:node:fs/promises --outfile=runtime_dist/runtime-worker.js && cp generated/runtime/webrogue_web_runtime.js generated/runtime/webrogue_web_runtime.d.ts generated/runtime/webrogue_web_runtime_bg.wasm node_modules/@bytecodealliance/jco-transpile/vendor/*.wasm runtime_dist/",
+    "dev": "npm run build && node serve.mjs",
+    "start": "npm run dev"
+  },
+  "devDependencies": {
+    "@bytecodealliance/jco": "^1.40.0",
+    "esbuild": "^0.25.12",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@bytecodealliance/preview3-shim": "^0.13.0"
+  }
+}

@@ -70,7 +70,7 @@ members = [
   "apple/runtime/ios/rust",
   "apple/runtime/macos/rust", 
 
-  # "web",
+  "web",
 ]
 exclude = [
   "vfs-adapter",
@@ -142,10 +142,10 @@ windows-sys = { version = "0.61.2", default-features = false }
 windows = { version = "0.62.2", default-features = false }
 wry = { version = "0.57", default-features = false }
 tao = { version = "0.37.1", default-features = false }
-winit = { version = "0.31.0-beta.3", default-features = false }
-winit-android = { version = "0.31.0-beta.3", default-features = false }
-winit-x11 = { version = "0.31.0-beta.3", default-features = false }
-winit-web = { version = "0.31.0-beta.3", default-features = false }
+winit = { version = "0.31.0-beta.4", default-features = false }
+winit-android = { version = "0.31.0-beta.4", default-features = false }
+winit-x11 = { version = "0.31.0-beta.4", default-features = false }
+winit-web = { version = "0.31.0-beta.4", default-features = false }
 gtk = { version = "0.18.2", default-features = false }
 dpi = { version = "*", default-features = false }
 libloading = { version = "0.8.9", default-features = false }
@@ -173,7 +173,7 @@ wasm-bindgen-futures = "0.4"
 web-sys = "0.3.91"
 parking_lot = "0.12.5"
 reqwest = { version = "0.13" }
-wasm_thread = { git = "https://github.com/webrogue-runtime/wasm_thread.git", rev = "daa98f6", default-features = false }
+wasm_thread = { git = "https://github.com/webrogue-runtime/wasm_thread.git", rev = "829d039c66917c3efbfec15d1f5214c54daf91d9", default-features = false }
 tokio-stream = "0.1"
 tokio-util = { version = "0.7.18" }
 tracing-subscriber = "0.3"
@@ -213,6 +213,14 @@ lto = true
 panic = "abort"
 codegen-units = 1
 opt-level = 3
+strip = "debuginfo"
+
+[profile.web]
+inherits = "release"
+lto = true
+panic = "abort"
+codegen-units = 1
+opt-level = "z"
 strip = "debuginfo"
 
 [profile.profiling]

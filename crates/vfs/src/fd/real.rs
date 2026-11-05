@@ -4,16 +4,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{VFSError, VFSResult};
-
-#[cfg(feature = "wasmtime")]
-use crate::vfs::real::RealVFS;
+use crate::{VFSError, VFSResult, vfs::real::RealVFS};
 
 #[derive(Clone)]
 pub struct RealFD {
-    #[cfg(feature = "wasmtime")]
     pub(crate) vfs: Arc<RealVFS>,
-    #[cfg(feature = "wasmtime")]
     pub(crate) vfs_path: String,
     pub(crate) file: Arc<Mutex<File>>, // None means directory
 }

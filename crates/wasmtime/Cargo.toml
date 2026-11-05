@@ -14,7 +14,7 @@ debug = ["jit", "wasmtime/debug", "dep:webrogue-debugger"] # , "wasmtime/debug-b
 pulley = ["wasmtime/pulley"]
 
 [dependencies]
-webrogue-gfx = { workspace = true }
+webrogue-gfx = { workspace = true, features = ["wasmtime"] }
 webrogue-virgl = { workspace = true }
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
