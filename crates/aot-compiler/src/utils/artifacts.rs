@@ -111,12 +111,12 @@ impl<R: std::io::Read + std::io::Seek> ArtifactsInner for ArtifactsImpl<R> {
         if !dir.ends_with("/") {
             dir += "/";
         }
-        let filenames = self
-            .archive
-            .file_names()
-            .map(|filename| filename.to_owned())
-            .collect::<Vec<_>>();
-        for path in filenames {
+        let mut paths = Vec::new();
+
+        for path in self.archive.file_names() {
+            paths.push(path?.into_owned());
+        }
+        for path in paths {
             if !path.starts_with(&dir) {
                 continue;
             }
