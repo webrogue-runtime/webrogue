@@ -9,9 +9,6 @@ import {
   stdout,
   terminalInput,
   terminalOutput,
-  terminalStderr,
-  terminalStdin,
-  terminalStdout,
 } from "@bytecodealliance/preview3-shim/cli";
 import * as clocks from "@bytecodealliance/preview3-shim/clocks";
 import * as filesystem from "@bytecodealliance/preview3-shim/filesystem";

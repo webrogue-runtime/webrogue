@@ -7292,7 +7292,7 @@ dependencies = [
 [[package]]
 name = "wasm_thread"
 version = "0.3.3"
-source = "git+https://github.com/webrogue-runtime/wasm_thread.git?rev=daa98f6#daa98f686a3967daa58611bb98ce845ba1f3efd2"
+source = "git+https://github.com/webrogue-runtime/wasm_thread.git?rev=829d039c66917c3efbfec15d1f5214c54daf91d9#829d039c66917c3efbfec15d1f5214c54daf91d9"
 dependencies = [
  "futures",
  "js-sys",

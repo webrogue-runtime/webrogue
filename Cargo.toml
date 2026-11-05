@@ -173,7 +173,7 @@ wasm-bindgen-futures = "0.4"
 web-sys = "0.3.91"
 parking_lot = "0.12.5"
 reqwest = { version = "0.13" }
-wasm_thread = { git = "https://github.com/webrogue-runtime/wasm_thread.git", rev = "daa98f6", default-features = false }
+wasm_thread = { git = "https://github.com/webrogue-runtime/wasm_thread.git", rev = "829d039c66917c3efbfec15d1f5214c54daf91d9", default-features = false }
 tokio-stream = "0.1"
 tokio-util = { version = "0.7.18" }
 tracing-subscriber = "0.3"
@@ -213,6 +213,14 @@ lto = true
 panic = "abort"
 codegen-units = 1
 opt-level = 3
+strip = "debuginfo"
+
+[profile.web]
+inherits = "release"
+lto = true
+panic = "abort"
+codegen-units = 1
+opt-level = "z"
 strip = "debuginfo"
 
 [profile.profiling]

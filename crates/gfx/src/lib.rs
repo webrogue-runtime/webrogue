@@ -2,9 +2,9 @@ mod event_sink;
 pub mod events;
 mod interface;
 #[cfg(feature = "wasmtime")]
-mod wasmtime;
-#[cfg(feature = "wasmtime")]
 mod vulkan_entry;
+#[cfg(feature = "wasmtime")]
+mod wasmtime;
 
 #[cfg(feature = "wasmtime")]
 pub use webrogue_virgl::ContextContainer as VirGLContextContainer;

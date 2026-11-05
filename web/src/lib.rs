@@ -117,9 +117,8 @@ impl ApplicationHandler for App {
         let system = builder.to_system(Some(false)).unwrap();
         *SYSTEM.lock().unwrap() = Some(system);
 
-        let worker_script_url = self.worker_script_url.clone();
         match wasm_thread::Builder::new()
-            .worker_script_url(worker_script_url)
+            .worker_script_url(self.worker_script_url.clone())
             .spawn_async(move || async move {
                 let Some(bytes) = ARCHIVE
                     .lock()
