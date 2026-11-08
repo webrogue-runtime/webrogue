@@ -35,6 +35,8 @@ pub enum ErrorCode {
     WrongOtp,
     #[serde(rename = "API_TOKEN_NAME_TAKEN")]
     ApiTokenNameTaken,
+    #[serde(rename = "NICE_TRY")]
+    NiceTry,
 }
 
 impl Default for ErrorCode {

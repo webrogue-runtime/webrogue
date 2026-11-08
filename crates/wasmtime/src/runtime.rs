@@ -39,10 +39,10 @@ impl Runtime {
     pub fn use_pulley(&mut self) -> &mut Self {
         self.wasmtime_config
             .target(cfg_select! {
-                all(target_endian = "little", target_pointer_width = "32")  => "pulley32",
-                all(target_endian = "little", target_pointer_width = "64")  => "pulley64",
-                all(target_endian = "big",    target_pointer_width = "32")  => "pulley32be",
-                all(target_endian = "big",    target_pointer_width = "64")  => "pulley64be",
+                all(target_endian = "little", target_pointer_width = "32") => "pulley32",
+                all(target_endian = "little", target_pointer_width = "64") => "pulley64",
+                all(target_endian = "big", target_pointer_width = "32") => "pulley32be",
+                all(target_endian = "big", target_pointer_width = "64") => "pulley64be",
             })
             .unwrap();
         self
