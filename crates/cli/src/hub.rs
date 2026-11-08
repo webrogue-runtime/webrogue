@@ -6,6 +6,7 @@ use webrogue_hub_client::{api_base_path::http_api_url, openapi::models::device_i
 mod debug;
 #[cfg(feature = "run")]
 mod runner;
+mod wrapp;
 
 static WRH_API_KEY_NAME: &str = "WRH_API_KEY";
 
@@ -29,6 +30,11 @@ pub enum HubCommand {
         device: Option<String>,
         #[arg(long)]
         gdb_port: u16,
+    },
+    /// Upload, download, list, and delete WRAPPs stored in Webrogue Hub.
+    Wrapp {
+        #[command(subcommand)]
+        command: wrapp::WrappCommand,
     },
 }
 
@@ -75,6 +81,14 @@ impl HubCommand {
                         crate::hub::debug::debug(wrapp_path, &device, &api_key, gdb_port).await?;
                         anyhow::Ok(())
                     })?;
+                Ok(())
+            }
+            HubCommand::Wrapp { command } => {
+                let api_key = get_api_key()?;
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()?
+                    .block_on(async { crate::hub::wrapp::run(command, &api_key).await })?;
                 Ok(())
             }
         }

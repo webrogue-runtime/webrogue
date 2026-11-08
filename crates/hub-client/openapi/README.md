@@ -26,18 +26,43 @@ All URIs are relative to *https://api.hub.example.com/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*DefaultApi* | [**abort_wrapp_upload**](docs/DefaultApi.md#abort_wrapp_upload) | **POST** /api/v1/wrapps/{id}/upload/abort | Abort a multipart upload
+*DefaultApi* | [**complete_wrapp_upload**](docs/DefaultApi.md#complete_wrapp_upload) | **POST** /api/v1/wrapps/{id}/upload/complete | Complete a multipart upload
+*DefaultApi* | [**create_wrapp**](docs/DefaultApi.md#create_wrapp) | **POST** /api/v1/wrapps | Create a wrapp
+*DefaultApi* | [**delete_wrapp**](docs/DefaultApi.md#delete_wrapp) | **DELETE** /api/v1/wrapps/{id} | Delete a wrapp
+*DefaultApi* | [**get_wrapp**](docs/DefaultApi.md#get_wrapp) | **GET** /api/v1/wrapps/{id} | Get a wrapp
+*DefaultApi* | [**get_wrapp_download_url**](docs/DefaultApi.md#get_wrapp_download_url) | **GET** /api/v1/wrapps/{id}/download_url | Get a download URL
+*DefaultApi* | [**get_wrapp_part_urls**](docs/DefaultApi.md#get_wrapp_part_urls) | **POST** /api/v1/wrapps/{id}/upload/part_urls | Get presigned part URLs
 *DefaultApi* | [**list_devices**](docs/DefaultApi.md#list_devices) | **GET** /api/v1/devices | List user devices
+*DefaultApi* | [**list_example_wrapps**](docs/DefaultApi.md#list_example_wrapps) | **GET** /api/v1/wrapps/examples | List example wrapps
+*DefaultApi* | [**list_wrapps**](docs/DefaultApi.md#list_wrapps) | **GET** /api/v1/wrapps | List wrapps
+*DefaultApi* | [**publish_wrapp**](docs/DefaultApi.md#publish_wrapp) | **POST** /api/v1/wrapps/{id}/publish | Publish a wrapp
+*DefaultApi* | [**replace_wrapp**](docs/DefaultApi.md#replace_wrapp) | **POST** /api/v1/wrapps/{id}/upload | Replace a wrapp
+*DefaultApi* | [**unpublish_wrapp**](docs/DefaultApi.md#unpublish_wrapp) | **DELETE** /api/v1/wrapps/{id}/publish | Unpublish a wrapp
 
 
 ## Documentation For Models
 
+ - [CompleteUploadRequest](docs/CompleteUploadRequest.md)
+ - [CompletedPart](docs/CompletedPart.md)
  - [ConnectDeviceWsCommand](docs/ConnectDeviceWsCommand.md)
  - [ConnectDeviceWsEvent](docs/ConnectDeviceWsEvent.md)
+ - [CreateWrappRequest](docs/CreateWrappRequest.md)
+ - [CreateWrappResponse](docs/CreateWrappResponse.md)
  - [DebugDeviceWsCommand](docs/DebugDeviceWsCommand.md)
  - [DebugDeviceWsEvent](docs/DebugDeviceWsEvent.md)
  - [DeviceInfo](docs/DeviceInfo.md)
+ - [DownloadUrlResponse](docs/DownloadUrlResponse.md)
  - [ErrorResponse](docs/ErrorResponse.md)
+ - [GetWrappResponse](docs/GetWrappResponse.md)
  - [ListDevicesResponse](docs/ListDevicesResponse.md)
+ - [ListWrappsResponse](docs/ListWrappsResponse.md)
+ - [PartUrl](docs/PartUrl.md)
+ - [PartUrlsRequest](docs/PartUrlsRequest.md)
+ - [PartUrlsResponse](docs/PartUrlsResponse.md)
+ - [PublishWrappResponse](docs/PublishWrappResponse.md)
+ - [ReplaceWrappRequest](docs/ReplaceWrappRequest.md)
+ - [WrappInfo](docs/WrappInfo.md)
 
 
 To get access to the crate's generated documentation, use:

@@ -33,6 +33,7 @@ hub = [
     "dep:futures-util",
     "dep:serde",
     "dep:rand",
+    "dep:tempfile",
     "dep:webrogue-cli-goodies",
     "__rustls",
 ]
@@ -76,7 +77,7 @@ webrogue-aot-compiler = { workspace = true, optional = true }
 webrogue-lld = { workspace = true, optional = true }
 webrogue-hub-client = { workspace = true, optional = true }
 webrogue-hub-debuggee = { workspace = true, optional = true }
-tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"], optional = true }
+tokio = { workspace = true, features = ["fs", "io-util", "macros", "net", "rt-multi-thread"], optional = true }
 blake3 = { workspace = true, optional = true }
 tokio-tungstenite = { workspace = true, optional = true, features = ["rustls-tls-webpki-roots"] }
 futures-util = { workspace = true, optional = true }
@@ -94,6 +95,7 @@ p12 = { workspace = true, optional = true }
 webrogue-vfs = { workspace = true, features = ["archive"] }
 wasm-opt = { workspace = true, default-features = false, optional = true }
 webrogue-wasm-processing = { workspace = true, optional = true }
+tempfile = { workspace = true, optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 webrogue-gfx = { workspace = true, features = ["static-moltenvk"], optional = true }

@@ -201,24 +201,12 @@ impl<'a> generated::webrogue::gfx::windowing::HostWindow for GFXCtxView<'a> {
 impl<'a> generated::webrogue::gfx::device_info::Host for GFXCtxView<'a> {
     fn get_os_family(&mut self) -> wasmtime::Result<u8> {
         let os_family = cfg_select! {
-            target_os = "linux" => {
-                1
-            }
-            target_os = "windows" => {
-                2
-            }
-            target_os = "macos" => {
-                3
-            }
-            target_os = "android" => {
-                4
-            }
-            target_os = "ios" => {
-                5
-            }
-            _ => {
-                0
-            }
+            target_os = "linux" => 1,
+            target_os = "windows" => 2,
+            target_os = "macos" => 3,
+            target_os = "android" => 4,
+            target_os = "ios" => 5,
+            _ => 0,
         };
         Ok(os_family)
     }
