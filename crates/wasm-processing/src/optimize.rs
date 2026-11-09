@@ -120,7 +120,8 @@ fn optimize_module(module: &[u8], tmp1: &Path, tmp2: &Path) -> anyhow::Result<Ve
     command.arg(tmp1);
     command.arg("-o").arg(tmp2);
     command.arg("-O3");
-    command.arg("--enable-bulk-memory-opt");
+    command.arg("--enable-bulk-memory");
+    command.arg("--enable-nontrapping-float-to-int");
     let status = command.spawn()?.wait()?;
 
     anyhow::ensure!(status.success(), "wasm-opt failed");
