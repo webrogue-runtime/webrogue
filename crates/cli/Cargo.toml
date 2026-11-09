@@ -24,9 +24,6 @@ compile = [
 ]
 hub = [
     "dep:webrogue-hub-client",
-    "dep:webrogue-hub-debuggee",
-    "dep:webrogue-gfx-winit",
-    "dep:webrogue-gfx",
     "dep:tokio",
     "dep:blake3",
     "dep:tokio-tungstenite",
@@ -36,6 +33,11 @@ hub = [
     "dep:tempfile",
     "dep:webrogue-cli-goodies",
     "__rustls",
+]
+hub-run = [
+    "run",
+    "hub",
+    "dep:webrogue-hub-debuggee",
 ]
 llvm = [
     "webrogue-aot-compiler?/llvm",

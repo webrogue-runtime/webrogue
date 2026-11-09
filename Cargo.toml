@@ -17,6 +17,7 @@ default = [
   "run",
   "compile",
   "hub",
+  "hub-run",
   "llvm",
   "wasm-opt",
   "internal-run",
@@ -26,6 +27,7 @@ full = [
   "run",
   "compile",
   "hub",
+  "hub-run",
   "llvm",
   "wasm-opt",
   "appended_artifacts",
@@ -34,6 +36,7 @@ full = [
 run = ["webrogue-cli/run"]
 compile = ["webrogue-cli/compile"]
 hub = ["webrogue-cli/hub"]
+hub-run = ["webrogue-cli/hub-run"]
 llvm = ["webrogue-cli/llvm"]
 wasm-opt = ["webrogue-cli/wasm-opt"]
 
