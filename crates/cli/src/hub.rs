@@ -4,7 +4,7 @@ use anyhow::Context;
 use clap::Subcommand;
 use webrogue_hub_client::{api_base_path::http_api_url, openapi::models::device_info::Status};
 mod debug;
-#[cfg(feature = "run")]
+#[cfg(feature = "hub-run")]
 mod runner;
 mod wrapp;
 
@@ -15,7 +15,7 @@ pub enum HubCommand {
     /// Host a runner accessible from Webrogue Hub.
     /// You can send a WRAPP from a remote device to run here.
     /// This allows to debug remotely.
-    #[cfg(feature = "run")]
+    #[cfg(feature = "hub-run")]
     HostRunner {
         /// Path to a directory that Webrogue will use for it's needs,
         /// such as providing persistent storage to WRAPPs or storing device UUID.
@@ -41,7 +41,7 @@ pub enum HubCommand {
 impl HubCommand {
     pub fn run(&self) -> anyhow::Result<()> {
         match self {
-            #[cfg(feature = "run")]
+            #[cfg(feature = "hub-run")]
             HubCommand::HostRunner { storage } => {
                 let gfx_builder =
                     webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
