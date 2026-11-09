@@ -56,42 +56,25 @@ impl EventBuilder<'_> {
     pub fn field(&mut self, name: &'static str, ty: RawType) -> &mut Self {
         self.event.fields.push(Field {
             name,
-            offset: self.event.size,
             ty: FieldType::Raw(ty),
         });
-        self.align();
         self
     }
 
     pub fn enum_field(&mut self, name: &'static str, ty: Enum) -> &mut Self {
         self.event.fields.push(Field {
             name,
-            offset: self.event.size,
             ty: FieldType::Enum(ty),
         });
-        self.align();
         self
     }
 
     pub fn bytes_field(&mut self, name: &'static str, len: usize) -> &mut Self {
         self.event.fields.push(Field {
             name,
-            offset: self.event.size,
             ty: FieldType::Bytes(len),
         });
-        self.align();
         self
-    }
-
-    pub fn align(&mut self) {
-        let mut field_refs = self.event.fields.iter_mut().collect::<Vec<_>>();
-        field_refs.sort_by_key(|field| usize::MAX - field.ty.size());
-        self.event.size = 4;
-        for field in &mut field_refs {
-            field.offset = self.event.size;
-            self.event.size += field.ty.size();
-        }
-        self.event.size = self.event.size.div_ceil(4) * 4;
     }
 }
 

@@ -61,6 +61,17 @@ impl ApplicationHandler for App {
         }
     }
 
+    fn device_event(
+        &mut self,
+        _event_loop: &dyn ActiveEventLoop,
+        _device_id: Option<winit::event::DeviceId>,
+        event: winit::event::DeviceEvent,
+    ) {
+        if let Some(proxy) = self.proxy.as_ref() {
+            proxy.device_event(&mut self.window_registry, event);
+        }
+    }
+
     fn proxy_wake_up(&mut self, event_loop: &dyn ActiveEventLoop) {
         if let Some(proxy) = self.proxy.as_ref() {
             proxy.proxy_wake_up(event_loop, &mut self.window_registry);

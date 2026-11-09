@@ -126,7 +126,6 @@ impl EnumCase {
 #[derive(Clone)]
 pub struct Field {
     pub name: &'static str,
-    pub offset: usize,
     pub ty: FieldType,
 }
 
@@ -182,6 +181,7 @@ pub enum RawType {
     U16,
     Bool,
     U8,
+    F32,
 }
 
 impl RawType {
@@ -191,6 +191,7 @@ impl RawType {
             RawType::U16 => 2,
             RawType::Bool => 1,
             RawType::U8 => 1,
+            RawType::F32 => 4,
         }
     }
 
@@ -200,6 +201,7 @@ impl RawType {
             RawType::U16 => "uint16_t",
             RawType::Bool => "uint8_t",
             RawType::U8 => "uint8_t",
+            RawType::F32 => "float",
         }
     }
 
@@ -209,6 +211,7 @@ impl RawType {
             RawType::U16 => "u16",
             RawType::Bool => "bool",
             RawType::U8 => "u8",
+            RawType::F32 => "f32",
         }
     }
 

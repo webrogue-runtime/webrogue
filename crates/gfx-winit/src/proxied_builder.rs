@@ -5,7 +5,7 @@ use std::{
 
 use webrogue_gfx::{System, events::Event};
 use winit::{
-    event::{FingerId, WindowEvent},
+    event::{DeviceEvent, FingerId, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoopProxy},
     window::{WindowAttributes, WindowId},
 };
@@ -414,6 +414,12 @@ impl WinitProxy {
                 window.on_event(event, &mut state.finger_id_map, simulate_touch);
             }
         });
+    }
+
+    pub fn device_event(&self, window_registry: &mut WindowRegistry, event: DeviceEvent) {
+        for window in window_registry.get_all_windows() {
+            window.on_device_event(event);
+        }
     }
 
     pub(crate) fn get_mailbox(&self) -> Mailbox {

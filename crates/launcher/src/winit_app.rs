@@ -237,6 +237,21 @@ impl ApplicationHandler for App {
         gtk::main_iteration_do(false);
     }
 
+    fn device_event(
+        &mut self,
+        _event_loop: &dyn ActiveEventLoop,
+        _device_id: Option<winit::event::DeviceId>,
+        event: winit::event::DeviceEvent,
+    ) {
+        #[cfg(target_os = "linux")]
+        self.initialize_gtk_if_needed();
+        for proxy in self.proxies.lock().unwrap().iter() {
+            proxy.device_event(&mut self.window_registry, event.clone());
+        }
+        #[cfg(target_os = "linux")]
+        gtk::main_iteration_do(false);
+    }
+
     fn about_to_wait(&mut self, _event_loop: &dyn ActiveEventLoop) {
         #[cfg(target_os = "linux")]
         self.initialize_gtk_if_needed();

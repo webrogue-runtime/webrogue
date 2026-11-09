@@ -46,6 +46,13 @@ impl WindowRegistry {
         }
     }
 
+    pub(crate) fn get_all_windows(&mut self) -> Vec<&WinitWindowInternal> {
+        self.windows_by_winit_id
+            .values()
+            .map(|window| window.as_ref())
+            .collect()
+    }
+
     pub fn clean(&mut self) {
         self.windows_by_winit_id.clear();
     }

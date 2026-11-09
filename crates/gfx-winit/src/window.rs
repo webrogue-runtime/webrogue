@@ -10,9 +10,9 @@ use std::{
 use softbuffer::SoftBufferError;
 use webrogue_gfx::{EventSink, EventStream};
 use winit::{
-    event::{FingerId, WindowEvent},
+    event::{DeviceEvent, FingerId, WindowEvent},
     event_loop::ActiveEventLoop,
-    window::{Window, WindowAttributes, WindowId},
+    window::{CursorGrabMode, Window, WindowAttributes, WindowId},
 };
 
 use crate::{
@@ -41,6 +41,7 @@ pub struct WinitWindow {
     pub(crate) event_sink: Arc<EventSink>,
     window_attributes_fn: Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
     has_native_window: AtomicBool,
+    pub(crate) is_cursor_grabbed: Arc<AtomicBool>,
 }
 
 impl WinitWindow {
@@ -59,6 +60,7 @@ impl WinitWindow {
             event_sink,
             window_attributes_fn,
             has_native_window: AtomicBool::new(false),
+            is_cursor_grabbed: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -79,6 +81,10 @@ impl WinitWindow {
         let native_window = Arc::new(event_loop.create_window(window_attributes).unwrap());
         native_window.set_title("Webrogue");
         native_window.set_resizable(true);
+        set_cursor_grab(
+            &native_window,
+            self.is_cursor_grabbed.load(Ordering::SeqCst),
+        );
         set_window_icon(
             native_window.as_ref().as_ref(),
             native_window.theme().unwrap_or(winit::window::Theme::Light),
@@ -107,6 +113,21 @@ impl WinitWindow {
     pub(crate) fn detach_native_window(&self) {
         *self.window_id.lock().unwrap() = None;
     }
+}
+
+fn set_cursor_grab(window: &Arc<Box<dyn Window>>, enabled: bool) -> bool {
+    if window
+        .set_cursor_grab(if enabled {
+            CursorGrabMode::Locked
+        } else {
+            CursorGrabMode::None
+        })
+        .is_err()
+    {
+        return false;
+    }
+    window.set_cursor_visible(!enabled);
+    true
 }
 
 impl webrogue_gfx::AbstractWindow for WinitWindow {
@@ -213,6 +234,24 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
     fn get_event_stream(&self) -> EventStream {
         self.event_sink.subscribe()
     }
+
+    fn set_mouse_grab(&self, enabled: bool) -> bool {
+        let Some(window_id) = *self.window_id.lock().unwrap() else {
+            return false;
+        };
+
+        self.mailbox.execute(|_, registry| {
+            let Some(window) = registry.get_window_by_winit_id(window_id) else {
+                return false;
+            };
+            if set_cursor_grab(&window.window, enabled) {
+                self.is_cursor_grabbed.store(true, Ordering::SeqCst);
+                true
+            } else {
+                false
+            }
+        })
+    }
 }
 
 impl WinitWindowInternal {
@@ -223,6 +262,10 @@ impl WinitWindowInternal {
         simulate_touch: bool,
     ) {
         crate::events::encode_event(self, event, finger_id_map, simulate_touch);
+    }
+
+    pub(crate) fn on_device_event(&self, event: DeviceEvent) {
+        crate::events::encode_device_event(self, event);
     }
 }
 

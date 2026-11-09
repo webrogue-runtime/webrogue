@@ -34,6 +34,8 @@ pub trait AbstractWindow: Send + Sync {
     fn get_vk_id(&self) -> Option<u32>;
     fn present_pixels(&self, pixels: &[u32]) -> anyhow::Result<bool>;
     fn get_event_stream(&self) -> EventStream;
+    /// Returns false if failed
+    fn set_mouse_grab(&self, enabled: bool) -> bool;
 }
 
 pub struct Window(pub(crate) Arc<dyn AbstractWindow>);
@@ -61,5 +63,10 @@ impl Window {
 
     pub fn get_event_stream(&self) -> EventStream {
         self.0.get_event_stream()
+    }
+
+    /// Returns false if the mouse grab could not be changed.
+    pub fn set_mouse_grab(&self, enabled: bool) -> bool {
+        self.0.set_mouse_grab(enabled)
     }
 }

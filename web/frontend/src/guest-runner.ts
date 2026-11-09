@@ -14,13 +14,14 @@ import * as clocks from "@bytecodealliance/preview3-shim/clocks";
 import * as filesystem from "@bytecodealliance/preview3-shim/filesystem";
 import * as random from "@bytecodealliance/preview3-shim/random";
 
-type RuntimeHost = {
+export type RuntimeHost = {
   gfxMakeWindow(): number;
   gfxCloseWindow(handle: number): void;
   gfxWindowPhysicalSize(handle: number): Uint32Array;
   gfxWindowLogicalSize(handle: number): Uint32Array;
   gfxWindowVulkanId(handle: number): number;
   gfxWindowNextEvent(handle: number): Promise<unknown | undefined>;
+  gfxWindowSetMouseGrab(handle: number, enabled: boolean): boolean;
   gfxPresentPixels(handle: number, pixels: Uint32Array): void;
   vfsRoot(): number | undefined;
   vfsOpen(handle: number, path: string): { ok?: number; err?: string };
@@ -55,26 +56,55 @@ const terminalStdinOverride = {
   },
 };
 
+// jco hands the resource object back to the host, so the host can keep its
+// opaque handle out of the object's public shape. The generated WIT types see
+// only the resource methods, not implementation details like this handle.
+const windowHandles = new WeakMap<object, number>();
+
+function windowHandle(window: object): number {
+  const handle = windowHandles.get(window);
+  if (handle === undefined) {
+    throw new Error("window is not registered with the host");
+  }
+  return handle;
+}
+
 class Window {
-  constructor(readonly handle: number) { }
+  // Matches jco's generated resource constructor signature. Instances are only
+  // created by `makeWindow` below.
+  private constructor() { }
+
+  static create(handle: number): Window {
+    const window = new Window();
+    windowHandles.set(window, handle);
+    return window;
+  }
 
   getPhysicalSize(): [number, number] {
-    const size = webrogueWorker.gfxWindowPhysicalSize(this.handle);
+    const size = webrogueWorker.gfxWindowPhysicalSize(windowHandle(this));
     return [size[0] ?? 0, size[1] ?? 0];
   }
 
   getLogicalSize(): [number, number] {
-    const size = webrogueWorker.gfxWindowLogicalSize(this.handle);
+    const size = webrogueWorker.gfxWindowLogicalSize(windowHandle(this));
     return [size[0] ?? 0, size[1] ?? 0];
   }
 
   getVulkanId(): number {
-    return webrogueWorker.gfxWindowVulkanId(this.handle);
+    return webrogueWorker.gfxWindowVulkanId(windowHandle(this));
   }
 
-  eventStream(): AsyncIterable<unknown> {
-    const handle = this.handle;
-    return {
+  setMouseGrab(enabled: boolean): { tag: "ok" | "err"; val: undefined } {
+    const ok = webrogueWorker.gfxWindowSetMouseGrab(
+      windowHandle(this),
+      enabled,
+    );
+    return { tag: ok ? "ok" : "err", val: undefined };
+  }
+
+  eventStream<T = unknown>(): AsyncIterable<T> {
+    const handle = windowHandle(this);
+    const stream: AsyncIterable<unknown> = {
       [Symbol.asyncIterator](): AsyncIterator<unknown> {
         return {
           async next(): Promise<IteratorResult<unknown>> {
@@ -87,32 +117,33 @@ class Window {
         };
       },
     };
+    return stream as AsyncIterable<T>;
   }
 }
 
-const windowing = {
+export const windowing = {
   Window,
   makeWindow(): Window {
-    return new Window(webrogueWorker.gfxMakeWindow());
+    return Window.create(webrogueWorker.gfxMakeWindow());
   },
-  closeWindow(window: Window): void {
-    webrogueWorker.gfxCloseWindow(window.handle);
-  },
-};
-
-const cpuRendering = {
-  presentPixels(window: Window, pixels: Uint32Array): void {
-    webrogueWorker.gfxPresentPixels(window.handle, pixels);
+  closeWindow(window: object): void {
+    webrogueWorker.gfxCloseWindow(windowHandle(window));
   },
 };
 
-const deviceInfo = {
+export const cpuRendering = {
+  presentPixels(window: object, pixels: Uint32Array): void {
+    webrogueWorker.gfxPresentPixels(windowHandle(window), pixels);
+  },
+};
+
+export const deviceInfo = {
   getOsFamily(): number {
     return 0;
   },
 };
 
-const vulkan = {
+export const vulkan = {
   checkPresence(): boolean {
     return false;
   },
@@ -281,7 +312,7 @@ class VfsDescriptor {
   }
 }
 
-const vfsHost = {
+export const vfsHost = {
   Descriptor: VfsDescriptor,
   rootDescriptor(): VfsDescriptor {
     const handle = webrogueWorker.vfsRoot();
@@ -292,7 +323,7 @@ const vfsHost = {
   },
 };
 
-const wasiImports = {
+export const wasiImports = {
   "wasi:cli/environment": environment,
   "wasi:cli/exit": exit,
   "wasi:cli/stderr": stderr,

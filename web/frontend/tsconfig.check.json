@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": [
+    "check/**/*.ts",
+    "src/guest-runner.ts",
+    "generated/example-imports/**/*.d.ts",
+    "generated/runtime-check/**/*.d.ts"
+  ]
+}

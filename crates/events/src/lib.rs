@@ -572,9 +572,14 @@ fn build() -> EventsBuilder {
     builder.add_event("redraw requested", 9);
     builder.add_event("resized", 10);
 
+    builder
+        .add_event("raw mouse motion", 11)
+        .field("dx", F32)
+        .field("dy", F32);
+
     // This value must be incremented when an event is added or changed,
     // then event's id must be changed to this new value:
-    // 10
+    // 11
 
     builder
 }

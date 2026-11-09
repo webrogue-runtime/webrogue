@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::window::WinitWindowInternal;
 use webrogue_gfx::events;
-use winit::event::{FingerId, WindowEvent};
+use winit::event::{DeviceEvent, FingerId, WindowEvent};
 
 pub fn encode_event(
     window: &WinitWindowInternal,
@@ -201,6 +201,20 @@ pub fn encode_event(
         WindowEvent::RedrawRequested => sink.push_event(events::Event::RedrawRequested),
         _ => {}
     };
+}
+
+pub fn encode_device_event(window: &WinitWindowInternal, event: DeviceEvent) {
+    let sink = &window.event_sink;
+    match event {
+        DeviceEvent::PointerMotion { delta } => sink.push_event(events::Event::RawMouseMotion(
+            delta.0 as f32,
+            delta.1 as f32,
+        )),
+        // DeviceEvent::MouseWheel { delta } => todo!(),
+        // DeviceEvent::Button { button, state } => todo!(),
+        // DeviceEvent::Key(raw_key_event) => todo!(),
+        _ => {}
+    }
 }
 
 fn translate_named_key(named_key: winit::keyboard::NamedKey) -> webrogue_gfx::events::NamedKey {

@@ -196,6 +196,15 @@ impl<'a> generated::webrogue::gfx::windowing::HostWindow for GFXCtxView<'a> {
         };
         Ok(id)
     }
+
+    fn set_mouse_grab(
+        &mut self,
+        self_: wasmtime::component::Resource<Window>,
+        enabled: bool,
+    ) -> wasmtime::Result<Result<(), ()>> {
+        let result = self.table.get(&self_)?.0.set_mouse_grab(enabled);
+        Ok(if result { Ok(()) } else { Err(()) })
+    }
 }
 
 impl<'a> generated::webrogue::gfx::device_info::Host for GFXCtxView<'a> {
