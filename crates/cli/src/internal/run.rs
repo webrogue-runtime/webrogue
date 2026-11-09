@@ -126,6 +126,10 @@ impl AbstractWindow for HeadlessWindow {
     fn get_event_stream(&self) -> webrogue_gfx::EventStream {
         self.events.subscribe()
     }
+
+    fn set_mouse_grab(&self, _enabled: bool) -> bool {
+        false
+    }
 }
 
 fn write_ppm(

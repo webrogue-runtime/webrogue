@@ -13,7 +13,9 @@ use web_sys::HtmlCanvasElement;
 use webrogue_gfx::System;
 use webrogue_gfx_winit::{ProxiedWinitBuilder, WindowRegistry, WinitProxy};
 use winit::{
-    application::ApplicationHandler, event::WindowEvent, event_loop::ActiveEventLoop,
+    application::ApplicationHandler,
+    event::{DeviceEvent, DeviceId, WindowEvent},
+    event_loop::ActiveEventLoop,
     window::WindowId,
 };
 use winit_web::WindowAttributesWeb;
@@ -117,6 +119,7 @@ impl ApplicationHandler for App {
         let system = builder.to_system(Some(false)).unwrap();
         *SYSTEM.lock().unwrap() = Some(system);
 
+        #[cfg(target_arch = "wasm32")]
         match wasm_thread::Builder::new()
             .worker_script_url(self.worker_script_url.clone())
             .spawn_async(move || async move {
@@ -170,6 +173,17 @@ impl ApplicationHandler for App {
     ) {
         if let Some(proxy) = self.proxy.as_ref() {
             proxy.window_event(&mut self.window_registry, window_id, event);
+        }
+    }
+
+    fn device_event(
+        &mut self,
+        _event_loop: &dyn ActiveEventLoop,
+        _device_id: Option<DeviceId>,
+        event: DeviceEvent,
+    ) {
+        if let Some(proxy) = self.proxy.as_ref() {
+            proxy.device_event(&mut self.window_registry, event);
         }
     }
 

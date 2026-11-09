@@ -15,7 +15,7 @@ done
 
 echo "==> Building the Rust runtime (wasm32-unknown-unknown)"
 cd "$root"
-cargo +nightly build -p webrogue-web-runtime --target wasm32-unknown-unknown --release
+cargo +nightly --config web/.cargo/config.toml build -p webrogue-web-runtime --target wasm32-unknown-unknown --release
 
 echo "==> Generating wasm-bindgen bindings"
 wasm-bindgen \

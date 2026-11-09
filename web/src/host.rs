@@ -83,6 +83,11 @@ pub fn gfx_window_vulkan_id(handle: u32) -> u32 {
     with_window(handle, |host| host.window.get_vk_id().unwrap_or(0)).unwrap_or(0)
 }
 
+#[wasm_bindgen(js_name = gfxWindowSetMouseGrab)]
+pub fn gfx_window_set_mouse_grab(handle: u32, enabled: bool) -> bool {
+    with_window(handle, |host| host.window.set_mouse_grab(enabled)).unwrap_or(false)
+}
+
 #[wasm_bindgen(js_name = gfxPresentPixels)]
 pub fn gfx_present_pixels(handle: u32, pixels: &[u32]) {
     with_window(handle, |host| {

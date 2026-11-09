@@ -21,7 +21,7 @@ pub enum WrappCommand {
     Upload {
         /// Path to the WRAPP file
         wrapp_path: PathBuf,
-        /// Name shown in Webrogue Hub (defaults to the file stem)
+        /// Name shown in Webrogue Hub (defaults to one specified in config)
         #[arg(long)]
         name: Option<String>,
         /// Replace an existing WRAPP by ID instead of creating a new one. The
@@ -36,6 +36,11 @@ pub enum WrappCommand {
         /// Output path (defaults to <name>.wrapp)
         #[arg(short, long)]
         output: Option<PathBuf>,
+    },
+    /// Publish an uploaded WRAPP, making it publicly visible
+    Publish {
+        /// WRAPP ID
+        id: String,
     },
     /// List WRAPPs owned by the current user
     List,
@@ -55,29 +60,31 @@ pub async fn run(command: &WrappCommand, api_key: &str) -> anyhow::Result<()> {
             id,
         } => {
             let wrapp_path = wrapp_path.clone();
-            let packed_wrapp_path =
+            let (packed_wrapp_path, wrapp_name) =
                 webrogue_cli_goodies::step_async("Packing WRAPP file".to_string(), async move {
-                    tokio::task::spawn_blocking(move || -> anyhow::Result<NamedTempFile> {
-                        let vfs = webrogue_vfs::VFS::build_from_path(&wrapp_path)?;
-                        let mut packed_wrapp_path = NamedTempFile::new_in(
-                            wrapp_path
-                                .parent()
-                                .ok_or_else(|| anyhow::anyhow!("Path error"))?,
-                        )?;
-                        webrogue_vfs::archive(
-                            &vfs,
-                            &mut packed_wrapp_path,
-                            ArchiveOptions { keep_wasm: true },
-                        )?;
-                        Ok(packed_wrapp_path)
-                    })
+                    tokio::task::spawn_blocking(
+                        move || -> anyhow::Result<(NamedTempFile, String)> {
+                            let vfs = webrogue_vfs::VFS::build_from_path(&wrapp_path)?;
+                            let mut packed_wrapp_path = NamedTempFile::new_in(
+                                wrapp_path
+                                    .parent()
+                                    .ok_or_else(|| anyhow::anyhow!("Path error"))?,
+                            )?;
+                            webrogue_vfs::archive(
+                                &vfs,
+                                &mut packed_wrapp_path,
+                                ArchiveOptions { keep_wasm: true },
+                            )?;
+                            Ok((packed_wrapp_path, vfs.config().name.clone()))
+                        },
+                    )
                     .await?
                 })
                 .await?;
             upload(
                 &configuration,
                 packed_wrapp_path.path(),
-                name.as_deref(),
+                name.as_deref().unwrap_or(&wrapp_name),
                 id.as_deref(),
             )
             .await?;
@@ -87,6 +94,7 @@ pub async fn run(command: &WrappCommand, api_key: &str) -> anyhow::Result<()> {
         WrappCommand::Download { id, output } => {
             download(&configuration, id, output.as_deref()).await
         }
+        WrappCommand::Publish { id } => publish(&configuration, id).await,
         WrappCommand::List => list(&configuration).await,
         WrappCommand::Delete { id } => delete(&configuration, id).await,
     }
@@ -102,7 +110,7 @@ fn configuration(api_key: &str) -> Configuration {
 async fn upload(
     configuration: &Configuration,
     wrapp_path: &std::path::Path,
-    name: Option<&str>,
+    name: &str,
     replace_id: Option<&str>,
 ) -> anyhow::Result<()> {
     let (mut file, size) =
@@ -129,18 +137,13 @@ async fn upload(
         })
         .await?
     } else {
-        let name = name.map(str::to_owned).unwrap_or_else(|| {
-            wrapp_path
-                .file_stem()
-                .and_then(|stem| stem.to_str())
-                .unwrap_or("wrapp")
-                .to_owned()
-        });
-
         webrogue_cli_goodies::step_async("Creating WRAPP".to_string(), async {
-            default_api::create_wrapp(configuration, models::CreateWrappRequest::new(name, size))
-                .await
-                .context("Unable to create the WRAPP")
+            default_api::create_wrapp(
+                configuration,
+                models::CreateWrappRequest::new(name.to_string(), size),
+            )
+            .await
+            .context("Unable to create the WRAPP")
         })
         .await?
     };
@@ -288,6 +291,18 @@ fn default_output_path(name: &str) -> PathBuf {
     } else {
         PathBuf::from(format!("{name}.wrapp"))
     }
+}
+
+async fn publish(configuration: &Configuration, id: &str) -> anyhow::Result<()> {
+    let response = webrogue_cli_goodies::step_async(
+        "Publishing".to_string(),
+        default_api::publish_wrapp(configuration, id),
+    )
+    .await
+    .context("Unable to get the WRAPP")?;
+
+    webrogue_cli_goodies::note(&format!("Download URL: {}", response.url));
+    Ok(())
 }
 
 async fn list(configuration: &Configuration) -> anyhow::Result<()> {

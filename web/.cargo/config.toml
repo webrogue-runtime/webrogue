@@ -1,0 +1,27 @@
+# Settings needed to build the web runtime for wasm32-unknown-unknown.
+#
+# These are intentionally not in the repository-root `.cargo/config.toml`:
+# they are loaded explicitly by the web build commands via
+# `cargo --config web/.cargo/config.toml`. Keeping them scoped to the web
+# build prevents `[unstable] build-std` from leaking into unrelated builds,
+# such as the nested `wasm32-wasip2` build that Wasmtime's
+# gdbstub-component artifact build script runs.
+
+[target.wasm32-unknown-unknown]
+rustflags = [
+    "-C", "target-feature=+atomics,+bulk-memory,+mutable-globals",
+    "-C", "link-arg=--shared-memory",
+    "-C", "link-arg=--import-memory",
+    "-C", "link-arg=--export-memory",
+    "-C", "link-arg=--export=__wasm_init_tls",
+    "-C", "link-arg=--export=__tls_size",
+    "-C", "link-arg=--export=__tls_align",
+    "-C", "link-arg=--export=__tls_base",
+    "-C", "link-arg=--export=__heap_base",
+    "-C", "link-arg=--export=__data_end",
+    "-C", "link-arg=--max-memory=4294967296",
+    "-Z", "wasm-c-abi=spec"
+]
+
+[unstable]
+build-std = ["std,panic_abort"]

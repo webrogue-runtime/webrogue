@@ -36,5 +36,6 @@ fn raw_ident(raw_type: webrogue_events::RawType) -> proc_macro2::TokenStream {
         webrogue_events::RawType::U16 => quote!(u16),
         webrogue_events::RawType::Bool => quote!(bool),
         webrogue_events::RawType::U8 => quote!(u8),
+        webrogue_events::RawType::F32 => quote!(f32),
     }
 }

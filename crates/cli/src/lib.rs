@@ -99,6 +99,12 @@ enum Cli {
         )]
         args: Vec<String>,
     },
+    #[cfg(feature = "wasm-opt")]
+    #[command(hide = true, disable_help_flag = true)]
+    WasmOptComponent {
+        #[arg(value_name = "PATH", required = true)]
+        path: PathBuf,
+    },
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -177,6 +183,16 @@ pub fn main() -> anyhow::Result<()> {
             let mut command = wasm_opt::integration::Command::new("whatever");
             command.args(args);
             wasm_opt::integration::run_from_command_args(command)?;
+            Ok(())
+        }
+        #[cfg(feature = "wasm-opt")]
+        Cli::WasmOptComponent { path } => {
+            let component = std::fs::read(&path)?;
+            let dir = tempfile::tempdir()?;
+            let tmp1 = dir.path().join("in.wasm");
+            let tmp2 = dir.path().join("out.wasm");
+            let component = webrogue_wasm_processing::optimize(&component, &tmp1, &tmp2)?.unwrap();
+            std::fs::write(&path, &component)?;
             Ok(())
         }
     }

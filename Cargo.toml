@@ -19,6 +19,8 @@ default = [
   "hub",
   "llvm",
   "wasm-opt",
+  "internal-run",
+  "internal-compile",
 ]
 full = [
   "run",

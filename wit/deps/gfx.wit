@@ -546,6 +546,8 @@ interface windowing {
         surface-attached,
         redraw-requested,
         resized,
+        /// dx, dy
+        raw-mouse-motion(tuple<f32, f32>),
     }
     // END GENERATED CODE
     make-window: func() -> window;
@@ -554,6 +556,7 @@ interface windowing {
         get-physical-size: func() -> tuple<u32, u32>;
         get-vulkan-id: func() -> u32;
         event-stream: func() -> stream<window-event>;
+        set-mouse-grab: func(enabled: bool) -> result;
     }
 
     close-window: func(window: window);

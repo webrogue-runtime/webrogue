@@ -60,6 +60,7 @@ wasm-opt = [
     "dep:wasm-opt",
     "dep:webrogue-wasm-processing",
     "webrogue-wasm-processing/wasm-opt",
+    "dep:tempfile",
 ]
 no-internal = []
 
