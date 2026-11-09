@@ -113,6 +113,10 @@ jobs:
         with:
           shared-key: ubuntu-unit-tests
 
+      - name: Install Rust toolchains
+        run: |
+          rustup target add wasm32-wasip2
+
       - name: Check Rust formatting
         run: python3 scripts/cargo_fmt_check.py
 
