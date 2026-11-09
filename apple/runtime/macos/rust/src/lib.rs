@@ -23,7 +23,7 @@ fn main(wrapp_path: String, persistent_path: String) -> anyhow::Result<()> {
                     let _ = gfx_system;
                     let _ = vfs;
                     let _ = persistent_path;
-                    return Ok(());
+                    Ok(())
                 }
             })
         },

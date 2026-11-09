@@ -188,11 +188,11 @@ fn load_impl(loader_state: &mut LoaderState) -> Result<(), ()> {
                 ) -> ash::vk::PFN_vkVoidFunction;
             }
 
-            return check_entry(unsafe {
+            check_entry(unsafe {
                 Entry::from_static_fn(ash::StaticFn {
                     get_instance_proc_addr: vkGetInstanceProcAddr,
                 })
-            });
+            })
         }
     }
 
