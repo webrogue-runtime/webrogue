@@ -39,16 +39,16 @@ impl ShadowBlobImpl {
 
 pub fn init() {
     #[cfg(signal_based_shadow_blob)]
-    if IS_EXTERNAL_SIGNAL_HANDLER_INSTALLED.load(Ordering::SeqCst) {
-        ShadowBlobImpl::Signal
-    } else if signal_based_blob::install_signal_handler() {
+    let shadow_blob_impl = if IS_EXTERNAL_SIGNAL_HANDLER_INSTALLED.load(Ordering::SeqCst)
+        || signal_based_blob::install_signal_handler()
+    {
         ShadowBlobImpl::Signal
     } else {
         ShadowBlobImpl::Hash
-    }
-    .set();
+    };
     #[cfg(not(signal_based_shadow_blob))]
-    ShadowBlobImpl::Hash.set();
+    let shadow_blob_impl = ShadowBlobImpl::Hash;
+    shadow_blob_impl.set();
     match ShadowBlobImpl::get() {
         Some(ShadowBlobImpl::Hash) => hash_based_blob::init(),
         #[cfg(signal_based_shadow_blob)]

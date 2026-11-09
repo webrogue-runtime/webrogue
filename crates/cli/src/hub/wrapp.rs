@@ -129,7 +129,7 @@ async fn upload(
         .await?;
 
     let created = if let Some(id) = replace_id {
-        let _ = default_api::abort_wrapp_upload(configuration, &id).await;
+        let _ = default_api::abort_wrapp_upload(configuration, id).await;
         webrogue_cli_goodies::step_async("Starting WRAPP replacement".to_string(), async {
             default_api::replace_wrapp(configuration, id, models::ReplaceWrappRequest::new(size))
                 .await

@@ -55,7 +55,7 @@ impl WasiFD {
 
     fn dir_children(&self) -> Result<Vec<DirectoryEntry>, ErrorCode> {
         if !self.0.is_dir() {
-            return Err(ErrorCode::NotDirectory.into());
+            return Err(ErrorCode::NotDirectory);
         }
         let (vfs, vfs_path) = self.0.get_vfs_and_path();
         let files = vfs.list_all_files();
@@ -144,9 +144,9 @@ impl<T> generated::webrogue::vfs::vfs::HostDescriptorWithStore<T> for VFS {
     ) -> wasmtime::Result<FutureReader<Result<(), ErrorCode>>> {
         // The virtual filesystem is read-only, the operation always fails.
         let _ = self_;
-        Ok(FutureReader::new(&mut host, async {
+        FutureReader::new(&mut host, async {
             Ok::<Result<(), ErrorCode>, std::convert::Infallible>(Err(ErrorCode::ReadOnly))
-        })?)
+        })
     }
 
     fn is_dir(

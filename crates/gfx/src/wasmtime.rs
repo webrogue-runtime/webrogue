@@ -28,9 +28,9 @@ pub trait GFXView: Send {
     fn gfx_ctx(&mut self) -> GFXCtxView<'_>;
 }
 
-struct GFX;
+struct Gfx;
 
-impl HasData for GFX {
+impl HasData for Gfx {
     type Data<'a> = GFXCtxView<'a>;
 }
 
@@ -43,10 +43,10 @@ pub fn add_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>
 where
     T: GFXView + 'static,
 {
-    generated::webrogue::gfx::windowing::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
-    generated::webrogue::gfx::cpu_rendering::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
-    generated::webrogue::gfx::vulkan::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
-    generated::webrogue::gfx::device_info::add_to_linker::<_, GFX>(linker, GFXView::gfx_ctx)?;
+    generated::webrogue::gfx::windowing::add_to_linker::<_, Gfx>(linker, GFXView::gfx_ctx)?;
+    generated::webrogue::gfx::cpu_rendering::add_to_linker::<_, Gfx>(linker, GFXView::gfx_ctx)?;
+    generated::webrogue::gfx::vulkan::add_to_linker::<_, Gfx>(linker, GFXView::gfx_ctx)?;
+    generated::webrogue::gfx::device_info::add_to_linker::<_, Gfx>(linker, GFXView::gfx_ctx)?;
 
     // Bindgen normally lifts lists into Vecs. These blob functions need the
     // guest buffer's backing memory directly, so register typed WasmList
@@ -151,7 +151,7 @@ impl<'a> generated::webrogue::gfx::windowing::Host for GFXCtxView<'a> {
     }
 }
 
-impl<T> generated::webrogue::gfx::windowing::HostWindowWithStore<T> for GFX {
+impl<T> generated::webrogue::gfx::windowing::HostWindowWithStore<T> for Gfx {
     fn event_stream(
         mut host: wasmtime::component::Access<T, Self>,
         self_: wasmtime::component::Resource<Window>,
@@ -160,10 +160,7 @@ impl<T> generated::webrogue::gfx::windowing::HostWindowWithStore<T> for GFX {
     > {
         let window = &host.get().table.get(&self_)?.0.clone();
 
-        Ok(wasmtime::component::StreamReader::new(
-            host.as_context_mut(),
-            window.get_event_stream(),
-        )?)
+        wasmtime::component::StreamReader::new(host.as_context_mut(), window.get_event_stream())
     }
 }
 
@@ -383,8 +380,10 @@ impl<'a> generated::webrogue::gfx::vulkan::HostRenderer for GFXCtxView<'a> {
         };
         let words = |bytes: &[u8]| -> Vec<u32> {
             bytes
-                .chunks_exact(4)
-                .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|chunk| u32::from_le_bytes(*chunk))
                 .collect()
         };
         virgl_context.lock().unwrap().submit_cmd(
@@ -459,7 +458,7 @@ impl<'a> generated::webrogue::gfx::vulkan::HostRenderer for GFXCtxView<'a> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-impl<T> generated::webrogue::gfx::vulkan::HostRendererWithStore<T> for GFX {
+impl<T> generated::webrogue::gfx::vulkan::HostRendererWithStore<T> for Gfx {
     fn create_device_memory_blob(
         mut host: wasmtime::component::Access<T, Self>,
         self_: wasmtime::component::Resource<VulkanRenderer>,
@@ -616,7 +615,7 @@ impl<'a> generated::webrogue::gfx::vulkan::HostRenderer for GFXCtxView<'a> {
 }
 
 #[cfg(target_arch = "wasm32")]
-impl<T> generated::webrogue::gfx::vulkan::HostRendererWithStore<T> for GFX {
+impl<T> generated::webrogue::gfx::vulkan::HostRendererWithStore<T> for Gfx {
     fn create_device_memory_blob(
         _host: wasmtime::component::Access<T, Self>,
         _self_: wasmtime::component::Resource<VulkanRenderer>,

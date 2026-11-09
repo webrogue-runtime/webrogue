@@ -140,9 +140,9 @@ impl Commands {
             } => crate::windows::build(
                 wrapp_path,
                 out_path,
-                arch.as_ref()
-                    .unwrap_or(&crate::windows::WindowsArch::X86_64)
-                    .clone(),
+                *arch
+                    .as_ref()
+                    .unwrap_or(&crate::windows::WindowsArch::X86_64),
                 *console,
                 cache,
                 // vulkan_fallback.clone(),

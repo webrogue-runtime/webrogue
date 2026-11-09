@@ -28,6 +28,9 @@ fn load_cached(required: bool) -> Option<Entry> {
     result
 }
 
+// The retry loop is only ever continued on Windows, where the user can choose
+// to retry after installing a driver.
+#[cfg_attr(not(windows), allow(clippy::never_loop))]
 fn load_with_retry(required: bool) -> Option<Entry> {
     loop {
         match load_parsed() {
@@ -115,7 +118,7 @@ fn load_parsed() -> Result<(Entry, &'static str), String> {
             for (name, message) in errors {
                 err += &format!("{}: {:#}\n\n", name, message);
             }
-            return Err(err.trim().to_string());
+            Err(err.trim().to_string())
         }
         LoaderState::Loaded((entry, name)) => Ok((entry, name)),
     }
@@ -289,7 +292,7 @@ fn check_entry(entry: Entry) -> anyhow::Result<Entry> {
                 return true;
             }
         }
-        return false;
+        false
     };
     let vk_version = unsafe {
         entry
@@ -353,7 +356,7 @@ fn check_entry(entry: Entry) -> anyhow::Result<Entry> {
     );
     drop(instance_drop_callback);
 
-    return Ok(entry);
+    Ok(entry)
 }
 
 enum LoaderState {
@@ -369,11 +372,11 @@ impl LoaderState {
         match entry {
             Ok(entry) => {
                 *self = LoaderState::Loaded((entry, name));
-                return Err(());
+                Err(())
             }
             Err(error) => {
                 errors.push((name, error));
-                return Ok(());
+                Ok(())
             }
         }
     }

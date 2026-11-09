@@ -37,7 +37,7 @@ lazy_static! {
 pub fn init() {}
 
 pub fn handle_segfault(_segfault_addr: *const ()) -> bool {
-    return false;
+    false
 }
 
 pub fn flush_all() {
@@ -99,8 +99,8 @@ pub fn register_blob(mut vm_ptr: *const (), mut len: usize, mut host_ptr: *const
             vm_ptr: vm_ptr as Ptr,
             blob_id,
         });
-        vm_ptr = unsafe { vm_ptr.add(page_size) };
-        host_ptr = unsafe { host_ptr.add(page_size) };
+        vm_ptr = unsafe { (vm_ptr as *const u8).add(page_size) as *const () };
+        host_ptr = unsafe { (host_ptr as *const u8).add(page_size) as *const () };
         len -= page_size;
     }
 }

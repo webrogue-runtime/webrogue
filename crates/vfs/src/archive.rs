@@ -24,9 +24,9 @@ pub fn archive(vfs: &VFS, output: impl Write, options: ArchiveOptions) -> anyhow
         if path == CONFIG_VFS_PATH {
             let config: Config = serde_json::from_reader(
                 vfs.open(&path)
-                    .map_err(|_| anyhow::anyhow!("VFS file \"{}\" is gone", &path))?
+                    .map_err(|_| anyhow::anyhow!("VFS file \"{}\" is gone", path))?
                     .reader()
-                    .map_err(|_| anyhow::anyhow!("Unable to open VFS file \"{}\"", &path))?,
+                    .map_err(|_| anyhow::anyhow!("Unable to open VFS file \"{}\"", path))?,
             )?;
             writer.add_file(&path, std::io::Cursor::new(serde_json::to_vec(&config)?))?;
             continue;
@@ -38,11 +38,11 @@ pub fn archive(vfs: &VFS, output: impl Write, options: ArchiveOptions) -> anyhow
 
         let fd = vfs
             .open(&path)
-            .map_err(|_| anyhow::anyhow!("VFS file \"{}\" is gone", &path))?;
+            .map_err(|_| anyhow::anyhow!("VFS file \"{}\" is gone", path))?;
         writer.add_file(
             &path,
             fd.reader()
-                .map_err(|_| anyhow::anyhow!("Unable to open VFS file \"{}\"", &path))?,
+                .map_err(|_| anyhow::anyhow!("Unable to open VFS file \"{}\"", path))?,
         )?;
     }
 

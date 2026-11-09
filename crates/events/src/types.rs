@@ -221,7 +221,7 @@ impl RawType {
 }
 
 fn wit_identifier_escape(s: String) -> String {
-    const WIT_IDENTIFIERS: [&'static str; 1] = ["f32"];
+    const WIT_IDENTIFIERS: [&str; 1] = ["f32"];
     if WIT_IDENTIFIERS.contains(&s.as_str()) {
         format!("%{s}")
     } else {

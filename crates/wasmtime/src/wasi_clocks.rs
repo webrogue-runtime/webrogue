@@ -22,8 +22,7 @@ impl WasiClocks {
     }
 
     fn get_start(&mut self) -> &tokio_hrtime::Instant {
-        self.start
-            .get_or_insert_with(|| tokio_hrtime::Instant::now())
+        self.start.get_or_insert_with(tokio_hrtime::Instant::now)
     }
 }
 
@@ -58,7 +57,7 @@ impl<T> generated::wasi::clocks::monotonic_clock::HostWithStore<T> for WasiClock
         accessor: &wasmtime::component::Accessor<T, Self>,
         when: Mark,
     ) -> wasmtime::Result<()> {
-        let start = accessor.with(|mut access| access.get().ctx.get_start().clone());
+        let start = accessor.with(|mut access| *access.get().ctx.get_start());
 
         let now = tokio_hrtime::Instant::now().duration_since(start);
         let when = tokio_hrtime::Duration::from_nanos(when);

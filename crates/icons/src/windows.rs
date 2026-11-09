@@ -75,7 +75,7 @@ pub fn generate_res(icons_data: IconsData, writer: &mut impl std::io::Write) -> 
             group_data.write_all(&0u8.to_le_bytes())?; // ColorCount
             group_data.write_all(&0u8.to_le_bytes())?; // reserved
             group_data.write_all(&1u16.to_le_bytes())?; // Planes
-            group_data.write_all(&(entry.bits_per_pixel() as u16).to_le_bytes())?; // BitCount
+            group_data.write_all(&entry.bits_per_pixel().to_le_bytes())?; // BitCount
             group_data.write_all(&(entry.data().len() as u32).to_le_bytes())?; // BytesInRes
             group_data.write_all(&((idx + 1) as u16).to_le_bytes())?; // Name (icon ID)
         }
@@ -91,7 +91,7 @@ pub fn generate_res(icons_data: IconsData, writer: &mut impl std::io::Write) -> 
     writer.write_all(&32u32.to_le_bytes())?;
     writer.write_all(&[0xff, 0xff, 0x0e, 0x00])?; // Type group_icon
     writer.write_all(&[0xff, 0xff])?; // Name prefix
-    writer.write_all(&((1) as u16).to_le_bytes())?; // Name (icon ID)
+    writer.write_all(&1_u16.to_le_bytes())?; // Name (icon ID)
     writer.write_all(&[0u8; 4])?; // DataVersion
     writer.write_all(&[0x30, 0x10, 0x09, 0x04])?; // MemoryFlags + LanguageId
     writer.write_all(&[0u8; 8])?; // Version + Characteristics

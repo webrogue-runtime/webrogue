@@ -21,10 +21,13 @@ use crate::{
     window_registry::WindowRegistry,
 };
 
+type WindowHandle = Arc<Box<dyn Window>>;
+type SoftbufferSurface = softbuffer::Surface<WindowHandle, WindowHandle>;
+
 pub struct CPUSurfaceData {
     // pub(crate) window: Arc<Box<dyn Window>>,
     // pub(crate) context: softbuffer::Context<Arc<Box<dyn Window>>>,
-    pub(crate) surface: Mutex<softbuffer::Surface<Arc<Box<dyn Window>>, Arc<Box<dyn Window>>>>,
+    pub(crate) surface: Mutex<SoftbufferSurface>,
 }
 
 pub struct WinitWindowInternal {
@@ -174,7 +177,7 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
             Ok(false),
             move |_, window_registry| -> anyhow::Result<bool> {
                 fn map_softbuffer_error(err: SoftBufferError) -> anyhow::Error {
-                    anyhow::anyhow!("{}", err.to_string())
+                    anyhow::anyhow!("{}", err)
                 }
 
                 let Some(window) = window_registry.get_window_by_winit_id(window_id) else {

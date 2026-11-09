@@ -59,7 +59,7 @@ impl Runtime {
     }
 }
 
-pub(self) async fn run_component(
+async fn run_component(
     runtime: Runtime,
     engine: wasmtime::Engine,
     component: Component,
@@ -81,10 +81,10 @@ pub(self) async fn run_component(
         .allow_ip_name_lookup(true)
         .inherit_network();
 
-    for persistent in wrapp_config.filesystem.map_or_else(
-        || Vec::new(),
-        |config| config.persistent.unwrap_or_default(),
-    ) {
+    for persistent in wrapp_config
+        .filesystem
+        .map_or_else(Vec::new, |config| config.persistent.unwrap_or_default())
+    {
         let host_path = runtime.persistent_dir.join(&persistent.name);
         if !host_path.exists() {
             std::fs::create_dir_all(&host_path).with_context(|| {
@@ -172,7 +172,7 @@ pub(self) async fn run_component(
         }
 
         let program_result = store
-            .run_concurrent(async |accessor| command.wasi_cli_run().call_run(&accessor).await)
+            .run_concurrent(async |accessor| command.wasi_cli_run().call_run(accessor).await)
             .await??;
         let _ = program_result;
         anyhow::Ok(())

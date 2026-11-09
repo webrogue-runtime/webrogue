@@ -106,8 +106,8 @@ fn get_api_key() -> anyhow::Result<String> {
     }
 }
 
-async fn select_device(api_key: &String) -> anyhow::Result<String> {
-    let result = async {
+async fn select_device(api_key: &str) -> anyhow::Result<String> {
+    async {
         struct SelectableDevice {
             name: String,
             status: Status,
@@ -139,7 +139,7 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
                     webrogue_cli_goodies::step_async("Fetching device list".to_string(), async {
                         let mut configuration =
                             webrogue_hub_client::openapi::apis::configuration::Configuration::new();
-                        configuration.bearer_access_token = Some(api_key.clone());
+                        configuration.bearer_access_token = Some(api_key.to_owned());
                         configuration.base_path = http_api_url();
                         webrogue_hub_client::openapi::apis::default_api::list_devices(
                             &configuration,
@@ -185,6 +185,5 @@ async fn select_device(api_key: &String) -> anyhow::Result<String> {
 
         anyhow::Ok(device.name)
     }
-    .await;
-    result
+    .await
 }

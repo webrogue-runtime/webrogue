@@ -15,11 +15,11 @@ use wasm_encoder::{ComponentSection as _, RawSection};
 /// Components are handled by optimizing each of their embedded core modules,
 /// since Binaryen itself only understands core modules.
 pub fn optimize(component: &[u8], tmp1: &Path, tmp2: &Path) -> anyhow::Result<Option<Vec<u8>>> {
-    if wasmparser::Parser::is_component(&component) {
-        optimize_component(&component, tmp1, tmp2).map(Some)
+    if wasmparser::Parser::is_component(component) {
+        optimize_component(component, tmp1, tmp2).map(Some)
     } else {
         // Keep the old behavior for plain core modules.
-        optimize_module(&component, tmp1, tmp2).map(Some)
+        optimize_module(component, tmp1, tmp2).map(Some)
     }
 }
 

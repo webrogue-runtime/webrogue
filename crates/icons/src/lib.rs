@@ -80,7 +80,7 @@ impl IconsData {
         let icon_config = self.default_config().clone();
         let icon_bytes = self.default_bytes().to_vec();
 
-        Ok(macos_image(&icon_config, &icon_bytes)?) // Bruh
+        macos_image(&icon_config, &icon_bytes) // Bruh
     }
 }
 

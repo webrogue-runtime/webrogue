@@ -77,7 +77,11 @@ impl Renderer {
                         }
                         result
                     }
-                    Some(unsafe { std::mem::transmute(vk_create_surface_webrogue as *const ()) })
+                    Some(unsafe {
+                        std::mem::transmute::<*const (), unsafe extern "system" fn()>(
+                            vk_create_surface_webrogue as *const (),
+                        )
+                    })
                 }
                 "vkDestroySurfaceKHR" => {
                     unsafe extern "system" fn vk_destroy_surface_khr(
@@ -106,7 +110,11 @@ impl Renderer {
                     }
                     let vk_destroy_surface_khr: ash::vk::PFN_vkDestroySurfaceKHR =
                         vk_destroy_surface_khr;
-                    Some(unsafe { std::mem::transmute(vk_destroy_surface_khr as *const ()) })
+                    Some(unsafe {
+                        std::mem::transmute::<*const (), unsafe extern "system" fn()>(
+                            vk_destroy_surface_khr as *const (),
+                        )
+                    })
                 }
                 "vkCreateInstance" => {
                     unsafe extern "system" fn vk_create_instance(
@@ -159,7 +167,11 @@ impl Renderer {
                         }
                     }
                     let vk_create_instance: ash::vk::PFN_vkCreateInstance = vk_create_instance;
-                    Some(unsafe { std::mem::transmute(vk_create_instance as *const ()) })
+                    Some(unsafe {
+                        std::mem::transmute::<*const (), unsafe extern "system" fn()>(
+                            vk_create_instance as *const (),
+                        )
+                    })
                 }
                 _ => {
                     let symbol = vk_lib.static_fn().get_instance_proc_addr;
@@ -283,7 +295,7 @@ impl ContextContainer {
             bindings::vkr_get_capset(caps.as_mut_ptr() as *mut c_void, webrogue::init_flags())
         };
         caps.truncate(size);
-        if caps.len() % 4 != 0 {
+        if !caps.len().is_multiple_of(4) {
             return Vec::new();
         }
         caps

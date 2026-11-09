@@ -73,13 +73,13 @@ impl RunCommand {
                     .expect("failed to spawn surface lifecycle simulator");
             });
         }
-        let gdb_port = self.gdb_port.clone();
+        let gdb_port = self.gdb_port;
 
         gfx_builder.run(
             move |gfx_system| -> anyhow::Result<()> {
                 webrogue_wasmtime::block_on_default_executor(async {
                     let persistent_path = std::env::home_dir()
-                        .map_or_else(|| std::env::current_dir(), |dir| Ok(dir))?
+                        .map_or_else(std::env::current_dir, Ok)?
                         .join(".webrogue")
                         .join(&config.id)
                         .join("persistent");

@@ -17,6 +17,7 @@ pub struct DeviceInfo {
     pub name: String,
     #[serde(rename = "online_at")]
     pub online_at: String,
+    /// dummy description
     #[serde(rename = "status")]
     pub status: Status,
 }
@@ -30,19 +31,16 @@ impl DeviceInfo {
         }
     }
 }
-///
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+/// dummy description
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Default,
+)]
 pub enum Status {
     #[serde(rename = "offline")]
+    #[default]
     Offline,
     #[serde(rename = "online")]
     Online,
     #[serde(rename = "busy")]
     Busy,
-}
-
-impl Default for Status {
-    fn default() -> Status {
-        Self::Offline
-    }
 }

@@ -32,11 +32,10 @@ impl RealFD {
     }
 
     pub fn size(&self) -> VFSResult<u64> {
-        Ok(self
-            .file
+        self.file
             .lock()
             .unwrap()
             .seek(std::io::SeekFrom::End(0))
-            .map_err(|_| VFSError::Unknown)?)
+            .map_err(|_| VFSError::Unknown)
     }
 }

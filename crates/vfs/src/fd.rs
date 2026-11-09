@@ -74,7 +74,7 @@ impl Read for FDReader {
         let result = self
             .fd
             .read_at(buf, self.offset)
-            .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Unknown VFS error"))?;
+            .map_err(|_| std::io::Error::other("Unknown VFS error"))?;
 
         self.offset += result as u64;
         Ok(result)
@@ -88,15 +88,11 @@ impl Seek for FDReader {
             std::io::SeekFrom::End(offset) => self
                 .size
                 .checked_add_signed(offset)
-                .ok_or(std::io::Error::new(std::io::ErrorKind::Other, "error"))?
-                .try_into()
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?,
+                .ok_or(std::io::Error::other("error"))?,
             std::io::SeekFrom::Current(offset) => self
                 .offset
                 .checked_add_signed(offset)
-                .ok_or(std::io::Error::new(std::io::ErrorKind::Other, "error"))?
-                .try_into()
-                .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?,
+                .ok_or(std::io::Error::other("error"))?,
         };
         Ok(self.offset)
     }

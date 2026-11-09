@@ -75,8 +75,7 @@ fn main() {
         .split(':')
         .nth(1)
         .unwrap()
-        .replace('\'', "")
-        .replace(',', "");
+        .replace(['\'', ','], "");
     let virglrenderer_version = virglrenderer_version.trim();
 
     fn def_if(condition: bool) -> Option<&'static str> {
@@ -209,7 +208,7 @@ fn main() {
 
     if is_windows {
         let compat_dir = _crate_manifest_dir.join("compat");
-        build.file(&compat_dir.join("win32_compat.c"));
+        build.file(compat_dir.join("win32_compat.c"));
         build.include(&compat_dir);
         build.flag(format!("/FI{}", compat_dir.join("prelude.h").display()));
         fn track_compat(dir: &std::path::Path) {
@@ -225,7 +224,7 @@ fn main() {
         track_compat(&compat_dir);
     }
 
-    bindgen_args.push(format!("-DHAVE_CONFIG_H=1"));
+    bindgen_args.push("-DHAVE_CONFIG_H=1".to_string());
     bindgen_args.push(format!("-imacros{}", config_h_path.display()));
     bindgen_args.push(format!("-I{}", out_dir.display()));
     if is_windows {
@@ -251,7 +250,7 @@ fn main() {
         config = config
             .replace(
                 "(@VIRGL_MAJOR_VERSION@)",
-                virglrenderer_version.split(".").nth(0).unwrap(),
+                virglrenderer_version.split(".").next().unwrap(),
             )
             .replace(
                 "(@VIRGL_MINOR_VERSION@)",

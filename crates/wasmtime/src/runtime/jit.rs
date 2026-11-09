@@ -33,6 +33,15 @@ impl JitRuntime {
         self
     }
 
+    /// Allows guest panics to unwind out of the Wasm execution instead of
+    /// aborting the process.
+    ///
+    /// # Safety
+    ///
+    /// Enabling this disables epoch-based interruption, and guest panics are
+    /// allowed to unwind across the Wasm boundary. The caller must ensure the
+    /// panic is caught where unwinding is sound and that the runtime is not
+    /// reused after such an unwind.
     pub unsafe fn allow_panic(&mut self) -> &mut Self {
         self.is_panic_allowed = true;
         self

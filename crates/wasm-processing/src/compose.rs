@@ -32,9 +32,9 @@ pub fn compose(component_bytes: Vec<u8>) -> anyhow::Result<Vec<u8>> {
     plug(&mut graph, vec![virt], component)
                 .with_context(|| "Unable to plug virtualized adapter into component.\nMake sure virtualizations are enabled and being used.")?;
 
-    Ok(graph
+    graph
         .encode(EncodeOptions::default())
-        .context("failed to encode composed component")?)
+        .context("failed to encode composed component")
 }
 
 /// Whether the component uses the filesystem.

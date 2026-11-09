@@ -52,7 +52,7 @@ fn print_message(label: &str, message: &str, label_style: ContentStyle) {
         );
     } else {
         if step::is_step() && !step::is_dirty() {
-            let _ = writeln!(stderr, "");
+            let _ = writeln!(stderr);
         }
         let _ = writeln!(stderr, "{}: {}", label, message);
     }

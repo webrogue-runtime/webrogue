@@ -156,14 +156,14 @@ impl CompressedReader {
             self.cache
                 .insert(frame_index, (frame_data, self.cache_epoch));
 
-            if self.cache_size > CACHE_SIZE_THRESHOLD && self.cache.len() > 1 {
-                if let Some((frame_to_remove, _)) =
+            if self.cache_size > CACHE_SIZE_THRESHOLD
+                && self.cache.len() > 1
+                && let Some((frame_to_remove, _)) =
                     self.cache.iter().min_by_key(|(_, (_, epoch))| *epoch)
-                {
-                    let frame_to_remove = *frame_to_remove;
-                    let (frame, _) = self.cache.remove(&frame_to_remove).unwrap();
-                    self.cache_size -= frame.len();
-                }
+            {
+                let frame_to_remove = *frame_to_remove;
+                let (frame, _) = self.cache.remove(&frame_to_remove).unwrap();
+                self.cache_size -= frame.len();
             }
 
             result

@@ -48,6 +48,6 @@ impl WrappVFS {
     }
 
     pub fn open(self: &Arc<Self>, path: &str) -> VFSResult<WrappFD> {
-        Ok(WrappFD::new(self.clone(), path).ok_or(VFSError::Unknown)?)
+        WrappFD::new(self.clone(), path).ok_or(VFSError::Unknown)
     }
 }

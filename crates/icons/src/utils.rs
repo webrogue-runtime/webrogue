@@ -55,7 +55,7 @@ impl Color {
             "Color specification must consist of 7 characters: 1 hash (#) character and 6 hex RRGGBB characters"
         );
         anyhow::ensure!(
-            data.chars().next().unwrap() == '#',
+            data.starts_with('#'),
             "Color specification must begin with hash (#) character"
         );
 
