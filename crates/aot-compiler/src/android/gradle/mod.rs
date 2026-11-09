@@ -148,7 +148,7 @@ pub fn build(
         step(format!("Linking native library for {}", arch.abi()), || {
             crate::android::link::link(
                 &object_file,
-                arch.clone(),
+                *arch,
                 &jni_libs_abi_dir.join("libwebrogue_aot.so"),
             )
         })?;

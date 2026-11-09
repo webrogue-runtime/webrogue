@@ -157,6 +157,8 @@ pub fn build(
     anyhow::Ok(())
 }
 
+// The parameters mirror the inputs of a single lld-link invocation.
+#[allow(clippy::too_many_arguments)]
 fn link_windows_msvc(
     object_file_path: &crate::utils::TemporaryFile,
     output_file_path: &std::path::Path,

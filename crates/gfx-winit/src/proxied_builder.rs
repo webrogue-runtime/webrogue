@@ -400,15 +400,12 @@ impl WinitProxy {
         self.with_state(|state| {
             let simulate_touch = state.simulate_touch;
             if let Some(window) = window_registry.get_window_by_winit_id(window_id) {
-                match &event {
-                    WindowEvent::ThemeChanged(theme) => {
-                        set_window_icon(
-                            window.window.as_ref().as_ref(),
-                            *theme,
-                            &state.icons.lock().unwrap(),
-                        );
-                    }
-                    _ => {}
+                if let WindowEvent::ThemeChanged(theme) = &event {
+                    set_window_icon(
+                        window.window.as_ref().as_ref(),
+                        *theme,
+                        &state.icons.lock().unwrap(),
+                    );
                 }
 
                 window.on_event(event, &mut state.finger_id_map, simulate_touch);

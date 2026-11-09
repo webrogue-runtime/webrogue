@@ -90,7 +90,7 @@ pub fn handle_segfault(segfault_addr: *const ()) -> bool {
             page_size * matching_pages,
         );
     };
-    return true;
+    true
 }
 
 fn sweep_stale(storage: &mut Storage) {
@@ -153,12 +153,11 @@ pub fn flush_all() {
 
 pub fn register_blob(vm_ptr: *const (), len: usize, host_ptr: *const (), blob_id: u64) {
     let vm_ptr = vm_ptr as Ptr;
-    let len = len as usize;
     let mut storage = static_storage.lock().unwrap();
     let page_size = storage.page_size;
 
     mem_ops::mprotect(vm_ptr, page_size, len / page_size, false, false);
-    debug_assert!(len % storage.page_size == 0);
+    debug_assert!(len.is_multiple_of(storage.page_size));
     let pages: Vec<(Ptr, Ptr)> = (0..len / page_size)
         .map(|page_index| {
             let page_ptr = vm_ptr + page_size * page_index;
@@ -290,7 +289,9 @@ pub fn install_signal_handler() -> bool {
         ) {
             let previous = &raw const PREV_SIGSEGV;
             let handled = (|| {
-                let Some(addr) = crate::shadow_blob::get_segfault_addr(signum, siginfo) else {
+                let Some(addr) =
+                    (unsafe { crate::shadow_blob::get_segfault_addr(signum, siginfo) })
+                else {
                     return false;
                 };
                 handle_segfault(addr)
@@ -364,7 +365,8 @@ pub fn install_signal_handler() -> bool {
                 return EXCEPTION_CONTINUE_SEARCH;
             }
 
-            let Some(addr) = crate::shadow_blob::get_segfault_addr(exception_info) else {
+            let Some(addr) = (unsafe { crate::shadow_blob::get_segfault_addr(exception_info) })
+            else {
                 return EXCEPTION_CONTINUE_SEARCH;
             };
             if handle_segfault(addr) {
@@ -376,7 +378,8 @@ pub fn install_signal_handler() -> bool {
         }
 
         unsafe extern "system" fn continue_handler(exception_info: *mut EXCEPTION_POINTERS) -> i32 {
-            let Some(addr) = crate::shadow_blob::get_segfault_addr(exception_info) else {
+            let Some(addr) = (unsafe { crate::shadow_blob::get_segfault_addr(exception_info) })
+            else {
                 return EXCEPTION_CONTINUE_SEARCH;
             };
 

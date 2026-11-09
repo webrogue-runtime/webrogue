@@ -133,9 +133,9 @@ fn generate_ios_splash_screen(
         "color-space" : "srgb",
         "components" : {{
           "alpha" : "1.000",
-          "blue" : "{:#02x}",
-          "green" : "{:#02x}",
-          "red" : "{:#02x}"
+          "blue" : "{:#x}",
+          "green" : "{:#x}",
+          "red" : "{:#x}"
         }}
       }},
       "idiom" : "universal"

@@ -64,15 +64,14 @@ pub fn generate_icons(
                     .join("res")
                     .join("mipmap-anydpi-v26")
                     .join(filename),
-                format!(
-                    r#"
+                r#"
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <foreground android:drawable="@drawable/ic_launcher_foreground"/>
     <background android:drawable="@drawable/ic_launcher_background"/>
 </adaptive-icon>
-"#,
-                ),
+"#
+                .to_string(),
             )?;
         }
 
@@ -121,7 +120,7 @@ pub fn generate_icons(
                 crate::utils::blend(
                     foreground_image(&icon_bytes)?,
                     &mut icon,
-                    (1024 as f32 * (1.0 - icon_config.inset) * (2.0 / 3.0)) as u32,
+                    (1024_f32 * (1.0 - icon_config.inset) * (2.0 / 3.0)) as u32,
                 );
                 write_icon_image(
                     &icon,

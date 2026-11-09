@@ -1,6 +1,6 @@
 use webrogue_common::RandomAccessReader;
 
-pub const MAGIC: &'static [u8; 6] = b"WRAPP\0";
+pub const MAGIC: &[u8; 6] = b"WRAPP\0";
 
 pub fn is_a_wrapp(readable: &mut impl RandomAccessReader) -> anyhow::Result<bool> {
     let mut magic = [0u8; MAGIC.len()];

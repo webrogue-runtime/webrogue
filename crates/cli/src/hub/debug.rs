@@ -143,7 +143,7 @@ async fn launch_wrapp(vfs: VFS, connection: &mut OutgoingDebugConnection) -> any
                 for path in &file_paths {
                     let hash = blake3::Hasher::new()
                         .update_reader(
-                            vfs.open(&path)
+                            vfs.open(path)
                                 .map_err(|_| anyhow::anyhow!("Unable to open VFS path {}", path))?
                                 .reader()
                                 .map_err(|_| {
@@ -182,7 +182,7 @@ async fn launch_wrapp(vfs: VFS, connection: &mut OutgoingDebugConnection) -> any
             continue;
         }
         let mut reader = vfs
-            .open(&path)
+            .open(path)
             .map_err(|_| anyhow::anyhow!("Unable to open VFS path {}", path))?
             .reader()
             .map_err(|_| anyhow::anyhow!("Unable to read at VFS path {}", path))?;

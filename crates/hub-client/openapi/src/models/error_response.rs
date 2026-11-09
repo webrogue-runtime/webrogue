@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 pub struct ErrorResponse {
     #[serde(rename = "error")]
     pub error: String,
+    /// dummy description
     #[serde(rename = "error_code", deserialize_with = "Option::deserialize")]
     pub error_code: Option<ErrorCode>,
 }
@@ -24,10 +25,13 @@ impl ErrorResponse {
         ErrorResponse { error, error_code }
     }
 }
-///
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+/// dummy description
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Default,
+)]
 pub enum ErrorCode {
     #[serde(rename = "WEAK_PASSWORD")]
+    #[default]
     WeakPassword,
     #[serde(rename = "WRONG_EMAIL_OR_PASSWORD")]
     WrongEmailOrPassword,
@@ -37,10 +41,4 @@ pub enum ErrorCode {
     ApiTokenNameTaken,
     #[serde(rename = "NICE_TRY")]
     NiceTry,
-}
-
-impl Default for ErrorCode {
-    fn default() -> ErrorCode {
-        Self::WeakPassword
-    }
 }

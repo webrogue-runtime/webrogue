@@ -57,7 +57,7 @@ pub fn compile_wrapp_to_object(
     }
     let engine = wasmtime::Engine::new(&config)?;
 
-    let cwasm = engine.precompile_component(&wasm)?;
+    let cwasm = engine.precompile_component(wasm)?;
 
     let cwasm_info = crate::cwasm_analyzer::analyze_cwasm(&cwasm)?;
 

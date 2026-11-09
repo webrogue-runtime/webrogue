@@ -119,13 +119,10 @@ impl Mailbox {
                 func(event_loop, window_registry)
             };
             loop {
-                match result_cell_2.1.try_lock() {
-                    Some(mut mutex_guard) => {
-                        let _ = mutex_guard.insert(result);
-                        result_cell_2.0.notify_all();
-                        break;
-                    }
-                    None => {}
+                if let Some(mut mutex_guard) = result_cell_2.1.try_lock() {
+                    let _ = mutex_guard.insert(result);
+                    result_cell_2.0.notify_all();
+                    break;
                 }
             }
         }));

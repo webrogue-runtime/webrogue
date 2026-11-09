@@ -69,9 +69,7 @@ impl VFS {
 
 impl VFS {
     pub fn open(&self, path: &str) -> VFSResult<FD> {
-        let path = split_path(path, 1)
-            .ok_or_else(|| VFSError::Access)?
-            .join("/");
+        let path = split_path(path, 1).ok_or(VFSError::Access)?.join("/");
         let files = self.list_all_files();
 
         if !files.contains(&path) {

@@ -205,15 +205,14 @@ pub fn encode_event(
 
 pub fn encode_device_event(window: &WinitWindowInternal, event: DeviceEvent) {
     let sink = &window.event_sink;
-    match event {
-        DeviceEvent::PointerMotion { delta } => sink.push_event(events::Event::RawMouseMotion(
+    // DeviceEvent::MouseWheel { delta } => todo!(),
+    // DeviceEvent::Button { button, state } => todo!(),
+    // DeviceEvent::Key(raw_key_event) => todo!(),
+    if let DeviceEvent::PointerMotion { delta } = event {
+        sink.push_event(events::Event::RawMouseMotion(
             delta.0 as f32,
             delta.1 as f32,
-        )),
-        // DeviceEvent::MouseWheel { delta } => todo!(),
-        // DeviceEvent::Button { button, state } => todo!(),
-        // DeviceEvent::Key(raw_key_event) => todo!(),
-        _ => {}
+        ));
     }
 }
 

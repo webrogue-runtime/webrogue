@@ -61,6 +61,12 @@ impl EventSink {
     }
 }
 
+impl Default for EventSink {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct EventStream {
     rx: tokio::sync::mpsc::Receiver<Event>,
     critical_rx: tokio::sync::mpsc::UnboundedReceiver<Event>,

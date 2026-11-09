@@ -109,7 +109,7 @@ pub fn build(
             built_appdir_path.display()
         );
 
-        let output_appdir = build_dir.join(&appdir_filename);
+        let output_appdir = build_dir.join(appdir_filename);
 
         if output_appdir.is_dir() {
             std::fs::remove_dir_all(&output_appdir)?;

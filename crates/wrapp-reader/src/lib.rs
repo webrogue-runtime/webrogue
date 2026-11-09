@@ -16,7 +16,7 @@ struct WRAPPReader;
 impl Guest for WRAPPReader {
     fn analyze(i: AnalyzeInput) -> AnalyzeOutputResult {
         let result: anyhow::Result<vscode::example::types::AnalyzeOutput> =
-            (|| Ok(extract_config(VFS::build_from_path(&i.path)?)?))();
+            (|| extract_config(VFS::build_from_path(&i.path)?))();
         match result {
             Ok(output) => AnalyzeOutputResult::Success(output),
             Err(e) => AnalyzeOutputResult::Error(format!("{:#}", e)),

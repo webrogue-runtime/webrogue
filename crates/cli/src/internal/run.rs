@@ -53,7 +53,7 @@ impl InternalRunCommand {
                 .unwrap()
                 .clone()
                 .ok_or_else(|| anyhow::anyhow!("guest did not present a CPU-rendered frame"))?;
-            write_ppm(&path, self.window_width, self.window_height, &pixels)?;
+            write_ppm(path, self.window_width, self.window_height, &pixels)?;
         }
 
         Ok(())

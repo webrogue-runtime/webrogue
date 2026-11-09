@@ -3,7 +3,7 @@ use std::{
     fs::File,
     io::{Read as _, Write as _},
     ops::Range,
-    path::Path,
+    path::{Path, PathBuf},
     process::Command,
 };
 
@@ -15,11 +15,11 @@ use wasm_encoder::{ComponentSection as _, RawSection};
 /// Components are handled by optimizing each of their embedded core modules,
 /// since Binaryen itself only understands core modules.
 pub fn optimize(component: &[u8], tmp1: &Path, tmp2: &Path) -> anyhow::Result<Option<Vec<u8>>> {
-    if wasmparser::Parser::is_component(&component) {
-        optimize_component(&component, tmp1, tmp2).map(Some)
+    if wasmparser::Parser::is_component(component) {
+        optimize_component(component, tmp1, tmp2).map(Some)
     } else {
         // Keep the old behavior for plain core modules.
-        optimize_module(&component, tmp1, tmp2).map(Some)
+        optimize_module(component, tmp1, tmp2).map(Some)
     }
 }
 
@@ -114,8 +114,10 @@ fn optimize_module(module: &[u8], tmp1: &Path, tmp2: &Path) -> anyhow::Result<Ve
     in_file.flush()?;
     drop(in_file);
 
-    // TODO add a env var to override to custom binary
-    let mut command = Command::new(current_exe()?);
+    let host_binary = std::env::var_os("WEBROGUE_WASM_OPT_BIN")
+        .map(PathBuf::from)
+        .unwrap_or(current_exe()?);
+    let mut command = Command::new(host_binary);
     command.arg("wasm-opt").arg("--");
     command.arg(tmp1);
     command.arg("-o").arg(tmp2);

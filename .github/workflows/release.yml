@@ -3,10 +3,10 @@ name: Release Webrogue CLI
 on:
   push:
     tags:
-    - 'v*.*.*'
+      - "v*.*.*"
   workflow_dispatch:
   schedule:
-  - cron: "37 13 * * 0"
+    - cron: "37 13 * * 0"
 
 jobs:
   build:
@@ -19,180 +19,180 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   release:
-    needs: [ build, aot_integration, ci ]
+    needs: [build, aot_integration, ci]
     runs-on: ubuntu-slim
     permissions:
       contents: write
 
     steps:
-    - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-    - uses: actions/download-artifact@v8
-      with:
-        name: AOT-Artifacts
-        path: .
+      - uses: actions/download-artifact@v8
+        with:
+          name: AOT-Artifacts
+          path: .
 
-    - uses: actions/download-artifact@v8
-      with:
-        name: AOT-Artifacts-macOS
-        path: .
+      - uses: actions/download-artifact@v8
+        with:
+          name: AOT-Artifacts-macOS
+          path: .
 
-    - uses: actions/download-artifact@v8
-      with: 
-        name: CLI-linux-x86_64-glibc-raw
-        path: webrogue_linux_x86_64_glibc_raw
+      - uses: actions/download-artifact@v8
+        with:
+          name: CLI-linux-x86_64-glibc-raw
+          path: webrogue_linux_x86_64_glibc_raw
 
-    - uses: actions/download-artifact@v8
-      with: 
-        name: CLI-linux-aarch64-glibc-raw
-        path: webrogue_linux_aarch64_glibc_raw
+      - uses: actions/download-artifact@v8
+        with:
+          name: CLI-linux-aarch64-glibc-raw
+          path: webrogue_linux_aarch64_glibc_raw
 
-    - uses: actions/download-artifact@v8
-      with: 
-        name: CLI-linux-x86_64-musl-raw
-        path: webrogue_linux_x86_64_musl_raw
+      - uses: actions/download-artifact@v8
+        with:
+          name: CLI-linux-x86_64-musl-raw
+          path: webrogue_linux_x86_64_musl_raw
 
-    - uses: actions/download-artifact@v8
-      with: 
-        name: CLI-linux-aarch64-musl-raw
-        path: webrogue_linux_aarch64_musl_raw
+      - uses: actions/download-artifact@v8
+        with:
+          name: CLI-linux-aarch64-musl-raw
+          path: webrogue_linux_aarch64_musl_raw
 
-    - uses: actions/download-artifact@v8
-      with: 
-        name: CLI-macOS-arm64-raw
-        path: webrogue_macos_arm64_raw
+      - uses: actions/download-artifact@v8
+        with:
+          name: CLI-macOS-arm64-raw
+          path: webrogue_macos_arm64_raw
 
-    - uses: actions/download-artifact@v8
-      with: 
-        name: CLI-macOS-x86_64-raw
-        path: webrogue_macos_x86_64_raw
+      - uses: actions/download-artifact@v8
+        with:
+          name: CLI-macOS-x86_64-raw
+          path: webrogue_macos_x86_64_raw
 
-    - uses: actions/download-artifact@v8
-      with: 
-        name: CLI-windows-x86_64-raw
-        path: webrogue_windows_x86_64_raw
+      - uses: actions/download-artifact@v8
+        with:
+          name: CLI-windows-x86_64-raw
+          path: webrogue_windows_x86_64_raw
 
-    - uses: actions/download-artifact@v8
-      with: 
-        name: CLI-windows-aarch64-raw
-        path: webrogue_windows_aarch64_raw
-  
-    - name: Append artifacts
-      run: |
-        mkdir webrogue-cli-linux-glibc-x86_64
-        python3 append_artifacts.py webrogue_linux_x86_64_glibc_raw/webrogue aot_artifacts.zip webrogue-cli-linux-glibc-x86_64/webrogue
-        chmod +x webrogue-cli-linux-glibc-x86_64/webrogue
-        tar czf webrogue-cli-linux-glibc-x86_64.tar.gz webrogue-cli-linux-glibc-x86_64/
+      - uses: actions/download-artifact@v8
+        with:
+          name: CLI-windows-aarch64-raw
+          path: webrogue_windows_aarch64_raw
 
-        mkdir webrogue-cli-linux-glibc-aarch64
-        python3 append_artifacts.py webrogue_linux_aarch64_glibc_raw/webrogue aot_artifacts.zip webrogue-cli-linux-glibc-aarch64/webrogue
-        chmod +x webrogue-cli-linux-glibc-aarch64/webrogue
-        tar czf webrogue-cli-linux-glibc-aarch64.tar.gz webrogue-cli-linux-glibc-aarch64/
+      - name: Append artifacts
+        run: |
+          mkdir webrogue-cli-linux-glibc-x86_64
+          python3 append_artifacts.py webrogue_linux_x86_64_glibc_raw/webrogue aot_artifacts.zip webrogue-cli-linux-glibc-x86_64/webrogue
+          chmod +x webrogue-cli-linux-glibc-x86_64/webrogue
+          tar czf webrogue-cli-linux-glibc-x86_64.tar.gz webrogue-cli-linux-glibc-x86_64/
 
-        mkdir webrogue-cli-linux-musl-x86_64
-        python3 append_artifacts.py webrogue_linux_x86_64_musl_raw/webrogue aot_artifacts.zip webrogue-cli-linux-musl-x86_64/webrogue
-        chmod +x webrogue-cli-linux-musl-x86_64/webrogue
-        tar czf webrogue-cli-linux-musl-x86_64.tar.gz webrogue-cli-linux-musl-x86_64/
+          mkdir webrogue-cli-linux-glibc-aarch64
+          python3 append_artifacts.py webrogue_linux_aarch64_glibc_raw/webrogue aot_artifacts.zip webrogue-cli-linux-glibc-aarch64/webrogue
+          chmod +x webrogue-cli-linux-glibc-aarch64/webrogue
+          tar czf webrogue-cli-linux-glibc-aarch64.tar.gz webrogue-cli-linux-glibc-aarch64/
 
-        mkdir webrogue-cli-linux-musl-aarch64
-        python3 append_artifacts.py webrogue_linux_aarch64_musl_raw/webrogue aot_artifacts.zip webrogue-cli-linux-musl-aarch64/webrogue
-        chmod +x webrogue-cli-linux-musl-aarch64/webrogue
-        tar czf webrogue-cli-linux-musl-aarch64.tar.gz webrogue-cli-linux-musl-aarch64/
+          mkdir webrogue-cli-linux-musl-x86_64
+          python3 append_artifacts.py webrogue_linux_x86_64_musl_raw/webrogue aot_artifacts.zip webrogue-cli-linux-musl-x86_64/webrogue
+          chmod +x webrogue-cli-linux-musl-x86_64/webrogue
+          tar czf webrogue-cli-linux-musl-x86_64.tar.gz webrogue-cli-linux-musl-x86_64/
 
-        mkdir webrogue-cli-windows-x86_64
-        python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-x86_64/webrogue.exe
-        zip -r webrogue-cli-windows-x86_64.zip webrogue-cli-windows-x86_64/
+          mkdir webrogue-cli-linux-musl-aarch64
+          python3 append_artifacts.py webrogue_linux_aarch64_musl_raw/webrogue aot_artifacts.zip webrogue-cli-linux-musl-aarch64/webrogue
+          chmod +x webrogue-cli-linux-musl-aarch64/webrogue
+          tar czf webrogue-cli-linux-musl-aarch64.tar.gz webrogue-cli-linux-musl-aarch64/
 
-        mkdir webrogue-cli-windows-aarch64
-        python3 append_artifacts.py webrogue_windows_aarch64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-aarch64/webrogue.exe
-        zip -r webrogue-cli-windows-aarch64.zip webrogue-cli-windows-aarch64/
+          mkdir webrogue-cli-windows-x86_64
+          python3 append_artifacts.py webrogue_windows_x86_64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-x86_64/webrogue.exe
+          zip -r webrogue-cli-windows-x86_64.zip webrogue-cli-windows-x86_64/
 
-        mkdir webrogue-cli-macos-arm64
-        python3 append_artifacts.py webrogue_macos_arm64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-arm64/webrogue
-        chmod +x webrogue-cli-macos-arm64/webrogue
-        tar czf webrogue-cli-macos-arm64.tar.gz webrogue-cli-macos-arm64/
+          mkdir webrogue-cli-windows-aarch64
+          python3 append_artifacts.py webrogue_windows_aarch64_raw/webrogue.exe aot_artifacts.zip webrogue-cli-windows-aarch64/webrogue.exe
+          zip -r webrogue-cli-windows-aarch64.zip webrogue-cli-windows-aarch64/
 
-        mkdir webrogue-cli-macos-x86_64
-        python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-x86_64/webrogue
-        chmod +x webrogue-cli-macos-x86_64/webrogue
-        tar czf webrogue-cli-macos-x86_64.tar.gz webrogue-cli-macos-x86_64/
+          mkdir webrogue-cli-macos-arm64
+          python3 append_artifacts.py webrogue_macos_arm64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-arm64/webrogue
+          chmod +x webrogue-cli-macos-arm64/webrogue
+          tar czf webrogue-cli-macos-arm64.tar.gz webrogue-cli-macos-arm64/
 
-    - uses: ncipollo/release-action@v1
-      if: github.event_name == 'push'
-      with:
-        artifacts: |
-          webrogue-cli-linux-glibc-x86_64.tar.gz
-          webrogue-cli-linux-glibc-aarch64.tar.gz
-          webrogue-cli-linux-musl-x86_64.tar.gz
-          webrogue-cli-linux-musl-aarch64.tar.gz
-          webrogue-cli-windows-x86_64.zip
-          webrogue-cli-windows-aarch64.zip
-          webrogue-cli-macos-arm64.tar.gz
-          webrogue-cli-macos-x86_64.tar.gz
-        name: Release ${{ github.ref_name }}
-        tag: ${{ github.ref_name }}
-        makeLatest: true
+          mkdir webrogue-cli-macos-x86_64
+          python3 append_artifacts.py webrogue_macos_x86_64_raw/webrogue aot_artifacts_macos.zip webrogue-cli-macos-x86_64/webrogue
+          chmod +x webrogue-cli-macos-x86_64/webrogue
+          tar czf webrogue-cli-macos-x86_64.tar.gz webrogue-cli-macos-x86_64/
 
-    - uses: actions/upload-artifact@v7
-      with:
-        name: CLI-linux-x86_64-glibc
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-linux-glibc-x86_64.tar.gz
+      - uses: ncipollo/release-action@v1
+        if: github.event_name == 'push'
+        with:
+          artifacts: |
+            webrogue-cli-linux-glibc-x86_64.tar.gz
+            webrogue-cli-linux-glibc-aarch64.tar.gz
+            webrogue-cli-linux-musl-x86_64.tar.gz
+            webrogue-cli-linux-musl-aarch64.tar.gz
+            webrogue-cli-windows-x86_64.zip
+            webrogue-cli-windows-aarch64.zip
+            webrogue-cli-macos-arm64.tar.gz
+            webrogue-cli-macos-x86_64.tar.gz
+          name: Release ${{ github.ref_name }}
+          tag: ${{ github.ref_name }}
+          makeLatest: true
 
-    - uses: actions/upload-artifact@v7
-      with:
-        name: CLI-linux-aarch64-glibc
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-linux-glibc-aarch64.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: CLI-linux-x86_64-glibc
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            webrogue-cli-linux-glibc-x86_64.tar.gz
 
-    - uses: actions/upload-artifact@v7
-      with:
-        name: CLI-linux-x86_64-musl
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-linux-musl-x86_64.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: CLI-linux-aarch64-glibc
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            webrogue-cli-linux-glibc-aarch64.tar.gz
 
-    - uses: actions/upload-artifact@v7
-      with:
-        name: CLI-linux-aarch64-musl
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-linux-musl-aarch64.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: CLI-linux-x86_64-musl
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            webrogue-cli-linux-musl-x86_64.tar.gz
 
-    - uses: actions/upload-artifact@v7
-      with:
-        name: CLI-windows-x86_64
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-windows-x86_64.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: CLI-linux-aarch64-musl
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            webrogue-cli-linux-musl-aarch64.tar.gz
 
-    - uses: actions/upload-artifact@v7
-      with:
-        name: CLI-windows-aarch64
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-windows-aarch64.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: CLI-windows-x86_64
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            webrogue-cli-windows-x86_64.zip
 
-    - uses: actions/upload-artifact@v7
-      with:
-        name: CLI-macOS-arm64
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-macos-arm64.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: CLI-windows-aarch64
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            webrogue-cli-windows-aarch64.zip
 
-    - uses: actions/upload-artifact@v7
-      with:
-        name: CLI-macOS-x86_64
-        retention-days: 1
-        if-no-files-found: error
-        path: |
-          webrogue-cli-macos-x86_64.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: CLI-macOS-arm64
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            webrogue-cli-macos-arm64.tar.gz
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: CLI-macOS-x86_64
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            webrogue-cli-macos-x86_64.tar.gz

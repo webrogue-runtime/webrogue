@@ -36,6 +36,9 @@ struct Context {
     next_sync_id: u32,
     resource_table: HashMap<u32, Resource>,
     sync_table: HashMap<u32, Arc<Sync>>,
+    // Submits are referenced by their heap address (fence ids), so they must
+    // not move when the inner vector reallocates.
+    #[allow(clippy::vec_box)]
     timelines: Vec<Vec<Box<TimelineSubmit>>>,
 }
 
@@ -150,7 +153,7 @@ pub(crate) fn init(ctx_flags: c_int) -> c_int {
     // vkr's own per-queue sync threads (condvar-based, portable).
     let ok = unsafe {
         bindings::webrogue_vkr_init(
-            (bindings::VKR_RENDERER_THREAD_SYNC | bindings::VKR_RENDERER_ASYNC_FENCE_CB) as u32,
+            bindings::VKR_RENDERER_THREAD_SYNC | bindings::VKR_RENDERER_ASYNC_FENCE_CB,
             Some(write_context_fence),
         )
     };
@@ -414,7 +417,7 @@ fn sync_wait_inner(ctx_id: u32, flags: u32, timeout_ms: u32, syncs: &[u32]) -> i
         return -1;
     };
 
-    if syncs.len() % 3 != 0 {
+    if !syncs.len().is_multiple_of(3) {
         return -EINVAL;
     }
     let sync_count = syncs.len() / 3;
@@ -448,10 +451,10 @@ fn sync_wait_inner(ctx_id: u32, flags: u32, timeout_ms: u32, syncs: &[u32]) -> i
         if ready {
             return Some(0);
         }
-        if let Some(deadline) = deadline {
-            if Instant::now() >= deadline {
-                return Some(2); // VK_TIMEOUT
-            }
+        if let Some(deadline) = deadline
+            && Instant::now() >= deadline
+        {
+            return Some(2); // VK_TIMEOUT
         }
         None
     })
@@ -469,7 +472,7 @@ pub(crate) fn submit_cmd(ctx_id: u32, headers: &[u32], cmds: &[u32], syncs: &[u3
 
     // Each batch header is 5 dwords: cmd_offset, cmd_size, sync_offset,
     // sync_count, ring_idx.
-    if headers.is_empty() || headers.len() % 5 != 0 {
+    if headers.is_empty() || !headers.len().is_multiple_of(5) {
         return -EINVAL;
     }
     let batch_count = headers.len() / 5;
