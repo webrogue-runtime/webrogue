@@ -78,6 +78,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ${{ matrix.os }}-${{ strategy.job-index }}
+          add-rust-environment-hash-key: false
 
       - name: Run check scripts (on UNIX)
         if: startsWith(matrix.os, 'windows') == false
@@ -112,6 +113,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ubuntu-unit-tests
+          add-rust-environment-hash-key: false
 
       - name: Install Rust toolchains
         run: |
@@ -172,6 +174,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ${{ matrix.os }}-runtime-integration
+          add-rust-environment-hash-key: false
 
       - name: Install Rust toolchains (common)
         run: |
