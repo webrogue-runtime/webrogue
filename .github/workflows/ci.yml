@@ -38,7 +38,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ci
+          shared-key: ci-platform-checks-j${{ strategy.job-index }}
           add-rust-environment-hash-key: false
 
       - name: Submodules
@@ -112,7 +112,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ci
+          shared-key: ci-unit-tests
           add-rust-environment-hash-key: false
 
       - name: Install Rust toolchains
@@ -146,7 +146,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ci
+          shared-key: ci-clippy
           add-rust-environment-hash-key: false
 
       - name: Install Rust toolchains
@@ -189,7 +189,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ci
+          shared-key: ci-runtime-integration-j${{ strategy.job-index }}
           add-rust-environment-hash-key: false
 
       - name: Submodules
