@@ -112,7 +112,40 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: unit-tests
+          shared-key: ci
+          add-rust-environment-hash-key: false
+
+      - name: Install Rust toolchains
+        run: |
+
+      - name: Build CLI for wasm-opt tests
+        run: cargo build --locked --bin webrogue
+
+      - name: Run unit tests
+        env:
+          WEBROGUE_WASM_OPT_BIN: ${{ github.workspace }}/target/debug/webrogue
+        run: |
+          cargo test --locked --workspace --lib --bins \
+            --exclude webrogue-web-runtime \
+            --exclude webrogue-launcher \
+            --exclude webrogue-launcher-dev \
+            --exclude webrogue-android-launcher
+
+  clippy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Submodules
+        run: |
+          git submodule update --init --single-branch --depth=1 external/virglrenderer external/wasmtime external/zstd-rs
+          git -C external/zstd-rs/ submodule update --init zstd-safe/zstd-sys/zstd
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci
           add-rust-environment-hash-key: false
 
       - name: Install Rust toolchains
@@ -131,19 +164,6 @@ jobs:
             --exclude webrogue-launcher-server-openapi \
             --exclude webrogue-android-launcher \
             -- -D warnings
-
-      - name: Build CLI for wasm-opt tests
-        run: cargo build --locked --bin webrogue
-
-      - name: Run unit tests
-        env:
-          WEBROGUE_WASM_OPT_BIN: ${{ github.workspace }}/target/debug/webrogue
-        run: |
-          cargo test --locked --workspace --lib --bins \
-            --exclude webrogue-web-runtime \
-            --exclude webrogue-launcher \
-            --exclude webrogue-launcher-dev \
-            --exclude webrogue-android-launcher
 
   runtime-integration:
     runs-on: ${{ matrix.os }}
