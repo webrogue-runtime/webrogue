@@ -44,11 +44,11 @@ jobs:
           name: AOT-Artifacts
           path: .
 
-      - uses: Swatinem/rust-cache@v2
-        if: matrix.libc == 'gnu'
-        with:
-          shared-key: ${{ matrix.runner }}-aot-test
-          add-rust-environment-hash-key: false
+      # - uses: Swatinem/rust-cache@v2
+      #   if: matrix.libc == 'gnu'
+      #   with:
+      #     shared-key: ${{ matrix.runner }}-aot-test
+      #     add-rust-environment-hash-key: false
 
       - name: Install Rust toolchains
         run: |
@@ -106,10 +106,10 @@ jobs:
           name: AOT-Artifacts
           path: .
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: ubuntu-24.04-android-aot-test
-          add-rust-environment-hash-key: false
+      # - uses: Swatinem/rust-cache@v2
+      #   with:
+      #     shared-key: ubuntu-24.04-android-aot-test
+      #     add-rust-environment-hash-key: false
 
       - uses: actions/setup-java@v6
         with:
@@ -177,10 +177,10 @@ jobs:
           name: AOT-Artifacts
           path: .
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: ${{ matrix.runner }}-aot-test
-          add-rust-environment-hash-key: false
+      # - uses: Swatinem/rust-cache@v2
+      #   with:
+      #     shared-key: ${{ matrix.runner }}-aot-test
+      #     add-rust-environment-hash-key: false
 
       - name: Install Rust toolchains
         run: |
@@ -215,10 +215,10 @@ jobs:
           name: AOT-Artifacts-macOS
           path: .
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: macos-26-aot-test
-          add-rust-environment-hash-key: false
+      # - uses: Swatinem/rust-cache@v2
+      #   with:
+      #     shared-key: macos-26-aot-test
+      #     add-rust-environment-hash-key: false
 
       - name: Install Rust toolchains
         run: |
