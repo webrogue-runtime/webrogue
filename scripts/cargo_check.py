@@ -1,4 +1,5 @@
 import os
+import platform
 import subprocess
 import sys
 
@@ -52,7 +53,11 @@ def check(package=None, target=None, features=None, ndk_target=None, no_default_
 
 native_targets = []
 if sys.platform == "win32":
-    native_targets.append("x86_64-pc-windows-msvc")
+    machine = platform.machine().lower()
+    if machine in ("arm64", "aarch64"):
+        native_targets.append("aarch64-pc-windows-msvc")
+    else:
+        native_targets.append("x86_64-pc-windows-msvc")
 elif sys.platform == "darwin":
     native_targets.append("aarch64-apple-darwin")
     # native_targets.append("x86_64-apple-darwin")
