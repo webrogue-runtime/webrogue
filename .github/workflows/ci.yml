@@ -22,11 +22,8 @@ permissions:
   contents: read
 
 jobs:
-  # check         - components for scripts/cargo_check.py ("" disables)
-  # fmt           - cargo fmt --check
-  # clippy        - cargo clippy
-  # unit_tests    - build the CLI + cargo test --workspace
-  # runtime_tests - cargo test --test runtime
+  # check - components for scripts/cargo_check.py ("" disables)
+  # tasks - list of: fmt, clippy, unit_tests, runtime_tests
   checks:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 180
@@ -38,58 +35,37 @@ jobs:
             os: ubuntu-24.04
             target: ""
             check: ""
-            fmt: true
-            clippy: true
-            unit_tests: true
-            runtime_tests: true
+            tasks: [fmt, clippy, unit_tests, runtime_tests]
           - name: linux-aarch64
             os: ubuntu-24.04-arm
             target: ""
             check: "cli,aot-lib"
-            fmt: false
-            clippy: false
-            unit_tests: false
-            runtime_tests: true
+            tasks: [runtime_tests]
           - name: windows-aarch64
             os: windows-11-arm
             target: "aarch64-pc-windows-msvc"
             check: "cli,aot-lib"
-            fmt: false
-            clippy: false
-            unit_tests: false
-            runtime_tests: true
+            tasks: [runtime_tests]
           - name: windows-x86_64
             os: windows-2025
             target: "x86_64-pc-windows-msvc"
             check: ""
-            fmt: false
-            clippy: false
-            unit_tests: false
-            runtime_tests: true
+            tasks: [runtime_tests]
           - name: macos-aarch64
             os: macos-26
             target: "aarch64-apple-darwin"
             check: "cli,aot-lib"
-            fmt: false
-            clippy: false
-            unit_tests: false
-            runtime_tests: true
+            tasks: [runtime_tests]
           - name: macos-ios
             os: macos-26
             target: ""
             check: "ios,macos"
-            fmt: false
-            clippy: false
-            unit_tests: false
-            runtime_tests: false
+            tasks: []
           - name: android
             os: ubuntu-24.04
             target: ""
             check: "android"
-            fmt: false
-            clippy: false
-            unit_tests: false
-            runtime_tests: false
+            tasks: []
 
     steps:
       - uses: actions/checkout@v7
@@ -139,6 +115,7 @@ jobs:
         with:
           shared-key: ci-${{ matrix.name }}
           add-rust-environment-hash-key: false
+          cache-all-crates: true
           save-if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
       - name: Set macOS deployment target
@@ -146,11 +123,11 @@ jobs:
         run: echo MACOSX_DEPLOYMENT_TARGET=12.0 >> "$GITHUB_ENV"
 
       - name: Check Rust formatting
-        if: matrix.fmt
+        if: contains(matrix.tasks, 'fmt')
         run: python3 scripts/cargo_fmt_check.py
 
       - name: Run cargo clippy (Unix)
-        if: matrix.clippy && startsWith(matrix.os, 'windows') == false
+        if: contains(matrix.tasks, 'clippy') && startsWith(matrix.os, 'windows') == false
         run: |
           cargo clippy --locked ${{ matrix.target && format('--target={0}', matrix.target) || '' }} --workspace --all-targets \
             --exclude webrogue-web-runtime \
@@ -161,7 +138,7 @@ jobs:
             -- -D warnings
 
       - name: Run cargo clippy (Windows)
-        if: matrix.clippy && startsWith(matrix.os, 'windows')
+        if: contains(matrix.tasks, 'clippy') && startsWith(matrix.os, 'windows')
         shell: cmd
         run: |
           for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
@@ -196,7 +173,7 @@ jobs:
           python3 scripts\cargo_check.py || exit /b 1
 
       - name: Build CLI for wasm-opt tests (Unix)
-        if: matrix.unit_tests && startsWith(matrix.os, 'windows') == false
+        if: contains(matrix.tasks, 'unit_tests') && startsWith(matrix.os, 'windows') == false
         run: |
           cargo build --locked ${{ matrix.target && format('--target={0}', matrix.target) || '' }} --bin webrogue
           target="${{ matrix.target }}"
@@ -207,7 +184,7 @@ jobs:
           fi
 
       - name: Build CLI for wasm-opt tests (Windows)
-        if: matrix.unit_tests && startsWith(matrix.os, 'windows')
+        if: contains(matrix.tasks, 'unit_tests') && startsWith(matrix.os, 'windows')
         shell: cmd
         run: |
           for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
@@ -225,7 +202,7 @@ jobs:
           )
 
       - name: Run unit tests (Unix)
-        if: matrix.unit_tests && startsWith(matrix.os, 'windows') == false
+        if: contains(matrix.tasks, 'unit_tests') && startsWith(matrix.os, 'windows') == false
         run: |
           cargo test --locked ${{ matrix.target && format('--target={0}', matrix.target) || '' }} --workspace --lib --bins \
             --exclude webrogue-web-runtime \
@@ -234,7 +211,7 @@ jobs:
             --exclude webrogue-android-launcher
 
       - name: Run unit tests (Windows)
-        if: matrix.unit_tests && startsWith(matrix.os, 'windows')
+        if: contains(matrix.tasks, 'unit_tests') && startsWith(matrix.os, 'windows')
         shell: cmd
         run: |
           for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
@@ -250,14 +227,14 @@ jobs:
             --exclude webrogue-android-launcher || exit /b 1
 
       - name: Run runtime integration tests (Unix)
-        if: matrix.runtime_tests && startsWith(matrix.os, 'windows') == false
+        if: contains(matrix.tasks, 'runtime_tests') && startsWith(matrix.os, 'windows') == false
         run: |
           cargo test --locked --no-default-features --features internal-run \
             ${{ matrix.target && format('--target={0}', matrix.target) || '' }} \
             --test runtime
 
       - name: Run runtime integration tests (Windows)
-        if: matrix.runtime_tests && startsWith(matrix.os, 'windows')
+        if: contains(matrix.tasks, 'runtime_tests') && startsWith(matrix.os, 'windows')
         shell: cmd
         run: |
           for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
