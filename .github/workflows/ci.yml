@@ -117,6 +117,7 @@ jobs:
 
       - name: Install Rust toolchains
         run: |
+          rustup target add wasm32-wasip2
 
       - name: Build CLI for wasm-opt tests
         run: cargo build --locked --bin webrogue
