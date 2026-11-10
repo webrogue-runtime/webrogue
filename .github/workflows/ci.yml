@@ -80,7 +80,7 @@ jobs:
         run: |
           git submodule update --init --single-branch --depth=1 webrogue-sdk
 
-      - uses: taiki-e/install-action@v2.87.29
+      - uses: taiki-e/install-action@v2.90.0
         if: contains(matrix.check, 'android')
         with:
           tool: cargo-ndk
@@ -251,7 +251,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: taiki-e/install-action@v2.87.29
+      - uses: taiki-e/install-action@v2.90.0
         with:
           tool: typos@1.51.1
 
