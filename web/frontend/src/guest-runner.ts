@@ -17,7 +17,7 @@ import * as random from "@bytecodealliance/preview3-shim/random";
 const symbolDispose = Symbol.dispose || Symbol.for('dispose');
 
 export type RuntimeHost = {
-  gfxMakeWindow(): number;
+  gfxMakeWindow(surfaceKind: string): number;
   gfxDropWindow(handle: number): void;
   gfxWindowPhysicalSize(handle: number): Uint32Array;
   gfxWindowLogicalSize(handle: number): Uint32Array;
@@ -128,10 +128,12 @@ class Window {
   }
 }
 
+export type SurfaceKind = "software" | "vulkan";
+
 export const windowing = {
   Window,
-  makeWindow(): Window {
-    return Window.create(webrogueWorker.gfxMakeWindow());
+  makeWindow(surfaceKind: SurfaceKind): Window {
+    return Window.create(webrogueWorker.gfxMakeWindow(surfaceKind));
   },
 };
 

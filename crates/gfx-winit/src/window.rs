@@ -2,13 +2,13 @@ use std::{
     collections::BTreeMap,
     num::NonZero,
     sync::{
-        Arc, Mutex,
-        atomic::{AtomicBool, Ordering},
+        Arc, Mutex, Weak,
+        atomic::{AtomicBool, AtomicU32, Ordering},
     },
 };
 
 use softbuffer::SoftBufferError;
-use webrogue_gfx::{EventSink, EventStream};
+use webrogue_gfx::{EventSink, EventStream, SurfaceKind};
 use winit::{
     event::{DeviceEvent, FingerId, WindowEvent},
     event_loop::ActiveEventLoop,
@@ -24,23 +24,79 @@ use crate::{
 type WindowHandle = Arc<Box<dyn Window>>;
 type SoftbufferSurface = softbuffer::Surface<WindowHandle, WindowHandle>;
 
-pub struct CPUSurfaceData {
-    // pub(crate) window: Arc<Box<dyn Window>>,
-    // pub(crate) context: softbuffer::Context<Arc<Box<dyn Window>>>,
-    pub(crate) surface: Mutex<SoftbufferSurface>,
+fn softbuffer_error(err: SoftBufferError) -> anyhow::Error {
+    anyhow::anyhow!("{}", err)
+}
+
+fn create_softbuffer_surface(window: &WindowHandle) -> anyhow::Result<SoftbufferSurface> {
+    let context = softbuffer::Context::new(window.clone()).map_err(softbuffer_error)?;
+    softbuffer::Surface::new(&context, window.clone()).map_err(softbuffer_error)
+}
+
+pub(crate) enum SurfaceData {
+    Software(Mutex<SoftbufferSurface>),
+    /// Id used by the guest to address this window in Vulkan surface creation.
+    Vulkan(u32),
+}
+
+impl SurfaceData {
+    pub(crate) fn vk_id(&self) -> Option<u32> {
+        match self {
+            Self::Vulkan(vk_window_id) => Some(*vk_window_id),
+            Self::Software(_) => None,
+        }
+    }
+}
+
+/// Weak list of all windows, used to recreate and detach native windows.
+///
+/// Vulkan window ids are handed out separately and only to windows that can
+/// actually have a Vulkan surface, so software-rendered windows do not consume
+/// guest-visible ids.
+#[derive(Default)]
+pub(crate) struct WindowList {
+    next_vk_id: AtomicU32,
+    windows: Mutex<Vec<Weak<WinitWindow>>>,
+}
+
+impl WindowList {
+    pub(crate) fn allocate_vk_id(&self) -> u32 {
+        self.next_vk_id.fetch_add(1, Ordering::Relaxed)
+    }
+
+    pub(crate) fn register(&self, window: &Arc<WinitWindow>) {
+        let mut windows = self.windows.lock().unwrap();
+        windows.retain(|window| window.strong_count() > 0);
+        windows.push(Arc::downgrade(window));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn get_by_vk_id(&self, vk_id: u32) -> Option<Arc<WinitWindow>> {
+        self.windows
+            .lock()
+            .unwrap()
+            .iter()
+            .filter_map(Weak::upgrade)
+            .find(|window| window.vk_id() == Some(vk_id))
+    }
+
+    pub(crate) fn live_windows(&self) -> Vec<Arc<WinitWindow>> {
+        let mut windows = self.windows.lock().unwrap();
+        windows.retain(|window| window.strong_count() > 0);
+        windows.iter().filter_map(Weak::upgrade).collect()
+    }
 }
 
 pub struct WinitWindowInternal {
     pub(crate) window: Arc<Box<dyn Window>>,
-    pub(crate) cpu_surface_data: Mutex<Option<Arc<CPUSurfaceData>>>,
+    pub(crate) surface_data: SurfaceData,
     pub(crate) event_sink: Arc<EventSink>,
-    pub(crate) vk_window_id: u32,
 }
 
 pub struct WinitWindow {
     pub(crate) window_id: Arc<Mutex<Option<WindowId>>>,
     pub(crate) mailbox: Mailbox,
-    pub(crate) vk_window_id: u32,
+    vk_window_id: Option<u32>,
     pub(crate) event_sink: Arc<EventSink>,
     window_attributes_fn: Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
     has_native_window: AtomicBool,
@@ -50,21 +106,51 @@ pub struct WinitWindow {
 impl WinitWindow {
     pub(crate) fn new(
         mailbox: Mailbox,
-        vk_window_id: u32,
-        event_sink: Arc<EventSink>,
+        surface_kind: SurfaceKind,
+        icons: Arc<Mutex<WindowIcons>>,
+        windows: &WindowList,
         window_attributes_fn: Option<
             Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>,
         >,
-    ) -> Self {
-        Self {
+    ) -> anyhow::Result<Arc<Self>> {
+        let event_sink = Arc::new(EventSink::new());
+        let vk_window_id = match surface_kind {
+            SurfaceKind::Vulkan => Some(windows.allocate_vk_id()),
+            SurfaceKind::Software => None,
+        };
+        let window = Arc::new(Self {
             window_id: Arc::new(Mutex::new(None)),
-            mailbox,
+            mailbox: mailbox.clone(),
             vk_window_id,
             event_sink,
             window_attributes_fn,
             has_native_window: AtomicBool::new(false),
             is_cursor_grabbed: Arc::new(AtomicBool::new(false)),
-        }
+        });
+        windows.register(&window);
+        let weak_window = Arc::downgrade(&window);
+
+        let (window_ready_tx, window_ready_rx) = std::sync::mpsc::channel();
+
+        mailbox.schedule_with_surfaces(move |event_loop, window_registry| {
+            let result = match weak_window.upgrade() {
+                Some(window_state) => window_state.create_native_window(
+                    event_loop,
+                    window_registry,
+                    &icons.lock().unwrap(),
+                ),
+                None => Ok(()),
+            };
+            let _ = window_ready_tx.send(result);
+        });
+        window_ready_rx.recv().map_err(|_| {
+            anyhow::anyhow!("window creation was cancelled before the native window was ready")
+        })??;
+        Ok(window)
+    }
+
+    pub(crate) fn vk_id(&self) -> Option<u32> {
+        self.vk_window_id
     }
 
     pub(crate) fn create_native_window(
@@ -72,16 +158,16 @@ impl WinitWindow {
         event_loop: &dyn ActiveEventLoop,
         window_registry: &mut WindowRegistry,
         icons: &WindowIcons,
-    ) {
+    ) -> anyhow::Result<()> {
         if self.window_id.lock().unwrap().is_some() {
-            return;
+            return Ok(());
         }
 
         let mut window_attributes = WindowAttributes::default();
         if let Some(window_attributes_fn) = &self.window_attributes_fn {
             window_attributes = window_attributes_fn(window_attributes);
         }
-        let native_window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+        let native_window = Arc::new(event_loop.create_window(window_attributes)?);
         native_window.set_title("Webrogue");
         native_window.set_resizable(true);
         set_cursor_grab(
@@ -95,18 +181,22 @@ impl WinitWindow {
         );
         // image::buffer::native_window
         //     .set_window_icon(winit::icon::RgbaIcon::new(rgba, width, height));
+        let surface_data = match self.vk_window_id {
+            Some(vk_window_id) => SurfaceData::Vulkan(vk_window_id),
+            None => SurfaceData::Software(Mutex::new(create_softbuffer_surface(&native_window)?)),
+        };
         let window_id = native_window.id();
         window_registry.add_window(
             window_id,
             WinitWindowInternal {
                 window: native_window,
-                cpu_surface_data: Mutex::new(None),
+                surface_data,
                 event_sink: self.event_sink.clone(),
-                vk_window_id: self.vk_window_id,
             },
         );
         *self.window_id.lock().unwrap() = Some(window_id);
         self.has_native_window.store(true, Ordering::Release);
+        Ok(())
     }
 
     pub(crate) fn had_native_window(&self) -> bool {
@@ -161,34 +251,18 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
         self.mailbox.execute_with_surfaces(
             Ok(false),
             move |_, window_registry| -> anyhow::Result<bool> {
-                fn map_softbuffer_error(err: SoftBufferError) -> anyhow::Error {
-                    anyhow::anyhow!("{}", err)
-                }
-
                 let Some(window) = window_registry.get_window_by_winit_id(window_id) else {
                     return Ok(false);
                 };
 
-                let mut lock = window.cpu_surface_data.lock().unwrap();
-
-                let cpu_surface_data = match lock.clone() {
-                    Some(cpu_surface_data) => cpu_surface_data.clone(),
-                    None => {
-                        let context = softbuffer::Context::new(window.window.clone())
-                            .map_err(map_softbuffer_error)?;
-
-                        let surface = softbuffer::Surface::new(&context, window.window.clone())
-                            .map_err(map_softbuffer_error)?;
-                        let cpu_surface_data = Arc::new(CPUSurfaceData {
-                            // context,
-                            surface: Mutex::new(surface),
-                        });
-                        let _ = lock.insert(cpu_surface_data.clone());
-                        cpu_surface_data
-                    }
+                let SurfaceData::Software(surface) = &window.surface_data else {
+                    anyhow::bail!(
+                        "Window (id = {}) is not software-rendered",
+                        window_id.into_raw()
+                    );
                 };
 
-                let mut surface = cpu_surface_data.surface.lock().unwrap();
+                let mut surface = surface.lock().unwrap();
 
                 let win_size = get_physical_size(window.window.as_ref().as_ref()).unwrap_or((0, 0));
                 let Some(win_size) = NonZero::new(win_size.0).zip(NonZero::new(win_size.1)) else {
@@ -198,8 +272,8 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
                 // Beware of "must set size of surface before calling `width()` on the buffer" error
                 surface
                     .resize(win_size.0, win_size.1)
-                    .map_err(map_softbuffer_error)?;
-                let mut buffer = surface.buffer_mut().map_err(map_softbuffer_error)?;
+                    .map_err(softbuffer_error)?;
+                let mut buffer = surface.buffer_mut().map_err(softbuffer_error)?;
 
                 if buffer.len() != pixels.len() {
                     // It's ok, it happens
@@ -208,7 +282,7 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
 
                 buffer.copy_from_slice(pixels);
 
-                buffer.present().map_err(map_softbuffer_error)?;
+                buffer.present().map_err(softbuffer_error)?;
 
                 Ok(true)
             },
@@ -216,7 +290,7 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
     }
 
     fn get_vk_id(&self) -> Option<u32> {
-        Some(self.vk_window_id)
+        self.vk_id()
     }
 
     fn get_event_stream(&self) -> EventStream {

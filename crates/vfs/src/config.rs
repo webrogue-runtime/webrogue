@@ -210,13 +210,13 @@ where
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct GraphicsApiConfig {
     #[schemars(
-        title = "Enablement of CPU rendering API",
-        description = "CPU rendering (a.k.a software rendering) is a way to just display an array of pixels stored directly in memory. This is the simplest and the most widely supported way to present something as it may bypass GPU entriely, but performance is expected to be low, so it is mostly used as a fallback if Vulkan is unsupported. This property actually does nothing, as CPU rendering is always available."
+        title = "Enablement of Software rendering API",
+        description = "Software rendering (a.k.a framebuffer or blitting) is a way to just display an array of pixels stored directly in memory. This is the simplest and the most widely supported way to present something as it may bypass GPU entirely, but performance is expected to be low. This property actually does nothing, as software rendering is always available for now, but this may change in future."
     )]
-    pub cpu_rendering: Option<Requirement>,
+    pub software: Option<Requirement>,
     #[schemars(
         title = "Enablement of Vulkan API",
-        description = "These value determines weather your applications is able to use Vulkan, and weather it deppends on it. Some platforms like Web browsers, old/virtualized Windows machines and iOS simulators may not support Vulkan, so your application will fail early if Vulkan is required but unsupported. On the other hand, disabling Vulkan entriely can strip away GFXStream library and save some size of final application"
+        description = "These value determines weather your applications is able to use Vulkan, and weather it depends on it. Some platforms like Web browsers, old/virtualized Windows machines and iOS simulators may not support Vulkan, so your application will fail early if Vulkan is required but unsupported. On the other hand, disabling Vulkan entirely can strip away VirGLRenderer library and save some size of final application."
     )]
     pub vulkan: Option<Requirement>,
 }

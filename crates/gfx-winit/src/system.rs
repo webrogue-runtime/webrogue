@@ -1,13 +1,14 @@
-use std::sync::{Arc, Mutex, Weak, mpsc};
+use std::sync::{Arc, Mutex};
 
 #[cfg(not(target_arch = "wasm32"))]
 use ash::Entry;
-use webrogue_gfx::EventSink;
+use webrogue_gfx::SurfaceKind;
 #[cfg(not(target_arch = "wasm32"))]
 use webrogue_gfx::{VirGLContextContainer, VirGLRenderer};
 use winit::window::WindowAttributes;
 
 use crate::surface_lifecycle::SurfaceLifecycle;
+use crate::window::WindowList;
 use crate::window_icons::WindowIcons;
 use crate::{WinitWindow, mailbox::Mailbox};
 
@@ -20,7 +21,7 @@ pub struct WinitSystem {
     pub(crate) virgl_context: Option<Arc<Mutex<webrogue_gfx::VirGLContextContainer>>>,
     pub(crate) window_attributes_fn:
         Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
-    pub(crate) vk_windows: Arc<Mutex<Vec<Weak<WinitWindow>>>>,
+    pub(crate) windows: Arc<WindowList>,
     pub(crate) icons: Arc<Mutex<WindowIcons>>,
 }
 
@@ -41,7 +42,7 @@ impl WinitSystem {
         window_attributes_fn: Option<
             Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>,
         >,
-        vk_windows: Arc<Mutex<Vec<Weak<WinitWindow>>>>,
+        windows: Arc<WindowList>,
         surface_lifecycle: Arc<SurfaceLifecycle>,
         icons: Arc<Mutex<WindowIcons>>,
     ) -> anyhow::Result<Self> {
@@ -70,7 +71,7 @@ impl WinitSystem {
                 Arc::new(VirGLSystemProxy {
                     mailbox: mailbox.clone(),
                     vulkan_entry: Arc::new(entry.clone()),
-                    vk_windows: vk_windows.clone(),
+                    windows: windows.clone(),
                     surface_lifecycle: surface_lifecycle.clone(),
                 }),
             ))))
@@ -80,57 +81,42 @@ impl WinitSystem {
             #[cfg(not(target_arch = "wasm32"))]
             virgl_context,
             window_attributes_fn,
-            vk_windows,
+            windows,
             icons,
         })
     }
 }
 
 impl webrogue_gfx::AbstractSystem for WinitSystem {
-    fn make_window(&self) -> webrogue_gfx::Window {
-        let event_sink = Arc::new(EventSink::new());
-        let mut vk_windows = self.vk_windows.lock().unwrap();
-        let vk_window_id = vk_windows.len() as u32;
-        let window_attributes_fn = self.window_attributes_fn.clone();
-        let window = Arc::new(WinitWindow::new(
+    fn make_window(&self, surface_kind: SurfaceKind) -> anyhow::Result<webrogue_gfx::Window> {
+        #[cfg(not(target_arch = "wasm32"))]
+        if matches!(surface_kind, SurfaceKind::Vulkan) && self.virgl_context.is_none() {
+            anyhow::bail!("Vulkan window requested, but no compatible Vulkan driver was found");
+        }
+        #[cfg(target_arch = "wasm32")]
+        if matches!(surface_kind, SurfaceKind::Vulkan) {
+            anyhow::bail!("Vulkan is unsupported in the web runtime");
+        }
+        Ok(webrogue_gfx::Window::new(WinitWindow::new(
             self.mailbox.clone(),
-            vk_window_id,
-            event_sink,
-            window_attributes_fn,
-        ));
-        let weak_window = Arc::downgrade(&window);
-        vk_windows.push(Arc::downgrade(&window));
-        drop(vk_windows);
-
-        let mailbox = self.mailbox.clone();
-        let (window_ready_tx, window_ready_rx) = mpsc::channel();
-        let icons = self.icons.clone();
-        mailbox.schedule_with_surfaces(move |event_loop, window_registry| {
-            let Some(window_state) = weak_window.upgrade() else {
-                return;
-            };
-            window_state.create_native_window(event_loop, window_registry, &icons.lock().unwrap());
-            let _ = window_ready_tx.send(());
-        });
-        window_ready_rx
-            .recv()
-            .expect("window creation was cancelled before the native window was ready");
-        webrogue_gfx::Window::new(window)
+            surface_kind,
+            self.icons.clone(),
+            &self.windows,
+            self.window_attributes_fn.clone(),
+        )?))
     }
 
     #[cfg(not(target_arch = "wasm32"))]
     fn get_virgl_context(&self) -> Option<Arc<Mutex<VirGLContextContainer>>> {
         self.virgl_context.clone()
     }
-
-    fn pump(&self) {}
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Clone)]
 struct VirGLSystemProxy {
     mailbox: Mailbox,
-    vk_windows: Arc<Mutex<Vec<Weak<WinitWindow>>>>,
+    windows: Arc<WindowList>,
     surface_lifecycle: Arc<SurfaceLifecycle>,
     vulkan_entry: Arc<Entry>,
 }
@@ -144,17 +130,10 @@ impl webrogue_gfx::VirGLSystemProxy for VirGLSystemProxy {
         p_allocator: *const ash::vk::AllocationCallbacks<'_>,
         p_surface: *mut ash::vk::SurfaceKHR,
     ) -> ash::vk::Result {
-        let window = {
-            let vk_windows = self.vk_windows.lock().unwrap();
-            if webrogue_window_id as usize >= vk_windows.len() {
-                return ash::vk::Result::ERROR_UNKNOWN;
-            }
-            let Some(window) = vk_windows[webrogue_window_id as usize].upgrade() else {
-                return ash::vk::Result::ERROR_UNKNOWN;
-            };
-            window
+        let Some(window) = self.windows.get_by_vk_id(webrogue_window_id) else {
+            return ash::vk::Result::ERROR_UNKNOWN;
         };
-        debug_assert!(window.vk_window_id == webrogue_window_id);
+        debug_assert_eq!(window.vk_id(), Some(webrogue_window_id));
         let window_id = window.window_id.clone();
 
         if !self

@@ -5,8 +5,7 @@ use std::sync::Mutex;
 use crate::event_sink::EventStream;
 
 pub trait AbstractSystem: Send + Sync {
-    fn make_window(&self) -> Window;
-    fn pump(&self);
+    fn make_window(&self, surface_kind: SurfaceKind) -> anyhow::Result<Window>;
     #[cfg(feature = "wasmtime")]
     fn get_virgl_context(&self) -> Option<Arc<Mutex<webrogue_virgl::ContextContainer>>>;
 }
@@ -19,12 +18,8 @@ impl System {
         Self(system)
     }
 
-    pub fn make_window(&self) -> Window {
-        self.0.make_window()
-    }
-
-    pub fn pump(&self) {
-        self.0.pump()
+    pub fn make_window(&self, surface_kind: SurfaceKind) -> anyhow::Result<Window> {
+        self.0.make_window(surface_kind)
     }
 }
 
@@ -69,4 +64,10 @@ impl Window {
     pub fn set_mouse_grab(&self, enabled: bool) -> bool {
         self.0.set_mouse_grab(enabled)
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SurfaceKind {
+    Software,
+    Vulkan,
 }
