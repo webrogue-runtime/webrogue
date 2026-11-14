@@ -10,3 +10,6 @@
 [submodule "external/wasmtime"]
 	path = external/wasmtime
 	url = https://github.com/bytecodealliance/wasmtime.git
+[submodule "external/wasi-gfx-runtime"]
+	path = external/wasi-gfx-runtime
+	url = https://github.com/wasi-gfx/wasi-gfx-runtime.git

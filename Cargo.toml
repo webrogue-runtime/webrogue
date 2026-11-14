@@ -117,6 +117,11 @@ wasmtime-wasi = { path = "external/wasmtime/crates/wasi", default-features = fal
 wasmtime-internal-debugger = { path = "external/wasmtime/crates/debugger", default-features = false }
 wasmtime-internal-gdbstub-component-artifact = { path = "external/wasmtime/crates/gdbstub-component/artifact" }
 
+# wasi-gfx-related crates
+wasi-webgpu-wasmtime = { path = "external/wasi-gfx-runtime/crates/wasi-webgpu-wasmtime" }
+wgpu-core = "30"
+wgpu-types = "30"
+
 # other crates
 image = { version = "0.25", default-features = false }
 imageproc = { version = "0.27", default-features = false }

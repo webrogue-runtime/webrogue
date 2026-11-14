@@ -19,3 +19,7 @@ pub use interface::{AbstractSystem, AbstractWindow, SurfaceKind, System, Window}
 pub use vulkan_entry::load_vulkan_entry;
 #[cfg(feature = "wasmtime")]
 pub use wasmtime::{GFXCtxView, GFXView, add_to_linker};
+
+pub use wasi_webgpu_wasmtime::{WasiWebGpuCtx, WasiWebGpuCtxView, WasiWebGpuOptions};
+pub use wgpu_core::global::Global as WGPUGlobal;
+pub use wgpu_types::InstanceDescriptor as WGPUInstanceDescriptor;
