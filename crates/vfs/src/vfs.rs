@@ -74,7 +74,7 @@ impl VFS {
         let files = self.list_all_files();
 
         if !files.contains(&path) {
-            let children = list_dir_children(&path, &files, &self.config());
+            let children = list_dir_children(&path, &files, self.config());
 
             // Yeah, empty directories are hidden... unless it's a root-level dir like "res"
             if children.is_empty() && path.contains("/") {
