@@ -6,6 +6,7 @@
 use wasmtime::component::{HasData, Linker, ResourceTable, WasmList};
 use wasmtime::{AsContext as _, AsContextMut as _};
 
+use crate::SurfaceKind;
 use crate::interface::{System, Window};
 
 pub(crate) mod generated {
@@ -138,8 +139,19 @@ where
 }
 
 impl<'a> generated::webrogue::gfx::windowing::Host for GFXCtxView<'a> {
-    fn make_window(&mut self) -> wasmtime::Result<wasmtime::component::Resource<Window>> {
-        let window = self.ctx.0.make_window();
+    fn make_window(
+        &mut self,
+        surface_kind: generated::webrogue::gfx::windowing::SurfaceKind,
+    ) -> wasmtime::Result<wasmtime::component::Resource<Window>> {
+        let surface_kind = match surface_kind {
+            generated::webrogue::gfx::windowing::SurfaceKind::Software => SurfaceKind::Software,
+            generated::webrogue::gfx::windowing::SurfaceKind::Vulkan => SurfaceKind::Vulkan,
+        };
+        let window = self
+            .ctx
+            .0
+            .make_window(surface_kind)
+            .map_err(wasmtime::Error::from_anyhow)?;
         Ok(self.table.push(window)?)
     }
 }
@@ -182,7 +194,7 @@ impl<'a> generated::webrogue::gfx::windowing::HostWindow for GFXCtxView<'a> {
         self_: wasmtime::component::Resource<Window>,
     ) -> wasmtime::Result<u32> {
         let Some(id) = self.table.get(&self_)?.0.get_vk_id() else {
-            wasmtime::bail!("get_vulkan_id failed")
+            wasmtime::bail!("window was not created with surface-kind::vulkan")
         };
         Ok(id)
     }

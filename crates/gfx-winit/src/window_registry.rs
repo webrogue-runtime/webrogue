@@ -36,13 +36,15 @@ impl WindowRegistry {
     pub(crate) fn surface_window_ids(&self) -> Vec<u32> {
         self.windows_by_winit_id
             .values()
-            .map(|window| window.vk_window_id)
+            .filter_map(|window| window.surface_data.vk_id())
             .collect()
     }
 
     pub(crate) fn notify_surface_lost(&self) {
         for window in self.windows_by_winit_id.values() {
-            window.event_sink.push_critical_event(Event::SurfaceLost);
+            if window.surface_data.vk_id().is_some() {
+                window.event_sink.push_critical_event(Event::SurfaceLost);
+            }
         }
     }
 

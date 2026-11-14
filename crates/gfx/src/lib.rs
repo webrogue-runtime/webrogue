@@ -14,7 +14,7 @@ pub use webrogue_virgl::Renderer as VirGLRenderer;
 pub use webrogue_virgl::SystemProxy as VirGLSystemProxy;
 
 pub use event_sink::{EventSink, EventStream};
-pub use interface::{AbstractSystem, AbstractWindow, System, Window};
+pub use interface::{AbstractSystem, AbstractWindow, SurfaceKind, System, Window};
 #[cfg(feature = "wasmtime")]
 pub use vulkan_entry::load_vulkan_entry;
 #[cfg(feature = "wasmtime")]

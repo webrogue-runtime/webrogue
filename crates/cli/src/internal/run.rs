@@ -6,7 +6,7 @@ use std::{
 use clap::Args;
 #[cfg(feature = "internal-run")]
 use webrogue_gfx::{AbstractSystem, Window};
-use webrogue_gfx::{AbstractWindow, EventSink, System};
+use webrogue_gfx::{AbstractWindow, EventSink, SurfaceKind, System};
 
 #[derive(Args, Debug)]
 pub struct InternalRunCommand {
@@ -67,16 +67,15 @@ struct HeadlessSystem {
 }
 
 impl AbstractSystem for HeadlessSystem {
-    fn make_window(&self) -> Window {
-        Window::new(Arc::new(HeadlessWindow {
+    fn make_window(&self, surface_kind: SurfaceKind) -> anyhow::Result<Window> {
+        assert!(matches!(surface_kind, SurfaceKind::Software));
+        Ok(Window::new(Arc::new(HeadlessWindow {
             width: self.width,
             height: self.height,
             last_frame: self.last_frame.clone(),
             events: EventSink::new(),
-        }))
+        })))
     }
-
-    fn pump(&self) {}
 
     fn get_virgl_context(&self) -> Option<Arc<Mutex<webrogue_virgl::ContextContainer>>> {
         None

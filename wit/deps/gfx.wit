@@ -550,7 +550,11 @@ interface windowing {
         raw-mouse-motion(tuple<f32, f32>),
     }
     // END GENERATED CODE
-    make-window: func() -> window;
+    enum surface-kind {
+        software,
+        vulkan,
+    }
+    make-window: func(surface-kind: surface-kind) -> window;
     resource window {
         get-logical-size: func() -> tuple<u32, u32>;
         get-physical-size: func() -> tuple<u32, u32>;

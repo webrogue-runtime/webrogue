@@ -4,7 +4,7 @@
 
 int main(void) {
   wr4c_window_t window;
-  wr4c_make_window(&window);
+  wr4c_make_window(&window, WR4C_SURFACE_KIND_SOFTWARE);
 
   int width = 0;
   int height = 0;

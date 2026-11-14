@@ -16,6 +16,7 @@ use crate::{
     mailbox::{Mailbox, RequestQueue},
     surface_lifecycle::{SURFACE_DESTROY_TIMEOUT, SurfaceLifecycle},
     utils::lock_mutex,
+    window::WindowList,
     window_icons::{WindowIcons, set_window_icon},
     window_registry::WindowRegistry,
 };
@@ -74,10 +75,10 @@ impl ProxiedWinitBuilder {
     }
 
     pub fn to_system(self, vulkan_requirement: Option<bool>) -> anyhow::Result<System> {
-        let (mailbox, vk_windows, surface_lifecycle, icons) = self.proxy.with_state(|state| {
+        let (mailbox, windows, surface_lifecycle, icons) = self.proxy.with_state(|state| {
             (
                 state.mailbox.clone(),
-                state.vk_windows.clone(),
+                state.windows.clone(),
                 state.surface_lifecycle.clone(),
                 state.icons.clone(),
             )
@@ -86,7 +87,7 @@ impl ProxiedWinitBuilder {
             mailbox,
             vulkan_requirement,
             self.window_attributes_fn.clone(),
-            vk_windows,
+            windows,
             surface_lifecycle,
             icons,
         )?;
@@ -111,7 +112,7 @@ impl ProxiedWinitBuilder {
 struct WinitProxyState {
     mailbox: Mailbox,
     on_surface_teardown_timeout: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
-    vk_windows: Arc<Mutex<Vec<Weak<WinitWindow>>>>,
+    windows: Arc<WindowList>,
     surface_lifecycle: Arc<SurfaceLifecycle>,
     lifecycle_state: LifecycleState,
     finger_id_map: BTreeMap<FingerId, u32>,
@@ -130,7 +131,7 @@ impl WinitProxyState {
                 surfaces_available: Arc::new(AtomicBool::new(false)),
             },
             on_surface_teardown_timeout: None,
-            vk_windows: Arc::new(Mutex::new(Vec::new())),
+            windows: Arc::new(WindowList::default()),
             surface_lifecycle: Arc::new(SurfaceLifecycle::default()),
             lifecycle_state: LifecycleState::default(),
             finger_id_map: BTreeMap::new(),
@@ -256,17 +257,19 @@ impl WinitProxy {
         event_loop: &dyn ActiveEventLoop,
         window_registry: &mut WindowRegistry,
     ) -> Vec<Arc<WinitWindow>> {
-        let (vk_windows, icons) =
-            self.with_state(|state| (state.vk_windows.clone(), state.icons.clone()));
-        let windows = vk_windows
-            .lock()
-            .unwrap()
-            .iter()
-            .filter_map(Weak::upgrade)
+        let (window_list, icons) =
+            self.with_state(|state| (state.windows.clone(), state.icons.clone()));
+        let windows = window_list
+            .live_windows()
+            .into_iter()
             .filter(|window| window.had_native_window())
             .collect::<Vec<_>>();
         for window in &windows {
-            window.create_native_window(event_loop, window_registry, &icons.lock().unwrap());
+            if let Err(error) =
+                window.create_native_window(event_loop, window_registry, &icons.lock().unwrap())
+            {
+                report_error(&error);
+            }
         }
         windows
     }
@@ -310,8 +313,8 @@ impl WinitProxy {
     }
 
     fn detach_native_windows(&self, window_registry: &mut WindowRegistry) {
-        let vk_windows = self.with_state(|state| state.vk_windows.clone());
-        for window in vk_windows.lock().unwrap().iter().filter_map(Weak::upgrade) {
+        let windows = self.with_state(|state| state.windows.clone());
+        for window in windows.live_windows() {
             window.detach_native_window();
         }
         window_registry.clean();
@@ -423,6 +426,14 @@ impl WinitProxy {
         self.with_state(|state| state.mailbox.clone())
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+fn report_error(error: &anyhow::Error) {
+    eprintln!("failed to recreate native window: {error:#}");
+}
+
+#[cfg(target_arch = "wasm32")]
+fn report_error(_error: &anyhow::Error) {}
 
 #[derive(Clone)]
 pub struct WeakWinitProxy {

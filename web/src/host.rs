@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::BTreeMap};
 
 use wasm_bindgen::prelude::*;
-use webrogue_gfx::{EventStream, Window, events::Event};
+use webrogue_gfx::{EventStream, SurfaceKind, Window, events::Event};
 
 struct HostWindow {
     window: Window,
@@ -30,9 +30,20 @@ fn with_window_mut<R>(handle: u32, f: impl FnOnce(&mut HostWindow) -> R) -> Opti
     WINDOWS.with(|windows| windows.borrow_mut().get_mut(&handle).map(f))
 }
 
+fn parse_surface_kind(surface_kind: &str) -> Result<SurfaceKind, JsValue> {
+    match surface_kind {
+        "software" => Ok(SurfaceKind::Software),
+        "vulkan" => Ok(SurfaceKind::Vulkan),
+        other => Err(JsValue::from_str(&format!("unknown surface kind: {other}"))),
+    }
+}
+
 #[wasm_bindgen(js_name = gfxMakeWindow)]
-pub fn gfx_make_window() -> u32 {
-    let window = system().make_window();
+pub fn gfx_make_window(surface_kind: &str) -> Result<u32, JsValue> {
+    let surface_kind = parse_surface_kind(surface_kind)?;
+    let window = system()
+        .make_window(surface_kind)
+        .map_err(|error| JsValue::from_str(&format!("{error:#}")))?;
     let events = window.get_event_stream();
     let handle = NEXT_HANDLE.with(|next| {
         let mut next = next.borrow_mut();
@@ -50,7 +61,7 @@ pub fn gfx_make_window() -> u32 {
             },
         );
     });
-    handle
+    Ok(handle)
 }
 
 #[wasm_bindgen(js_name = gfxDropWindow)]
