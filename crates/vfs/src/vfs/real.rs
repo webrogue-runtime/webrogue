@@ -164,7 +164,7 @@ impl RealVFS {
         self.paths.keys().cloned().collect()
     }
 
-    pub fn config(&self) -> Config {
-        self.config.clone()
+    pub fn config(&self) -> &Config {
+        &self.config
     }
 }

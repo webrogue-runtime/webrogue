@@ -32,7 +32,7 @@ impl RunCommand {
             )
         })?;
 
-        let config = vfs.config();
+        let config = vfs.config().clone();
         let vulkan_requirement = config.vulkan_requirement().to_bool_option();
 
         if self.surface_lifecycle_simulator == Some(0) {

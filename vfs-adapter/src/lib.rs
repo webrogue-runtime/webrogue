@@ -188,8 +188,16 @@ impl exported::types::GuestDescriptor for ExportedDescriptor {
 
     async fn stat(&self) -> Result<exported::types::DescriptorStat, exported::types::ErrorCode> {
         match self {
-            ExportedDescriptor::Real(desc) => desc.stat().await,
-            ExportedDescriptor::Vfs(desc) => desc.stat(),
+            ExportedDescriptor::Real(desc) => {
+                #[cfg(debug_assertions)]
+                webrogue_vfs::debug_print("real stat");
+                desc.stat().await
+            }
+            ExportedDescriptor::Vfs(desc) => {
+                #[cfg(debug_assertions)]
+                webrogue_vfs::debug_print("vfs stat");
+                desc.stat()
+            }
         }
     }
 
@@ -199,8 +207,14 @@ impl exported::types::GuestDescriptor for ExportedDescriptor {
         path: String,
     ) -> Result<exported::types::DescriptorStat, exported::types::ErrorCode> {
         match self {
-            ExportedDescriptor::Real(desc) => desc.stat_at(path_flags, path).await,
+            ExportedDescriptor::Real(desc) => {
+                #[cfg(debug_assertions)]
+                webrogue_vfs::debug_print(&alloc::format!("real stat_at {}", path));
+                desc.stat_at(path_flags, path).await
+            }
             ExportedDescriptor::Vfs(desc) => {
+                #[cfg(debug_assertions)]
+                webrogue_vfs::debug_print(&alloc::format!("vfs stat_at {}", path));
                 let _ = path_flags;
                 if path.is_empty() {
                     desc.stat()
@@ -258,10 +272,14 @@ impl exported::types::GuestDescriptor for ExportedDescriptor {
     ) -> Result<exported::types::Descriptor, exported::types::ErrorCode> {
         match self {
             ExportedDescriptor::Real(desc) => {
+                #[cfg(debug_assertions)]
+                webrogue_vfs::debug_print(&alloc::format!("real open_at {}", path));
                 let desc = desc.open_at(path_flags, path, open_flags, flags).await?;
                 Ok(ExportedDescriptor::Real(desc).export())
             }
             ExportedDescriptor::Vfs(desc) => {
+                #[cfg(debug_assertions)]
+                webrogue_vfs::debug_print(&alloc::format!("vfs open_at {}", path));
                 let _ = (path_flags, open_flags, flags);
                 if path.is_empty() {
                     return Err(exported::types::ErrorCode::NoEntry);

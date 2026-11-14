@@ -14,7 +14,8 @@ use webrogue_common::{RandomAccessReader, split_path};
 use webrogue_wrapp::is_path_a_wrapp;
 
 use crate::{
-    DARK_WINDOW_ICON_VFS_PATH, FD, LIGHT_WINDOW_ICON_VFS_PATH, VFSError, VFSResult,
+    DARK_WINDOW_ICON_VFS_PATH, FD, LIGHT_WINDOW_ICON_VFS_PATH, RESOURCES_ROOT_VFS_PATH, VFSError,
+    VFSResult,
     config::Config,
     fd::FDInner,
     vfs::{real::RealVFS, wrapp::WrappVFS},
@@ -73,16 +74,16 @@ impl VFS {
         let files = self.list_all_files();
 
         if !files.contains(&path) {
-            let dirs = list_dir_children(&path, &files);
+            let children = list_dir_children(&path, &files, &self.config());
 
             // Yeah, empty directories are hidden... unless it's a root-level dir like "res"
-            if dirs.is_empty() && path.contains("/") {
+            if children.is_empty() && path.contains("/") {
                 return Err(VFSError::NotExists);
             }
             return Ok(FD(Arc::new(FDInner::Dir((
                 self.clone(),
                 path,
-                dirs.into_iter().collect(),
+                children.into_iter().collect(),
             )))));
         }
 
@@ -94,7 +95,7 @@ impl VFS {
 
     pub fn list_dir_children(&self, path: &String) -> BTreeSet<String> {
         let files = self.list_all_files();
-        list_dir_children(path, &files)
+        list_dir_children(path, &files, self.config())
     }
 
     pub fn list_all_files(&self) -> Vec<String> {
@@ -104,7 +105,7 @@ impl VFS {
         }
     }
 
-    pub fn config(&self) -> Config {
+    pub fn config(&self) -> &Config {
         match &self.0 {
             VFSInner::Real(vfs) => vfs.config(),
             VFSInner::Wrapp(vfs) => vfs.config(),
@@ -212,18 +213,35 @@ impl VFS {
     }
 }
 
-fn list_dir_children(path: &String, files: &Vec<String>) -> BTreeSet<String> {
+fn list_dir_children(path: &String, files: &Vec<String>, config: &Config) -> BTreeSet<String> {
     let mut dirs = BTreeSet::new();
     let search_prefix = format!("{path}/");
 
-    for other in files {
-        if !other.starts_with(&search_prefix) {
-            continue;
+    let mut try_path = |path: &str| {
+        if !path.starts_with(&search_prefix) {
+            return;
         }
-        let Some(dir) = other[search_prefix.len()..].split('/').next() else {
-            continue;
+        let Some(dir) = path[search_prefix.len()..].split('/').next() else {
+            return;
         };
         dirs.insert(dir.to_string());
+    };
+
+    for other in files {
+        try_path(other)
     }
+
+    for other in config
+        .filesystem
+        .clone()
+        .and_then(|fs| fs.persistent)
+        .unwrap_or_default()
+    {
+        try_path(&format!(
+            "{}/{}",
+            RESOURCES_ROOT_VFS_PATH, other.mapped_path
+        ))
+    }
+
     dirs
 }

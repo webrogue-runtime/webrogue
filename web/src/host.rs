@@ -53,8 +53,8 @@ pub fn gfx_make_window() -> u32 {
     handle
 }
 
-#[wasm_bindgen(js_name = gfxCloseWindow)]
-pub fn gfx_close_window(handle: u32) {
+#[wasm_bindgen(js_name = gfxDropWindow)]
+pub fn gfx_drop_window(handle: u32) {
     WINDOWS.with(|windows| {
         windows.borrow_mut().remove(&handle);
     });

@@ -558,9 +558,6 @@ interface windowing {
         event-stream: func() -> stream<window-event>;
         set-mouse-grab: func(enabled: bool) -> result;
     }
-
-    close-window: func(window: window);
-
 }
 
 interface vulkan {

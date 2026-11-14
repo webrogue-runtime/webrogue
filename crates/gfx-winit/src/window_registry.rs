@@ -56,4 +56,8 @@ impl WindowRegistry {
     pub fn clean(&mut self) {
         self.windows_by_winit_id.clear();
     }
+
+    pub(crate) fn close_window_by_winit_id(&mut self, id: WindowId) {
+        self.windows_by_winit_id.remove(&id);
+    }
 }

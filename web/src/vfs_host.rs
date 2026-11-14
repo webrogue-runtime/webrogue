@@ -100,8 +100,8 @@ pub fn vfs_open(handle: u32, path: String) -> JsValue {
     }
 }
 
-#[wasm_bindgen(js_name = vfsClose)]
-pub fn vfs_close(handle: u32) {
+#[wasm_bindgen(js_name = vfsDrop)]
+pub fn vfs_drop(handle: u32) {
     FDS.with(|fds| {
         fds.borrow_mut().remove(&handle);
     });

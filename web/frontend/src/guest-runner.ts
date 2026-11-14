@@ -14,9 +14,11 @@ import * as clocks from "@bytecodealliance/preview3-shim/clocks";
 import * as filesystem from "@bytecodealliance/preview3-shim/filesystem";
 import * as random from "@bytecodealliance/preview3-shim/random";
 
+const symbolDispose = Symbol.dispose || Symbol.for('dispose');
+
 export type RuntimeHost = {
   gfxMakeWindow(): number;
-  gfxCloseWindow(handle: number): void;
+  gfxDropWindow(handle: number): void;
   gfxWindowPhysicalSize(handle: number): Uint32Array;
   gfxWindowLogicalSize(handle: number): Uint32Array;
   gfxWindowVulkanId(handle: number): number;
@@ -25,7 +27,7 @@ export type RuntimeHost = {
   gfxPresentPixels(handle: number, pixels: Uint32Array): void;
   vfsRoot(): number | undefined;
   vfsOpen(handle: number, path: string): { ok?: number; err?: string };
-  vfsClose(handle: number): void;
+  vfsDrop(handle: number): void;
   vfsIsDir(handle: number): boolean;
   vfsReadAt(handle: number, offset: number, length: number): Uint8Array | undefined;
   vfsStat(handle: number): { type: string; size: number } | { err: string };
@@ -119,15 +121,17 @@ class Window {
     };
     return stream as AsyncIterable<T>;
   }
+
+  [symbolDispose]() {
+    const handle = windowHandle(this);
+    webrogueWorker.gfxDropWindow(handle);
+  }
 }
 
 export const windowing = {
   Window,
   makeWindow(): Window {
     return Window.create(webrogueWorker.gfxMakeWindow());
-  },
-  closeWindow(window: object): void {
-    webrogueWorker.gfxCloseWindow(windowHandle(window));
   },
 };
 
@@ -309,6 +313,11 @@ class VfsDescriptor {
       type: { tag: child.directory ? "directory" : "regular-file" },
     }));
     return [entriesStream(entries), Promise.resolve(vfsOk)];
+  }
+
+  [symbolDispose]() {
+    const handle = windowHandle(this);
+    webrogueWorker.vfsDrop(this.handle);
   }
 }
 

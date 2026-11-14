@@ -142,13 +142,6 @@ impl<'a> generated::webrogue::gfx::windowing::Host for GFXCtxView<'a> {
         let window = self.ctx.0.make_window();
         Ok(self.table.push(window)?)
     }
-
-    fn close_window(
-        &mut self,
-        _window: wasmtime::component::Resource<Window>,
-    ) -> wasmtime::Result<()> {
-        Ok(())
-    }
 }
 
 impl<T> generated::webrogue::gfx::windowing::HostWindowWithStore<T> for Gfx {

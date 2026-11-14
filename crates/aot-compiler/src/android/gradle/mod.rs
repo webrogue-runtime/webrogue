@@ -33,7 +33,7 @@ pub fn build(
 ) -> anyhow::Result<()> {
     let vfs = VFS::build_from_path(container_path)?;
 
-    let config = vfs.config();
+    let config = vfs.config().clone();
     let mut artifacts =
         crate::utils::Artifacts::new().with_context(|| "Error opening artifacts library")?;
     let template_id = artifacts.get_data("android_gradle/template_id")?;

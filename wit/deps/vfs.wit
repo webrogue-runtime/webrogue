@@ -23,6 +23,8 @@ interface vfs {
         dir-children: func() -> tuple<stream<directory-entry>, future<result<_, error-code>>>;
     }
     root-descriptor: func() -> descriptor;
+
+    debug-print: func(message: string);
 }
 
 world vfs-world {
