@@ -167,7 +167,7 @@ webrtc = { version = "0.21.1" }
 base64 = { version = "0.23.1" }
 tokio-tungstenite = { version = "*" }
 futures-util = { version = "0.3" }
-blake3 = { version = "1.8.2" }
+blake3 = { version = "1" }
 async-trait = { version = "0.1.89" }
 rand = { version = "0.10", default-features = false }
 softbuffer = "0.4.8"
@@ -255,3 +255,6 @@ codegen-units = 1
 [patch.crates-io]
 zstd-safe = { path = "external/zstd-rs/zstd-safe" }
 zstd = { path = "external/zstd-rs" }
+
+[target.'cfg(target_env = "msvc")'.workspace.dependencies]
+blake3 = { version = "1", features = ["pure"] }
