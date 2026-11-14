@@ -40,7 +40,7 @@ fn android_main(app: android_activity::AndroidApp) {
                 asset.size as u64,
             )))
             .unwrap();
-        let config = vfs.config();
+        let config = vfs.config().clone();
 
         let data_dir = app.internal_data_path().unwrap();
 

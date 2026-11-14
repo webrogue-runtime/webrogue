@@ -118,21 +118,6 @@ impl WinitWindow {
     }
 }
 
-fn set_cursor_grab(window: &Arc<Box<dyn Window>>, enabled: bool) -> bool {
-    if window
-        .set_cursor_grab(if enabled {
-            CursorGrabMode::Locked
-        } else {
-            CursorGrabMode::None
-        })
-        .is_err()
-    {
-        return false;
-    }
-    window.set_cursor_visible(!enabled);
-    true
-}
-
 impl webrogue_gfx::AbstractWindow for WinitWindow {
     fn get_logical_size(&self) -> (u32, u32) {
         if !self.mailbox.surfaces_available() {
@@ -257,6 +242,16 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
     }
 }
 
+impl Drop for WinitWindow {
+    fn drop(&mut self) {
+        if let Some(window_id) = *self.window_id.lock().unwrap() {
+            self.mailbox.execute(|_, registry| {
+                registry.close_window_by_winit_id(window_id);
+            })
+        }
+    }
+}
+
 impl WinitWindowInternal {
     pub(crate) fn on_event(
         &self,
@@ -297,4 +292,19 @@ fn get_physical_size(window: &dyn Window) -> Option<(u32, u32)> {
 fn get_physical_size(window: &dyn Window) -> Option<(u32, u32)> {
     let size = window.surface_size();
     Some((size.width, size.height))
+}
+
+fn set_cursor_grab(window: &Arc<Box<dyn Window>>, enabled: bool) -> bool {
+    if window
+        .set_cursor_grab(if enabled {
+            CursorGrabMode::Locked
+        } else {
+            CursorGrabMode::None
+        })
+        .is_err()
+    {
+        return false;
+    }
+    window.set_cursor_visible(!enabled);
+    true
 }

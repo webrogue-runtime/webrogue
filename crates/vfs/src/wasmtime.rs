@@ -202,6 +202,14 @@ impl<T> generated::webrogue::vfs::vfs::HostWithStore<T> for VFS {
         let fd = WasiFD(fd);
         Ok(host.get().table.push(fd)?)
     }
+
+    fn debug_print(
+        _: Access<'_, T, Self>,
+        message: std::string::String,
+    ) -> std::result::Result<(), wasmtime::Error> {
+        println!("vfs debug: {}\n", message);
+        Ok(())
+    }
 }
 
 impl generated::webrogue::vfs::vfs::Host for VFSCtxView<'_> {}

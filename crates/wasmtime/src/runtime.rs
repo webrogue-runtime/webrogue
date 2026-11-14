@@ -83,6 +83,7 @@ async fn run_component(
 
     for persistent in wrapp_config
         .filesystem
+        .clone()
         .map_or_else(Vec::new, |config| config.persistent.unwrap_or_default())
     {
         let host_path = runtime.persistent_dir.join(&persistent.name);

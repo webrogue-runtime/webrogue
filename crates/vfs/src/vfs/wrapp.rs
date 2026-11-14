@@ -39,8 +39,8 @@ impl WrappVFS {
         Ok(WrappVFS { reader, config })
     }
 
-    pub fn config(&self) -> Config {
-        self.config.clone()
+    pub fn config(&self) -> &Config {
+        &self.config
     }
 
     pub fn list_all_files(&self) -> Vec<String> {

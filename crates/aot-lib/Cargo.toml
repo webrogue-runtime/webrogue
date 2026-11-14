@@ -19,8 +19,5 @@ webrogue-gfx = { workspace = true }
 webrogue-gfx-winit = { workspace = true }
 anyhow = { workspace = true }
 
-[target.'cfg(target_env = "msvc")'.dependencies]
-blake3 = { version = "1", features = ["pure"] }
-
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation", "Win32_System_Console"] }

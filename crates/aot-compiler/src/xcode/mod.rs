@@ -36,7 +36,7 @@ const NO_VULKAN_ON_SIM_ERROR: &str = "Vulkan is currently unsupported on iOS Sim
 
 pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
     let vfs = VFS::build_from_path(args.wrapp_path)?;
-    let wrapp_config = vfs.config();
+    let wrapp_config = vfs.config().clone();
 
     let mut artifacts = crate::utils::Artifacts::new()?;
     let template_id = artifacts.get_data("apple_xcode/template_id")?;

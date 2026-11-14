@@ -25,7 +25,7 @@ extern "C" fn webrogue_aot_windows() {
             wrapp_size,
         )))?;
 
-        let config = vfs.config();
+        let config = vfs.config().clone();
 
         let persistent_path = dirs::data_dir()
             .expect("dirs::data_dir returned None")
@@ -97,7 +97,7 @@ extern "C" fn webrogue_aot_linux() {
             wrapp_size,
         )))?;
 
-        let config = vfs.config();
+        let config = vfs.config().clone();
 
         let persistent_path = dirs::data_dir()
             .ok_or_else(|| anyhow::anyhow!("dirs::data_dir returned None"))?
