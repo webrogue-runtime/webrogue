@@ -20,6 +20,9 @@ pub use vulkan_entry::load_vulkan_entry;
 #[cfg(feature = "wasmtime")]
 pub use wasmtime::{GFXCtxView, GFXView, add_to_linker};
 
+#[cfg(feature = "wasmtime")]
 pub use wasi_webgpu_wasmtime::{WasiWebGpuCtx, WasiWebGpuCtxView, WasiWebGpuOptions};
+#[cfg(feature = "wasmtime")]
 pub use wgpu_core::global::Global as WGPUGlobal;
+#[cfg(feature = "wasmtime")]
 pub use wgpu_types::InstanceDescriptor as WGPUInstanceDescriptor;

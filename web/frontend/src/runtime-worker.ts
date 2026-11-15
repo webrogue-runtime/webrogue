@@ -8,9 +8,9 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 }).webrogueWorker = { ...runtime, runGuest, sleep };
 
 self.onmessage = (event: MessageEvent) => {
-    const [module_or_path, memory, work] = event.data;
+    const [module_or_path, memory, work, payload] = event.data;
     init({ module_or_path, memory })
-        .then(() => runtime.wasm_thread_entry_point(work))
+        .then(() => runtime.wasm_thread_entry_point(work, payload))
         .catch((error) => {
             console.error(error);
         });

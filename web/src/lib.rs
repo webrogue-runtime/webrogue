@@ -105,6 +105,8 @@ impl ApplicationHandler for App {
                 .dyn_into::<HtmlCanvasElement>()
                 .unwrap();
 
+            // canvas.transfer_control_to_offscreen().unwrap();
+
             window_attributes.with_platform_attributes(Box::new(
                 WindowAttributesWeb::default().with_canvas(Some(canvas)),
             ))
@@ -119,37 +121,55 @@ impl ApplicationHandler for App {
         let system = builder.to_system(Some(false)).unwrap();
         *SYSTEM.lock().unwrap() = Some(system);
 
+        let message_channel = web_sys::MessageChannel::new().unwrap();
+
+        // {
+
+        // }
+        // message_channel.port1().post_message_with_transferable(message, transferable)
+
         #[cfg(target_arch = "wasm32")]
         match wasm_thread::Builder::new()
             .worker_script_url(self.worker_script_url.clone())
-            .spawn_async(move || async move {
-                let Some(bytes) = ARCHIVE
-                    .lock()
-                    .unwrap()
-                    .as_ref()
-                    .and_then(|archive| archive.main_wasm())
-                else {
-                    web_sys::console::error_1(&JsValue::from_str(
-                        "WRAPP archive does not contain main.wasm",
-                    ));
-                    return;
-                };
-
-                let bytes = match webrogue_wasm_processing::compose(bytes) {
-                    Ok(bytes) => bytes,
-                    Err(error) => {
-                        web_sys::console::error_1(&JsValue::from_str(&format!(
-                            "unable to compose the guest component: {error:#}"
-                        )));
+            .spawn_async(
+                move || async move {
+                    let message_port = wasm_thread::worker_payload()
+                        .dyn_into::<web_sys::MessagePort>()
+                        .unwrap();
+                    // message_port.add_event_listener_with_callback(type_, listener);
+                    let Some(bytes) = ARCHIVE
+                        .lock()
+                        .unwrap()
+                        .as_ref()
+                        .and_then(|archive| archive.main_wasm())
+                    else {
+                        web_sys::console::error_1(&JsValue::from_str(
+                            "WRAPP archive does not contain main.wasm",
+                        ));
                         return;
-                    }
-                };
+                    };
 
-                if let Err(error) = JsFuture::from(run_guest(&bytes)).await {
-                    web_sys::console::error_1(&JsValue::from_str("guest stopped:"));
-                    web_sys::console::error_1(&error);
-                }
-            }) {
+                    let bytes = match webrogue_wasm_processing::compose(bytes) {
+                        Ok(bytes) => bytes,
+                        Err(error) => {
+                            web_sys::console::error_1(&JsValue::from_str(&format!(
+                                "unable to compose the guest component: {error:#}"
+                            )));
+                            return;
+                        }
+                    };
+
+                    if let Err(error) = JsFuture::from(run_guest(&bytes)).await {
+                        web_sys::console::error_1(&JsValue::from_str("guest stopped:"));
+                        web_sys::console::error_1(&error);
+                    }
+                    drop(message_port);
+                },
+                Some(
+                    wasm_bindgen::prelude::Upcast::<JsValue>::upcast(&message_channel.port2())
+                        .clone(),
+                ),
+            ) {
             Err(error) => {
                 web_sys::console::error_1(&JsValue::from_str(&format!(
                     "unable to spawn the guest worker: {error}"

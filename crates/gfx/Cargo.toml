@@ -7,7 +7,7 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
-wasmtime = ["dep:ash", "dep:wasmtime", "dep:webrogue-virgl"]
+wasmtime = ["dep:ash", "dep:wasmtime", "dep:webrogue-virgl", "dep:wasi-webgpu-wasmtime", "dep:wgpu-core", "dep:wgpu-types"]
 web = ["dep:js-sys", "dep:wasm-bindgen"]
 static-vk = []
 static-vk-icd = []
@@ -23,9 +23,9 @@ wasm-bindgen = { workspace = true, optional = true }
 ash = { workspace = true, features = ["std", "loaded"], default-features = false, optional = true }
 wasmtime = { workspace = true, default-features = false, features = ["anyhow", "component-model", "component-model-async", "runtime", "std"], optional = true }
 webrogue-virgl = { workspace = true, optional = true }
-wasi-webgpu-wasmtime = { workspace = true }
-wgpu-core = { workspace = true }
-wgpu-types = { workspace = true }
+wasi-webgpu-wasmtime = { workspace = true, optional = true }
+wgpu-core = { workspace = true, optional = true }
+wgpu-types = { workspace = true, optional = true }
 
 [build-dependencies]
 reqwest = { workspace = true, features = ["blocking"], optional = true }

@@ -22,9 +22,11 @@ web-sys = { workspace = true, features = [
     "Document",
     "Element",
     "HtmlCanvasElement",
+    "OffscreenCanvas",
     "HtmlElement",
     "Response",
     "Window",
+    "MessageChannel",
 ] }
 webrogue-common = { workspace = true }
 webrogue-gfx = { workspace = true, default-features = false, features = ["web"] }
