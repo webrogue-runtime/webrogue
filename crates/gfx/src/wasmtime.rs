@@ -3,20 +3,26 @@
 //! This module is only compiled for native targets. The web runtime hosts the
 //! same interfaces from JavaScript/Rust without wasmtime.
 
+use std::sync::Arc;
+
 use wasi_webgpu_wasmtime::WasiWebGpuCtxView;
+use wasi_webgpu_wasmtime::reexports::wgpu_types;
 use wasmtime::component::{HasData, Linker, ResourceTable, WasmList};
 use wasmtime::{AsContext as _, AsContextMut as _};
 
-use crate::SurfaceKind;
 use crate::interface::{System, Window};
+use crate::{SurfaceKind, WGPUGlobal, WGPUSurfaceId};
 
 pub(crate) mod generated {
     wasmtime::component::bindgen!({
         path: "../../wit",
         world: "webrogue-gfx-world",
+        require_store_data_send: true,
         with: {
             "webrogue:gfx/windowing.window": crate::interface::Window,
             "webrogue:gfx/vulkan.renderer": super::VulkanRenderer,
+            "webrogue:gfx/windowing-webgpu.context": super::WebGPUContext,
+            "wasi:webgpu/webgpu": wasi_webgpu_wasmtime::wasi::webgpu::webgpu,
         },
         imports: {
             "webrogue:gfx/windowing.[method]window.event-stream": trappable | store,
@@ -24,6 +30,168 @@ pub(crate) mod generated {
             default: trappable,
         },
     });
+}
+
+pub struct WebGPUContext {
+    window: Window,
+    surface_id: WGPUSurfaceId,
+    configuration: Option<ContextConfiguration>,
+}
+
+struct ContextConfiguration {
+    device: wasmtime::component::Resource<wasi_webgpu_wasmtime::Device>,
+    format: wasi_webgpu_wasmtime::wasi::webgpu::webgpu::GpuTextureFormat,
+    usage: wasi_webgpu_wasmtime::wasi::webgpu::webgpu::GpuTextureUsage,
+    width: u32,
+    height: u32,
+}
+
+impl<'a> crate::wasmtime::generated::webrogue::gfx::windowing_webgpu::Host for GFXCtxView<'a> {}
+
+impl crate::wasmtime::generated::webrogue::gfx::windowing_webgpu::HostContext for GFXCtxView<'_> {
+    fn new(
+        &mut self,
+        window: wasmtime::component::Resource<crate::interface::Window>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<WebGPUContext>> {
+        let window = self.table.get(&window)?.clone();
+        let surface_id = window
+            .create_webgpu_surface(self.webgpu_instance)
+            .map_err(wasmtime::Error::from_anyhow)?;
+        Ok(self.table.push(WebGPUContext {
+            window,
+            surface_id,
+            configuration: None,
+        })?)
+    }
+
+    fn configure(
+        &mut self,
+        context: wasmtime::component::Resource<WebGPUContext>,
+        configuration: generated::webrogue::gfx::windowing_webgpu::ContextConfiguration,
+    ) -> wasmtime::Result<()> {
+        use wasi_webgpu_wasmtime::wasi::webgpu::webgpu::{
+            GpuCanvasAlphaMode, GpuTextureUsage, PredefinedColorSpace,
+        };
+
+        let device_id = *self.table.get(&configuration.device)?.device_id();
+
+        // Defaults follow the WebGPU spec:
+        // https://www.w3.org/TR/webgpu/#dictdef-gpucanvasconfiguration
+        let format = configuration.format;
+        let usage = configuration
+            .usage
+            .unwrap_or(GpuTextureUsage::RENDER_ATTACHMENT);
+
+        let context = self.table.get_mut(&context)?;
+        let (width, height) = context.window.get_physical_size();
+        wasmtime::ensure!(width != 0 && height != 0, "window has zero size");
+
+        let error = self.webgpu_instance.surface_configure(
+            context.surface_id,
+            device_id,
+            &wgpu_types::SurfaceConfiguration {
+                format: format.into(),
+                usage: usage.try_into()?,
+                view_formats: configuration
+                    .view_formats
+                    .into_iter()
+                    .flatten()
+                    .map(Into::into)
+                    .collect(),
+                alpha_mode: configuration
+                    .alpha_mode
+                    .unwrap_or(GpuCanvasAlphaMode::Opaque)
+                    .into(),
+                color_space: configuration
+                    .color_space
+                    .unwrap_or(PredefinedColorSpace::Srgb)
+                    .into(),
+                // Not part of the WebGPU configuration.
+                width,
+                height,
+                present_mode: wgpu_types::PresentMode::default(),
+                desired_maximum_frame_latency: 2,
+            },
+        );
+        if let Some(error) = error {
+            wasmtime::bail!("{error:#?}")
+        }
+
+        context.configuration = Some(ContextConfiguration {
+            device: configuration.device,
+            format,
+            usage,
+            width,
+            height,
+        });
+        Ok(())
+    }
+
+    fn unconfigure(
+        &mut self,
+        context: wasmtime::component::Resource<WebGPUContext>,
+    ) -> wasmtime::Result<()> {
+        let context = self.table.get_mut(&context)?;
+        context.configuration = None;
+        Ok(())
+    }
+
+    fn get_current_texture(
+        &mut self,
+        context_res: wasmtime::component::Resource<WebGPUContext>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<generated::wasi::webgpu::webgpu::GpuTexture>>
+    {
+        let context = self.table.get(&context_res)?;
+        let Some(configuration) = &context.configuration else {
+            wasmtime::bail!("WebGPU surface is not configured")
+        };
+
+        let output = self
+            .webgpu_instance
+            .surface_get_current_texture(context.surface_id, None)?;
+        let texture_id = output
+            .texture
+            .ok_or_else(|| wasmtime::format_err!("surface returned no texture"))?;
+
+        let info = wasi_webgpu_wasmtime::TextureInfo {
+            width: configuration.width,
+            height: configuration.height,
+            depth_or_array_layers: 1,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wasi_webgpu_wasmtime::wasi::webgpu::webgpu::GpuTextureDimension::D2,
+            format: configuration.format,
+            usage: configuration.usage,
+            texture_binding_view_dimension: None,
+            label: None,
+        };
+
+        let device = self.table.get(&configuration.device)?;
+
+        // SAFETY: `surface_get_current_texture` only returns textures that
+        // belong to the device the surface was configured with.
+        let texture = unsafe { device.connect_texture(texture_id, info) };
+
+        Ok(self.table.push_child(texture, &context_res)?)
+    }
+
+    fn present(
+        &mut self,
+        context: wasmtime::component::Resource<WebGPUContext>,
+    ) -> wasmtime::Result<()> {
+        let surface_id = self.table.get(&context)?.surface_id;
+        self.webgpu_instance.surface_present(surface_id)?;
+        Ok(())
+    }
+
+    fn drop(
+        &mut self,
+        context: wasmtime::component::Resource<WebGPUContext>,
+    ) -> wasmtime::Result<()> {
+        let context = self.table.delete(context)?;
+        self.webgpu_instance.surface_drop(context.surface_id);
+        Ok(())
+    }
 }
 
 pub trait GFXView: WasiWebGpuCtxView + Send {
@@ -39,6 +207,7 @@ impl HasData for Gfx {
 pub struct GFXCtxView<'a> {
     pub ctx: &'a mut System,
     pub table: &'a mut ResourceTable,
+    pub webgpu_instance: &'a Arc<WGPUGlobal>,
 }
 
 pub fn add_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>
@@ -49,6 +218,7 @@ where
     generated::webrogue::gfx::cpu_rendering::add_to_linker::<_, Gfx>(linker, GFXView::gfx_ctx)?;
     generated::webrogue::gfx::vulkan::add_to_linker::<_, Gfx>(linker, GFXView::gfx_ctx)?;
     generated::webrogue::gfx::device_info::add_to_linker::<_, Gfx>(linker, GFXView::gfx_ctx)?;
+    generated::webrogue::gfx::windowing_webgpu::add_to_linker::<_, Gfx>(linker, GFXView::gfx_ctx)?;
 
     // Bindgen normally lifts lists into Vecs. These blob functions need the
     // guest buffer's backing memory directly, so register typed WasmList
@@ -149,6 +319,7 @@ impl<'a> generated::webrogue::gfx::windowing::Host for GFXCtxView<'a> {
         let surface_kind = match surface_kind {
             generated::webrogue::gfx::windowing::SurfaceKind::Software => SurfaceKind::Software,
             generated::webrogue::gfx::windowing::SurfaceKind::Vulkan => SurfaceKind::Vulkan,
+            generated::webrogue::gfx::windowing::SurfaceKind::Webgpu => SurfaceKind::WebGPU,
         };
         let window = self
             .ctx

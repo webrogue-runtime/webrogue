@@ -135,17 +135,22 @@ async fn run_component(
         }
     }
 
+    let webgpu_instance = Arc::new(WGPUGlobal::new(
+        "webrogue",
+        WGPUInstanceDescriptor::new_without_display_handle_from_env(),
+        None,
+    ));
+    let (webgpu_poll_notifier, _webgpu_poll_thread) =
+        webrogue_gfx::spawn_poll_devices_thread(webgpu_instance.clone(), Default::default())?;
+
     let state = State {
         gfx: runtime.gfx_system,
         wasi_ctx: wasi_ctx_builder.build(),
         resource_table: wasmtime_wasi::ResourceTable::new(),
         vfs: runtime.vfs.clone(),
         wasi_clocks: WasiClocks::new(),
-        webgpu_instance: Arc::new(WGPUGlobal::new(
-            "webrogue",
-            WGPUInstanceDescriptor::new_without_display_handle_from_env(),
-            None,
-        )),
+        webgpu_instance,
+        webgpu_poll_notifier,
         webgpu_options: WasiWebGpuOptions::default(),
     };
     let mut store = wasmtime::Store::new(&engine, state);

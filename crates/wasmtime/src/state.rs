@@ -3,7 +3,8 @@ use std::sync::Arc;
 use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 use webrogue_gfx::{
-    GFXCtxView, GFXView, WGPUGlobal, WasiWebGpuCtx, WasiWebGpuCtxView, WasiWebGpuOptions,
+    GFXCtxView, GFXView, MpscPollNotifier, WGPUGlobal, WasiWebGpuCtx, WasiWebGpuCtxView,
+    WasiWebGpuOptions,
 };
 use webrogue_vfs::{VFS, VFSCtxView, VFSView};
 
@@ -16,6 +17,7 @@ pub struct State {
     pub vfs: VFS,
     pub wasi_clocks: WasiClocks,
     pub webgpu_instance: Arc<WGPUGlobal>,
+    pub webgpu_poll_notifier: MpscPollNotifier,
     pub webgpu_options: WasiWebGpuOptions,
 }
 
@@ -33,6 +35,7 @@ impl GFXView for State {
         GFXCtxView {
             ctx: &mut self.gfx,
             table: &mut self.resource_table,
+            webgpu_instance: &self.webgpu_instance,
         }
     }
 }
@@ -41,6 +44,7 @@ impl WasiWebGpuCtxView for State {
     fn webgpu_ctx(&mut self) -> WasiWebGpuCtx<'_> {
         WasiWebGpuCtx {
             instance: &self.webgpu_instance,
+            poll_notifier: &self.webgpu_poll_notifier,
             table: &mut self.resource_table,
             options: &mut self.webgpu_options,
         }

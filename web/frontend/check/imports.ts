@@ -11,22 +11,22 @@
 // a different revision of the WASI WIT files, so they are intentionally not
 // compared here.
 
-import type * as CpuRendering from "../generated/example-imports/interfaces/webrogue-gfx-cpu-rendering.js";
-import type * as Vulkan from "../generated/example-imports/interfaces/webrogue-gfx-vulkan.js";
-import type * as Windowing from "../generated/example-imports/interfaces/webrogue-gfx-windowing.js";
 import type * as Runtime from "../generated/runtime-check/webrogue_web_runtime.js";
+import type * as WebGpu from "../generated/example-imports/interfaces/wasi-webgpu-webgpu.js";
+import type * as Windowing from "../generated/example-imports/interfaces/webrogue-gfx-windowing.js";
+import type * as WindowingWebgpu from "../generated/example-imports/interfaces/webrogue-gfx-windowing-webgpu.js";
 
+import * as webgpu from "../generated/wasi-gfx-shim/src/webgpu.js";
 import {
-  cpuRendering,
-  vulkan,
   windowing,
+  windowingWebgpu,
   type RuntimeHost,
 } from "../src/guest-runner.js";
 
 const checks = [
+  webgpu satisfies typeof WebGpu,
   windowing satisfies typeof Windowing,
-  cpuRendering satisfies typeof CpuRendering,
-  vulkan satisfies typeof Vulkan,
+  windowingWebgpu satisfies typeof WindowingWebgpu,
 ];
 
 // The worker exposes the wasm-bindgen exports as `webrogueWorker`. If a

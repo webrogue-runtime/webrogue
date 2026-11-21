@@ -8,7 +8,7 @@ interface windowing {
         right,
         middle,
     }
-    
+
     enum named-key {
         unknown,
         alt,
@@ -316,7 +316,7 @@ interface windowing {
         f34,
         f35,
     }
-    
+
     enum physical-key {
         unknown,
         backquote,
@@ -533,7 +533,7 @@ interface windowing {
         show-all-windows,
         zoom-toggle,
     }
-    
+
     variant window-event {
         /// button, down, x, y, touch-id
         mouse-button(tuple<mouse-button, bool, u32, u32, u32>),
@@ -553,6 +553,7 @@ interface windowing {
     enum surface-kind {
         software,
         vulkan,
+        webgpu,
     }
     make-window: func(surface-kind: surface-kind) -> window;
     resource window {
@@ -613,6 +614,31 @@ interface cpu-rendering {
         window: borrow<window>,
         buf: list<u32>,
     );
+}
+
+// Copied from surface-webgpu
+interface windowing-webgpu {
+    use wasi:webgpu/webgpu@0.3.0-rc.2.{gpu-device, gpu-texture, gpu-texture-format, gpu-texture-usage, predefined-color-space, gpu-canvas-tone-mapping, gpu-canvas-alpha-mode};
+    use windowing.{window};
+
+    record context-configuration {
+        device: borrow<gpu-device>,
+        format: gpu-texture-format,
+        usage: option<gpu-texture-usage>,
+        view-formats: option<list<gpu-texture-format>>,
+        color-space: option<predefined-color-space>,
+        tone-mapping: option<gpu-canvas-tone-mapping>,
+        alpha-mode: option<gpu-canvas-alpha-mode>,
+    }
+
+    resource context {
+        constructor(window: borrow<window>);
+        configure: func(configuration: context-configuration);
+        unconfigure: func();
+        get-current-texture: func() -> gpu-texture;
+        /// TODO: consider if needed
+        present: func();
+    }
 }
 
 interface device-info {

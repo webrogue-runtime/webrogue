@@ -16,6 +16,8 @@ mod window_registry;
 pub use proxied_builder::{ProxiedWinitBuilder, WeakWinitProxy, WinitProxy};
 pub use simple_builder::SimpleWinitBuilder;
 pub use system::WinitSystem;
+#[cfg(target_arch = "wasm32")]
+pub use window::CURRENT_CANVAS_ID;
 pub use window::WinitWindow;
 pub use window_icons::WindowIcons;
 pub use window_registry::WindowRegistry;

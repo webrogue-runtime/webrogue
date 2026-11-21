@@ -2,14 +2,20 @@ mod host;
 mod vfs_host;
 mod wrapp;
 
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    cell::RefCell,
+    collections::BTreeMap,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::HtmlCanvasElement;
+use web_sys::{
+    Element, HtmlCanvasElement, ImageBitmap, ImageBitmapRenderingContext, MessageEvent, MessagePort,
+};
 use webrogue_gfx::System;
 use webrogue_gfx_winit::{ProxiedWinitBuilder, WindowRegistry, WinitProxy};
 use winit::{
@@ -24,9 +30,115 @@ use crate::wrapp::SharedArchive;
 
 static INITIALIZED: AtomicBool = AtomicBool::new(false);
 
+/// Size used for a canvas whose container has not been laid out yet.
+const DEFAULT_CANVAS_WIDTH: u32 = 960;
+const DEFAULT_CANVAS_HEIGHT: u32 = 720;
+
 pub(crate) static SYSTEM: Mutex<Option<System>> = Mutex::new(None);
 
 static ARCHIVE: Mutex<Option<SharedArchive>> = Mutex::new(None);
+
+thread_local! {
+    /// Canvases of live windows, keyed by the id stored in the corresponding
+    /// `HostWindow`.
+    ///
+    /// Each window needs its own canvas: a canvas can only have one kind of
+    /// rendering context, and software windows use a 2D context while WebGPU
+    /// windows use a `bitmaprenderer` context.
+    static CANVASES: RefCell<BTreeMap<u32, HtmlCanvasElement>> = RefCell::new(BTreeMap::new());
+    /// Main-thread end of the channel that the guest worker uses to send
+    /// WebGPU frames and canvas lifecycle messages.
+    static WEBGPU_PORT: RefCell<Option<MessagePort>> = const { RefCell::new(None) };
+}
+
+fn message_canvas_id(data: &JsValue) -> Option<u32> {
+    js_sys::Reflect::get(data, &JsValue::from_str("canvas"))
+        .ok()?
+        .as_f64()
+        .map(|id| id as u32)
+}
+
+fn message_kind(data: &JsValue) -> Option<String> {
+    js_sys::Reflect::get(data, &JsValue::from_str("kind"))
+        .ok()?
+        .as_string()
+}
+
+/// Receives frames and canvas lifecycle messages from the guest worker.
+fn install_webgpu_port(port: &MessagePort) {
+    let onmessage = Closure::<dyn FnMut(MessageEvent)>::new(|event: MessageEvent| {
+        let data = event.data();
+        let Some(kind) = message_kind(&data) else {
+            return;
+        };
+        match kind.as_str() {
+            // The guest finished rendering a frame. Show it on the window canvas.
+            "frame" => {
+                let Some(canvas_id) = message_canvas_id(&data) else {
+                    return;
+                };
+                let Ok(bitmap) = js_sys::Reflect::get(&data, &JsValue::from_str("bitmap")) else {
+                    return;
+                };
+                if !bitmap.is_instance_of::<ImageBitmap>() {
+                    return;
+                }
+                let bitmap: ImageBitmap = bitmap.unchecked_into();
+                CANVASES.with(|canvases| {
+                    let canvases = canvases.borrow();
+                    let Some(canvas) = canvases.get(&canvas_id) else {
+                        return;
+                    };
+                    // `transferFromImageBitmap` replaces the canvas bitmap but
+                    // keeps the `width`/`height` attributes, so the canvas
+                    // would clip (or stretch) frames rendered at another size.
+                    // Keep the backing store in sync with the guest instead.
+                    // The CSS size stays independent: the canvas fills its
+                    // container.
+                    let (width, height) = (bitmap.width(), bitmap.height());
+                    if canvas.width() != width || canvas.height() != height {
+                        canvas.set_width(width);
+                        canvas.set_height(height);
+                    }
+                    let Ok(Some(context)) = canvas.get_context("bitmaprenderer") else {
+                        return;
+                    };
+                    let Ok(context) = context.dyn_into::<ImageBitmapRenderingContext>() else {
+                        return;
+                    };
+                    context.transfer_from_image_bitmap(&bitmap);
+                });
+            }
+            // The window was closed. Drop its canvas so a later window gets a
+            // fresh element that can use a different kind of context.
+            "drop" => {
+                let Some(canvas_id) = message_canvas_id(&data) else {
+                    return;
+                };
+                CANVASES.with(|canvases| {
+                    let canvas = canvases.borrow_mut().remove(&canvas_id);
+                    if let Some(canvas) = canvas
+                        && let Some(parent) = canvas.parent_node()
+                    {
+                        let _ = parent.remove_child(&canvas);
+                    }
+                });
+            }
+            _ => {}
+        }
+    });
+    port.set_onmessage(Some(onmessage.as_ref().unchecked_ref()));
+    onmessage.forget();
+}
+
+/// Returns the message port connected to the main thread, for the guest worker.
+///
+/// It is created by the main thread and transferred to the worker as its
+/// payload (see `wasm_thread::Builder::spawn_async`).
+#[wasm_bindgen(js_name = workerPayload)]
+pub fn worker_payload() -> JsValue {
+    wasm_thread::worker_payload()
+}
 
 #[wasm_bindgen]
 extern "C" {
@@ -99,11 +211,83 @@ impl ApplicationHandler for App {
         let builder = builder.with_window_attributes(|window_attributes| {
             let window = web_sys::window().unwrap();
             let document = window.document().unwrap();
+
+            // Every window gets its own canvas. A canvas has a single kind of
+            // rendering context, so sharing one between a software window (2D)
+            // and a WebGPU window (`bitmaprenderer`) would not work.
+            //
+            // The id is owned by the window (see `WinitWindow`), so a native
+            // window that is recreated replaces its canvas under the same id
+            // and the guest's cached id stays valid.
+            let canvas_id = webrogue_gfx_winit::CURRENT_CANVAS_ID.load(Ordering::Relaxed);
             let canvas = document
-                .get_element_by_id("webrogue-runtime-canvas")
+                .create_element("canvas")
                 .unwrap()
                 .dyn_into::<HtmlCanvasElement>()
                 .unwrap();
+            canvas.set_id(&format!("webrogue-canvas-{canvas_id}"));
+            canvas.set_class_name("webrogue-canvas");
+
+            let container = document.get_element_by_id("webrogue-canvases");
+            let parent = container
+                .clone()
+                .or_else(|| document.body().map(|body| body.unchecked_into::<Element>()))
+                .unwrap();
+
+            // The canvas fills its container instead of using a fixed size.
+            // The web backend derives the window size from the canvas' client
+            // size, so this is what makes the guest follow layout changes.
+            //
+            // `height: 100%` only resolves when the container has a height of
+            // its own. Otherwise it falls back to `auto`, and a canvas with
+            // `height: auto` keeps its intrinsic aspect ratio (the ratio of its
+            // `width`/`height` attributes), which would freeze the aspect ratio
+            // of the first frame. Use the viewport height in that case.
+            let has_own_height = container.is_some() && parent.client_height() > 0;
+            let (initial_width, initial_height) = if has_own_height {
+                (
+                    u32::try_from(parent.client_width()).unwrap_or(0),
+                    u32::try_from(parent.client_height()).unwrap_or(0),
+                )
+            } else {
+                let viewport_width = window
+                    .inner_width()
+                    .ok()
+                    .and_then(|value| value.as_f64())
+                    .unwrap_or(0.0);
+                let viewport_height = window
+                    .inner_height()
+                    .ok()
+                    .and_then(|value| value.as_f64())
+                    .unwrap_or(0.0);
+                (viewport_width as u32, viewport_height as u32)
+            };
+            canvas.set_width(if initial_width == 0 {
+                DEFAULT_CANVAS_WIDTH
+            } else {
+                initial_width
+            });
+            canvas.set_height(if initial_height == 0 {
+                DEFAULT_CANVAS_HEIGHT
+            } else {
+                initial_height
+            });
+            let style = canvas.style();
+            let _ = style.set_property("display", "block");
+            let _ = style.set_property("width", "100%");
+            let _ = style.set_property("height", if has_own_height { "100%" } else { "100svh" });
+
+            parent.append_child(&canvas).unwrap();
+
+            CANVASES.with(|canvases| {
+                let previous = canvases.borrow_mut().insert(canvas_id, canvas.clone());
+                // Drop the canvas of a previous incarnation of this window.
+                if let Some(previous) = previous
+                    && let Some(parent) = previous.parent_node()
+                {
+                    let _ = parent.remove_child(&previous);
+                }
+            });
 
             // canvas.transfer_control_to_offscreen().unwrap();
 
@@ -122,6 +306,9 @@ impl ApplicationHandler for App {
         *SYSTEM.lock().unwrap() = Some(system);
 
         let message_channel = web_sys::MessageChannel::new().unwrap();
+        let main_port = message_channel.port1();
+        install_webgpu_port(&main_port);
+        WEBGPU_PORT.with(|slot| *slot.borrow_mut() = Some(main_port));
 
         // {
 

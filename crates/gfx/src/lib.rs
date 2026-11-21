@@ -21,8 +21,13 @@ pub use vulkan_entry::load_vulkan_entry;
 pub use wasmtime::{GFXCtxView, GFXView, add_to_linker};
 
 #[cfg(feature = "wasmtime")]
-pub use wasi_webgpu_wasmtime::{WasiWebGpuCtx, WasiWebGpuCtxView, WasiWebGpuOptions};
+pub use wasi_webgpu_wasmtime::{
+    MpscPollNotifier, WasiWebGpuCtx, WasiWebGpuCtxView, WasiWebGpuOptions,
+    spawn_poll_devices_thread,
+};
 #[cfg(feature = "wasmtime")]
 pub use wgpu_core::global::Global as WGPUGlobal;
+#[cfg(feature = "wasmtime")]
+pub use wgpu_core::id::SurfaceId as WGPUSurfaceId;
 #[cfg(feature = "wasmtime")]
 pub use wgpu_types::InstanceDescriptor as WGPUInstanceDescriptor;

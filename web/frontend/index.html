@@ -28,9 +28,21 @@
         font-weight: 600;
       }
 
-      #webrogue-runtime-canvas {
-        width: min(100%, 960px);
-        aspect-ratio: 4 / 3;
+      #webrogue-canvases {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        width: 100%;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      .webrogue-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
         background: #000;
         border: 1px solid #2c2c34;
         border-radius: 0.5rem;
@@ -80,7 +92,7 @@
   <body>
     <h1>Webrogue</h1>
 
-    <canvas id="webrogue-runtime-canvas" width="960" height="720"></canvas>
+    <div id="webrogue-canvases"></div>
 
     <div id="controls">
       <label class="file">

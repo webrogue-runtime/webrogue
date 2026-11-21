@@ -3,21 +3,25 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json && npm run build:guest-runner",
+    "build": "npm run build:wasi-gfx-shim && tsc -p tsconfig.json && npm run build:guest-runner",
     "build:runtime": "cd ../.. && cargo +nightly --config web/.cargo/config.toml build -p webrogue-web-runtime --target wasm32-unknown-unknown --release && wasm-bindgen --target web --out-dir web/frontend/generated/runtime --out-name webrogue_web_runtime target/wasm32-unknown-unknown/release/webrogue_web_runtime.wasm",
     "build:guest-runner": "esbuild src/guest-runner.ts --bundle --format=esm --target=es2022 --platform=browser --external:node:fs/promises --outfile=dist/guest-runner.js && cp node_modules/@bytecodealliance/jco-transpile/vendor/*.wasm dist/",
-    "build:runtime-dist": "npm run build:runtime && rm -rf runtime_dist && esbuild src/runtime-worker.ts --bundle --format=esm --target=es2022 --platform=browser --external:node:fs/promises --outfile=runtime_dist/runtime-worker.js && cp generated/runtime/webrogue_web_runtime.js generated/runtime/webrogue_web_runtime.d.ts generated/runtime/webrogue_web_runtime_bg.wasm node_modules/@bytecodealliance/jco-transpile/vendor/*.wasm runtime_dist/",
-    "check:imports": "npm run check:imports:runtime && npm run check:imports:generate && npm run check:imports:typecheck",
+    "build:runtime-dist": "npm run build:wasi-gfx-shim && npm run build:runtime && rm -rf runtime_dist && esbuild src/runtime-worker.ts --bundle --format=esm --target=es2022 --platform=browser --external:node:fs/promises --outfile=runtime_dist/runtime-worker.js && cp generated/runtime/webrogue_web_runtime.js generated/runtime/webrogue_web_runtime.d.ts generated/runtime/webrogue_web_runtime_bg.wasm node_modules/@bytecodealliance/jco-transpile/vendor/*.wasm runtime_dist/",
+    "build:wasi-gfx-shim": "node -e \"require('node:fs').rmSync('generated/wasi-gfx-shim', { recursive: true, force: true })\" && node node_modules/typescript-shim/bin/tsc -p tsconfig.wasi-gfx-shim.json && cp -r ../../external/wasi-gfx-shim/types generated/wasi-gfx-shim/",
+    "check:imports": "npm run check:imports:runtime && npm run build:wasi-gfx-shim && npm run check:imports:generate && npm run check:imports:typecheck",
     "check:imports:runtime": "cd ../.. && cargo +nightly --config web/.cargo/config.toml build -p webrogue-web-runtime --target wasm32-unknown-unknown && wasm-bindgen --target web --out-dir web/frontend/generated/runtime-check --out-name webrogue_web_runtime target/wasm32-unknown-unknown/debug/webrogue_web_runtime.wasm",
-    "check:imports:generate": "node -e \"require('node:fs').rmSync('generated/example-imports', { recursive: true, force: true })\" && jco transpile ../../webrogue-sdk/examples/sdl_woodeneye/build/woodeneye -o generated/example-imports --name main --instantiation async --async-mode jspi --no-component-error-wrapping --no-nodejs-compat --base64-cutoff 5000 --bindgen-enable-wasm-exnref",
+    "check:imports:generate": "node -e \"require('node:fs').rmSync('generated/example-imports', { recursive: true, force: true })\" && jco transpile ../../webrogue-sdk/examples/webgpu/build/main -o generated/example-imports --name main --instantiation async --async-mode jspi --no-component-error-wrapping --no-nodejs-compat --base64-cutoff 5000 --bindgen-enable-wasm-exnref",
     "check:imports:typecheck": "tsc -p tsconfig.check.json",
     "dev": "npm run build && node serve.mjs",
     "start": "npm run dev"
   },
   "devDependencies": {
     "@bytecodealliance/jco": "^1.40.0",
+    "@webgpu/types": "0.1.71",
     "esbuild": "^0.25.12",
-    "typescript": "^7.0.2"
+    "type-fest": "5.8.0",
+    "typescript": "^7.0.2",
+    "typescript-shim": "npm:typescript@5.8.3"
   },
   "dependencies": {
     "@bytecodealliance/preview3-shim": "^0.13.0"

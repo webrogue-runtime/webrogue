@@ -42,7 +42,7 @@ impl WindowRegistry {
 
     pub(crate) fn notify_surface_lost(&self) {
         for window in self.windows_by_winit_id.values() {
-            if window.surface_data.vk_id().is_some() {
+            if window.surface_data.needs_surface_lost_event() {
                 window.event_sink.push_critical_event(Event::SurfaceLost);
             }
         }

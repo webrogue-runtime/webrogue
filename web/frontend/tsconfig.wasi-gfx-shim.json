@@ -1,0 +1,36 @@
+{
+  // Builds the wasi-gfx shim from `external/wasi-gfx-shim` into `generated`.
+  //
+  // The shim is a submodule whose sources are written against its own tsconfig
+  // (no `verbatimModuleSyntax`, `@webgpu/types` globals), so it cannot be part
+  // of the frontend program. Compiling it separately keeps the frontend's
+  // compiler options intact and gives `guest-runner.ts` a JavaScript module
+  // with declarations to import.
+  //
+  // This runs with the TypeScript version pinned by the shim (`typescript-shim`
+  // in package.json). TypeScript 7 ships WebGPU declarations in `lib.dom` that
+  // conflict with the `@webgpu/types` revision the shim is written against.
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.AsyncIterable"],
+    "types": ["@webgpu/types"],
+    // The shim's own `node_modules` is not installed; resolve the type-only
+    // dependency from the frontend's.
+    "paths": {
+      "type-fest": ["./node_modules/type-fest/index.d.ts"]
+    },
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "skipLibCheck": true,
+    "rootDir": "../../external/wasi-gfx-shim",
+    "outDir": "generated/wasi-gfx-shim",
+    "declaration": true
+  },
+  "include": ["../../external/wasi-gfx-shim/src/**/*.ts"]
+}

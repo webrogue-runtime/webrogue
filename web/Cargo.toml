@@ -24,9 +24,13 @@ web-sys = { workspace = true, features = [
     "HtmlCanvasElement",
     "OffscreenCanvas",
     "HtmlElement",
+    "ImageBitmap",
+    "ImageBitmapRenderingContext",
+    "MessageChannel",
+    "MessageEvent",
+    "MessagePort",
     "Response",
     "Window",
-    "MessageChannel",
 ] }
 webrogue-common = { workspace = true }
 webrogue-gfx = { workspace = true, default-features = false, features = ["web"] }

@@ -27,12 +27,25 @@ pub trait AbstractWindow: Send + Sync {
     fn get_logical_size(&self) -> (u32, u32);
     fn get_physical_size(&self) -> (u32, u32);
     fn get_vk_id(&self) -> Option<u32>;
+    // Id of the window's DOM canvas, only used by the web runtime
+    fn webgpu_canvas_id(&self) -> u32 {
+        0
+    }
     fn present_pixels(&self, pixels: &[u32]) -> anyhow::Result<bool>;
     fn get_event_stream(&self) -> EventStream;
     /// Returns false if failed
     fn set_mouse_grab(&self, enabled: bool) -> bool;
+    #[cfg(feature = "wasmtime")]
+    fn create_webgpu_surface(
+        &self,
+        instance: &Arc<crate::WGPUGlobal>,
+    ) -> anyhow::Result<crate::WGPUSurfaceId> {
+        let _ = instance;
+        anyhow::bail!("this window does not support WebGPU")
+    }
 }
 
+#[derive(Clone)]
 pub struct Window(pub(crate) Arc<dyn AbstractWindow>);
 
 impl Window {
@@ -52,6 +65,10 @@ impl Window {
         self.0.get_vk_id()
     }
 
+    pub fn webgpu_canvas_id(&self) -> u32 {
+        self.0.webgpu_canvas_id()
+    }
+
     pub fn present_pixels(&self, pixels: &[u32]) -> anyhow::Result<bool> {
         self.0.present_pixels(pixels)
     }
@@ -64,10 +81,19 @@ impl Window {
     pub fn set_mouse_grab(&self, enabled: bool) -> bool {
         self.0.set_mouse_grab(enabled)
     }
+
+    #[cfg(feature = "wasmtime")]
+    pub fn create_webgpu_surface(
+        &self,
+        instance: &Arc<crate::WGPUGlobal>,
+    ) -> anyhow::Result<crate::WGPUSurfaceId> {
+        self.0.create_webgpu_surface(instance)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SurfaceKind {
     Software,
     Vulkan,
+    WebGPU,
 }

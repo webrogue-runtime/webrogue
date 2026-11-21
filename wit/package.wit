@@ -8,6 +8,8 @@ world webrogue-gfx-world {
     import webrogue:gfx/windowing;
     import webrogue:gfx/vulkan;
     import webrogue:gfx/cpu-rendering;
+    import webrogue:gfx/windowing-webgpu;
+    // import wasi:webgpu/webgpu@0.3.0-rc.2;
     import webrogue:gfx/device-info;
 }
 

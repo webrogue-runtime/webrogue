@@ -7,6 +7,8 @@ struct HostWindow {
     window: Window,
     events: EventStream,
     last_size: Option<(u32, u32)>,
+    /// Canvas created for this window by `can_create_surfaces`.
+    webgpu_canvas_id: u32,
 }
 
 thread_local! {
@@ -34,6 +36,7 @@ fn parse_surface_kind(surface_kind: &str) -> Result<SurfaceKind, JsValue> {
     match surface_kind {
         "software" => Ok(SurfaceKind::Software),
         "vulkan" => Ok(SurfaceKind::Vulkan),
+        "webgpu" => Ok(SurfaceKind::WebGPU),
         other => Err(JsValue::from_str(&format!("unknown surface kind: {other}"))),
     }
 }
@@ -44,6 +47,7 @@ pub fn gfx_make_window(surface_kind: &str) -> Result<u32, JsValue> {
     let window = system()
         .make_window(surface_kind)
         .map_err(|error| JsValue::from_str(&format!("{error:#}")))?;
+    let webgpu_canvas_id = window.webgpu_canvas_id();
     let events = window.get_event_stream();
     let handle = NEXT_HANDLE.with(|next| {
         let mut next = next.borrow_mut();
@@ -58,6 +62,7 @@ pub fn gfx_make_window(surface_kind: &str) -> Result<u32, JsValue> {
                 window,
                 events,
                 last_size: None,
+                webgpu_canvas_id,
             },
         );
     });
@@ -66,9 +71,36 @@ pub fn gfx_make_window(surface_kind: &str) -> Result<u32, JsValue> {
 
 #[wasm_bindgen(js_name = gfxDropWindow)]
 pub fn gfx_drop_window(handle: u32) {
-    WINDOWS.with(|windows| {
-        windows.borrow_mut().remove(&handle);
+    let canvas_id = WINDOWS.with(|windows| {
+        windows
+            .borrow_mut()
+            .remove(&handle)
+            .map(|host| host.webgpu_canvas_id)
     });
+    if let Some(canvas_id) = canvas_id {
+        // The canvas lives on the main thread; remove it there so that a later
+        // window can create a fresh canvas with a different context type.
+        let Ok(port) = wasm_thread::worker_payload().dyn_into::<web_sys::MessagePort>() else {
+            return;
+        };
+        let message = js_sys::Object::new();
+        let _ = js_sys::Reflect::set(
+            &message,
+            &JsValue::from_str("kind"),
+            &JsValue::from_str("drop"),
+        );
+        let _ = js_sys::Reflect::set(
+            &message,
+            &JsValue::from_str("canvas"),
+            &JsValue::from(canvas_id),
+        );
+        let _ = port.post_message(&message);
+    }
+}
+
+#[wasm_bindgen(js_name = gfxWindowWebgpuCanvasId)]
+pub fn gfx_window_webgpu_canvas_id(handle: u32) -> u32 {
+    with_window(handle, |host| host.webgpu_canvas_id).unwrap_or(u32::MAX)
 }
 
 #[wasm_bindgen(js_name = gfxWindowPhysicalSize)]

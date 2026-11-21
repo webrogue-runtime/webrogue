@@ -9,3 +9,5 @@
 /vk_swiftshader.dll
 /.hub_storage
 __pycache__/
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

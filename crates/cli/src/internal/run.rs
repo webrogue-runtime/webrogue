@@ -68,7 +68,10 @@ struct HeadlessSystem {
 
 impl AbstractSystem for HeadlessSystem {
     fn make_window(&self, surface_kind: SurfaceKind) -> anyhow::Result<Window> {
-        assert!(matches!(surface_kind, SurfaceKind::Software));
+        anyhow::ensure!(
+            matches!(surface_kind, SurfaceKind::Software),
+            "headless windows only support software rendering"
+        );
         Ok(Window::new(Arc::new(HeadlessWindow {
             width: self.width,
             height: self.height,

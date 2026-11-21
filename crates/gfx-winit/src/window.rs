@@ -24,6 +24,16 @@ use crate::{
 type WindowHandle = Arc<Box<dyn Window>>;
 type SoftbufferSurface = softbuffer::Surface<WindowHandle, WindowHandle>;
 
+/// Id of the canvas that the window attributes callback should use for the
+/// window that is currently being created.
+///
+/// The callback does not receive the window, so `create_native_window` stores
+/// the id here right before invoking it. On the web the callback creates or
+/// replaces the DOM canvas with this id (see the web runtime), which keeps the
+/// id stable when a native window is recreated.
+#[cfg(target_arch = "wasm32")]
+pub static CURRENT_CANVAS_ID: AtomicU32 = AtomicU32::new(0);
+
 fn softbuffer_error(err: SoftBufferError) -> anyhow::Error {
     anyhow::anyhow!("{}", err)
 }
@@ -37,14 +47,21 @@ pub(crate) enum SurfaceData {
     Software(Mutex<SoftbufferSurface>),
     /// Id used by the guest to address this window in Vulkan surface creation.
     Vulkan(u32),
+    /// The guest creates the WebGPU surface itself through
+    /// `webrogue:gfx/windowing-webgpu`.
+    WebGPU,
 }
 
 impl SurfaceData {
     pub(crate) fn vk_id(&self) -> Option<u32> {
         match self {
             Self::Vulkan(vk_window_id) => Some(*vk_window_id),
-            Self::Software(_) => None,
+            Self::Software(_) | Self::WebGPU => None,
         }
+    }
+
+    pub(crate) fn needs_surface_lost_event(&self) -> bool {
+        matches!(self, Self::Vulkan(_) | Self::WebGPU)
     }
 }
 
@@ -56,12 +73,19 @@ impl SurfaceData {
 #[derive(Default)]
 pub(crate) struct WindowList {
     next_vk_id: AtomicU32,
+    #[cfg(target_arch = "wasm32")]
+    next_canvas_id: AtomicU32,
     windows: Mutex<Vec<Weak<WinitWindow>>>,
 }
 
 impl WindowList {
     pub(crate) fn allocate_vk_id(&self) -> u32 {
         self.next_vk_id.fetch_add(1, Ordering::Relaxed)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn allocate_canvas_id(&self) -> u32 {
+        self.next_canvas_id.fetch_add(1, Ordering::Relaxed)
     }
 
     pub(crate) fn register(&self, window: &Arc<WinitWindow>) {
@@ -96,7 +120,10 @@ pub struct WinitWindowInternal {
 pub struct WinitWindow {
     pub(crate) window_id: Arc<Mutex<Option<WindowId>>>,
     pub(crate) mailbox: Mailbox,
+    surface_kind: SurfaceKind,
     vk_window_id: Option<u32>,
+    /// Id of this window's DOM canvas (web only; always 0 elsewhere).
+    canvas_id: u32,
     pub(crate) event_sink: Arc<EventSink>,
     window_attributes_fn: Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
     has_native_window: AtomicBool,
@@ -116,12 +143,18 @@ impl WinitWindow {
         let event_sink = Arc::new(EventSink::new());
         let vk_window_id = match surface_kind {
             SurfaceKind::Vulkan => Some(windows.allocate_vk_id()),
-            SurfaceKind::Software => None,
+            SurfaceKind::Software | SurfaceKind::WebGPU => None,
         };
+        #[cfg(target_arch = "wasm32")]
+        let canvas_id = windows.allocate_canvas_id();
+        #[cfg(not(target_arch = "wasm32"))]
+        let canvas_id = 0;
         let window = Arc::new(Self {
             window_id: Arc::new(Mutex::new(None)),
             mailbox: mailbox.clone(),
+            surface_kind,
             vk_window_id,
+            canvas_id,
             event_sink,
             window_attributes_fn,
             has_native_window: AtomicBool::new(false),
@@ -163,6 +196,11 @@ impl WinitWindow {
             return Ok(());
         }
 
+        // The attributes callback cannot see the window, so publish the canvas
+        // id it should use for this native window. Recreating a native window
+        // reuses the id, and the callback replaces the canvas element.
+        #[cfg(target_arch = "wasm32")]
+        CURRENT_CANVAS_ID.store(self.canvas_id, Ordering::Relaxed);
         let mut window_attributes = WindowAttributes::default();
         if let Some(window_attributes_fn) = &self.window_attributes_fn {
             window_attributes = window_attributes_fn(window_attributes);
@@ -181,9 +219,15 @@ impl WinitWindow {
         );
         // image::buffer::native_window
         //     .set_window_icon(winit::icon::RgbaIcon::new(rgba, width, height));
-        let surface_data = match self.vk_window_id {
-            Some(vk_window_id) => SurfaceData::Vulkan(vk_window_id),
-            None => SurfaceData::Software(Mutex::new(create_softbuffer_surface(&native_window)?)),
+        let surface_data = match self.surface_kind {
+            SurfaceKind::Vulkan => SurfaceData::Vulkan(
+                self.vk_window_id
+                    .expect("Vulkan windows always have a Vulkan window id"),
+            ),
+            SurfaceKind::Software => {
+                SurfaceData::Software(Mutex::new(create_softbuffer_surface(&native_window)?))
+            }
+            SurfaceKind::WebGPU => SurfaceData::WebGPU,
         };
         let window_id = native_window.id();
         window_registry.add_window(
@@ -209,6 +253,10 @@ impl WinitWindow {
 }
 
 impl webrogue_gfx::AbstractWindow for WinitWindow {
+    fn webgpu_canvas_id(&self) -> u32 {
+        self.canvas_id
+    }
+
     fn get_logical_size(&self) -> (u32, u32) {
         if !self.mailbox.surfaces_available() {
             return (0, 0);
@@ -313,6 +361,41 @@ impl webrogue_gfx::AbstractWindow for WinitWindow {
                 false
             }
         })
+    }
+
+    #[cfg(all(feature = "wasmtime"))]
+    fn create_webgpu_surface(
+        &self,
+        instance: &Arc<webrogue_gfx::WGPUGlobal>,
+    ) -> anyhow::Result<webrogue_gfx::WGPUSurfaceId> {
+        use winit::raw_window_handle::{HasDisplayHandle as _, HasWindowHandle as _};
+
+        let Some(window_id) = *self.window_id.lock().unwrap() else {
+            anyhow::bail!("window has no native window");
+        };
+        let instance = instance.clone();
+        self.mailbox.execute_with_surfaces(
+            Err(anyhow::anyhow!("native window is not available")),
+            move |_, window_registry| {
+                let window = window_registry
+                    .get_window_by_winit_id(window_id)
+                    .ok_or_else(|| anyhow::anyhow!("window is not registered"))?;
+                let native_window = window.window.as_ref().as_ref();
+                let display_handle = native_window.display_handle()?;
+                let window_handle = native_window.window_handle()?;
+                // SAFETY: both handles belong to the native window, which stays
+                // alive as long as the window is registered. The guest drops
+                // the surface together with its WebGPU context.
+                let surface_id = unsafe {
+                    instance.instance_create_surface(
+                        Some(display_handle.as_raw()),
+                        window_handle.as_raw(),
+                        None,
+                    )
+                }?;
+                Ok(surface_id)
+            },
+        )
     }
 }
 

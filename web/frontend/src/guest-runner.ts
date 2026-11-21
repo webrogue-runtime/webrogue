@@ -14,6 +14,10 @@ import * as clocks from "@bytecodealliance/preview3-shim/clocks";
 import * as filesystem from "@bytecodealliance/preview3-shim/filesystem";
 import * as random from "@bytecodealliance/preview3-shim/random";
 
+import * as webgpu from "../generated/wasi-gfx-shim/src/webgpu.js";
+import { Context as SurfaceWebgpuContext } from "../generated/wasi-gfx-shim/src/surface-webgpu.js";
+import type { Surface } from "../generated/wasi-gfx-shim/src/surface-webgpu.js";
+
 const symbolDispose = Symbol.dispose || Symbol.for('dispose');
 
 export type RuntimeHost = {
@@ -22,6 +26,7 @@ export type RuntimeHost = {
   gfxWindowPhysicalSize(handle: number): Uint32Array;
   gfxWindowLogicalSize(handle: number): Uint32Array;
   gfxWindowVulkanId(handle: number): number;
+  gfxWindowWebgpuCanvasId(handle: number): number;
   gfxWindowNextEvent(handle: number): Promise<unknown | undefined>;
   gfxWindowSetMouseGrab(handle: number, enabled: boolean): boolean;
   gfxPresentPixels(handle: number, pixels: Uint32Array): void;
@@ -34,6 +39,8 @@ export type RuntimeHost = {
   vfsChildren(
     handle: number,
   ): { name: string; directory: boolean }[] | { err: string };
+  /** Message port connected to the main thread. */
+  workerPayload(): MessagePort;
 };
 
 declare const webrogueWorker: RuntimeHost;
@@ -96,6 +103,16 @@ class Window {
     return webrogueWorker.gfxWindowVulkanId(windowHandle(this));
   }
 
+  /**
+   * Id of the main-thread canvas that displays this window's WebGPU frames.
+   *
+   * Not part of the WIT interface: `windowing-webgpu` uses it to address the
+   * window canvas when the guest runs in a worker.
+   */
+  webgpuCanvasId(): number {
+    return webrogueWorker.gfxWindowWebgpuCanvasId(windowHandle(this));
+  }
+
   setMouseGrab(enabled: boolean): { tag: "ok" | "err"; val: undefined } {
     const ok = webrogueWorker.gfxWindowSetMouseGrab(
       windowHandle(this),
@@ -128,7 +145,7 @@ class Window {
   }
 }
 
-export type SurfaceKind = "software" | "vulkan";
+export type SurfaceKind = "software" | "vulkan" | "webgpu";
 
 export const windowing = {
   Window,
@@ -141,6 +158,62 @@ export const cpuRendering = {
   presentPixels(window: object, pixels: Uint32Array): void {
     webrogueWorker.gfxPresentPixels(windowHandle(window), pixels);
   },
+};
+
+/**
+ * WebGPU surface of a window.
+ *
+ * The guest runs in a worker, so it cannot use the window's DOM canvas
+ * directly. It renders into an `OffscreenCanvas` instead and transfers the
+ * resulting `ImageBitmap` to the main thread, which displays it on the window
+ * canvas (see `install_webgpu_port` in the runtime).
+ */
+class WebgpuContext extends SurfaceWebgpuContext {
+  #canvas: OffscreenCanvas;
+  #window: Window;
+  #port: MessagePort;
+
+  constructor(window: Window) {
+    const [width, height] = window.getPhysicalSize();
+    const canvas = new OffscreenCanvas(Math.max(width, 1), Math.max(height, 1));
+    // `SurfaceWebgpuContext` only uses `canvas`; the rest of the surface (DOM
+    // element, input events) stays on the main thread.
+    super({ canvas } as unknown as Surface);
+    this.#canvas = canvas;
+    this.#window = window;
+    this.#port = webrogueWorker.workerPayload();
+  }
+
+  override configure(
+    configuration: Parameters<SurfaceWebgpuContext["configure"]>[0],
+  ): void {
+    const [width, height] = this.#window.getPhysicalSize();
+    if (
+      width !== 0 &&
+      height !== 0 &&
+      (this.#canvas.width !== width || this.#canvas.height !== height)
+    ) {
+      this.#canvas.width = width;
+      this.#canvas.height = height;
+    }
+    super.configure(configuration);
+  }
+
+  override present(): void {
+    const bitmap = this.#canvas.transferToImageBitmap();
+    this.#port.postMessage(
+      {
+        kind: "frame",
+        canvas: this.#window.webgpuCanvasId(),
+        bitmap,
+      },
+      [bitmap],
+    );
+  }
+}
+
+export const windowingWebgpu = {
+  Context: WebgpuContext,
 };
 
 export const deviceInfo = {
@@ -360,7 +433,9 @@ type ImportObject = Record<string, unknown>;
 function buildImports(): ImportObject {
   const imports: ImportObject = {
     ...wasiImports,
+    "wasi:webgpu/webgpu": webgpu,
     "webrogue:gfx/windowing": windowing,
+    "webrogue:gfx/windowing-webgpu": windowingWebgpu,
     "webrogue:gfx/cpu-rendering": cpuRendering,
     "webrogue:gfx/device-info": deviceInfo,
     "webrogue:gfx/vulkan": vulkan,
