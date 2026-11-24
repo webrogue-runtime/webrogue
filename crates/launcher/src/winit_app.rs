@@ -27,14 +27,14 @@ struct LauncherConfigImpl {
 
 impl LauncherConfigImpl {
     fn new(
-        storage_path: PathBuf,
         gfx_system: webrogue_gfx::System,
         event_loop_proxy: EventLoopProxy,
         launch_finish_indicator: Arc<Mutex<Option<()>>>,
     ) -> Self {
+        let storage_path = webrogue_common::cli_dir(true);
         Self {
             storage_path: storage_path.clone(),
-            hub_debuggee: HubDebuggee::new(storage_path.clone(), gfx_system),
+            hub_debuggee: HubDebuggee::new(storage_path, gfx_system),
             event_loop_proxy,
             launch_finish_indicator,
         }
@@ -81,7 +81,6 @@ pub struct App {
     as_child: bool,
     #[cfg(target_os = "linux")]
     should_quit: Arc<AtomicBool>,
-    storage_path: std::path::PathBuf,
     proxies: Arc<Mutex<Vec<WinitProxy>>>,
     window_registry: WindowRegistry,
     launch_finish_indicator: Arc<Mutex<Option<()>>>,
@@ -90,7 +89,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(as_child: bool, storage_path: std::path::PathBuf) -> Self {
+    pub fn new(as_child: bool) -> Self {
         Self {
             window: None,
             webview: None,
@@ -98,7 +97,6 @@ impl App {
             as_child,
             #[cfg(target_os = "linux")]
             should_quit: Arc::new(AtomicBool::new(false)),
-            storage_path,
             proxies: Arc::new(Mutex::new(Vec::new())),
             window_registry: WindowRegistry::new(),
             launch_finish_indicator: Arc::new(Mutex::new(None)),
@@ -143,7 +141,6 @@ impl ApplicationHandler for App {
             &window,
             self.as_child,
             Arc::new(LauncherConfigImpl::new(
-                self.storage_path.clone(),
                 gfx_system,
                 event_loop.create_proxy(),
                 self.launch_finish_indicator.clone(),

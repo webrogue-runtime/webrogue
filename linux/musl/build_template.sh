@@ -1,7 +1,7 @@
 cd $(dirname $(dirname $0))
 set -ex
 
-OUT_DIR="../aot_artifacts/$ARCH-linux-musl"
+OUT_DIR="../aot_artifacts/linux-${ARCH}cpu-musllibc"
 rm -rf "$OUT_DIR"
 
 export NUM_JOBS=$(($(nproc) + 2))

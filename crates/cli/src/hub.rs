@@ -16,11 +16,7 @@ pub enum HubCommand {
     /// You can send a WRAPP from a remote device to run here.
     /// This allows to debug remotely.
     #[cfg(feature = "hub-run")]
-    HostRunner {
-        /// Path to a directory that Webrogue will use for it's needs,
-        /// such as providing persistent storage to WRAPPs or storing device UUID.
-        storage: PathBuf,
-    },
+    HostRunner,
     /// Debug remotely
     Debug {
         /// Path to WRAPP to be debugged
@@ -42,14 +38,13 @@ impl HubCommand {
     pub fn run(&self) -> anyhow::Result<()> {
         match self {
             #[cfg(feature = "hub-run")]
-            HubCommand::HostRunner { storage } => {
+            HubCommand::HostRunner => {
                 let gfx_builder =
                     webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?;
-                let storage = storage.clone();
                 gfx_builder.run(
                     move |system| {
                         webrogue_wasmtime::block_on_default_executor(async {
-                            crate::hub::runner::host(&storage, &get_api_key()?, system).await?;
+                            crate::hub::runner::host(&get_api_key()?, system).await?;
                             anyhow::Ok(())
                         })
                     },

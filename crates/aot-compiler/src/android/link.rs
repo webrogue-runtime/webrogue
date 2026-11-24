@@ -1,4 +1,7 @@
-use crate::{android::AndroidArch, utils::path_to_arg};
+use crate::{
+    android::AndroidArch,
+    utils::{path_arg, path_arg_nocheck},
+};
 
 pub fn link(
     object_file: &crate::utils::TemporaryFile,
@@ -33,7 +36,7 @@ pub fn link(
 
     args.push("-shared".to_string());
     args.push("-o".to_string());
-    args.push(path_to_arg(output_path)?);
+    args.push(path_arg_nocheck(output_path)?);
     args.push("-z".to_string());
     args.push("max-page-size=16384".to_string());
     args.push("--build-id=sha1".to_string());
@@ -49,7 +52,7 @@ pub fn link(
     args.push("-z".to_string());
     args.push("noexecstack".to_string());
 
-    args.push(object_file.as_arg()?);
+    args.push(path_arg(object_file.path())?);
 
     crate::utils::run_lld(args)
 }

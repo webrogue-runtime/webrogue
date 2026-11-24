@@ -1728,15 +1728,6 @@ dependencies = [
 
 [[package]]
 name = "dirs"
-version = "6.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3e8aa94d75141228480295a7d0e7feb620b1a5ad9f12bc40be62411e38cce4e"
-dependencies = [
- "dirs-sys",
-]
-
-[[package]]
-name = "dirs"
 version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d57d423b3c82e89b9a24ca3091fee61f456a26edbd28d26c65906f4bc1dcd8f"
@@ -5170,7 +5161,7 @@ dependencies = [
  "tokio-native-tls",
  "tokio-rustls",
  "tower",
- "tower-http 0.6.11",
+ "tower-http",
  "tower-service",
  "url",
  "wasm-bindgen",
@@ -6836,21 +6827,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tower-http"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b11f75e912b0c2be01b63d8cf8057b8c3f97cf34abb3d431a3a4c8675498e233"
-dependencies = [
- "bitflags 2.13.0",
- "bytes",
- "http",
- "percent-encoding",
- "pin-project-lite",
- "tower-layer",
- "tower-service",
-]
-
-[[package]]
 name = "tower-layer"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7972,7 +7948,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -7983,7 +7959,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-android"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "android-activity",
  "android_logger",
@@ -8008,7 +7984,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-android-launcher"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "android-activity",
  "android_logger",
@@ -8032,7 +8008,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-aot-compiler"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -8055,14 +8031,13 @@ dependencies = [
 
 [[package]]
 name = "webrogue-aot-data"
-version = "0.2.0"
+version = "0.3.0"
 
 [[package]]
 name = "webrogue-aot-lib"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
- "dirs 6.0.0",
  "webrogue-common",
  "webrogue-gfx",
  "webrogue-gfx-winit",
@@ -8074,7 +8049,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8097,6 +8072,7 @@ dependencies = [
  "wasm-opt",
  "webrogue-aot-compiler",
  "webrogue-cli-goodies",
+ "webrogue-common",
  "webrogue-gfx",
  "webrogue-gfx-winit",
  "webrogue-hub-client",
@@ -8111,7 +8087,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-cli-goodies"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -8121,11 +8097,14 @@ dependencies = [
 
 [[package]]
 name = "webrogue-common"
-version = "0.2.0"
+version = "0.3.0"
+dependencies = [
+ "dirs",
+]
 
 [[package]]
 name = "webrogue-debugger"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8139,14 +8118,14 @@ dependencies = [
 
 [[package]]
 name = "webrogue-events"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
 ]
 
 [[package]]
 name = "webrogue-events-apigen"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -8157,7 +8136,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-events-macro"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "proc-macro2",
@@ -8167,7 +8146,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-gfx"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "ash",
@@ -8186,7 +8165,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-gfx-winit"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "ash",
@@ -8203,7 +8182,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-hub-client"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8234,7 +8213,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-hub-debuggee"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8257,7 +8236,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-icons"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "ico",
@@ -8269,7 +8248,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-ios"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "webrogue-gfx",
@@ -8283,7 +8262,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-launcher"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8308,9 +8287,10 @@ dependencies = [
  "tokio-stream",
  "tokio-tungstenite",
  "tokio-util",
- "tower-http 0.7.0",
+ "tower-http",
  "tower-service",
  "tracing",
+ "webrogue-common",
  "webrogue-gfx",
  "webrogue-gfx-winit",
  "webrogue-hub-client",
@@ -8326,7 +8306,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-launcher-dev"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "gtk",
  "tracing",
@@ -8368,11 +8348,11 @@ dependencies = [
 
 [[package]]
 name = "webrogue-licenses"
-version = "0.2.0"
+version = "0.3.0"
 
 [[package]]
 name = "webrogue-lld"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "reqwest",
@@ -8380,7 +8360,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-macos"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "webrogue-gfx",
@@ -8391,7 +8371,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-vfs"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "image",
@@ -8407,7 +8387,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-virgl"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ash",
  "cfg_aliases",
@@ -8421,7 +8401,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-virgl-lib"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bindgen",
  "cc",
@@ -8429,7 +8409,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wasm-processing"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "tempfile",
@@ -8440,7 +8420,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wasmtime"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -8462,7 +8442,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wasmtime-common"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "wasmtime",
 ]
@@ -8491,7 +8471,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wrapp"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "webrogue-common",
@@ -8501,7 +8481,7 @@ dependencies = [
 
 [[package]]
 name = "webrogue-wrapp-reader"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "base64 0.23.1",
@@ -9392,7 +9372,7 @@ dependencies = [
  "block2",
  "cookie",
  "crossbeam-channel",
- "dirs 7.0.0",
+ "dirs",
  "dom_query",
  "dpi",
  "dunce",

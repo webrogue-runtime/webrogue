@@ -12,6 +12,8 @@ run = [
     "dep:webrogue-gfx-winit",
     "dep:webrogue-gfx",
     "dep:webrogue-virgl",
+    "dep:webrogue-common",
+    "webrogue-common/webrogue-dir",
     "webrogue-virgl/lib-impl",
     "dep:tokio",
     "dep:async-trait",
@@ -38,12 +40,14 @@ hub-run = [
     "run",
     "hub",
     "dep:webrogue-hub-debuggee",
+    "dep:webrogue-common",
+    "webrogue-common/webrogue-dir",
 ]
 llvm = [
     "webrogue-aot-compiler?/llvm",
     "dep:webrogue-lld",
 ]
-appended_artifacts = ["webrogue-aot-compiler/appended_artifacts"]
+downloadable-artifacts = ["webrogue-aot-compiler/downloadable-artifacts"]
 __rustls = ["dep:rustls"]
 internal = []
 internal-run = [
@@ -80,6 +84,7 @@ webrogue-aot-compiler = { workspace = true, optional = true }
 webrogue-lld = { workspace = true, optional = true }
 webrogue-hub-client = { workspace = true, optional = true }
 webrogue-hub-debuggee = { workspace = true, optional = true }
+webrogue-common = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["fs", "io-util", "macros", "net", "rt-multi-thread"], optional = true }
 blake3 = { workspace = true, optional = true }
 tokio-tungstenite = { workspace = true, optional = true, features = ["rustls-tls-webpki-roots"] }

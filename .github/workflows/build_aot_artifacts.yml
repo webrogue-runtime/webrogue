@@ -203,25 +203,23 @@ jobs:
 
       - name: Archive artifacts
         run: |
-          cd aot_artifacts && zip -r ../aot_artifacts.zip \
-            android_gradle \
-            x86_64-linux-gnu aarch64-linux-gnu \
-            x86_64-linux-musl aarch64-linux-musl \
-            x86_64-windows-msvc aarch64-windows-msvc \
-            && cd ..
-          cp aot_artifacts.zip aot_artifacts_macos.zip
-          cd aot_artifacts && zip -r ../aot_artifacts_macos.zip apple_xcode && cd ..
+          mkdir aot_artifacts_packed
+          cd aot_artifacts
+          for dir in *
+          do 
+            zip -r ../aot_artifacts_packed/$dir.zip $dir
+          done
 
       - uses: actions/upload-artifact@v7
         with:
           name: AOT-Artifacts
           retention-days: 1
           if-no-files-found: error
-          path: aot_artifacts.zip
+          path: aot_artifacts
 
       - uses: actions/upload-artifact@v7
         with:
-          name: AOT-Artifacts-macOS
+          name: AOT-Artifacts-Packed
           retention-days: 1
           if-no-files-found: error
-          path: aot_artifacts_macos.zip
+          path: aot_artifacts_packed

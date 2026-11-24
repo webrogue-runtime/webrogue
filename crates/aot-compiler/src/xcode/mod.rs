@@ -3,6 +3,8 @@ use std::{fs::File, io::Write as _};
 use webrogue_cli_goodies::step;
 use webrogue_vfs::{ArchiveOptions, VFS, archive_to_file, config::Requirement};
 
+use crate::{aot_artifacts::AotArtifactType, utils::copy_dir_recursive};
+
 mod build;
 mod icons;
 mod object;
@@ -38,8 +40,8 @@ pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
     let vfs = VFS::build_from_path(args.wrapp_path)?;
     let wrapp_config = vfs.config().clone();
 
-    let mut artifacts = crate::utils::Artifacts::new()?;
-    let template_id = artifacts.get_data("apple_xcode/template_id")?;
+    let artifacts_dir = AotArtifactType::Xcode.dir_path()?;
+    let template_id = std::fs::read(artifacts_dir.join("template_id"))?;
 
     let mut old_stamp = read_stamp(args.build_dir).ok();
     let old_config = old_stamp.as_ref().map(|stamp| &stamp.config);
@@ -55,7 +57,7 @@ pub fn run(args: XcodeArgs, command: &XcodeCommands) -> anyhow::Result<()> {
                 anyhow::ensure!(args.build_dir.is_dir(), "build_dir can't be a file");
                 std::fs::remove_dir_all(args.build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
             }
-            artifacts.extract_dir(args.build_dir, "apple_xcode/template")?;
+            copy_dir_recursive(artifacts_dir.join("template"), args.build_dir)?;
 
             for platform in ["macos", "iphoneos", "iphonesimulator"] {
                 let is_vulkan_needed = wrapp_config

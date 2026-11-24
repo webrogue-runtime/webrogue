@@ -24,7 +24,7 @@ impl clap::ValueEnum for LibC {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum LinuxArch {
     X86_64,
     Aarch64,
@@ -37,8 +37,8 @@ impl clap::ValueEnum for LinuxArch {
 
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         match self {
-            Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64")),
-            Self::Aarch64 => Some(clap::builder::PossibleValue::new("aarch64")),
+            Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64").alias("x64")),
+            Self::Aarch64 => Some(clap::builder::PossibleValue::new("aarch64").alias("arm64")),
         }
     }
 }
@@ -120,5 +120,6 @@ pub fn build_linux(
 
         anyhow::Ok(())
     })?;
+
     anyhow::Ok(())
 }

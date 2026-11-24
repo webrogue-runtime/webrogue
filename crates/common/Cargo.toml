@@ -7,5 +7,7 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
+webrogue-dir = ["dep:dirs"]
 
 [dependencies]
+dirs = { workspace = true, optional = true }

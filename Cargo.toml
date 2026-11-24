@@ -30,7 +30,6 @@ full = [
   "hub-run",
   "llvm",
   "wasm-opt",
-  "appended_artifacts",
   "webrogue-cli/no-internal",
 ]
 run = ["webrogue-cli/run"]
@@ -40,9 +39,10 @@ hub-run = ["webrogue-cli/hub-run"]
 llvm = ["webrogue-cli/llvm"]
 wasm-opt = ["webrogue-cli/wasm-opt"]
 
-# to use this feature, you need to process resulting binary 
-# using append_artifacts.py script, so it is disabled by default
-appended_artifacts = ["webrogue-cli/appended_artifacts"]
+# Use crate's version to find matching release on GitHub
+# and download missing artifacts. This must be enabled when
+# for each released CLI binary
+downloadable-artifacts = ["webrogue-cli/downloadable-artifacts"]
 
 # Some internal features
 internal-run = ["webrogue-cli/internal-run"]
@@ -58,7 +58,7 @@ clap = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Artem Borovik"]
 license = "Apache-2.0 WITH LLVM-exception"
 edition = "2024"
@@ -137,7 +137,7 @@ semver = { version = "1", default-features = false }
 postcard = { version = "1", default-features = false }
 quote = { version = "1.0", default-features = false }
 proc-macro2 = { version = "1.0", default-features = false }
-dirs = { version = "6.0.0" }
+dirs = { version = "7.0.0" }
 zip = { version = "9.0", default-features = false }
 libc = { version = "0.2.186", default-features = false }
 lazy_static = { version = "1.5.0" }

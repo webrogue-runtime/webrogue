@@ -48,7 +48,7 @@ impl DebugRunnerConfig {
 
         let task = tokio::task::spawn(async move {
             let config = vfs.config();
-            let persistent_path = storage.join("persistent").join(&config.id);
+            let persistent_path = webrogue_common::wrapp_persistent_dir_path(&storage, &config.id);
             let runtime = webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path);
             let mut runtime = runtime.jit();
             runtime.jit_profile(webrogue_wasmtime::JitProfile::Debug);

@@ -33,7 +33,7 @@ cargo_flags = [
     "build-std",
 ]
 
-out_dir = os.path.join(repo_dir, "aot_artifacts", f"{rust_arch}-windows-msvc")
+out_dir = os.path.join(repo_dir, "aot_artifacts", f"windows-{rust_arch}cpu")
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 

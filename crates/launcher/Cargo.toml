@@ -7,7 +7,15 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
-winit = ["dep:winit", "dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-virgl", "webrogue-virgl/lib-impl"]
+winit = [
+    "dep:winit",
+    "dep:webrogue-wasmtime",
+    "dep:webrogue-gfx-winit",
+    "dep:webrogue-virgl",
+    "webrogue-virgl/lib-impl",
+    "dep:webrogue-common",
+    "webrogue-common/webrogue-dir",
+]
 
 [dependencies]
 wry = { workspace = true, default-features = true }
@@ -34,6 +42,7 @@ serde_json = { workspace = true }
 webrogue-hub-client = { workspace = true }
 blake3 = { workspace = true }
 webrogue-vfs = { workspace = true }
+webrogue-common = { workspace = true, optional = true }
 webrogue-hub-debuggee = { workspace = true }
 webrogue-wasmtime = { workspace = true, features = ["jit"], optional = true }
 webrogue-gfx = { workspace = true }

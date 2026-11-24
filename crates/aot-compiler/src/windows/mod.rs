@@ -3,7 +3,10 @@ use std::io::{Seek as _, Write as _};
 use webrogue_cli_goodies::step;
 use webrogue_vfs::{ArchiveOptions, VFS, archive};
 
-use crate::utils::TemporaryFile;
+use crate::{
+    aot_artifacts::AotArtifactType,
+    utils::{TemporaryFile, path_arg, path_arg_nocheck},
+};
 
 #[derive(Clone, Copy, Debug)]
 pub enum WindowsArch {
@@ -18,8 +21,8 @@ impl clap::ValueEnum for WindowsArch {
 
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         match self {
-            Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64")),
-            Self::AArch64 => Some(clap::builder::PossibleValue::new("aarch64")),
+            Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64").alias("x64")),
+            Self::AArch64 => Some(clap::builder::PossibleValue::new("aarch64").alias("arm64")),
         }
     }
 }
@@ -85,7 +88,6 @@ pub fn build(
         )
     })?;
 
-    let mut artifacts = crate::utils::Artifacts::new()?;
     let build_dir = output_file_path
         .parent()
         .ok_or_else(|| anyhow::anyhow!("Path error"))?
@@ -101,9 +103,7 @@ pub fn build(
         link_windows_msvc(
             &object_file,
             output_file_path,
-            &mut artifacts,
             arch,
-            &build_dir,
             res_tmp.path(),
             is_console,
             vulkan,
@@ -162,50 +162,34 @@ pub fn build(
 fn link_windows_msvc(
     object_file_path: &crate::utils::TemporaryFile,
     output_file_path: &std::path::Path,
-    artifacts: &mut crate::utils::Artifacts,
     arch: WindowsArch,
-    build_dir: &std::path::Path,
     res_tmp: &std::path::Path,
     is_console: bool,
     vulkan: bool,
 ) -> anyhow::Result<()> {
-    use crate::utils::path_to_arg;
+    let artifacts_dir = AotArtifactType::Windows(arch).dir_path()?;
 
-    let arch_str = match arch {
-        WindowsArch::X86_64 => "x86_64",
-        WindowsArch::AArch64 => "aarch64",
-    };
-    let win_arch_str = match arch {
-        WindowsArch::X86_64 => "x64",
-        WindowsArch::AArch64 => "arm64",
-    };
-    let obj = if is_console { "console.obj" } else { "gui.obj" };
-    let obj_tmp =
-        artifacts.extract_tmp(build_dir, &format!("{}-windows-msvc/{}", arch_str, obj))?;
-    let webrogue_aot_lib_tmp = artifacts.extract_tmp(
-        build_dir,
-        &format!("{}-windows-msvc/webrogue_aot_lib.lib", arch_str),
-    )?;
-    let virgl_lib_tmp = artifacts.extract_tmp(
-        build_dir,
-        &format!(
-            "{}-windows-msvc/webrogue_virgl_lib_{}.a",
-            arch_str,
-            if vulkan { "impl" } else { "stub" }
+    crate::utils::run_lld(vec![
+        "lld-link".to_string(),
+        format!("-out:{}", path_arg_nocheck(output_file_path)?),
+        "-nologo".to_string(),
+        format!(
+            "-machine:{}",
+            match arch {
+                WindowsArch::X86_64 => "x64",
+                WindowsArch::AArch64 => "arm64",
+            }
         ),
-    )?;
-
-    crate::utils::lld!(
-        "lld-link",
-        format!("-out:{}", path_to_arg(output_file_path)?),
-        "-nologo",
-        &format!("-machine:{}", win_arch_str),
-        object_file_path,
-        path_to_arg(res_tmp)?,
-        obj_tmp.as_arg()?,
-        webrogue_aot_lib_tmp.as_arg()?,
-        virgl_lib_tmp.as_arg()?,
-        "/nodefaultlib",
-        "/lldignoreenv"
-    )
+        path_arg(object_file_path.path())?,
+        path_arg(res_tmp)?,
+        path_arg(artifacts_dir.join(if is_console { "console.obj" } else { "gui.obj" }))?,
+        path_arg(artifacts_dir.join("webrogue_aot_lib.lib"))?,
+        path_arg(artifacts_dir.join(if vulkan {
+            "webrogue_virgl_lib_impl.a"
+        } else {
+            "webrogue_virgl_lib_stub.a"
+        }))?,
+        "/nodefaultlib".to_string(),
+        "/lldignoreenv".to_string(),
+    ])
 }
