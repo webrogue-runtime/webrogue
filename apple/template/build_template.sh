@@ -96,10 +96,11 @@ xcodegen
 # a strange bug in xcconfig. TODO remove this line when it works without it
 sed -i '' 's/..\/aot.xcconfig/aot.xcconfig/g' webrogue.xcodeproj/project.pbxproj
 
-OUT_PATH="$(realpath ../../aot_artifacts/apple)"
+OUT_PATH=../../aot_artifacts/xcode
 rm -rf $OUT_PATH
 mkdir -p $OUT_PATH
 mkdir -p $OUT_PATH/template
+OUT_PATH="$(realpath $OUT_PATH)"
 
 TARGET_FILES=$(cat template_files.txt)
 
