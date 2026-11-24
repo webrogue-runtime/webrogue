@@ -129,7 +129,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 anyhow = { version = "1" }
 zstd-safe = { version = "^8.2.0", default-features = false }
-zstd = { version = "^0.14.3", default-features = false }
 cc = { version = "1" }
 tokio = { version = "1" }
 bytes = { version = "1.12" }
@@ -254,7 +253,3 @@ codegen-units = 1
 
 [patch.crates-io]
 zstd-safe = { path = "external/zstd-rs/zstd-safe" }
-zstd = { path = "external/zstd-rs" }
-
-[target.'cfg(target_env = "msvc")'.workspace.dependencies]
-blake3 = { version = "1", features = ["pure"] }

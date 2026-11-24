@@ -5,7 +5,7 @@ use std::io::{Seek, Write};
 use webrogue_cli_goodies::step;
 use webrogue_vfs::{ArchiveOptions, VFS, archive};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum LibC {
     GLibC,
     Musl,

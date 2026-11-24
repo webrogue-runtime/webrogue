@@ -28,10 +28,10 @@ struct LauncherConfigImpl {
 impl LauncherConfigImpl {
     fn new(
         gfx_system: webrogue_gfx::System,
+        storage_path: PathBuf,
         event_loop_proxy: EventLoopProxy,
         launch_finish_indicator: Arc<Mutex<Option<()>>>,
     ) -> Self {
-        let storage_path = webrogue_common::cli_dir(true);
         Self {
             storage_path: storage_path.clone(),
             hub_debuggee: HubDebuggee::new(storage_path, gfx_system),
@@ -79,6 +79,7 @@ pub struct App {
     webview: Option<wry::WebView>,
     mailbox: Option<WinitMailbox>,
     as_child: bool,
+    storage_path: PathBuf,
     #[cfg(target_os = "linux")]
     should_quit: Arc<AtomicBool>,
     proxies: Arc<Mutex<Vec<WinitProxy>>>,
@@ -89,12 +90,13 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(as_child: bool) -> Self {
+    pub fn new(as_child: bool, storage_path: PathBuf) -> Self {
         Self {
             window: None,
             webview: None,
             mailbox: None,
             as_child,
+            storage_path,
             #[cfg(target_os = "linux")]
             should_quit: Arc::new(AtomicBool::new(false)),
             proxies: Arc::new(Mutex::new(Vec::new())),
@@ -142,6 +144,7 @@ impl ApplicationHandler for App {
             self.as_child,
             Arc::new(LauncherConfigImpl::new(
                 gfx_system,
+                self.storage_path.clone(),
                 event_loop.create_proxy(),
                 self.launch_finish_indicator.clone(),
             )),

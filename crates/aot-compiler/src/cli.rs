@@ -102,8 +102,8 @@ impl Commands {
                 crate::linux::build_linux(
                     wrapp_path,
                     out_path,
-                    libc.clone().unwrap_or(crate::linux::LibC::GLibC),
-                    arch.clone().unwrap_or(crate::linux::LinuxArch::X86_64),
+                    libc.unwrap_or(crate::linux::LibC::GLibC),
+                    arch.unwrap_or(crate::linux::LinuxArch::X86_64),
                     cache,
                 )?;
             }

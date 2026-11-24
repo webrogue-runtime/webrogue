@@ -8129,8 +8129,6 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
- "serde",
- "serde_json",
  "webrogue-events",
 ]
 
@@ -8203,6 +8201,7 @@ dependencies = [
 name = "webrogue-hub-client-openapi"
 version = "1.0.0"
 dependencies = [
+ "chrono",
  "reqwest",
  "serde",
  "serde_json",
@@ -8290,7 +8289,6 @@ dependencies = [
  "tower-http",
  "tower-service",
  "tracing",
- "webrogue-common",
  "webrogue-gfx",
  "webrogue-gfx-winit",
  "webrogue-hub-client",
@@ -8311,6 +8309,7 @@ dependencies = [
  "gtk",
  "tracing",
  "tracing-subscriber",
+ "webrogue-common",
  "webrogue-launcher",
  "winit",
  "winit-x11",
@@ -8332,6 +8331,7 @@ dependencies = [
  "frunk-enum-derive",
  "frunk_core",
  "frunk_derives",
+ "futures-util",
  "headers",
  "http",
  "lazy_static",
@@ -8475,7 +8475,6 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "webrogue-common",
- "zstd",
  "zstd-safe",
 ]
 
@@ -9716,6 +9715,8 @@ dependencies = [
 [[package]]
 name = "zstd"
 version = "0.14.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db3ae9bf90af6e40197bef767eeefc46ad6397420fe873830bd85e5fbbfb3c70"
 dependencies = [
  "zstd-safe",
 ]
