@@ -35,8 +35,8 @@ rm -f process_dump*
 # strace -s 1000 -o process_dump -ff \
 clang \
     main.o \
-    ../aot_artifacts/$ARCH-linux-musl/libwebrogue_aot_lib.a \
-    ../aot_artifacts/$ARCH-linux-musl/libwebrogue_virgl_lib_impl.a \
+    $OUT_DIR/libwebrogue_aot_lib.a \
+    $OUT_DIR/libwebrogue_virgl_lib_impl.a \
     empty.musl.$ARCH.o \
     -o a.out \
     -fuse-ld=lld \

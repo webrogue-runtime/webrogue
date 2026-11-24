@@ -8,6 +8,7 @@ cd .. # android
 . ./setup_sdk.sh
 # ./runtime/gradlew --no-daemon --project-dir=runtime :runner:assembleRelease
 
+mkdir ../aot_artifacts/android
 OUT_PATH="$(realpath ../aot_artifacts/android)"
 rm -rf $OUT_PATH
 mkdir -p $OUT_PATH
