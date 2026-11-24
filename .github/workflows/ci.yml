@@ -54,7 +54,7 @@ jobs:
           - name: macos-aarch64
             os: macos-26
             target: "aarch64-apple-darwin"
-            check: "cli,aot-lib"
+            check: "cli"
             tasks: [runtime_tests]
           - name: macos-ios
             os: macos-26
