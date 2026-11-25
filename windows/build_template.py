@@ -61,7 +61,7 @@ subprocess.run(
     [
         "cargo",
         "build",
-        "--manifest-path=../../crates/aot-lib/Cargo.toml",
+        "--manifest-path=../crates/aot-lib/Cargo.toml",
         "--target-dir=./target",
     ] + cargo_flags,
     cwd=str(template_dir),
@@ -72,7 +72,7 @@ for virgl_type in ["impl", "stub"]:
         [
             "cargo",
             "build",
-            "--manifest-path=../../crates/virgl-lib/Cargo.toml",
+            "--manifest-path=../crates/virgl-lib/Cargo.toml",
             "--target-dir=./target",
             f"--features={virgl_type}",
             "--message-format=json",
