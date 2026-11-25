@@ -36,12 +36,7 @@ fn aot_compiled_headless_app_forwards_guest_stdout_and_stderr() {
         .expect("pack AOT stdio fixture");
     assert_success(&pack_output, "pack AOT stdio fixture");
 
-    let artifacts_name = if cfg!(target_os = "macos") {
-        "aot_artifacts_macos.zip"
-    } else {
-        "aot_artifacts.zip"
-    };
-    let artifacts = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(artifacts_name);
+    let artifacts = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("aot_artifacts");
     let executable = compile_aot_fixture(&wrapp, temporary_dir.path(), &artifacts);
 
     let data_dir = temporary_dir.path().join("data");
