@@ -212,8 +212,8 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          name: AOT-Artifacts-macOS
-          path: .
+          name: AOT-Artifacts
+          path: aot_artifacts
 
       # - uses: Swatinem/rust-cache@v2
       #   with:

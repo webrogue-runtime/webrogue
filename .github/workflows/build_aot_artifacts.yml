@@ -81,7 +81,7 @@ jobs:
           for /f "usebackq tokens=*" %%i in (`vswhere -latest -find Common7\Tools\VsDevCmd.bat`) do (
             call "%%i"
           )
-          python3 windows/msvc/build_template.py ${{ matrix.rust_arch }} ${{ matrix.win_arch }} || exit /b 1
+          python3 windows/build_template.py ${{ matrix.rust_arch }} ${{ matrix.win_arch }} || exit /b 1
 
       - uses: actions/upload-artifact@v7
         with:

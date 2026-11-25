@@ -9,7 +9,7 @@ import requests
 import zipfile
 
 template_dir = os.path.dirname(os.path.realpath(__file__))
-repo_dir = os.path.dirname(os.path.dirname(template_dir))
+repo_dir = os.path.dirname(template_dir)
 sys.path.insert(0, os.path.join(repo_dir, "scripts"))
 
 import tree_shake
