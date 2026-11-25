@@ -1,6 +1,7 @@
+use std::path::PathBuf;
+
 use crate::{
-    aot_artifacts::AotArtifactType,
-    linux::{LibC, LinuxArch},
+    linux::LinuxArch,
     utils::{path_arg, path_arg_nocheck, run_lld},
 };
 
@@ -8,12 +9,11 @@ use crate::{
 #[allow(unused_variables)]
 pub fn link_musl(
     object_file: &crate::utils::TemporaryFile,
-    output_file_path: &std::path::PathBuf,
+    output_file_path: &PathBuf,
     arch: LinuxArch,
     vulkan: bool,
+    artifacts_dir: PathBuf,
 ) -> anyhow::Result<()> {
-    let artifacts_dir = AotArtifactType::Linux(arch, LibC::Musl).dir_path()?;
-
     let args = vec![
         "ld.lld".to_string(),
         "-z".to_string(),
@@ -65,9 +65,8 @@ pub fn link_glibc(
     output_file_path: &std::path::PathBuf,
     arch: LinuxArch,
     vulkan: bool,
+    artifacts_dir: PathBuf,
 ) -> anyhow::Result<()> {
-    let artifacts_dir = AotArtifactType::Linux(arch, LibC::GLibC).dir_path()?;
-
     let mut args = vec![
         "ld.lld".to_string(),
         "--hash-style=gnu".to_string(),

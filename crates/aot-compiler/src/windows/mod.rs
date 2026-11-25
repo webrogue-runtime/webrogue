@@ -1,4 +1,7 @@
-use std::io::{Seek as _, Write as _};
+use std::{
+    io::{Seek as _, Write as _},
+    path::PathBuf,
+};
 
 use webrogue_cli_goodies::step;
 use webrogue_vfs::{ArchiveOptions, VFS, archive};
@@ -99,6 +102,7 @@ pub fn build(
         anyhow::Ok(res_tmp)
     })?;
 
+    let artifacts_dir = AotArtifactType::Windows(arch).dir_path()?;
     step("Linking native binary".to_owned(), || {
         link_windows_msvc(
             &object_file,
@@ -107,6 +111,7 @@ pub fn build(
             res_tmp.path(),
             is_console,
             vulkan,
+            artifacts_dir,
         )
     })?;
     drop(object_file);
@@ -166,9 +171,8 @@ fn link_windows_msvc(
     res_tmp: &std::path::Path,
     is_console: bool,
     vulkan: bool,
+    artifacts_dir: PathBuf,
 ) -> anyhow::Result<()> {
-    let artifacts_dir = AotArtifactType::Windows(arch).dir_path()?;
-
     crate::utils::run_lld(vec![
         "lld-link".to_string(),
         format!("-out:{}", path_arg_nocheck(output_file_path)?),

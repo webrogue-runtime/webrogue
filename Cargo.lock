@@ -8017,6 +8017,7 @@ dependencies = [
  "clap",
  "object",
  "postcard",
+ "reqwest",
  "semver",
  "serde",
  "tempfile",

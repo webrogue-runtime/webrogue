@@ -207,7 +207,7 @@ jobs:
           cd aot_artifacts
           for dir in *
           do 
-            zip -r ../aot_artifacts_packed/$dir.zip $dir
+            zip -r ../aot_artifacts_packed/aot-artifact-$dir.zip $dir
           done
 
       - uses: actions/upload-artifact@v7

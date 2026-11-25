@@ -5,6 +5,8 @@ use std::io::{Seek, Write};
 use webrogue_cli_goodies::step;
 use webrogue_vfs::{ArchiveOptions, VFS, archive};
 
+use crate::aot_artifacts::AotArtifactType;
+
 #[derive(Clone, Copy, Debug)]
 pub enum LibC {
     GLibC,
@@ -64,6 +66,7 @@ pub fn build_linux(
     })?;
     match libc {
         LibC::GLibC => {
+            let artifacts_dir = AotArtifactType::Linux(arch, LibC::GLibC).dir_path()?;
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
                     &wasm,
@@ -78,10 +81,11 @@ pub fn build_linux(
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_glibc(&object_file, output_file_path, arch, vulkan)
+                link::link_glibc(&object_file, output_file_path, arch, vulkan, artifacts_dir)
             })?;
         }
         LibC::Musl => {
+            let artifacts_dir = AotArtifactType::Linux(arch, LibC::Musl).dir_path()?;
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
                     &wasm,
@@ -96,7 +100,7 @@ pub fn build_linux(
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_musl(&object_file, output_file_path, arch, vulkan)
+                link::link_musl(&object_file, output_file_path, arch, vulkan, artifacts_dir)
             })?;
         }
     }

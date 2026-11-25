@@ -20,11 +20,34 @@ impl AotArtifactType {
         }
         let dir = artifacts_dir.join(self.dir_name());
         if !dir.exists() {
-            // TODO downloading
+            #[cfg(not(feature = "downloadable-artifacts"))]
             anyhow::bail!(
                 "AOT artifacts for `{}` are missing and can't be downloaded without `downloadable-artifacts` feature",
                 self.dir_name()
-            )
+            );
+            #[cfg(feature = "downloadable-artifacts")]
+            webrogue_cli_goodies::step(
+                format!("Downloading `{}` AOT artifact", self.dir_name()),
+                || {
+                    let mut response = reqwest::blocking::get(format!(
+                        "https://github.com/webrogue-runtime/webrogue/releases/download/aot-artifact-{}/{}.zip",
+                        std::env!("WEBROGUE_RELEASE_TAG"),
+                        self.dir_name(),
+                    ))?;
+                    if !response.status().is_success() {
+                        anyhow::bail!(
+                            "HTTP {} while downloading `{}` from GitHub",
+                            response.status(),
+                            self.dir_name()
+                        );
+                    }
+                    let mut zip_file = tempfile::tempfile()?;
+                    std::io::copy(&mut response, &mut zip_file)?;
+                    let mut archive = zip::ZipArchive::new(zip_file)?;
+                    archive.extract(&artifacts_dir)?;
+                    anyhow::Ok(())
+                },
+            )?;
         }
         Ok(dir)
     }

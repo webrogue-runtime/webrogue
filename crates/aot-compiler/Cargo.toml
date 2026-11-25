@@ -11,6 +11,8 @@ default = []
 llvm = []
 downloadable-artifacts = [
     "dep:zip",
+    "dep:reqwest",
+    "reqwest/blocking",
 ]
 internal-commands = []
 
@@ -32,3 +34,4 @@ zip = { workspace = true, default-features = false, features = ['deflate'], opti
 webrogue-cli-goodies = { workspace = true }
 tempfile = { workspace = true }
 semver = { workspace = true, default-features = false }
+reqwest = { workspace = true, optional = true }
