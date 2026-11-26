@@ -1,3 +1,5 @@
+#[cfg(feature = "downloadable-artifacts")]
+use std::path::Path;
 use std::{path::PathBuf, str::FromStr};
 
 use crate::{
@@ -18,6 +20,12 @@ impl AotArtifactType {
         if !artifacts_dir.exists() {
             std::fs::create_dir_all(&artifacts_dir)?;
         }
+
+        #[cfg(feature = "downloadable-artifacts")]
+        let tag = std::env!("WEBROGUE_RELEASE_TAG");
+        #[cfg(feature = "downloadable-artifacts")]
+        self.check_tag(&artifacts_dir, tag)?;
+
         let dir = artifacts_dir.join(self.dir_name());
         if !dir.exists() {
             #[cfg(not(feature = "downloadable-artifacts"))]
@@ -26,30 +34,59 @@ impl AotArtifactType {
                 self.dir_name()
             );
             #[cfg(feature = "downloadable-artifacts")]
-            webrogue_cli_goodies::step(
-                format!("Downloading `{}` AOT artifact", self.dir_name()),
-                || {
-                    let mut response = reqwest::blocking::get(format!(
-                        "https://github.com/webrogue-runtime/webrogue/releases/download/aot-artifact-{}/{}.zip",
-                        std::env!("WEBROGUE_RELEASE_TAG"),
-                        self.dir_name(),
-                    ))?;
-                    if !response.status().is_success() {
-                        anyhow::bail!(
-                            "HTTP {} while downloading `{}` from GitHub",
-                            response.status(),
-                            self.dir_name()
-                        );
-                    }
-                    let mut zip_file = tempfile::tempfile()?;
-                    std::io::copy(&mut response, &mut zip_file)?;
-                    let mut archive = zip::ZipArchive::new(zip_file)?;
-                    archive.extract(&artifacts_dir)?;
-                    anyhow::Ok(())
-                },
-            )?;
+            {
+                self.download_artifact(&artifacts_dir, tag)?;
+            }
         }
         Ok(dir)
+    }
+
+    #[cfg(feature = "downloadable-artifacts")]
+    fn check_tag(&self, artifacts_dir: &Path, tag: &str) -> anyhow::Result<()> {
+        let tag_path = artifacts_dir.join("tag.txt");
+        if tag_path.exists() {
+            let previous_tag = std::fs::read_to_string(&tag_path)?;
+            if previous_tag == tag {
+                return Ok(());
+            }
+            webrogue_cli_goodies::note(
+                "purging AOT artifacts cache from different Webrogue version",
+            );
+        } else {
+            webrogue_cli_goodies::note("purging AOT artifacts cache due to missing tag file");
+        }
+        std::fs::remove_dir_all(artifacts_dir)?;
+        std::fs::create_dir_all(artifacts_dir)?;
+        std::fs::write(&tag_path, tag.as_bytes())?;
+        Ok(())
+    }
+
+    #[cfg(feature = "downloadable-artifacts")]
+    fn download_artifact(&self, artifacts_dir: &Path, tag: &str) -> anyhow::Result<()> {
+        webrogue_cli_goodies::step(
+            format!("Downloading `{}` AOT artifact", self.dir_name()),
+            || {
+                let url = format!(
+                    "https://github.com/webrogue-runtime/webrogue/releases/download/{}/aot-artifact-{}.zip",
+                    tag,
+                    self.dir_name(),
+                );
+                let mut response = reqwest::blocking::get(&url)?;
+                if !response.status().is_success() {
+                    anyhow::bail!(
+                        "HTTP {} while downloading from `{}`",
+                        response.status(),
+                        url
+                    );
+                }
+                let mut zip_file = tempfile::tempfile()?;
+                std::io::copy(&mut response, &mut zip_file)?;
+                let mut archive = zip::ZipArchive::new(zip_file)?;
+                archive.extract(&artifacts_dir)?;
+                anyhow::Ok(())
+            },
+        )?;
+        Ok(())
     }
 
     fn dir_name(&self) -> String {
