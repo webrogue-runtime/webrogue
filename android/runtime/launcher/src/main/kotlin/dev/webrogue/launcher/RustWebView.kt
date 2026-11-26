@@ -7,14 +7,15 @@
 package dev.webrogue.launcher
 
 import android.annotation.SuppressLint
-import android.webkit.*
 import android.content.Context
+import android.webkit.*
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import kotlin.collections.Map
 
 @SuppressLint("RestrictedApi")
-class RustWebView(context: Context, val initScripts: Array<String>, val id: String): WebView(context) {
+class RustWebView(context: Context, val initScripts: Array<String>, val id: String) :
+    WebView(context) {
     val isDocumentStartScriptEnabled: Boolean
 
     init {
@@ -28,43 +29,41 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
             isDocumentStartScriptEnabled = true
             for (script in initScripts) {
-                WebViewCompat.addDocumentStartJavaScript(this, script, setOf("*"));
+                WebViewCompat.addDocumentStartJavaScript(this, script, setOf("*"))
             }
         } else {
-          isDocumentStartScriptEnabled = false
+            isDocumentStartScriptEnabled = false
         }
-
-        
     }
 
     fun loadUrlMainThread(url: String) {
         post {
-          loadUrl(url)
+            loadUrl(url)
         }
     }
 
     fun loadUrlMainThread(url: String, additionalHttpHeaders: Map<String, String>) {
         post {
-          loadUrl(url, additionalHttpHeaders)
+            loadUrl(url, additionalHttpHeaders)
         }
     }
 
     override fun loadUrl(url: String) {
         if (!Rust.shouldOverride(id, url)) {
-            super.loadUrl(url);
+            super.loadUrl(url)
         }
     }
 
     override fun loadUrl(url: String, additionalHttpHeaders: Map<String, String>) {
         if (!Rust.shouldOverride(id, url)) {
-            super.loadUrl(url, additionalHttpHeaders);
+            super.loadUrl(url, additionalHttpHeaders)
         }
     }
 
     fun loadHTMLMainThread(html: String) {
         post {
-          // A null base URL gives about:blank, which IPC accepts as a request URI.
-          super.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+            // A null base URL gives about:blank, which IPC accepts as a request URI.
+            super.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
         }
     }
 
@@ -90,8 +89,7 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
 
     fun getCookies(url: String): String {
         val cookieManager = CookieManager.getInstance()
-        return cookieManager.getCookie(url)
+        // `getCookie` returns null when the URL has no cookies
+        return cookieManager.getCookie(url) ?: ""
     }
-
-    
 }

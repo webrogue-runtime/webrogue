@@ -54,7 +54,7 @@ tracing.workspace = true
 futures = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-gtk = "0.18"
+gtk = { workspace = true }
 wry = { workspace = true, features = ["linux-body", "x11"] }
 
 [build-dependencies]
