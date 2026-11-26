@@ -1,4 +1,5 @@
 mod android;
+mod aot_artifacts;
 mod cli;
 mod compile;
 pub(crate) mod cwasm_analyzer;

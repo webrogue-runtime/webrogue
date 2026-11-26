@@ -7,7 +7,13 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
-winit = ["dep:winit", "dep:webrogue-wasmtime", "dep:webrogue-gfx-winit", "dep:webrogue-virgl", "webrogue-virgl/lib-impl"]
+winit = [
+    "dep:winit",
+    "dep:webrogue-wasmtime",
+    "dep:webrogue-gfx-winit",
+    "dep:webrogue-virgl",
+    "webrogue-virgl/lib-impl",
+]
 
 [dependencies]
 wry = { workspace = true, default-features = true }

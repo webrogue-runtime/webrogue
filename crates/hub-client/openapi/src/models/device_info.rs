@@ -16,14 +16,18 @@ pub struct DeviceInfo {
     #[serde(rename = "name")]
     pub name: String,
     #[serde(rename = "online_at")]
-    pub online_at: String,
+    pub online_at: chrono::DateTime<chrono::FixedOffset>,
     /// dummy description
     #[serde(rename = "status")]
     pub status: Status,
 }
 
 impl DeviceInfo {
-    pub fn new(name: String, online_at: String, status: Status) -> DeviceInfo {
+    pub fn new(
+        name: String,
+        online_at: chrono::DateTime<chrono::FixedOffset>,
+        status: Status,
+    ) -> DeviceInfo {
         DeviceInfo {
             name,
             online_at,

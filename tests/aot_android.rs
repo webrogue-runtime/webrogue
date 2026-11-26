@@ -38,7 +38,7 @@ fn android_aot_app_forwards_guest_stdout_and_stderr_to_logcat() {
     std::fs::write(mobile_fixture_dir.join("webrogue.json"), config)
         .expect("write Android fixture config");
 
-    let artifacts = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("aot_artifacts.zip");
+    let artifacts = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("aot_artifacts");
     let build_dir = temporary_dir.path().join("android-app");
     let apk = temporary_dir.path().join("stdio.apk");
     let compile_output = Command::new(env!("CARGO_BIN_EXE_webrogue"))

@@ -3,6 +3,11 @@ name: Build Webrogue CLI utility
 on:
   workflow_call:
 
+# Tag-triggered releases need to download AOT artifacts from GitHub.
+env:
+  WEBROGUE_RELEASE_TAG: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+  WEBROGUE_FEATURES: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && 'full,downloadable-artifacts' || 'full' }}
+
 jobs:
   linux-cli:
     runs-on: ${{ matrix.runner }}
@@ -68,7 +73,7 @@ jobs:
       - name: Build
         run: |
           export MACOSX_DEPLOYMENT_TARGET=12.0
-          cargo build --no-default-features --profile=cli --target=aarch64-apple-darwin --features=full
+          cargo build --no-default-features --profile=cli --target=aarch64-apple-darwin --features=$WEBROGUE_FEATURES
 
       - uses: actions/upload-artifact@v7
         with:
@@ -96,7 +101,7 @@ jobs:
       - name: Build
         run: |
           export MACOSX_DEPLOYMENT_TARGET=12.0
-          cargo build --no-default-features --profile=cli --target=x86_64-apple-darwin --features=full
+          cargo build --no-default-features --profile=cli --target=x86_64-apple-darwin --features=$WEBROGUE_FEATURES
 
       - uses: actions/upload-artifact@v7
         with:
@@ -140,7 +145,7 @@ jobs:
           set CC=clang-cl
           set CXX=clang-cl
           set CXXFLAGS=/EHsc
-          cargo build --no-default-features --target=${{ matrix.arch }}-pc-windows-msvc --features=full --profile cli  || exit /b 1
+          cargo build --no-default-features --target=${{ matrix.arch }}-pc-windows-msvc --features=%WEBROGUE_FEATURES% --profile cli  || exit /b 1
 
       - uses: actions/upload-artifact@v7
         with:

@@ -78,11 +78,10 @@ impl RunCommand {
         gfx_builder.run(
             move |gfx_system| -> anyhow::Result<()> {
                 webrogue_wasmtime::block_on_default_executor(async {
-                    let persistent_path = std::env::home_dir()
-                        .map_or_else(std::env::current_dir, Ok)?
-                        .join(".webrogue")
-                        .join(&config.id)
-                        .join("persistent");
+                    let persistent_path = webrogue_common::wrapp_persistent_dir_path(
+                        &webrogue_common::cli_dir(true),
+                        &config.id,
+                    );
 
                     let runtime =
                         webrogue_wasmtime::Runtime::new(gfx_system, vfs, &persistent_path);

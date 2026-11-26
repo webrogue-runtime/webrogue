@@ -1,8 +1,7 @@
 /target
 .vscode
 .DS_Store
-/aot_artifacts*
-.webrogue
+/aot_artifacts
 /.cache
 /aot
 /aot.exe

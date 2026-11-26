@@ -1,10 +1,9 @@
-use anyhow::Context as _;
 use semver::Version;
 use std::{collections::HashSet, io::Write, path::absolute};
 use webrogue_cli_goodies::{note, step};
 use webrogue_vfs::{ArchiveOptions, VFS, archive_to_file, config::Config};
 
-use crate::android::AndroidArch;
+use crate::{android::AndroidArch, aot_artifacts::AotArtifactType, utils::copy_dir_recursive};
 
 mod icons;
 mod types;
@@ -31,12 +30,11 @@ pub fn build(
     output: Option<std::path::PathBuf>,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
+    let artifacts_dir = AotArtifactType::Android.dir_path()?;
     let vfs = VFS::build_from_path(container_path)?;
 
     let config = vfs.config().clone();
-    let mut artifacts =
-        crate::utils::Artifacts::new().with_context(|| "Error opening artifacts library")?;
-    let template_id = artifacts.get_data("android_gradle/template_id")?;
+    let template_id = std::fs::read(artifacts_dir.join("template_id"))?;
     let mut old_stamp = read_stamp(build_dir).ok();
 
     if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id) {
@@ -47,7 +45,8 @@ pub fn build(
                 anyhow::ensure!(build_dir.is_dir(), "build_dir can't be a file");
                 std::fs::remove_dir_all(build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
             }
-            artifacts.extract_dir(build_dir, "android_gradle/template")?;
+
+            copy_dir_recursive(artifacts_dir.join("template"), build_dir)?;
             anyhow::Ok(())
         })?;
     }
@@ -122,12 +121,16 @@ pub fn build(
             step(
                 format!("Extracting runtime library for {}", arch.abi()),
                 || {
-                    artifacts.extract(
+                    std::fs::copy(
+                        artifacts_dir
+                            .join("template")
+                            .join("app")
+                            .join("src")
+                            .join("main")
+                            .join("jniLibs")
+                            .join(arch.abi())
+                            .join("libwebrogue.so"),
                         &runtime_lib_path,
-                        &format!(
-                            "android_gradle/template/app/src/main/jniLibs/{}/libwebrogue.so",
-                            arch.abi()
-                        ),
                     )?;
                     anyhow::Ok(())
                 },

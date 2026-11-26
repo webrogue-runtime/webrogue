@@ -5,7 +5,9 @@ use std::io::{Seek, Write};
 use webrogue_cli_goodies::step;
 use webrogue_vfs::{ArchiveOptions, VFS, archive};
 
-#[derive(Clone, Debug)]
+use crate::aot_artifacts::AotArtifactType;
+
+#[derive(Clone, Copy, Debug)]
 pub enum LibC {
     GLibC,
     Musl,
@@ -24,7 +26,7 @@ impl clap::ValueEnum for LibC {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum LinuxArch {
     X86_64,
     Aarch64,
@@ -37,8 +39,8 @@ impl clap::ValueEnum for LinuxArch {
 
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         match self {
-            Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64")),
-            Self::Aarch64 => Some(clap::builder::PossibleValue::new("aarch64")),
+            Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64").alias("x64")),
+            Self::Aarch64 => Some(clap::builder::PossibleValue::new("aarch64").alias("arm64")),
         }
     }
 }
@@ -64,6 +66,7 @@ pub fn build_linux(
     })?;
     match libc {
         LibC::GLibC => {
+            let artifacts_dir = AotArtifactType::Linux(arch, LibC::GLibC).dir_path()?;
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
                     &wasm,
@@ -78,10 +81,11 @@ pub fn build_linux(
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_glibc(&object_file, output_file_path, arch, vulkan)
+                link::link_glibc(&object_file, output_file_path, arch, vulkan, artifacts_dir)
             })?;
         }
         LibC::Musl => {
+            let artifacts_dir = AotArtifactType::Linux(arch, LibC::Musl).dir_path()?;
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
                     &wasm,
@@ -96,7 +100,7 @@ pub fn build_linux(
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_musl(&object_file, output_file_path, arch, vulkan)
+                link::link_musl(&object_file, output_file_path, arch, vulkan, artifacts_dir)
             })?;
         }
     }
@@ -120,5 +124,6 @@ pub fn build_linux(
 
         anyhow::Ok(())
     })?;
+
     anyhow::Ok(())
 }

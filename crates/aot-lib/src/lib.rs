@@ -27,10 +27,7 @@ extern "C" fn webrogue_aot_windows() {
 
         let config = vfs.config().clone();
 
-        let persistent_path = dirs::data_dir()
-            .expect("dirs::data_dir returned None")
-            .join(config.id.clone().replace('.', "-"))
-            .join("persistent");
+        let persistent_path = webrogue_common::aot_persistent_dir_path(None, &config.id);
 
         webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?
             .with_window_icons(webrogue_gfx_winit::WindowIcons {
@@ -99,10 +96,7 @@ extern "C" fn webrogue_aot_linux() {
 
         let config = vfs.config().clone();
 
-        let persistent_path = dirs::data_dir()
-            .ok_or_else(|| anyhow::anyhow!("dirs::data_dir returned None"))?
-            .join(&config.id)
-            .join("persistent");
+        let persistent_path = webrogue_common::aot_persistent_dir_path(None, &config.id);
 
         webrogue_gfx_winit::SimpleWinitBuilder::with_default_event_loop()?
             .with_window_icons(webrogue_gfx_winit::WindowIcons {

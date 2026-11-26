@@ -1,6 +1,4 @@
-mod artifacts;
-pub use artifacts::*;
-use std::{fmt::Display, fs::File};
+use std::{fs::File, path::Path};
 
 pub(crate) fn run_lld(_args: Vec<String>) -> anyhow::Result<()> {
     #[cfg(feature = "llvm")]
@@ -42,14 +40,6 @@ pub(crate) fn run_lld(_args: Vec<String>) -> anyhow::Result<()> {
     anyhow::bail!("LLVM feature is disabled at build time")
 }
 
-macro_rules! lld {
-    ($($x:expr),+ $(,)?) => (
-        $crate::utils::run_lld(vec![$($x.to_string()),+])
-    );
-}
-
-pub(crate) use lld;
-
 pub struct TemporaryFile {
     path: std::path::PathBuf,
     _temp_path: tempfile::TempPath,
@@ -80,20 +70,6 @@ impl TemporaryFile {
     pub fn path(&self) -> &std::path::PathBuf {
         &self.path
     }
-
-    pub fn as_arg(&self) -> anyhow::Result<String> {
-        crate::utils::path_to_arg(self.path.clone())
-    }
-}
-
-impl Display for TemporaryFile {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.path().clone().as_os_str().to_str().unwrap().to_owned()
-        )
-    }
 }
 
 // Should be handled by tempfile, but, just to ensure...
@@ -103,11 +79,35 @@ impl Drop for TemporaryFile {
     }
 }
 
-pub fn path_to_arg<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<String> {
+pub fn path_arg<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<String> {
+    let path = path.as_ref();
+    anyhow::ensure!(
+        path.exists(),
+        "File `{}` form AOT artifacts is missing",
+        path.display()
+    );
+    path_arg_nocheck(path)
+}
+
+pub fn path_arg_nocheck<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<String> {
+    let path = path.as_ref();
     Ok(path
-        .as_ref()
         .as_os_str()
         .to_str()
-        .ok_or_else(|| anyhow::anyhow!("Path error: {}", path.as_ref().display()))?
+        .ok_or_else(|| anyhow::anyhow!("Path error: {}", path.display()))?
         .to_owned())
+}
+
+pub fn copy_dir_recursive(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
+    std::fs::create_dir_all(&dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            copy_dir_recursive(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            std::fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
 }

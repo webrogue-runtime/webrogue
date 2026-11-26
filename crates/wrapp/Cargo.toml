@@ -12,6 +12,5 @@ write = []
 [dependencies]
 anyhow = { workspace = true }
 zstd-safe = { workspace = true, features = ["seekable", "std"] }
-zstd = { workspace = true }
 webrogue-common = { workspace = true }
 #image = { workspace = true, optional = true, default-features = false, features = ["png", "rayon"] }

@@ -26,9 +26,9 @@ pub struct WrappInfo {
     #[serde(rename = "download_url", deserialize_with = "Option::deserialize")]
     pub download_url: Option<String>,
     #[serde(rename = "created_at")]
-    pub created_at: String,
+    pub created_at: chrono::DateTime<chrono::FixedOffset>,
     #[serde(rename = "updated_at")]
-    pub updated_at: String,
+    pub updated_at: chrono::DateTime<chrono::FixedOffset>,
 }
 
 impl WrappInfo {
@@ -39,8 +39,8 @@ impl WrappInfo {
         is_public: bool,
         is_example: bool,
         download_url: Option<String>,
-        created_at: String,
-        updated_at: String,
+        created_at: chrono::DateTime<chrono::FixedOffset>,
+        updated_at: chrono::DateTime<chrono::FixedOffset>,
     ) -> WrappInfo {
         WrappInfo {
             id,

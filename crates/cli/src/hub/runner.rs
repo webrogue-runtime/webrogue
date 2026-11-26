@@ -1,4 +1,4 @@
-use std::{fs::File, path::Path};
+use std::fs::File;
 
 use futures_util::{SinkExt as _, StreamExt as _};
 use serde::{Deserialize, Serialize};
@@ -14,16 +14,13 @@ pub struct Config {
     pub device_name: String,
 }
 
-pub async fn host(
-    storage_path: &Path,
-    api_key: &str,
-    gfx_system: webrogue_gfx::System,
-) -> anyhow::Result<()> {
+pub async fn host(api_key: &str, gfx_system: webrogue_gfx::System) -> anyhow::Result<()> {
     let device_name = {
-        if !storage_path.exists() {
-            std::fs::create_dir_all(storage_path)?;
+        let data_path = webrogue_common::cli_dir(false);
+        if !data_path.exists() {
+            std::fs::create_dir_all(&data_path)?;
         }
-        let config_path = storage_path.join("config.json");
+        let config_path = data_path.join("config.json");
         if !config_path.exists() {
             let device_name = format!(
                 "Untitled device {:X}",
@@ -61,7 +58,7 @@ pub async fn host(
     let incoming_message = serde_json::from_str::<ConnectDeviceWsEvent>(event_str.as_str())?;
 
     let hub_debuggee =
-        webrogue_hub_debuggee::HubDebuggee::new(storage_path.to_path_buf(), gfx_system);
+        webrogue_hub_debuggee::HubDebuggee::new(webrogue_common::cli_dir(true), gfx_system);
 
     hub_debuggee
         .launch(

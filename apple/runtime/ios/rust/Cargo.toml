@@ -8,8 +8,17 @@ rust-version.workspace = true
 
 [features]
 # default = ["launcher"]
-launcher = ["webrogue-wasmtime/jit", "webrogue-launcher"] # jit issue
-runner = ["webrogue-wasmtime/aot"]
+launcher = [
+    "webrogue-launcher",
+    "dep:winit",
+] # TODO use pulley
+runner = [
+    "dep:webrogue-wasmtime",
+    "webrogue-wasmtime/aot",
+    "webrogue-wrapp",
+    "webrogue-vfs",
+    "webrogue-gfx-winit",
+]
 
 [lib]
 name = "webrogue_ios"
@@ -17,10 +26,16 @@ crate-type = ["staticlib"]
 
 [dependencies]
 anyhow = { workspace = true }
-webrogue-wasmtime = { workspace = true }
-webrogue-wrapp = { workspace = true }
-webrogue-launcher = { workspace = true, optional = true, features = ["winit"] }
-winit = { workspace = true, default-features = true }
-webrogue-gfx-winit = { workspace = true }
-webrogue-vfs = { workspace = true }
 webrogue-gfx = { workspace = true, features = ["static-vk"] }
+
+# runner features
+webrogue-wasmtime = { workspace = true, optional = true }
+webrogue-wrapp = { workspace = true, optional = true }
+webrogue-vfs = { workspace = true, optional = true }
+
+
+# launcher features
+webrogue-launcher = { workspace = true, optional = true, features = ["winit"] }
+winit = { workspace = true, optional = true, default-features = true }
+webrogue-gfx-winit = { workspace = true, optional = true }
+

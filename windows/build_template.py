@@ -9,7 +9,7 @@ import requests
 import zipfile
 
 template_dir = os.path.dirname(os.path.realpath(__file__))
-repo_dir = os.path.dirname(os.path.dirname(template_dir))
+repo_dir = os.path.dirname(template_dir)
 sys.path.insert(0, os.path.join(repo_dir, "scripts"))
 
 import tree_shake
@@ -33,7 +33,7 @@ cargo_flags = [
     "build-std",
 ]
 
-out_dir = os.path.join(repo_dir, "aot_artifacts", f"{rust_arch}-windows-msvc")
+out_dir = os.path.join(repo_dir, "aot_artifacts", f"windows-{rust_arch}cpu")
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -61,7 +61,7 @@ subprocess.run(
     [
         "cargo",
         "build",
-        "--manifest-path=../../crates/aot-lib/Cargo.toml",
+        "--manifest-path=../crates/aot-lib/Cargo.toml",
         "--target-dir=./target",
     ] + cargo_flags,
     cwd=str(template_dir),
@@ -72,7 +72,7 @@ for virgl_type in ["impl", "stub"]:
         [
             "cargo",
             "build",
-            "--manifest-path=../../crates/virgl-lib/Cargo.toml",
+            "--manifest-path=../crates/virgl-lib/Cargo.toml",
             "--target-dir=./target",
             f"--features={virgl_type}",
             "--message-format=json",

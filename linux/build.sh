@@ -50,6 +50,8 @@ do
             docker run \
                 --rm \
                 $DOCKER_USER_FLAGS \
+                -e WEBROGUE_RELEASE_TAG \
+                -e WEBROGUE_FEATURES \
                 -v "$REPO_ROOT":/usr/src/myapp \
                 -v "$MOUNT_ROOT/cargo_cache":/fakehome/.cargo/registry/cache \
                 -v "$MOUNT_ROOT/cargo_index":/fakehome/.cargo/registry/index \

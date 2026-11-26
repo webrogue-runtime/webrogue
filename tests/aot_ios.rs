@@ -37,8 +37,7 @@ fn ios_simulator_aot_app_forwards_guest_stdout_and_stderr() {
     std::fs::write(mobile_fixture_dir.join("webrogue.json"), config)
         .expect("write iOS fixture config");
 
-    let artifacts =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("aot_artifacts_macos.zip");
+    let artifacts = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("aot_artifacts");
     let build_dir = temporary_dir.path().join("ios-app");
     let compile_output = Command::new(env!("CARGO_BIN_EXE_webrogue"))
         .arg("compile")

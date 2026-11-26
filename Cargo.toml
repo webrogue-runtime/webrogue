@@ -30,7 +30,6 @@ full = [
   "hub-run",
   "llvm",
   "wasm-opt",
-  "appended_artifacts",
   "webrogue-cli/no-internal",
 ]
 run = ["webrogue-cli/run"]
@@ -40,9 +39,10 @@ hub-run = ["webrogue-cli/hub-run"]
 llvm = ["webrogue-cli/llvm"]
 wasm-opt = ["webrogue-cli/wasm-opt"]
 
-# to use this feature, you need to process resulting binary 
-# using append_artifacts.py script, so it is disabled by default
-appended_artifacts = ["webrogue-cli/appended_artifacts"]
+# Use crate's version to find matching release on GitHub
+# and download missing artifacts. This must be enabled when
+# for each released CLI binary
+downloadable-artifacts = ["webrogue-cli/downloadable-artifacts"]
 
 # Some internal features
 internal-run = ["webrogue-cli/internal-run"]
@@ -58,7 +58,7 @@ clap = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Artem Borovik"]
 license = "Apache-2.0 WITH LLVM-exception"
 edition = "2024"
@@ -129,7 +129,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 anyhow = { version = "1" }
 zstd-safe = { version = "^8.2.0", default-features = false }
-zstd = { version = "^0.14.3", default-features = false }
 cc = { version = "1" }
 tokio = { version = "1" }
 bytes = { version = "1.12" }
@@ -137,7 +136,7 @@ semver = { version = "1", default-features = false }
 postcard = { version = "1", default-features = false }
 quote = { version = "1.0", default-features = false }
 proc-macro2 = { version = "1.0", default-features = false }
-dirs = { version = "6.0.0" }
+dirs = { version = "7.0.0" }
 zip = { version = "9.0", default-features = false }
 libc = { version = "0.2.186", default-features = false }
 lazy_static = { version = "1.5.0" }
@@ -196,7 +195,7 @@ xxhash-rust = "0.8.16"
 bindgen = { version = "0.73", default-features = false }
 tokio-hrtime = "0.1.7"
 wac-graph = "0.12.0"
-wasm-opt = { git = "https://github.com/brson/wasm-opt-rs.git", rev = "a48e39ac6d948c30bd8d5cf1dc493cbd95845705" }
+wasm-opt = "0.133.0"
 tempfile = "3.27.0"
 
 [profile.dev]
@@ -254,7 +253,3 @@ codegen-units = 1
 
 [patch.crates-io]
 zstd-safe = { path = "external/zstd-rs/zstd-safe" }
-zstd = { path = "external/zstd-rs" }
-
-[target.'cfg(target_env = "msvc")'.workspace.dependencies]
-blake3 = { version = "1", features = ["pure"] }
