@@ -34,9 +34,7 @@ impl AotArtifactType {
                 self.dir_name()
             );
             #[cfg(feature = "downloadable-artifacts")]
-            {
-                self.download_artifact(&artifacts_dir, tag)?;
-            }
+            self.download_artifact(&artifacts_dir, tag)?;
         }
         Ok(dir)
     }
@@ -53,6 +51,9 @@ impl AotArtifactType {
                 "purging AOT artifacts cache from different Webrogue version",
             );
         } else {
+            if std::fs::read_dir(&artifacts_dir)?.count() == 0 {
+                return Ok(());
+            }
             webrogue_cli_goodies::note("purging AOT artifacts cache due to missing tag file");
         }
         std::fs::remove_dir_all(artifacts_dir)?;

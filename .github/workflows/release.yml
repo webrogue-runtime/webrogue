@@ -35,32 +35,32 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: CLI-linux-x86_64-glibc-raw
-          path: webrogue-cli-linux-glibc-x86_64/webrogue
+          path: webrogue-cli-linux-glibc-x86_64
 
       - uses: actions/download-artifact@v8
         with:
           name: CLI-linux-aarch64-glibc-raw
-          path: webrogue-cli-linux-glibc-aarch64/webrogue
+          path: webrogue-cli-linux-glibc-aarch64
 
       - uses: actions/download-artifact@v8
         with:
           name: CLI-linux-x86_64-musl-raw
-          path: webrogue-cli-linux-musl-x86_64/webrogue
+          path: webrogue-cli-linux-musl-x86_64
 
       - uses: actions/download-artifact@v8
         with:
           name: CLI-linux-aarch64-musl-raw
-          path: webrogue-cli-linux-musl-aarch64/webrogue
+          path: webrogue-cli-linux-musl-aarch64
 
       - uses: actions/download-artifact@v8
         with:
           name: CLI-macOS-arm64-raw
-          path: webrogue-cli-macos-arm64/webrogue
+          path: webrogue-cli-macos-arm64
 
       - uses: actions/download-artifact@v8
         with:
           name: CLI-macOS-x86_64-raw
-          path: webrogue-cli-macos-x86_64/webrogue
+          path: webrogue-cli-macos-x86_64
 
       - uses: actions/download-artifact@v8
         with:
