@@ -1,5 +1,3 @@
 package dev.webrogue.launcher
 
-class LauncherActivity : WryActivity() {
-}
-
+class LauncherActivity : WryActivity() {}

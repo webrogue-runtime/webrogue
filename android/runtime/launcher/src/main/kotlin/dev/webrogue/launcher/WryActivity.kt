@@ -24,7 +24,8 @@ private fun Bundle?.activityId(): Int? =
     this?.takeIf { it.containsKey(ACTIVITY_ID_KEY) }?.getInt(ACTIVITY_ID_KEY)
 
 object WryLifecycleObserver : DefaultLifecycleObserver {
-    // This only runs once: https://developer.android.com/reference/androidx/lifecycle/ProcessLifecycleOwner
+    // This only runs once:
+    // https://developer.android.com/reference/androidx/lifecycle/ProcessLifecycleOwner
     override fun onCreate(owner: LifecycleOwner) {
         super.onCreate(owner)
         Rust.onFirstActivityCreate()
@@ -41,11 +42,11 @@ abstract class WryActivity : AppCompatActivity() {
     var id: Int = 0
     open val handleBackNavigation: Boolean = true
 
-    open fun onWebViewCreate(webView: WebView) { }
+    open fun onWebViewCreate(webView: WebView) {}
 
     // The webview's history changed (a navigation, a pushState, back or forward),
     // so `canGoBack()` may have changed.
-    open fun onWebViewHistoryChanged(webView: WebView) { }
+    open fun onWebViewHistoryChanged(webView: WebView) {}
 
     fun requestPermissions(permissions: Array<String>, listener: (Boolean?) -> Unit) {
         permissionListener = listener
@@ -61,19 +62,20 @@ abstract class WryActivity : AppCompatActivity() {
         mWebView = webView
 
         if (handleBackNavigation) {
-            val callback = object : OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    if (this@WryActivity::mWebView.isInitialized) {
-                        if (this@WryActivity.mWebView.canGoBack()) {
-                            this@WryActivity.mWebView.goBack()
-                        } else {
-                            this.isEnabled = false
-                            this@WryActivity.onBackPressed()
-                            this.isEnabled = true
+            val callback =
+                object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() {
+                        if (this@WryActivity::mWebView.isInitialized) {
+                            if (this@WryActivity.mWebView.canGoBack()) {
+                                this@WryActivity.mWebView.goBack()
+                            } else {
+                                this.isEnabled = false
+                                this@WryActivity.onBackPressed()
+                                this.isEnabled = true
+                            }
                         }
                     }
                 }
-            }
             onBackPressedDispatcher.addCallback(this, callback)
         }
 
@@ -91,11 +93,10 @@ abstract class WryActivity : AppCompatActivity() {
             // Otherwise manually check WebView versions
             var webViewPackage = "com.google.android.webview"
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-              webViewPackage = "com.android.chrome"
+                webViewPackage = "com.android.chrome"
             }
             try {
-                @Suppress("DEPRECATION")
-                val info = packageManager.getPackageInfo(webViewPackage, 0)
+                @Suppress("DEPRECATION") val info = packageManager.getPackageInfo(webViewPackage, 0)
                 return info.versionName.toString()
             } catch (ex: Exception) {
                 Logger.warn("Unable to get package info for '$webViewPackage'$ex")
@@ -117,19 +118,21 @@ abstract class WryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         id = savedInstanceState.activityId() ?: intent.extras.activityId() ?: hashCode()
 
-        permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions(),
-        ) { isGranted ->
-            permissionListener?.let { listener ->
-                val allGranted = isGranted.values.all { it }
-                listener(allGranted)
+        permissionLauncher =
+            registerForActivityResult(
+                ActivityResultContracts.RequestMultiplePermissions(),
+            ) { isGranted ->
+                permissionListener?.let { listener ->
+                    val allGranted = isGranted.values.all { it }
+                    listener(allGranted)
+                }
             }
-        }
-        activityLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            activityListener?.invoke(result)
-        }
+        activityLauncher =
+            registerForActivityResult(
+                ActivityResultContracts.StartActivityForResult(),
+            ) { result ->
+                activityListener?.invoke(result)
+            }
 
         Rust.onCreate(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(WryLifecycleObserver)
@@ -174,7 +177,14 @@ abstract class WryActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Rust.onDestroy(this)
-        Rust.onWebviewDestroy(this, if (::mWebView.isInitialized) { mWebView.id } else { "" })
+        Rust.onWebviewDestroy(
+            this,
+            if (::mWebView.isInitialized) {
+                mWebView.id
+            } else {
+                ""
+            },
+        )
     }
 
     override fun onLowMemory() {
@@ -199,6 +209,4 @@ abstract class WryActivity : AppCompatActivity() {
         startActivity(intent)
         return id
     }
-
-    
 }
