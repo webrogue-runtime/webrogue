@@ -1,0 +1,7 @@
+[book]
+title = "Webrogue Documentation"
+authors = ["Artem Borovik"]
+language = "en"
+
+[output.html]
+preferred-dark-theme = "coal"
