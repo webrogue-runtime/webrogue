@@ -7,7 +7,8 @@ extend-exclude = [
     "/crates/virgl-lib/epoxy",
     "/crates/virgl-lib/compat",
     "/crates/debugger/wit/deps",
-    "crates/hub-client/openapi",
+    "/crates/hub-client/openapi",
+    "/docs/theme",
 ]
 ignore-vcs = true
 

@@ -23,9 +23,15 @@ pub enum Commands {
         wrapp_path: std::path::PathBuf,
         /// Path where resulting project will be placed
         build_dir: std::path::PathBuf,
-        /// CPU architecture to build for.
+        /// Comma-separated list of CPU architectures to build for.
         /// Defaults to aarch64.
-        #[arg(long, value_enum, value_delimiter = ',', default_value = "aarch64")]
+        #[arg(
+            long,
+            value_enum,
+            value_name = "ARCH_LIST",
+            value_delimiter = ',',
+            default_value = "aarch64"
+        )]
         arch: Vec<crate::android::AndroidArch>,
         /// Path to Android SDK.
         /// If not specified, ANDROID_SDK_ROOT or ANDROID_HOME environment variable will be used.
