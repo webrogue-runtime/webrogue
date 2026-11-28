@@ -52,7 +52,7 @@ impl InternalCommands {
                 crate::android::link::link(
                     &object_file,
                     match target {
-                        crate::Target::ARM64LinuxAndroid => crate::android::AndroidArch::Aarch64,
+                        crate::Target::ARM64LinuxAndroid => crate::android::AndroidArch::AArch64,
                         crate::Target::X86_64LinuxAndroid => crate::android::AndroidArch::X86_64,
                         _ => anyhow::bail!("Unsupported target for Android: {}", target),
                     },

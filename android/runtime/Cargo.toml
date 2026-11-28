@@ -19,6 +19,7 @@ runner = [
     "webrogue-wasmtime/aot",
     "dep:webrogue-common",
 ]
+vulkan = ["webrogue-gfx-winit/vulkan"]
 
 [lib]
 name = "webrogue"
@@ -28,8 +29,8 @@ crate-type = ["cdylib"]
 anyhow = { workspace = true }
 webrogue-wasmtime = { workspace = true }
 winit = { workspace = true }
-webrogue-gfx-winit = { workspace = true, features = ["vulkan"] } # TODO disable vulkan on x64
-jni = { version = "0.22", optional = true }
+webrogue-gfx-winit = { workspace = true }
+jni = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 webrogue-gfx = { workspace = true }

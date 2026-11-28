@@ -196,6 +196,7 @@ tokio-hrtime = "0.1.7"
 wac-graph = "0.12.0"
 wasm-opt = "0.133.0"
 tempfile = "3.27.0"
+jni = { version = "0.22" }
 
 [profile.dev]
 panic = "abort"

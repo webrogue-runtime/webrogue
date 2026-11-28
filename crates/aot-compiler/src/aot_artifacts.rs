@@ -3,10 +3,12 @@ use std::path::Path;
 use std::{path::PathBuf, str::FromStr};
 
 use crate::{
+    android::AndroidArch,
     linux::{LibC, LinuxArch},
     windows::WindowsArch,
 };
 
+#[derive(Clone, Copy)]
 pub enum VulkanPresence {
     Disabled,
     Enabled,
@@ -38,7 +40,8 @@ pub enum AotArtifactType {
     Linux(LinuxArchLibC, VulkanPresence),
     WindowsCommon(WindowsArch),
     Windows(WindowsArch, VulkanPresence),
-    Android,
+    AndroidCommon,
+    Android(AndroidArch, VulkanPresence),
     Xcode,
 }
 
@@ -132,7 +135,10 @@ impl AotArtifactType {
             AotArtifactType::Windows(arch, vulkan) => {
                 format!("windows-{}-{}", arch.artifact_str(), vulkan.artifact_str(),)
             }
-            AotArtifactType::Android => "android".to_string(),
+            AotArtifactType::AndroidCommon => "android".to_string(),
+            AotArtifactType::Android(arch, vulkan) => {
+                format!("android-{}-{}", arch.artifact_str(), vulkan.artifact_str(),)
+            }
             AotArtifactType::Xcode => "xcode".to_string(),
         }
     }

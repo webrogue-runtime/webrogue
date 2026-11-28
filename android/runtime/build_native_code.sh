@@ -44,20 +44,36 @@ for TARGET in arm64-v8a x86_64; do
     rustup target add $RUST_TARGET-linux-android
     CARGO_FLAGS="--profile $1 -Z build-std"
 
-    $STRACE_COMMAND cargo +nightly ndk \
-        -t $TARGET \
-        -o runner/src/main/jniLibs/ \
-        build \
-        --features runner \
-        $CARGO_FLAGS
+    for VULKAN_TYPE in 'novulkan' 'vulkan'
+    do
+        if [ "$VULKAN_TYPE" = "vulkan" ]; then
+            CARGO_VULKAN_FLAGS="--features=vulkan"
+        else
+            CARGO_VULKAN_FLAGS=""
+        fi
+
+        $STRACE_COMMAND cargo +nightly ndk \
+            -t $TARGET \
+            -o runner/src/main/jniLibs-$VULKAN_TYPE/ \
+            build \
+            --features runner \
+            $CARGO_FLAGS \
+            $CARGO_VULKAN_FLAGS
+    done
 
     if [ "$BUILD_WEBROGUE_ANDROID_LAUNCHER" = "1" ]; then
+        if [ "$TARGET" = "arm64-v8a" ]; then
+            CARGO_VULKAN_FLAGS="--features=vulkan"
+        else
+            CARGO_VULKAN_FLAGS=""
+        fi
         $STRACE_COMMAND cargo +nightly ndk \
             -t $TARGET \
             -o launcher/src/main/jniLibs/ \
             build \
             --features launcher \
-            $CARGO_FLAGS
+            $CARGO_FLAGS \
+            $CARGO_VULKAN_FLAGS
 
         $STRACE_COMMAND cargo +nightly ndk \
             -t $TARGET \
@@ -67,3 +83,5 @@ for TARGET in arm64-v8a x86_64; do
             $CARGO_FLAGS
     fi
 done
+cp runner/src/main/jniLibs-vulkan/arm64-v8a/libwebrogue.so runner/src/main/jniLibs/arm64-v8a 
+cp runner/src/main/jniLibs-novulkan/x86_64/libwebrogue.so runner/src/main/jniLibs/x86_64

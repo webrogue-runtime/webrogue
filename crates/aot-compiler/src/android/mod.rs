@@ -1,32 +1,37 @@
 mod gradle;
 pub(crate) mod link;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, clap::ValueEnum, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, clap::ValueEnum, Eq, Hash, PartialOrd, Ord)]
 pub enum AndroidArch {
     #[default]
     #[value(name = "aarch64")]
-    Aarch64,
+    AArch64,
     #[value(name = "x86_64")]
     X86_64,
 }
 
 impl AndroidArch {
+    pub fn artifact_str(&self) -> &'static str {
+        match self {
+            AndroidArch::X86_64 => "x86_64cpu",
+            AndroidArch::AArch64 => "aarch64cpu",
+        }
+    }
+}
+
+impl AndroidArch {
     fn target(self) -> crate::Target {
         match self {
-            Self::Aarch64 => crate::Target::ARM64LinuxAndroid,
+            Self::AArch64 => crate::Target::ARM64LinuxAndroid,
             Self::X86_64 => crate::Target::X86_64LinuxAndroid,
         }
     }
 
     fn abi(self) -> &'static str {
         match self {
-            Self::Aarch64 => "arm64-v8a",
+            Self::AArch64 => "arm64-v8a",
             Self::X86_64 => "x86_64",
         }
-    }
-
-    fn all() -> &'static [Self] {
-        &[Self::Aarch64, Self::X86_64]
     }
 }
 
