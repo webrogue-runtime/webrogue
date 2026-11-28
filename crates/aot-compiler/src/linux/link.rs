@@ -24,13 +24,13 @@ pub fn link_musl(
         "-m".to_string(),
         match &arch {
             LinuxArch::X86_64 => "elf_x86_64",
-            LinuxArch::Aarch64 => "aarch64linux",
+            LinuxArch::AArch64 => "aarch64linux",
         }
         .to_string(),
         "-dynamic-linker".to_string(),
         match &arch {
             LinuxArch::X86_64 => "/lib/ld-musl-x86_64.so.1",
-            LinuxArch::Aarch64 => "/lib/ld-musl-aarch64.so.1",
+            LinuxArch::AArch64 => "/lib/ld-musl-aarch64.so.1",
         }
         .to_string(),
         "--strip-all".to_string(),
@@ -68,13 +68,13 @@ pub fn link_glibc(
         "-m".to_string(),
         match &arch {
             LinuxArch::X86_64 => "elf_x86_64",
-            LinuxArch::Aarch64 => "aarch64linux",
+            LinuxArch::AArch64 => "aarch64linux",
         }
         .to_string(),
         "-dynamic-linker".to_string(),
         match &arch {
             LinuxArch::X86_64 => "/lib64/ld-linux-x86-64.so.2",
-            LinuxArch::Aarch64 => "/lib/ld-linux-aarch64.so.1",
+            LinuxArch::AArch64 => "/lib/ld-linux-aarch64.so.1",
         }
         .to_string(),
         "--strip-all".to_string(),
@@ -83,7 +83,7 @@ pub fn link_glibc(
     ];
     match &arch {
         LinuxArch::X86_64 => {}
-        LinuxArch::Aarch64 => {
+        LinuxArch::AArch64 => {
             args.push("-EL".to_string());
             args.push(path_arg(
                 common_artifacts_dir.join("ld-linux-aarch64.so.1"),

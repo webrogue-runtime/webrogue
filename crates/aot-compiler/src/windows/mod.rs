@@ -7,7 +7,7 @@ use webrogue_cli_goodies::step;
 use webrogue_vfs::{ArchiveOptions, VFS, archive};
 
 use crate::{
-    aot_artifacts::AotArtifactType,
+    aot_artifacts::{AotArtifactType, VulkanPresence},
     utils::{TemporaryFile, path_arg, path_arg_nocheck},
 };
 
@@ -15,6 +15,15 @@ use crate::{
 pub enum WindowsArch {
     X86_64,
     AArch64,
+}
+
+impl WindowsArch {
+    pub fn artifact_str(&self) -> &'static str {
+        match self {
+            WindowsArch::X86_64 => "x86_64cpu",
+            WindowsArch::AArch64 => "aarch64cpu",
+        }
+    }
 }
 
 impl clap::ValueEnum for WindowsArch {
@@ -68,11 +77,11 @@ pub fn build(
             .parent()
             .ok_or(anyhow::anyhow!("Path error"))?,
     )?;
-    let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
-    // let arch_str = match arch {
-    //     WindowsArch::X86_64 => "x86_64",
-    //     WindowsArch::AArch64 => "aarch64",
-    // };
+    let vulkan = if config.vulkan_requirement().to_bool_option().unwrap_or(true) {
+        VulkanPresence::Enabled
+    } else {
+        VulkanPresence::Disabled
+    };
 
     let wasm = step("Processing WASM code".to_owned(), || {
         crate::compile::process_wasm(wrapp_file_path, output_file_path)
@@ -101,7 +110,8 @@ pub fn build(
         anyhow::Ok(res_tmp)
     })?;
 
-    let artifacts_dir = AotArtifactType::Windows(arch).dir_path()?;
+    let common_artifacts_dir = AotArtifactType::WindowsCommon(arch).dir_path()?;
+    let artifacts_dir = AotArtifactType::Windows(arch, vulkan).dir_path()?;
     step("Linking native binary".to_owned(), || {
         link_windows_msvc(
             &object_file,
@@ -109,8 +119,8 @@ pub fn build(
             arch,
             res_tmp.path(),
             is_console,
-            vulkan,
             artifacts_dir,
+            common_artifacts_dir,
         )
     })?;
     drop(object_file);
@@ -169,8 +179,8 @@ fn link_windows_msvc(
     arch: WindowsArch,
     res_tmp: &std::path::Path,
     is_console: bool,
-    vulkan: bool,
     artifacts_dir: PathBuf,
+    common_artifacts_dir: PathBuf,
 ) -> anyhow::Result<()> {
     crate::utils::run_lld(vec![
         "lld-link".to_string(),
@@ -185,13 +195,8 @@ fn link_windows_msvc(
         ),
         path_arg(object_file_path.path())?,
         path_arg(res_tmp)?,
-        path_arg(artifacts_dir.join(if is_console { "console.obj" } else { "gui.obj" }))?,
+        path_arg(common_artifacts_dir.join(if is_console { "console.obj" } else { "gui.obj" }))?,
         path_arg(artifacts_dir.join("webrogue_aot_lib.lib"))?,
-        path_arg(artifacts_dir.join(if vulkan {
-            "webrogue_virgl_lib_impl.a"
-        } else {
-            "webrogue_virgl_lib_stub.a"
-        }))?,
         "/nodefaultlib".to_string(),
         "/lldignoreenv".to_string(),
     ])

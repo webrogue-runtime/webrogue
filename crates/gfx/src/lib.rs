@@ -28,9 +28,17 @@ pub mod shadow_blob {
         false
     }
 
-    pub unsafe fn get_segfault_addr<SIGNUM, SIGINFO>(
-        _signum: SIGNUM,
-        _siginfo: SIGINFO,
+    #[cfg(not(target_os = "windows"))]
+    pub unsafe fn get_segfault_addr<Signum, Siginfo>(
+        _signum: Signum,
+        _siginfo: Siginfo,
+    ) -> Option<*const ()> {
+        None
+    }
+    
+    #[cfg(target_os = "windows")]
+    pub unsafe fn get_segfault_addr<ExceptionInfo>(
+        _exception_info: ExceptionInfo,
     ) -> Option<*const ()> {
         None
     }

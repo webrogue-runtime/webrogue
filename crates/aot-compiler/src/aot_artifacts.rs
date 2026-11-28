@@ -29,24 +29,15 @@ pub struct LinuxArchLibC {
 
 impl LinuxArchLibC {
     fn artifact_str(&self) -> String {
-        format!(
-            "{}cpu-{}libc",
-            match self.arch {
-                LinuxArch::X86_64 => "x86_64",
-                LinuxArch::Aarch64 => "aarch64",
-            },
-            match self.libc {
-                LibC::GLibC => "gnu",
-                LibC::Musl => "musl",
-            }
-        )
+        format!("{}-{}", self.arch.artifact_str(), self.libc.artifact_str(),)
     }
 }
 
 pub enum AotArtifactType {
     LinuxCommon(LinuxArchLibC),
     Linux(LinuxArchLibC, VulkanPresence),
-    Windows(WindowsArch),
+    WindowsCommon(WindowsArch),
+    Windows(WindowsArch, VulkanPresence),
     Android,
     Xcode,
 }
@@ -137,13 +128,10 @@ impl AotArtifactType {
                 arch_libc.artifact_str(),
                 vulkan.artifact_str()
             ),
-            AotArtifactType::Windows(arch) => format!(
-                "windows-{}cpu",
-                match arch {
-                    WindowsArch::X86_64 => "x86_64",
-                    WindowsArch::AArch64 => "aarch64",
-                }
-            ),
+            AotArtifactType::WindowsCommon(arch) => format!("windows-{}", arch.artifact_str()),
+            AotArtifactType::Windows(arch, vulkan) => {
+                format!("windows-{}-{}", arch.artifact_str(), vulkan.artifact_str(),)
+            }
             AotArtifactType::Android => "android".to_string(),
             AotArtifactType::Xcode => "xcode".to_string(),
         }

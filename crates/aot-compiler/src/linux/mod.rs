@@ -13,6 +13,15 @@ pub enum LibC {
     Musl,
 }
 
+impl LibC {
+    pub fn artifact_str(&self) -> &'static str {
+        match self {
+            LibC::GLibC => "gnulibc",
+            LibC::Musl => "musllibc",
+        }
+    }
+}
+
 impl clap::ValueEnum for LibC {
     fn value_variants<'a>() -> &'a [Self] {
         &[Self::GLibC, Self::Musl]
@@ -29,18 +38,27 @@ impl clap::ValueEnum for LibC {
 #[derive(Clone, Copy, Debug)]
 pub enum LinuxArch {
     X86_64,
-    Aarch64,
+    AArch64,
+}
+
+impl LinuxArch {
+    pub fn artifact_str(&self) -> &'static str {
+        match self {
+            LinuxArch::X86_64 => "x86_64cpu",
+            LinuxArch::AArch64 => "aarch64cpu",
+        }
+    }
 }
 
 impl clap::ValueEnum for LinuxArch {
     fn value_variants<'a>() -> &'a [Self] {
-        &[Self::X86_64, Self::Aarch64]
+        &[Self::X86_64, Self::AArch64]
     }
 
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         match self {
             Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64").alias("x64")),
-            Self::Aarch64 => Some(clap::builder::PossibleValue::new("aarch64").alias("arm64")),
+            Self::AArch64 => Some(clap::builder::PossibleValue::new("aarch64").alias("arm64")),
         }
     }
 }
@@ -79,7 +97,7 @@ pub fn build_linux(
                     object_file.path(),
                     match &arch {
                         LinuxArch::X86_64 => crate::Target::X86_64LinuxGNU,
-                        LinuxArch::Aarch64 => crate::Target::Aarch64LinuxGNU,
+                        LinuxArch::AArch64 => crate::Target::Aarch64LinuxGNU,
                     },
                     cache,
                     false,
@@ -102,7 +120,7 @@ pub fn build_linux(
                     object_file.path(),
                     match &arch {
                         LinuxArch::X86_64 => crate::Target::X86_64LinuxMUSL,
-                        LinuxArch::Aarch64 => crate::Target::Aarch64LinuxMUSL,
+                        LinuxArch::AArch64 => crate::Target::Aarch64LinuxMUSL,
                     },
                     cache,
                     false,

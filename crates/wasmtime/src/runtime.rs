@@ -157,10 +157,10 @@ async fn run_component(
         use wasmtime::windows::StoreExt;
 
         store.set_signal_handler(move |exception_info| {
-            let Some(addr) = webrogue_virgl::virgl::get_segfault_addr(exception_info) else {
+            let Some(addr) = webrogue_gfx::shadow_blob::get_segfault_addr(exception_info) else {
                 return false;
             };
-            webrogue_virgl::virgl::handle_segfault(addr)
+            webrogue_gfx::shadow_blob::handle_segfault(addr)
         });
     }
 
