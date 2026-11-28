@@ -11,8 +11,7 @@ winit = [
     "dep:winit",
     "dep:webrogue-wasmtime",
     "dep:webrogue-gfx-winit",
-    "dep:webrogue-virgl",
-    "webrogue-virgl/lib-impl",
+    "webrogue-gfx-winit/vulkan",
 ]
 
 [dependencies]
@@ -44,7 +43,6 @@ webrogue-hub-debuggee = { workspace = true }
 webrogue-wasmtime = { workspace = true, features = ["jit"], optional = true }
 webrogue-gfx = { workspace = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
-webrogue-virgl = { workspace = true, optional = true }
 headers = { workspace = true }
 rand = { workspace = true }
 tokio-tungstenite = { workspace = true, features = ["rustls-tls-webpki-roots"] }

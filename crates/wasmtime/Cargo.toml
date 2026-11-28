@@ -15,7 +15,6 @@ pulley = ["wasmtime/pulley"]
 
 [dependencies]
 webrogue-gfx = { workspace = true, features = ["wasmtime"] }
-webrogue-virgl = { workspace = true }
 anyhow = { workspace = true }
 webrogue-wrapp = { workspace = true }
 wasmtime = { workspace = true, default-features = false, features = ["runtime", "anyhow", "debug"] }

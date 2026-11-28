@@ -24,7 +24,6 @@ docker --version | grep podman >/dev/null || {
     DOCKER_USER_FLAGS="-u $(id -u ${USER}):$(id -g ${USER})"
 }
 
-
 for LIBC in $LIBCS
 do
     for ARCH in $ARCHES

@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "vulkan")]
 use ash::Entry;
 use webrogue_gfx::SurfaceKind;
-#[cfg(not(target_arch = "wasm32"))]
-use webrogue_gfx::{VirGLContextContainer, VirGLRenderer};
+#[cfg(feature = "vulkan")]
+use webrogue_gfx::virgl::{ContextContainer, Renderer, SystemProxy};
 use winit::window::WindowAttributes;
 
 use crate::surface_lifecycle::SurfaceLifecycle;
@@ -12,13 +12,13 @@ use crate::window::WindowList;
 use crate::window_icons::WindowIcons;
 use crate::{WinitWindow, mailbox::Mailbox};
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "vulkan")]
 use webrogue_gfx::load_vulkan_entry;
 
 pub struct WinitSystem {
     pub(crate) mailbox: Mailbox,
-    #[cfg(not(target_arch = "wasm32"))]
-    pub(crate) virgl_context: Option<Arc<Mutex<webrogue_gfx::VirGLContextContainer>>>,
+    #[cfg(feature = "vulkan")]
+    pub(crate) virgl_context: Option<Arc<Mutex<ContextContainer>>>,
     pub(crate) window_attributes_fn:
         Option<Arc<dyn Fn(WindowAttributes) -> WindowAttributes + Send + Sync>>,
     pub(crate) windows: Arc<WindowList>,
@@ -27,11 +27,9 @@ pub struct WinitSystem {
 
 impl Drop for WinitSystem {
     fn drop(&mut self) {
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            // virgl must be deinitialized before vulkan library is unloaded
-            self.virgl_context.take();
-        }
+        // virgl must be deinitialized before vulkan library is unloaded
+        #[cfg(feature = "vulkan")]
+        self.virgl_context.take();
     }
 }
 
@@ -46,39 +44,39 @@ impl WinitSystem {
         surface_lifecycle: Arc<SurfaceLifecycle>,
         icons: Arc<Mutex<WindowIcons>>,
     ) -> anyhow::Result<Self> {
-        #[cfg(not(target_arch = "wasm32"))]
-        let vulkan_entry =
-            if vulkan_requirement == Some(false) || webrogue_gfx::VirGLRenderer::is_stub() {
+        #[cfg(feature = "vulkan")]
+        let virgl_context = {
+            let vulkan_entry = if vulkan_requirement == Some(false) {
                 None
             } else {
                 load_vulkan_entry(vulkan_requirement == Some(true))
             };
-        #[cfg(not(target_arch = "wasm32"))]
-        if vulkan_entry.is_none() && vulkan_requirement == Some(true) {
-            anyhow::bail!(
-                "Vulkan is required by this application, but no compatible Vulkan driver found"
-            )
-        }
-        #[cfg(target_arch = "wasm32")]
+            if vulkan_entry.is_none() && vulkan_requirement == Some(true) {
+                anyhow::bail!(
+                    "Vulkan is required by this application, but no compatible Vulkan driver found"
+                )
+            }
+            vulkan_entry.as_ref().map(|entry| {
+                Arc::new(Mutex::new(ContextContainer::new(Renderer::get(
+                    Arc::new(entry.clone()),
+                    Arc::new(VirGLSystemProxy {
+                        mailbox: mailbox.clone(),
+                        vulkan_entry: Arc::new(entry.clone()),
+                        windows: windows.clone(),
+                        surface_lifecycle: surface_lifecycle.clone(),
+                    }),
+                ))))
+            })
+        };
+
+        #[cfg(not(feature = "vulkan"))]
         if vulkan_requirement == Some(true) {
-            anyhow::bail!("Vulkan is unsupported in web runtime")
+            anyhow::bail!("Vulkan support is disabled at compile time")
         }
         let _ = &surface_lifecycle;
-        #[cfg(not(target_arch = "wasm32"))]
-        let virgl_context = vulkan_entry.as_ref().map(|entry| {
-            Arc::new(Mutex::new(VirGLContextContainer::new(VirGLRenderer::get(
-                Arc::new(entry.clone()),
-                Arc::new(VirGLSystemProxy {
-                    mailbox: mailbox.clone(),
-                    vulkan_entry: Arc::new(entry.clone()),
-                    windows: windows.clone(),
-                    surface_lifecycle: surface_lifecycle.clone(),
-                }),
-            ))))
-        });
         Ok(Self {
             mailbox,
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(feature = "vulkan")]
             virgl_context,
             window_attributes_fn,
             windows,
@@ -89,13 +87,13 @@ impl WinitSystem {
 
 impl webrogue_gfx::AbstractSystem for WinitSystem {
     fn make_window(&self, surface_kind: SurfaceKind) -> anyhow::Result<webrogue_gfx::Window> {
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(feature = "vulkan")]
         if matches!(surface_kind, SurfaceKind::Vulkan) && self.virgl_context.is_none() {
             anyhow::bail!("Vulkan window requested, but no compatible Vulkan driver was found");
         }
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(not(feature = "vulkan"))]
         if matches!(surface_kind, SurfaceKind::Vulkan) {
-            anyhow::bail!("Vulkan is unsupported in the web runtime");
+            anyhow::bail!("Vulkan supported is disabled at compile time");
         }
         Ok(webrogue_gfx::Window::new(WinitWindow::new(
             self.mailbox.clone(),
@@ -106,13 +104,13 @@ impl webrogue_gfx::AbstractSystem for WinitSystem {
         )?))
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
-    fn get_virgl_context(&self) -> Option<Arc<Mutex<VirGLContextContainer>>> {
+    #[cfg(feature = "vulkan")]
+    fn get_virgl_context(&self) -> Option<Arc<Mutex<ContextContainer>>> {
         self.virgl_context.clone()
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "vulkan")]
 #[derive(Clone)]
 struct VirGLSystemProxy {
     mailbox: Mailbox,
@@ -121,8 +119,8 @@ struct VirGLSystemProxy {
     vulkan_entry: Arc<Entry>,
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-impl webrogue_gfx::VirGLSystemProxy for VirGLSystemProxy {
+#[cfg(feature = "vulkan")]
+impl SystemProxy for VirGLSystemProxy {
     fn vk_create_surface_webrogue(
         &self,
         instance: ash::vk::Instance,

@@ -33,8 +33,6 @@ impl Renderer {
     }
 
     fn new(vk_lib: Arc<Entry>, system_proxy: Arc<dyn SystemProxy>) -> Arc<Self> {
-        #[cfg(feature = "_lib")]
-        webrogue_virgl_lib::stub_fn();
         shadow_blob::init();
 
         unsafe extern "system" fn wrapped_sym(

@@ -77,7 +77,8 @@ impl AbstractSystem for HeadlessSystem {
         })))
     }
 
-    fn get_virgl_context(&self) -> Option<Arc<Mutex<webrogue_virgl::ContextContainer>>> {
+    #[cfg(feature = "_vulkan")]
+    fn get_virgl_context(&self) -> Option<Arc<Mutex<webrogue_gfx::virgl::ContextContainer>>> {
         None
     }
 }

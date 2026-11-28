@@ -78,9 +78,8 @@ if is_component_selected("cli"):
 
 if is_component_selected("aot-lib"):
     for target in native_targets:
-        check(package="webrogue-aot-lib", target=target)
-        for virgl_type in ["impl", "stub"]:
-            check(package="webrogue-virgl-lib", target=target, features=[virgl_type])
+        for features in [[], ["vulkan"]]:
+            check(package="webrogue-aot-lib", target=target, features=features)
 
 if is_component_selected("android"):
     for ndk_target in ["arm64-v8a", "x86_64"]:
@@ -107,4 +106,4 @@ for pending_check in tqdm_func(pending_checks):
     )
 
 if components != checked_components:
-    raise Exception(f"Some specified components were not checked. Specified components :{components}")
+    raise Exception(f"Some specified components were not checked. Specified components: {components}")

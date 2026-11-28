@@ -12,8 +12,6 @@ pub enum InternalCommands {
         wrapp_path: PathBuf,
         out_path: PathBuf,
         target: String,
-        #[arg(short, long)]
-        pic: bool,
     },
 }
 
@@ -24,7 +22,6 @@ impl InternalCommands {
                 wrapp_path,
                 out_path,
                 target,
-                pic,
             } => {
                 let wasm = crate::compile::process_wasm(wrapp_path, out_path)?;
                 crate::compile::compile_wrapp_to_object(
@@ -32,7 +29,6 @@ impl InternalCommands {
                     out_path,
                     crate::Target::from_name(target)?,
                     None,
-                    *pic,
                     false,
                 )?;
             }
@@ -52,12 +48,11 @@ impl InternalCommands {
                     target,
                     None,
                     true,
-                    true,
                 )?;
                 crate::android::link::link(
                     &object_file,
                     match target {
-                        crate::Target::ARM64LinuxAndroid => crate::android::AndroidArch::Aarch64,
+                        crate::Target::ARM64LinuxAndroid => crate::android::AndroidArch::AArch64,
                         crate::Target::X86_64LinuxAndroid => crate::android::AndroidArch::X86_64,
                         _ => anyhow::bail!("Unsupported target for Android: {}", target),
                     },

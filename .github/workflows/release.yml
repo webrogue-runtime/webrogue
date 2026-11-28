@@ -94,11 +94,11 @@ jobs:
           for dir in webrogue-cli-linux-glibc-x86_64 webrogue-cli-linux-glibc-aarch64 webrogue-cli-linux-musl-x86_64 webrogue-cli-linux-musl-aarch64 webrogue-cli-macos-arm64 webrogue-cli-macos-x86_64
           do
             chmod +x $dir/webrogue
-            tar czf $dir.tar.gz $dir/
+            tar czf $dir.tar.gz -C $dir/ .
           done
 
-          zip -r webrogue-cli-windows-x86_64.zip webrogue-cli-windows-x86_64/
-          zip -r webrogue-cli-windows-aarch64.zip webrogue-cli-windows-aarch64/
+          (cd webrogue-cli-windows-x86_64 && zip -r ../webrogue-cli-windows-x86_64.zip .)
+          (cd webrogue-cli-windows-aarch64 && zip -r ../webrogue-cli-windows-aarch64.zip .)
 
       - uses: ncipollo/release-action@v1
         if: github.event_name == 'push'
@@ -113,6 +113,6 @@ jobs:
             webrogue-cli-windows-x86_64.zip
             webrogue-cli-windows-aarch64.zip
             aot_artifacts_packed/*.zip
-          name: Release ${{ github.ref_name }}
+          name: Webrogue ${{ github.ref_name }}
           tag: ${{ github.ref_name }}
-          makeLatest: true
+          draft: true

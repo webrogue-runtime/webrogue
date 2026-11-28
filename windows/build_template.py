@@ -26,17 +26,6 @@ os.environ["CC"] = "clang-cl"
 os.environ["CXX"] = "clang-cl"
 os.environ["RUSTUP_TOOLCHAIN"] = "nightly"
 
-cargo_flags = [
-    f"--target={rust_arch}-pc-windows-msvc",
-    "--profile=aot",
-    "-Z",
-    "build-std",
-]
-
-out_dir = os.path.join(repo_dir, "aot_artifacts", f"windows-{rust_arch}cpu")
-if not os.path.exists(out_dir):
-    os.makedirs(out_dir)
-
 empty_wrapp = os.path.join(repo_dir, "webrogue-sdk", "examples", "empty", "webrogue.json")
 if os.path.exists(empty_wrapp):
     subprocess.run(
@@ -51,169 +40,155 @@ if os.path.exists(empty_wrapp):
             "compile",
             "object",
             str(empty_wrapp),
-            f"windows\\msvc\\empty-{rust_arch}.obj",
+            f"windows\\empty-{rust_arch}.obj",
             f"{rust_arch}-windows-msvc"
         ],
         cwd=str(repo_dir),
     ).check_returncode()
 
-subprocess.run(
-    [
-        "cargo",
-        "build",
-        "--manifest-path=../crates/aot-lib/Cargo.toml",
-        "--target-dir=./target",
-    ] + cargo_flags,
-    cwd=str(template_dir),
-).check_returncode()
+def batched(iterable, n):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx : min(ndx + n, l)]
 
-for virgl_type in ["impl", "stub"]:
-    build_result = subprocess.run(
+common_out_dir = os.path.join(repo_dir, "aot_artifacts", f"windows-{rust_arch}cpu")
+if not os.path.exists(common_out_dir):
+    os.makedirs(common_out_dir)
+
+for is_vulkan in [False, True]:
+    out_dir = os.path.join(repo_dir, "aot_artifacts", f"windows-{rust_arch}cpu-{"vulkan" if is_vulkan else "novulkan"}")
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    cargo_flags = [
+        f"--target={rust_arch}-pc-windows-msvc",
+        "--profile=aot",
+        "-Z",
+        "build-std",
+    ]
+    if is_vulkan:
+        cargo_flags.append("--features=vulkan")
+
+    subprocess.run(
         [
             "cargo",
             "build",
-            "--manifest-path=../crates/virgl-lib/Cargo.toml",
+            "--manifest-path=../crates/aot-lib/Cargo.toml",
             "--target-dir=./target",
-            f"--features={virgl_type}",
-            "--message-format=json",
         ] + cargo_flags,
         cwd=str(template_dir),
-        stdout=subprocess.PIPE,
-    )
-    if build_result.returncode:
-        print(build_result.stdout.decode())
-        quit()
-    rlib_path = None
-    for line in build_result.stdout.decode().splitlines():
-        message = json.loads(line)
-        if message.get("reason") != "compiler-artifact":
-            continue
-        if message["target"]["name"] != "webrogue_virgl_lib":
-            continue
-        for filename in message["filenames"]:
-            if filename.endswith(".rlib"):
-                rlib_path = filename
-    lib_out_path = os.path.join(
-        out_dir,
-        f"webrogue_virgl_lib_{virgl_type}.a",
-    )
-    if os.path.exists(lib_out_path):
-        os.remove(lib_out_path)
-    os.rename(rlib_path, lib_out_path)
+    ).check_returncode()
 
-virgl_lib_impl = os.path.join(out_dir, "webrogue_virgl_lib_impl.a")
+    for win_type in ["gui", "console"]:
+        subprocess.run(
+            [
+                "clang",
+                "-target",
+                f"{rust_arch}-pc-win32",
+                "-c",
+                "main.c",
+                "-o",
+                f"{win_type}.obj",
+                "-fms-compatibility-version=19",
+                "-fms-extensions",
+                "-fdelayed-template-parsing",
+                "-fexceptions",
+                "-mthread-model",
+                "posix",
+                "-fno-threadsafe-statics",
+                "-Wno-msvc-not-found",
+                "-DWIN32",
+                "-D_WIN32",
+                "-D_MT",
+                "-D_DLL",
+                "-Xclang",
+                "-disable-llvm-verifier",
+                "-D_CRT_SECURE_NO_WARNINGS",
+                "-D_CRT_NONSTDC_NO_DEPRECATE",
+                "-U__GNUC__",
+                "-U__gnu_linux__",
+                "-U__GNUC_MINOR__",
+                "-U__GNUC_PATCHLEVEL__",
+                "-U__GNUC_STDC_INLINE__",
+                f"-I{os.path.join(sdk_dir, 'Include', sdk_version , 'um')}",
+                f"-I{os.path.join(sdk_dir, 'Include', sdk_version , 'shared')}",
+                # "-I$XWIN_PATH/crt/include",
+                f"-I{os.path.join(sdk_dir, 'Include', sdk_version , 'ucrt')}",
+                f"-DWR_WIN_TYPE_{win_type}",
+            ],
+            cwd=str(template_dir),
+        ).check_returncode()
+        obj_out_path = os.path.join(common_out_dir, f"{win_type}.obj")
+        if os.path.exists(obj_out_path):
+            os.remove(obj_out_path)
+        os.rename(
+            os.path.join(template_dir, f"{win_type}.obj"),
+            obj_out_path,
+        )
+    um_lib_dir = os.path.join(sdk_dir, "Lib", sdk_version, "um", win_arch)
 
-for win_type in ["gui", "console"]:
+    webrogue_aot_lib_path = os.path.join(template_dir, "webrogue_aot_lib.lib")
+    if os.path.exists(webrogue_aot_lib_path):
+        os.remove(webrogue_aot_lib_path)
+    os.rename(
+        os.path.join(
+            template_dir,
+            "target",
+            f"{rust_arch}-pc-windows-msvc",
+            "aot",
+            "webrogue_aot_lib.lib",
+        ),
+        webrogue_aot_lib_path,
+    )
+
     subprocess.run(
         [
-            "clang",
-            "-target",
-            f"{rust_arch}-pc-win32",
-            "-c",
-            "main.c",
-            "-o",
-            f"{win_type}.obj",
-            "-fms-compatibility-version=19",
-            "-fms-extensions",
-            "-fdelayed-template-parsing",
-            "-fexceptions",
-            "-mthread-model",
-            "posix",
-            "-fno-threadsafe-statics",
-            "-Wno-msvc-not-found",
-            "-DWIN32",
-            "-D_WIN32",
-            "-D_MT",
-            "-D_DLL",
-            "-Xclang",
-            "-disable-llvm-verifier",
-            "-D_CRT_SECURE_NO_WARNINGS",
-            "-D_CRT_NONSTDC_NO_DEPRECATE",
-            "-U__GNUC__",
-            "-U__gnu_linux__",
-            "-U__GNUC_MINOR__",
-            "-U__GNUC_PATCHLEVEL__",
-            "-U__GNUC_STDC_INLINE__",
-            f"-I{os.path.join(sdk_dir, 'Include', sdk_version , 'um')}",
-            f"-I{os.path.join(sdk_dir, 'Include', sdk_version , 'shared')}",
-            # "-I$XWIN_PATH/crt/include",
-            f"-I{os.path.join(sdk_dir, 'Include', sdk_version , 'ucrt')}",
-            f"-DWR_WIN_TYPE_{win_type}",
+            "llvm-ar",
+            "qLs",
+            webrogue_aot_lib_path,
+            os.path.join(vc_tools_install_dir, "lib", win_arch, "libcpmt.lib"),
+            os.path.join(vc_tools_install_dir, "lib", win_arch, "libvcruntime.lib"),
+            os.path.join(vc_tools_install_dir, "lib", win_arch, "oldnames.lib"),
+            os.path.join(vc_tools_install_dir, "lib", win_arch, "libcmt.lib"),
+            os.path.join(sdk_dir, "Lib", sdk_version, "ucrt", win_arch, "libucrt.lib"),
+            # os.path.join(um_lib_dir, "ws2_32.lib"),
+            os.path.join(um_lib_dir, "ntdll.lib"),
+            os.path.join(um_lib_dir, "AdvAPI32.Lib"),
+            os.path.join(um_lib_dir, "bcrypt.lib"),
+            os.path.join(um_lib_dir, "kernel32.lib"),
+            # os.path.join(um_lib_dir, "UserEnv.Lib"),
+            # os.path.join(um_lib_dir, "oleaut32.lib"),
+            os.path.join(um_lib_dir, "ole32.lib"),
+            os.path.join(um_lib_dir, "gdi32.lib"),
+            os.path.join(um_lib_dir, "user32.lib"),
+            os.path.join(um_lib_dir, "imm32.lib"),
+            # os.path.join(um_lib_dir, "version.lib"),
+            # os.path.join(um_lib_dir, "setupapi.lib"),
+            # os.path.join(um_lib_dir, "winmm.lib"),
+            # os.path.join(um_lib_dir, "shell32.lib"),
+            # os.path.join(um_lib_dir, "uuid.lib"),
+            os.path.join(um_lib_dir, "Uxtheme.lib"),
+            os.path.join(um_lib_dir, "dwmapi.lib"),
         ],
         cwd=str(template_dir),
     ).check_returncode()
-    obj_out_path = os.path.join(out_dir, f"{win_type}.obj")
-    if os.path.exists(obj_out_path):
-        os.remove(obj_out_path)
-    os.rename(
-        os.path.join(template_dir, f"{win_type}.obj"),
-        obj_out_path,
+
+    lib_content_result = subprocess.run(
+        ["llvm-ar", "t", webrogue_aot_lib_path],
+        cwd=str(template_dir),
+        stdout=subprocess.PIPE,
     )
-um_lib_dir = os.path.join(sdk_dir, "Lib", sdk_version, "um", win_arch)
+    if lib_content_result.returncode:
+        print(lib_content_result.stdout.decode())
+        quit()
+    lib_content = lib_content_result.stdout.decode()
 
-webrogue_aot_lib_path = os.path.join(template_dir, "webrogue_aot_lib.lib")
-if os.path.exists(webrogue_aot_lib_path):
-    os.remove(webrogue_aot_lib_path)
-os.rename(
-    os.path.join(
-        template_dir,
-        "target",
-        f"{rust_arch}-pc-windows-msvc",
-        "aot",
-        "webrogue_aot_lib.lib",
-    ),
-    webrogue_aot_lib_path,
-)
+    lld_outputs: list[str] = []
 
-subprocess.run(
-    [
-        "llvm-ar",
-        "qLs",
-        webrogue_aot_lib_path,
-        os.path.join(vc_tools_install_dir, "lib", win_arch, "libcpmt.lib"),
-        os.path.join(vc_tools_install_dir, "lib", win_arch, "libvcruntime.lib"),
-        os.path.join(vc_tools_install_dir, "lib", win_arch, "oldnames.lib"),
-        os.path.join(vc_tools_install_dir, "lib", win_arch, "libcmt.lib"),
-        os.path.join(sdk_dir, "Lib", sdk_version, "ucrt", win_arch, "libucrt.lib"),
-        # os.path.join(um_lib_dir, "ws2_32.lib"),
-        os.path.join(um_lib_dir, "ntdll.lib"),
-        os.path.join(um_lib_dir, "AdvAPI32.Lib"),
-        os.path.join(um_lib_dir, "bcrypt.lib"),
-        os.path.join(um_lib_dir, "kernel32.lib"),
-        # os.path.join(um_lib_dir, "UserEnv.Lib"),
-        # os.path.join(um_lib_dir, "oleaut32.lib"),
-        os.path.join(um_lib_dir, "ole32.lib"),
-        os.path.join(um_lib_dir, "gdi32.lib"),
-        os.path.join(um_lib_dir, "user32.lib"),
-        os.path.join(um_lib_dir, "imm32.lib"),
-        # os.path.join(um_lib_dir, "version.lib"),
-        # os.path.join(um_lib_dir, "setupapi.lib"),
-        # os.path.join(um_lib_dir, "winmm.lib"),
-        # os.path.join(um_lib_dir, "shell32.lib"),
-        # os.path.join(um_lib_dir, "uuid.lib"),
-        os.path.join(um_lib_dir, "Uxtheme.lib"),
-        os.path.join(um_lib_dir, "dwmapi.lib"),
-    ],
-    cwd=str(template_dir),
-).check_returncode()
-
-lib_content_result = subprocess.run(
-    ["llvm-ar", "t", webrogue_aot_lib_path],
-    cwd=str(template_dir),
-    stdout=subprocess.PIPE,
-)
-if lib_content_result.returncode:
-    print(lib_content_result.stdout.decode())
-    quit()
-lib_content = lib_content_result.stdout.decode()
-
-lld_outputs: list[str] = []
-
-# Stage 1: use lld-link's verbose output to find objects that are never
-# referenced. This is fast but conservative, especially on AArch64.
-for virgl_type in ["impl", "stub"]:
+    # Stage 1: use lld-link's verbose output to find objects that are never
+    # referenced. This is fast but conservative, especially on AArch64.
     for win_type in ["gui", "console"]:
-        obj_out_path = os.path.join(out_dir, f"{win_type}.obj")
+        obj_out_path = os.path.join(common_out_dir, f"{win_type}.obj")
         exe_path = os.path.join(template_dir, "aot.exe")
         lld_content_result = subprocess.run(
             [
@@ -224,10 +199,6 @@ for virgl_type in ["impl", "stub"]:
                 os.path.join(template_dir, f"empty-{rust_arch}.obj"),
                 obj_out_path,
                 webrogue_aot_lib_path,
-                os.path.join(
-                    out_dir,
-                    f"webrogue_virgl_lib_{virgl_type}.a",
-                ),
                 "/nodefaultlib",
                 "/threads:1",
                 "/verbose",
@@ -240,60 +211,50 @@ for virgl_type in ["impl", "stub"]:
             quit()
         lld_outputs.append(lld_content_result.stderr.decode())
 
-prefix_str_1 = "lld-link: Loaded webrogue_aot_lib.lib("
-prefix_str_2 = "lld-link: Reading webrogue_aot_lib.lib("
-visited = set()
+    prefix_str_1 = "lld-link: Loaded webrogue_aot_lib.lib("
+    prefix_str_2 = "lld-link: Reading webrogue_aot_lib.lib("
+    visited = set()
 
-for lld_output in lld_outputs:
-    for line in lld_output.splitlines():
-        if line.startswith(prefix_str_1):
-            line = line[len(prefix_str_1) : line.find(")", len(prefix_str_1))]
-            visited.add(line)
-        elif line.startswith(prefix_str_2):
-            line = line[len(prefix_str_2) : -2]
-            visited.add(line)
+    for lld_output in lld_outputs:
+        for line in lld_output.splitlines():
+            if line.startswith(prefix_str_1):
+                line = line[len(prefix_str_1) : line.find(")", len(prefix_str_1))]
+                visited.add(line)
+            elif line.startswith(prefix_str_2):
+                line = line[len(prefix_str_2) : -2]
+                visited.add(line)
 
-objects_to_remove = []
+    objects_to_remove = []
 
-for line in lib_content.splitlines():
-    line = line.strip()
-    if line.endswith(".dll"):
-        continue
-    if [1 for o in visited if line.endswith(o)]:
-        continue
-    objects_to_remove.append(line)
-
-
-def batched(iterable, n):
-    l = len(iterable)
-    for ndx in range(0, l, n):
-        yield iterable[ndx : min(ndx + n, l)]
+    for line in lib_content.splitlines():
+        line = line.strip()
+        if line.endswith(".dll"):
+            continue
+        if [1 for o in visited if line.endswith(o)]:
+            continue
+        objects_to_remove.append(line)
 
 
-for object_batch_to_remove in batched(objects_to_remove, 128):
-    subprocess.run(
-        ["llvm-ar", "d", webrogue_aot_lib_path] + list(object_batch_to_remove),
-        cwd=str(template_dir),
-    ).check_returncode()
+    for object_batch_to_remove in batched(objects_to_remove, 128):
+        subprocess.run(
+            ["llvm-ar", "d", webrogue_aot_lib_path] + list(object_batch_to_remove),
+            cwd=str(template_dir),
+        ).check_returncode()
 
-# Stage 2: use the linker as an oracle to remove the objects that stage 1 kept
-# conservatively. This is slower, but it finds many more dead objects.
-webrogue_aot_lib_out_path = os.path.join(out_dir, "webrogue_aot_lib.lib")
-tree_shake.tree_shake(
-    archive=webrogue_aot_lib_path,
-    objects=[
-        os.path.join(out_dir, "gui.obj"),
-        os.path.join(out_dir, "console.obj"),
-    ],
-    output=webrogue_aot_lib_out_path,
-    machine=win_arch,
-    app_obj=os.path.join(template_dir, f"empty-{rust_arch}.obj"),
-    virgl_libs=[
-        os.path.join(out_dir, "webrogue_virgl_lib_impl.a"),
-        os.path.join(out_dir, "webrogue_virgl_lib_stub.a"),
-    ],
-)
-os.remove(webrogue_aot_lib_path)
+    # Stage 2: use the linker as an oracle to remove the objects that stage 1 kept
+    # conservatively. This is slower, but it finds many more dead objects.
+    webrogue_aot_lib_out_path = os.path.join(out_dir, "webrogue_aot_lib.lib")
+    tree_shake.tree_shake(
+        archive=webrogue_aot_lib_path,
+        objects=[
+            os.path.join(common_out_dir, "gui.obj"),
+            os.path.join(common_out_dir, "console.obj"),
+        ],
+        output=webrogue_aot_lib_out_path,
+        machine=win_arch,
+        app_obj=os.path.join(template_dir, f"empty-{rust_arch}.obj"),
+    )
+    os.remove(webrogue_aot_lib_path)
 
 # mesa_version = "26.1.4"
 # if not os.path.exists(os.path.join(template_dir, "lavapipe")):

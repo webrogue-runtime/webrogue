@@ -10,7 +10,7 @@ pub fn link(
 ) -> anyhow::Result<()> {
     let mut args = vec!["ld.lld".to_string()];
     match arch {
-        AndroidArch::Aarch64 => {
+        AndroidArch::AArch64 => {
             args.push("-EL".to_string());
             args.push("--fix-cortex-a53-843419".to_string());
         }
@@ -26,7 +26,7 @@ pub fn link(
 
     args.push("-m".to_string());
     match arch {
-        AndroidArch::Aarch64 => {
+        AndroidArch::AArch64 => {
             args.push("aarch64linux".to_string());
         }
         AndroidArch::X86_64 => {

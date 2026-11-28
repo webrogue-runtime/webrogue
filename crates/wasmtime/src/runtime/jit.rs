@@ -101,7 +101,7 @@ impl JitRuntime {
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking)
                     .compiler_inlining(Inlining::Intrinsics)
                     .signals_based_traps(true);
-                webrogue_virgl::shadow_blob::external_signal_handler_installed();
+                webrogue_gfx::shadow_blob::external_signal_handler_installed();
             }
             JitProfile::FastCompilation => {
                 config
@@ -109,7 +109,7 @@ impl JitRuntime {
                     .cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::SinglePass)
                     .compiler_inlining(Inlining::Intrinsics)
                     .signals_based_traps(true);
-                webrogue_virgl::shadow_blob::external_signal_handler_installed();
+                webrogue_gfx::shadow_blob::external_signal_handler_installed();
             }
         };
 

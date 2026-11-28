@@ -17,7 +17,6 @@ pub fn compile(
                     &aot_dir.join("aot.x86_64.macosx.o"),
                     crate::Target::x86_64AppleDarwin,
                     cache,
-                    true, // TODO check
                     false,
                 )
             })?;
@@ -27,7 +26,6 @@ pub fn compile(
                     &aot_dir.join("aot.arm64.macosx.o"),
                     crate::Target::ARM64AppleDarwin,
                     cache,
-                    true, // TODO check
                     false,
                 )
             })?;
@@ -39,7 +37,6 @@ pub fn compile(
                     &aot_dir.join("aot.arm64.iphoneos.o"),
                     crate::Target::ARM64AppleIOS,
                     cache,
-                    true, // TODO check
                     false,
                 )
             })?;
@@ -53,7 +50,6 @@ pub fn compile(
                         &aot_dir.join("aot.arm64.iphonesimulator.o"),
                         crate::Target::ARM64AppleIOSSIM,
                         cache,
-                        true, // TODO check
                         false,
                     )
                 },
@@ -66,7 +62,6 @@ pub fn compile(
                         &aot_dir.join("aot.x86_64.iphonesimulator.o"),
                         crate::Target::X86_64AppleIOSSIM,
                         cache,
-                        true, // TODO check
                         false,
                     )
                 },

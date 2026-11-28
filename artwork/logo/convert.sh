@@ -1,6 +1,6 @@
 cd $(dirname $0)
 
-set -e
+set -ex
 
 # sudo snap install svgo
 # sudo apt install librsvg2-bin
@@ -104,3 +104,6 @@ ofsize 44 | parse_colors | outer_fill_color ffffff80 | inner_fill_color ffffff |
 # Embedded default icon
 ofsize 62 | to_png_transparent 1024 ../../crates/icons/media/logo_default_embedded.png
 ofsize 62 | parse_colors | outer_fill_color 000000 | inner_fill_color ffffff | stroke_color ffffff | default_colors | to_png_transparent 1024 ../../crates/icons/media/logo_default_embedded_dark.png
+
+# For documentation
+ofsize 62 | to_svg ../../docs/theme/favicon.svg

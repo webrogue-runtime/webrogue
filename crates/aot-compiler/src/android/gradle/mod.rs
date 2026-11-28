@@ -1,9 +1,12 @@
 use semver::Version;
-use std::{collections::HashSet, io::Write, path::absolute};
+use std::{collections::BTreeMap, io::Write, path::absolute};
 use webrogue_cli_goodies::{note, step};
 use webrogue_vfs::{ArchiveOptions, VFS, archive_to_file, config::Config};
 
-use crate::{android::AndroidArch, aot_artifacts::AotArtifactType, utils::copy_dir_recursive};
+use crate::{
+    aot_artifacts::{AotArtifactType, VulkanPresence},
+    utils::copy_dir_recursive,
+};
 
 mod icons;
 mod types;
@@ -30,11 +33,22 @@ pub fn build(
     output: Option<std::path::PathBuf>,
     cache: Option<&std::path::PathBuf>,
 ) -> anyhow::Result<()> {
-    let artifacts_dir = AotArtifactType::Android.dir_path()?;
     let vfs = VFS::build_from_path(container_path)?;
-
     let config = vfs.config().clone();
-    let template_id = std::fs::read(artifacts_dir.join("template_id"))?;
+
+    let vulkan = if config.vulkan_requirement().to_bool_option().unwrap_or(true) {
+        VulkanPresence::Enabled
+    } else {
+        VulkanPresence::Disabled
+    };
+
+    let common_artifacts_dir = AotArtifactType::AndroidCommon.dir_path()?;
+    let mut archs_and_artifacts_dirs = BTreeMap::new();
+    for arch in archs {
+        archs_and_artifacts_dirs.insert(*arch, AotArtifactType::Android(*arch, vulkan).dir_path()?);
+    }
+
+    let template_id = std::fs::read(common_artifacts_dir.join("template_id"))?;
     let mut old_stamp = read_stamp(build_dir).ok();
 
     if old_stamp.as_ref().map(|stamp| &stamp.template_id) != Some(&template_id) {
@@ -46,7 +60,7 @@ pub fn build(
                 std::fs::remove_dir_all(build_dir)?; // TODO we need to somehow ensure user doesn't removes something important
             }
 
-            copy_dir_recursive(artifacts_dir.join("template"), build_dir)?;
+            copy_dir_recursive(common_artifacts_dir.join("template"), build_dir)?;
             anyhow::Ok(())
         })?;
     }
@@ -78,24 +92,39 @@ pub fn build(
         !archs.is_empty(),
         "At least one Android architecture is required"
     );
-    let mut skipped_archs = HashSet::new();
-    let mut selected_archs = HashSet::new();
-    skipped_archs.extend(AndroidArch::all().iter().cloned());
-    for arch in archs {
-        skipped_archs.remove(arch);
-        selected_archs.insert(*arch);
-    }
 
-    for arch in &skipped_archs {
-        let jni_libs_abi_dir = build_dir
-            .join("app")
-            .join("src")
-            .join("main")
-            .join("jniLibs")
-            .join(arch.abi());
+    // let mut skipped_archs = HashSet::new();
+    // skipped_archs.extend(AndroidArch::all().iter().cloned());
+    // for (arch, _) in &archs_and_artifacts_dirs {
+    //     skipped_archs.remove(arch);
+    // }
 
-        if jni_libs_abi_dir.exists() {
-            std::fs::remove_dir_all(&jni_libs_abi_dir)?;
+    // for arch in &skipped_archs {
+    //     let jni_libs_abi_dir = build_dir
+    //         .join("app")
+    //         .join("src")
+    //         .join("main")
+    //         .join("jniLibs")
+    //         .join(arch.abi());
+
+    //     if jni_libs_abi_dir.exists() {
+    //         std::fs::remove_dir_all(&jni_libs_abi_dir)?;
+    //     }
+    // }
+
+    let jni_libs_dir = build_dir
+        .join("app")
+        .join("src")
+        .join("main")
+        .join("jniLibs");
+    std::fs::create_dir_all(&jni_libs_dir)?;
+
+    for entry in std::fs::read_dir(&jni_libs_dir)? {
+        let entry = entry?;
+        let abi = entry.file_name();
+        let abi = abi.to_str();
+        if !archs.iter().any(|arch| abi == Some(arch.abi())) {
+            std::fs::remove_dir_all(entry.path())?;
         }
     }
 
@@ -103,15 +132,10 @@ pub fn build(
         crate::compile::process_wasm(container_path, build_dir)
     })?;
 
-    for arch in &selected_archs {
+    for (arch, artifacts_dir) in &archs_and_artifacts_dirs {
         let object_file = crate::utils::TemporaryFile::new(build_dir)?;
 
-        let jni_libs_abi_dir = build_dir
-            .join("app")
-            .join("src")
-            .join("main")
-            .join("jniLibs")
-            .join(arch.abi());
+        let jni_libs_abi_dir = jni_libs_dir.join(arch.abi());
 
         std::fs::create_dir_all(&jni_libs_abi_dir)?;
 
@@ -121,17 +145,7 @@ pub fn build(
             step(
                 format!("Extracting runtime library for {}", arch.abi()),
                 || {
-                    std::fs::copy(
-                        artifacts_dir
-                            .join("template")
-                            .join("app")
-                            .join("src")
-                            .join("main")
-                            .join("jniLibs")
-                            .join(arch.abi())
-                            .join("libwebrogue.so"),
-                        &runtime_lib_path,
-                    )?;
+                    std::fs::copy(artifacts_dir.join("libwebrogue.so"), &runtime_lib_path)?;
                     anyhow::Ok(())
                 },
             )?;
@@ -144,7 +158,6 @@ pub fn build(
                 arch.target(),
                 cache,
                 true,
-                true,
             )
         })?;
 
@@ -155,22 +168,6 @@ pub fn build(
                 &jni_libs_abi_dir.join("libwebrogue_aot.so"),
             )
         })?;
-    }
-
-    let jni_libs_dir = build_dir
-        .join("app")
-        .join("src")
-        .join("main")
-        .join("jniLibs");
-    for entry in std::fs::read_dir(&jni_libs_dir)? {
-        let entry = entry?;
-        let abi = entry.file_name();
-        if !selected_archs
-            .iter()
-            .any(|arch| abi.to_str() == Some(arch.abi()))
-        {
-            std::fs::remove_dir_all(entry.path())?;
-        }
     }
 
     let copied_apk_dir = step("Building Android project".to_owned(), || {

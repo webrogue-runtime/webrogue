@@ -1342,7 +1342,6 @@ dependencies = [
  "hashbrown 0.17.2",
  "log",
  "smallvec",
- "target-lexicon 0.13.6",
 ]
 
 [[package]]
@@ -4697,7 +4696,6 @@ name = "pulley-interpreter"
 version = "52.0.0-dev"
 dependencies = [
  "cranelift-bitset",
- "log",
  "pulley-macros",
  "wasmtime-internal-core",
 ]
@@ -7383,6 +7381,7 @@ dependencies = [
  "bytes",
  "cc",
  "encoding_rs",
+ "foldhash",
  "futures",
  "gimli",
  "indexmap",
@@ -7507,7 +7506,6 @@ dependencies = [
  "pulley-interpreter",
  "smallvec",
  "target-lexicon 0.13.6",
- "thiserror 2.0.21",
  "wasmparser 0.263.0",
  "wasmtime-environ",
  "wasmtime-internal-core",
@@ -7621,7 +7619,6 @@ dependencies = [
  "rand 0.10.4",
  "rustix 1.1.6",
  "rustix-linux-procfs",
- "thiserror 2.0.21",
  "tokio",
  "tracing",
  "url",
@@ -7931,7 +7928,6 @@ dependencies = [
  "webrogue-gfx-winit",
  "webrogue-hub-debuggee",
  "webrogue-vfs",
- "webrogue-virgl",
  "webrogue-wasmtime",
  "winit",
  "winit-android",
@@ -8036,7 +8032,6 @@ dependencies = [
  "webrogue-licenses",
  "webrogue-lld",
  "webrogue-vfs",
- "webrogue-virgl",
  "webrogue-wasm-processing",
  "webrogue-wasmtime",
 ]
@@ -8251,7 +8246,6 @@ dependencies = [
  "webrogue-hub-debuggee",
  "webrogue-launcher-server-openapi",
  "webrogue-vfs",
- "webrogue-virgl",
  "webrogue-wasmtime",
  "webrtc",
  "winit",
@@ -8346,21 +8340,14 @@ name = "webrogue-virgl"
 version = "0.3.0"
 dependencies = [
  "ash",
+ "bindgen",
+ "cc",
  "cfg_aliases",
  "lazy_static",
  "libc",
  "rustix 1.1.6",
- "webrogue-virgl-lib",
  "windows-sys 0.61.2",
  "xxhash-rust",
-]
-
-[[package]]
-name = "webrogue-virgl-lib"
-version = "0.3.0"
-dependencies = [
- "bindgen",
- "cc",
 ]
 
 [[package]]
@@ -8390,7 +8377,6 @@ dependencies = [
  "webrogue-debugger",
  "webrogue-gfx",
  "webrogue-vfs",
- "webrogue-virgl",
  "webrogue-wasm-processing",
  "webrogue-wasmtime-common",
  "webrogue-wrapp",

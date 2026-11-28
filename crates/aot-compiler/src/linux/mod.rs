@@ -5,12 +5,21 @@ use std::io::{Seek, Write};
 use webrogue_cli_goodies::step;
 use webrogue_vfs::{ArchiveOptions, VFS, archive};
 
-use crate::aot_artifacts::AotArtifactType;
+use crate::aot_artifacts::{AotArtifactType, LinuxArchLibC, VulkanPresence};
 
 #[derive(Clone, Copy, Debug)]
 pub enum LibC {
     GLibC,
     Musl,
+}
+
+impl LibC {
+    pub fn artifact_str(&self) -> &'static str {
+        match self {
+            LibC::GLibC => "gnulibc",
+            LibC::Musl => "musllibc",
+        }
+    }
 }
 
 impl clap::ValueEnum for LibC {
@@ -29,18 +38,27 @@ impl clap::ValueEnum for LibC {
 #[derive(Clone, Copy, Debug)]
 pub enum LinuxArch {
     X86_64,
-    Aarch64,
+    AArch64,
+}
+
+impl LinuxArch {
+    pub fn artifact_str(&self) -> &'static str {
+        match self {
+            LinuxArch::X86_64 => "x86_64cpu",
+            LinuxArch::AArch64 => "aarch64cpu",
+        }
+    }
 }
 
 impl clap::ValueEnum for LinuxArch {
     fn value_variants<'a>() -> &'a [Self] {
-        &[Self::X86_64, Self::Aarch64]
+        &[Self::X86_64, Self::AArch64]
     }
 
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         match self {
             Self::X86_64 => Some(clap::builder::PossibleValue::new("x86_64").alias("x64")),
-            Self::Aarch64 => Some(clap::builder::PossibleValue::new("aarch64").alias("arm64")),
+            Self::AArch64 => Some(clap::builder::PossibleValue::new("aarch64").alias("arm64")),
         }
     }
 }
@@ -60,47 +78,62 @@ pub fn build_linux(
             .ok_or(anyhow::anyhow!("Path error"))?,
     )?;
     let config = vfs.config();
-    let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
+    let vulkan = if config.vulkan_requirement().to_bool_option().unwrap_or(true) {
+        VulkanPresence::Enabled
+    } else {
+        VulkanPresence::Disabled
+    };
     let wasm = step("Processing WASM code".to_owned(), || {
         crate::compile::process_wasm(wrapp_file_path, output_file_path)
     })?;
+    let arch_libc = LinuxArchLibC { arch, libc };
+    let common_artifacts_dir = AotArtifactType::LinuxCommon(arch_libc).dir_path()?;
+    let artifacts_dir = AotArtifactType::Linux(arch_libc, vulkan).dir_path()?;
     match libc {
         LibC::GLibC => {
-            let artifacts_dir = AotArtifactType::Linux(arch, LibC::GLibC).dir_path()?;
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
                     &wasm,
                     object_file.path(),
                     match &arch {
                         LinuxArch::X86_64 => crate::Target::X86_64LinuxGNU,
-                        LinuxArch::Aarch64 => crate::Target::Aarch64LinuxGNU,
+                        LinuxArch::AArch64 => crate::Target::Aarch64LinuxGNU,
                     },
                     cache,
-                    false,
                     false,
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_glibc(&object_file, output_file_path, arch, vulkan, artifacts_dir)
+                link::link_glibc(
+                    &object_file,
+                    output_file_path,
+                    arch,
+                    artifacts_dir,
+                    common_artifacts_dir,
+                )
             })?;
         }
         LibC::Musl => {
-            let artifacts_dir = AotArtifactType::Linux(arch, LibC::Musl).dir_path()?;
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
                     &wasm,
                     object_file.path(),
                     match &arch {
                         LinuxArch::X86_64 => crate::Target::X86_64LinuxMUSL,
-                        LinuxArch::Aarch64 => crate::Target::Aarch64LinuxMUSL,
+                        LinuxArch::AArch64 => crate::Target::Aarch64LinuxMUSL,
                     },
                     cache,
-                    true,
                     false,
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_musl(&object_file, output_file_path, arch, vulkan, artifacts_dir)
+                link::link_musl(
+                    &object_file,
+                    output_file_path,
+                    arch,
+                    artifacts_dir,
+                    common_artifacts_dir,
+                )
             })?;
         }
     }

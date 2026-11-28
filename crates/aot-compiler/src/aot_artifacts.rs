@@ -3,14 +3,45 @@ use std::path::Path;
 use std::{path::PathBuf, str::FromStr};
 
 use crate::{
+    android::AndroidArch,
     linux::{LibC, LinuxArch},
     windows::WindowsArch,
 };
 
+#[derive(Clone, Copy)]
+pub enum VulkanPresence {
+    Disabled,
+    Enabled,
+}
+
+impl VulkanPresence {
+    fn artifact_str(&self) -> &'static str {
+        match self {
+            VulkanPresence::Disabled => "novulkan",
+            VulkanPresence::Enabled => "vulkan",
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct LinuxArchLibC {
+    pub arch: LinuxArch,
+    pub libc: LibC,
+}
+
+impl LinuxArchLibC {
+    fn artifact_str(&self) -> String {
+        format!("{}-{}", self.arch.artifact_str(), self.libc.artifact_str(),)
+    }
+}
+
 pub enum AotArtifactType {
-    Linux(LinuxArch, LibC),
-    Windows(WindowsArch),
-    Android,
+    LinuxCommon(LinuxArchLibC),
+    Linux(LinuxArchLibC, VulkanPresence),
+    WindowsCommon(WindowsArch),
+    Windows(WindowsArch, VulkanPresence),
+    AndroidCommon,
+    Android(AndroidArch, VulkanPresence),
     Xcode,
 }
 
@@ -92,25 +123,22 @@ impl AotArtifactType {
 
     fn dir_name(&self) -> String {
         match self {
-            AotArtifactType::Linux(arch, libc) => format!(
-                "linux-{}cpu-{}libc",
-                match arch {
-                    LinuxArch::X86_64 => "x86_64",
-                    LinuxArch::Aarch64 => "aarch64",
-                },
-                match libc {
-                    LibC::GLibC => "gnu",
-                    LibC::Musl => "musl",
-                }
+            AotArtifactType::LinuxCommon(arch_libc) => {
+                format!("linux-{}", arch_libc.artifact_str())
+            }
+            AotArtifactType::Linux(arch_libc, vulkan) => format!(
+                "linux-{}-{}",
+                arch_libc.artifact_str(),
+                vulkan.artifact_str()
             ),
-            AotArtifactType::Windows(arch) => format!(
-                "windows-{}cpu",
-                match arch {
-                    WindowsArch::X86_64 => "x86_64",
-                    WindowsArch::AArch64 => "aarch64",
-                }
-            ),
-            AotArtifactType::Android => "android".to_string(),
+            AotArtifactType::WindowsCommon(arch) => format!("windows-{}", arch.artifact_str()),
+            AotArtifactType::Windows(arch, vulkan) => {
+                format!("windows-{}-{}", arch.artifact_str(), vulkan.artifact_str(),)
+            }
+            AotArtifactType::AndroidCommon => "android".to_string(),
+            AotArtifactType::Android(arch, vulkan) => {
+                format!("android-{}-{}", arch.artifact_str(), vulkan.artifact_str(),)
+            }
             AotArtifactType::Xcode => "xcode".to_string(),
         }
     }

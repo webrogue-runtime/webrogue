@@ -99,7 +99,6 @@ webrogue-icons = { path = "crates/icons" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-winit = { path = "crates/gfx-winit" }
 webrogue-virgl = { path = "crates/virgl" }
-webrogue-virgl-lib  = { path = "crates/virgl-lib" }
 webrogue-lld = { path = "crates/lld" }
 webrogue-wrapp = { path = "crates/wrapp" }
 webrogue-launcher = { path = "crates/launcher" }
@@ -197,6 +196,7 @@ tokio-hrtime = "0.1.7"
 wac-graph = "0.12.0"
 wasm-opt = "0.133.0"
 tempfile = "3.27.0"
+jni = { version = "0.22" }
 
 [profile.dev]
 panic = "abort"
