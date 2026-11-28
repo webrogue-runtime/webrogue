@@ -123,7 +123,7 @@ imageproc = { version = "0.27", default-features = false }
 object = { version = "0.40", default-features = false }
 clap = { version = "4" }
 futures =  { version = "0.3" }
-wasmparser = { version = "0.258" }
+wasmparser = { version = "0.263" }
 wasm-encoder = { version = "0.258", default-features = false, features = ["std", "component-model", "wasmparser"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
