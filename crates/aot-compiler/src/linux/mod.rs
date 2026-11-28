@@ -5,7 +5,7 @@ use std::io::{Seek, Write};
 use webrogue_cli_goodies::step;
 use webrogue_vfs::{ArchiveOptions, VFS, archive};
 
-use crate::aot_artifacts::AotArtifactType;
+use crate::aot_artifacts::{AotArtifactType, LinuxArchLibC, VulkanPresence};
 
 #[derive(Clone, Copy, Debug)]
 pub enum LibC {
@@ -60,13 +60,19 @@ pub fn build_linux(
             .ok_or(anyhow::anyhow!("Path error"))?,
     )?;
     let config = vfs.config();
-    let vulkan = config.vulkan_requirement().to_bool_option().unwrap_or(true);
+    let vulkan = if config.vulkan_requirement().to_bool_option().unwrap_or(true) {
+        VulkanPresence::Enabled
+    } else {
+        VulkanPresence::Disabled
+    };
     let wasm = step("Processing WASM code".to_owned(), || {
         crate::compile::process_wasm(wrapp_file_path, output_file_path)
     })?;
+    let arch_libc = LinuxArchLibC { arch, libc };
+    let common_artifacts_dir = AotArtifactType::LinuxCommon(arch_libc).dir_path()?;
+    let artifacts_dir = AotArtifactType::Linux(arch_libc, vulkan).dir_path()?;
     match libc {
         LibC::GLibC => {
-            let artifacts_dir = AotArtifactType::Linux(arch, LibC::GLibC).dir_path()?;
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
                     &wasm,
@@ -77,15 +83,19 @@ pub fn build_linux(
                     },
                     cache,
                     false,
-                    false,
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_glibc(&object_file, output_file_path, arch, vulkan, artifacts_dir)
+                link::link_glibc(
+                    &object_file,
+                    output_file_path,
+                    arch,
+                    artifacts_dir,
+                    common_artifacts_dir,
+                )
             })?;
         }
         LibC::Musl => {
-            let artifacts_dir = AotArtifactType::Linux(arch, LibC::Musl).dir_path()?;
             step("Compiling AOT object".to_owned(), || {
                 crate::compile::compile_wrapp_to_object(
                     &wasm,
@@ -95,12 +105,17 @@ pub fn build_linux(
                         LinuxArch::Aarch64 => crate::Target::Aarch64LinuxMUSL,
                     },
                     cache,
-                    true,
                     false,
                 )
             })?;
             step("Linking native binary".to_owned(), || {
-                link::link_musl(&object_file, output_file_path, arch, vulkan, artifacts_dir)
+                link::link_musl(
+                    &object_file,
+                    output_file_path,
+                    arch,
+                    artifacts_dir,
+                    common_artifacts_dir,
+                )
             })?;
         }
     }

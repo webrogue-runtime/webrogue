@@ -12,13 +12,11 @@ launcher = [
     "dep:jni",
     "dep:serde",
     "dep:serde_json",
-    "webrogue-virgl/lib-impl",
     "dep:webrogue-hub-debuggee",
     "dep:tokio",
 ]
 runner = [
     "webrogue-wasmtime/aot",
-    "webrogue-virgl/lib-impl",
     "dep:webrogue-common",
 ]
 
@@ -30,8 +28,7 @@ crate-type = ["cdylib"]
 anyhow = { workspace = true }
 webrogue-wasmtime = { workspace = true }
 winit = { workspace = true }
-webrogue-virgl = { workspace = true }
-webrogue-gfx-winit = { workspace = true }
+webrogue-gfx-winit = { workspace = true, features = ["vulkan"] } # TODO disable vulkan on x64
 jni = { version = "0.22", optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }

@@ -113,6 +113,6 @@ jobs:
             webrogue-cli-windows-x86_64.zip
             webrogue-cli-windows-aarch64.zip
             aot_artifacts_packed/*.zip
-          name: Release ${{ github.ref_name }}
+          name: Webrogue ${{ github.ref_name }}
           tag: ${{ github.ref_name }}
           makeLatest: true

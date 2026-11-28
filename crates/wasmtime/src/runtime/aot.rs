@@ -15,7 +15,7 @@ impl AotRuntime {
 
         config.with_custom_code_memory(Some(Arc::new(StaticCodeMemory {})));
 
-        webrogue_virgl::shadow_blob::external_signal_handler_installed();
+        webrogue_gfx::shadow_blob::external_signal_handler_installed();
         let engine = wasmtime::Engine::new(&config)?;
         let component = unsafe {
             wasmtime::component::Component::deserialize_raw(

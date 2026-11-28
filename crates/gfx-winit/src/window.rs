@@ -70,7 +70,7 @@ impl WindowList {
         windows.push(Arc::downgrade(window));
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "vulkan")]
     pub(crate) fn get_by_vk_id(&self, vk_id: u32) -> Option<Arc<WinitWindow>> {
         self.windows
             .lock()

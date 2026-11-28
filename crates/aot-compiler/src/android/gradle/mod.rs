@@ -144,7 +144,6 @@ pub fn build(
                 arch.target(),
                 cache,
                 true,
-                true,
             )
         })?;
 

@@ -10,11 +10,10 @@ rust-version.workspace = true
 run = [
     "dep:webrogue-wasmtime",
     "dep:webrogue-gfx-winit",
+    "_vulkan",
     "dep:webrogue-gfx",
-    "dep:webrogue-virgl",
     "dep:webrogue-common",
     "webrogue-common/webrogue-dir",
-    "webrogue-virgl/lib-impl",
     "dep:tokio",
     "dep:async-trait",
     "dep:tokio-util",
@@ -40,6 +39,7 @@ hub-run = [
     "run",
     "hub",
     "dep:webrogue-hub-debuggee",
+    "_vulkan",
     "dep:webrogue-common",
     "webrogue-common/webrogue-dir",
 ]
@@ -53,9 +53,8 @@ internal = []
 internal-run = [
     "internal",
     "dep:webrogue-wasmtime",
+    # webrogue-wasmtime/vulkan is disabled
     "dep:webrogue-gfx",
-    "dep:webrogue-virgl",
-    "webrogue-virgl/lib-stub",
 ]
 internal-compile = [
     "internal",
@@ -69,6 +68,10 @@ wasm-opt = [
     "dep:tempfile",
 ]
 no-internal = []
+_vulkan = [
+    "dep:webrogue-gfx-winit",
+    "webrogue-gfx-winit/vulkan",
+]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -79,7 +82,6 @@ tracing = { workspace = true }
 webrogue-wasmtime = { workspace = true, features = ["jit", "cache", "debug"], optional = true }
 webrogue-gfx-winit = { workspace = true, optional = true }
 webrogue-gfx = { workspace = true, optional = true }
-webrogue-virgl = { workspace = true, optional = true }
 webrogue-aot-compiler = { workspace = true, optional = true }
 webrogue-lld = { workspace = true, optional = true }
 webrogue-hub-client = { workspace = true, optional = true }

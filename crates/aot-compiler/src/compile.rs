@@ -40,7 +40,6 @@ pub fn compile_wrapp_to_object(
     object_file_path: &std::path::Path,
     target: crate::Target,
     cache: Option<&std::path::PathBuf>,
-    is_pic: bool,
     export_dynamic: bool,
 ) -> anyhow::Result<()> {
     let mut config = webrogue_wasmtime_common::aot_config();
@@ -49,11 +48,6 @@ pub fn compile_wrapp_to_object(
     config.cranelift_regalloc_algorithm(wasmtime::RegallocAlgorithm::Backtracking);
     if let Some(cache) = cache {
         config.cache(Some(Cache::from_file(Some(cache))?));
-    }
-    if is_pic {
-        unsafe {
-            config.cranelift_flag_enable("is_pic");
-        }
     }
     let engine = wasmtime::Engine::new(&config)?;
 

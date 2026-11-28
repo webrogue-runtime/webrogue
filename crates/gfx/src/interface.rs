@@ -1,12 +1,12 @@
 use std::sync::Arc;
-#[cfg(feature = "wasmtime")]
+#[cfg(feature = "vulkan")]
 use std::sync::Mutex;
 
 use crate::event_sink::EventStream;
 
 pub trait AbstractSystem: Send + Sync {
     fn make_window(&self, surface_kind: SurfaceKind) -> anyhow::Result<Window>;
-    #[cfg(feature = "wasmtime")]
+    #[cfg(feature = "vulkan")]
     fn get_virgl_context(&self) -> Option<Arc<Mutex<webrogue_virgl::ContextContainer>>>;
 }
 

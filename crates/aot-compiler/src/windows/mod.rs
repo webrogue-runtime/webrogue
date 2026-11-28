@@ -86,7 +86,6 @@ pub fn build(
                 WindowsArch::AArch64 => crate::Target::Aarch64WindowsMSVC,
             },
             cache,
-            false, // TODO check
             false,
         )
     })?;

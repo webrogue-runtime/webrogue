@@ -7,14 +7,11 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
-_lib = ["dep:webrogue-virgl-lib"]
-lib-stub = ["_lib", "webrogue-virgl-lib/stub"]
-lib-impl = ["_lib", "webrogue-virgl-lib/impl"]
+skip-build = []
 
 [dependencies]
 lazy_static = { workspace = true }
 ash = { workspace = true, default-features = false }
-webrogue-virgl-lib = { workspace = true, optional = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 
 [target.'cfg(windows)'.dependencies]
@@ -26,3 +23,10 @@ libc = { workspace = true }
 
 [build-dependencies]
 cfg_aliases = { workspace = true }
+cc = { workspace = true }
+
+[target.'cfg(target_env = "musl")'.build-dependencies]
+bindgen = { workspace = true, default-features = false }
+
+[target.'cfg(not(target_env = "musl"))'.build-dependencies]
+bindgen = { workspace = true, default-features = true }

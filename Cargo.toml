@@ -99,7 +99,6 @@ webrogue-icons = { path = "crates/icons" }
 webrogue-gfx = { path = "crates/gfx" }
 webrogue-gfx-winit = { path = "crates/gfx-winit" }
 webrogue-virgl = { path = "crates/virgl" }
-webrogue-virgl-lib  = { path = "crates/virgl-lib" }
 webrogue-lld = { path = "crates/lld" }
 webrogue-wrapp = { path = "crates/wrapp" }
 webrogue-launcher = { path = "crates/launcher" }

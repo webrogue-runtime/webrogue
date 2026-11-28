@@ -11,4 +11,6 @@ echo $(dirname $(dirname $(pwd)))
 docker run \
     -v $(dirname $(dirname $(pwd))):/host_dir \
     $DOCKER_USER_FLAGS \
-    -t $image_name
+    --rm \
+    -t $image_name \
+    sh convert.sh

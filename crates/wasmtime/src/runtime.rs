@@ -146,10 +146,10 @@ async fn run_component(
         use wasmtime::unix::StoreExt;
 
         store.set_signal_handler(move |signum, siginfo, _| {
-            let Some(addr) = webrogue_virgl::shadow_blob::get_segfault_addr(signum, siginfo) else {
+            let Some(addr) = webrogue_gfx::shadow_blob::get_segfault_addr(signum, siginfo) else {
                 return false;
             };
-            webrogue_virgl::shadow_blob::handle_segfault(addr)
+            webrogue_gfx::shadow_blob::handle_segfault(addr)
         });
     }
     #[cfg(target_os = "windows")]
@@ -157,20 +157,30 @@ async fn run_component(
         use wasmtime::windows::StoreExt;
 
         store.set_signal_handler(move |exception_info| {
-            let Some(addr) = webrogue_virgl::shadow_blob::get_segfault_addr(exception_info) else {
+            let Some(addr) = webrogue_virgl::virgl::get_segfault_addr(exception_info) else {
                 return false;
             };
-            webrogue_virgl::shadow_blob::handle_segfault(addr)
+            webrogue_virgl::virgl::handle_segfault(addr)
         });
     }
+
+    #[cfg(feature = "debug")]
+    let is_debug = runtime.debug_connection_factory.is_some();
+
     async fn run_with_command(
         store: &mut wasmtime::Store<State>,
         command: Command,
+        #[cfg(feature = "debug")] is_debug: bool,
     ) -> anyhow::Result<()> {
         #[cfg(feature = "debug")]
-        if let Some(mut breakpoints) = store.edit_breakpoints() {
-            breakpoints.single_step(true)?;
+        if is_debug {
+            store.edit_breakpoints(|breakpoints| breakpoints.single_step(true))?;
+            // if let Some(mut breakpoints) = store.edit_breakpoints() {
+            //     breakpoints.single_step(true)?;
+            // }
         }
+        // Not works b738a89287bb78e51c06ac9624014bbda3c1429f
+        // Works 3e0ee3fbfdd88d06c3f8c169168fe0d3b0c0096d
 
         let program_result = store
             .run_concurrent(async |accessor| command.wasi_cli_run().call_run(accessor).await)
@@ -187,14 +197,14 @@ async fn run_component(
             .context("Unable to instantiate command")?;
         store.set_epoch_deadline(1);
         webrogue_debugger::debug(store, debug_connection_factory, move |store| {
-            Box::pin(run_with_command(store, command))
+            Box::pin(run_with_command(store, command, is_debug))
         })
         .await?;
     } else {
         let command = Command::instantiate_async(&mut store, &component, &linker)
             .await
             .context("Unable to instantiate command")?;
-        run_with_command(&mut store, command).await?;
+        run_with_command(&mut store, command, is_debug).await?;
     };
     #[cfg(not(feature = "debug"))]
     {

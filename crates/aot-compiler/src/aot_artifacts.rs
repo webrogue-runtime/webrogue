@@ -7,8 +7,45 @@ use crate::{
     windows::WindowsArch,
 };
 
+pub enum VulkanPresence {
+    Disabled,
+    Enabled,
+}
+
+impl VulkanPresence {
+    fn artifact_str(&self) -> &'static str {
+        match self {
+            VulkanPresence::Disabled => "novulkan",
+            VulkanPresence::Enabled => "vulkan",
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct LinuxArchLibC {
+    pub arch: LinuxArch,
+    pub libc: LibC,
+}
+
+impl LinuxArchLibC {
+    fn artifact_str(&self) -> String {
+        format!(
+            "{}cpu-{}libc",
+            match self.arch {
+                LinuxArch::X86_64 => "x86_64",
+                LinuxArch::Aarch64 => "aarch64",
+            },
+            match self.libc {
+                LibC::GLibC => "gnu",
+                LibC::Musl => "musl",
+            }
+        )
+    }
+}
+
 pub enum AotArtifactType {
-    Linux(LinuxArch, LibC),
+    LinuxCommon(LinuxArchLibC),
+    Linux(LinuxArchLibC, VulkanPresence),
     Windows(WindowsArch),
     Android,
     Xcode,
@@ -92,16 +129,13 @@ impl AotArtifactType {
 
     fn dir_name(&self) -> String {
         match self {
-            AotArtifactType::Linux(arch, libc) => format!(
-                "linux-{}cpu-{}libc",
-                match arch {
-                    LinuxArch::X86_64 => "x86_64",
-                    LinuxArch::Aarch64 => "aarch64",
-                },
-                match libc {
-                    LibC::GLibC => "gnu",
-                    LibC::Musl => "musl",
-                }
+            AotArtifactType::LinuxCommon(arch_libc) => {
+                format!("linux-{}", arch_libc.artifact_str())
+            }
+            AotArtifactType::Linux(arch_libc, vulkan) => format!(
+                "linux-{}-{}",
+                arch_libc.artifact_str(),
+                vulkan.artifact_str()
             ),
             AotArtifactType::Windows(arch) => format!(
                 "windows-{}cpu",
