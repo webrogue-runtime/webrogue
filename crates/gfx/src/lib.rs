@@ -35,7 +35,7 @@ pub mod shadow_blob {
     ) -> Option<*const ()> {
         None
     }
-    
+
     #[cfg(target_os = "windows")]
     pub unsafe fn get_segfault_addr<ExceptionInfo>(
         _exception_info: ExceptionInfo,
